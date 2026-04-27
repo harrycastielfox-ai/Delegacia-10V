@@ -11,13 +11,14 @@ import {
   Bell,
   Maximize2,
   ChevronRight,
+  Gavel,
+  Shield,
 } from "lucide-react";
 import {
   PieChart,
   Pie,
   Cell,
   ResponsiveContainer,
-  BarChart,
   Bar,
   XAxis,
   YAxis,
@@ -25,140 +26,134 @@ import {
   Tooltip,
   Line,
   ComposedChart,
+  BarChart,
 } from "recharts";
 import { AppLayout } from "@/components/AppLayout";
 import { PageHeader } from "@/components/PageHeader";
 import { StatCard } from "@/components/StatCard";
 import { Panel } from "@/components/Panel";
+import {
+  META,
+  PANORAMA,
+  POR_STATUS,
+  POR_PRIORIDADE,
+  POR_GRAVIDADE,
+  CVLI_ANUAL,
+  CVLI_MENSAL,
+  POR_BAIRRO,
+  EQUIPES,
+  PROCEDIMENTOS,
+  PENDENTES_ESPECIFICOS,
+} from "@/data/sipi";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Painel de Controle — SIPI" },
-      { name: "description", content: "Visão operacional dos inquéritos policiais." },
+      { title: "Painel — DT Itabela / 23ª COORPIN" },
+      { name: "description", content: "Dashboard executivo da Delegacia Territorial de Itabela." },
     ],
   }),
   component: Dashboard,
 });
 
-const criticalCases = [
-  { id: "IPL 2024.0001234-5", days: 12 },
-  { id: "IPL 2024.0000987-1", days: 7 },
-  { id: "IPL 2024.0000765-3", days: 3 },
-];
-
-const alerts = [
-  { dot: "warning", text: "7 inquéritos sem atualização há mais de 15 dias", time: "Há 2 horas" },
-  { dot: "warning", text: "5 inquéritos sem prazo definido", time: "Há 4 horas" },
-  { dot: "warning", text: "3 inquéritos próximos do vencimento (≤ 5 dias)", time: "Há 6 horas" },
-];
-
-const situationData = [
-  { name: "Em andamento", value: 512, color: "var(--success)" },
-  { name: "Finalizados", value: 142, color: "var(--info)" },
-  { name: "Outros", value: 30, color: "var(--warning)" },
-];
-const gravityData = [
-  { name: "Alta", value: 98, color: "var(--destructive)" },
-  { name: "Média", value: 352, color: "var(--warning)" },
-  { name: "Baixa", value: 234, color: "var(--info)" },
-];
-const teamData = [
-  { name: "Equipe 1", value: 256, pct: 37 },
-  { name: "Equipe 2", value: 198, pct: 29 },
-  { name: "Equipe 3", value: 142, pct: 21 },
-  { name: "Outros", value: 88, pct: 13 },
-];
-const cvliData = [
-  { year: "2021", elucidados: 45, registros: 98, taxa: 45.9 },
-  { year: "2022", elucidados: 52, registros: 110, taxa: 47.3 },
-  { year: "2023", elucidados: 61, registros: 125, taxa: 48.8 },
-  { year: "2024", elucidados: 74, registros: 140, taxa: 52.9 },
-  { year: "2025", elucidados: 68, registros: 128, taxa: 53.1 },
-  { year: "2026", elucidados: 23, registros: 83, taxa: 27.7 },
-];
-
 function Dashboard() {
+  const finalizados = PANORAMA.relatorioEnviado;
+  const total = PANORAMA.totalCadastrados;
+
   return (
     <AppLayout>
-      <PageHeader title="Painel de Controle" subtitle="Visão operacional dos inquéritos policiais" />
+      <PageHeader
+        title="Painel de Controle"
+        subtitle={`${META.unidade} — atualizado em ${META.atualizadoEm}`}
+      />
 
       {/* KPI cards */}
       <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-7 gap-4 mb-6">
-        <StatCard label="TOTAL" value={684} hint="Inquéritos cadastrados" icon={FileText} tone="success" />
-        <StatCard label="EM ANDAMENTO" value={512} hint="75% do total" icon={Clock} tone="info" />
-        <StatCard label="FINALIZADOS" value={142} hint="21% do total" icon={CheckCircle2} tone="primary" />
-        <StatCard label="ALTA PRIORIDADE" value={18} hint="Requer atenção" icon={TrendingUp} tone="warning" />
-        <StatCard label="VENCIDOS" value={12} hint="Prazo expirado" icon={AlertTriangle} tone="destructive" />
-        <StatCard label="SEM PRAZO" value={23} hint="Sem data limite" icon={CalendarX} tone="purple" />
-        <StatCard label="SEM ATUALIZAÇÃO" value={37} hint="+ 15 dias" icon={Info} tone="warning" />
+        <StatCard label="TOTAL" value={total} hint="Procedimentos cadastrados" icon={FileText} tone="success" />
+        <StatCard label="EM ANDAMENTO" value={PANORAMA.emAndamento} hint={`${Math.round((PANORAMA.emAndamento / total) * 100)}% do total`} icon={Clock} tone="info" />
+        <StatCard label="CONCLUÍDOS" value={finalizados} hint={`${PANORAMA.taxaConclusao}% taxa atual`} icon={CheckCircle2} tone="primary" />
+        <StatCard label="PRIOR. ALTA" value={PANORAMA.prioridadeAlta} hint="Requer atenção" icon={TrendingUp} tone="warning" />
+        <StatCard label="PRAZO CRÍTICO" value={PANORAMA.prazoCritico} hint="< 3 dias" icon={AlertTriangle} tone="destructive" />
+        <StatCard label="RÉU PRESO" value={PANORAMA.reuPreso} hint="Casos com prisão" icon={Shield} tone="purple" />
+        <StatCard label="MED. PROTETIVAS" value={PANORAMA.medidasProtetivas} hint="Ativas" icon={Gavel} tone="warning" />
       </div>
 
       {/* Mid row */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-6">
         <Panel
-          title="CASOS CRÍTICOS"
+          title="ALERTAS CRÍTICOS"
           accent="destructive"
           icon={<AlertOctagon className="h-4 w-4 text-destructive" />}
-          action={
-            <div className="flex items-center gap-2">
-              <span className="text-[10px] font-bold bg-destructive/20 text-destructive px-2 py-0.5 rounded">
-                5
+        >
+          <ul className="space-y-3">
+            <li className="flex items-center gap-3">
+              <span className="h-2 w-2 rounded-full bg-destructive shrink-0" />
+              <div className="flex-1">
+                <div className="text-sm font-semibold">Inquéritos em prazo crítico</div>
+                <div className="text-xs text-muted-foreground">Menos de 3 dias para vencer</div>
+              </div>
+              <span className="text-[10px] font-bold bg-destructive/15 text-destructive border border-destructive/30 px-2 py-1 rounded">
+                {PANORAMA.prazoCritico}
               </span>
-              <button className="text-xs text-destructive flex items-center gap-1 hover:underline">
-                Ver todos <ChevronRight className="h-3 w-3" />
-              </button>
-            </div>
-          }
-        >
-          <ul className="space-y-3">
-            {criticalCases.map((c) => (
-              <li key={c.id} className="flex items-center gap-3">
-                <span className="h-2 w-2 rounded-full bg-destructive shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm font-semibold">{c.id}</div>
-                  <div className="text-xs text-muted-foreground">Vencido há {c.days} dias</div>
-                </div>
-                <span className="text-[10px] font-bold bg-destructive/15 text-destructive border border-destructive/30 px-2 py-1 rounded">
-                  VENCIDO
-                </span>
-              </li>
-            ))}
+            </li>
+            <li className="flex items-center gap-3">
+              <span className="h-2 w-2 rounded-full bg-warning shrink-0" />
+              <div className="flex-1">
+                <div className="text-sm font-semibold">Casos prioridade ALTA</div>
+                <div className="text-xs text-muted-foreground">Demandam ação imediata</div>
+              </div>
+              <span className="text-[10px] font-bold bg-warning/15 text-warning border border-warning/30 px-2 py-1 rounded">
+                {PANORAMA.prioridadeAlta}
+              </span>
+            </li>
+            <li className="flex items-center gap-3">
+              <span className="h-2 w-2 rounded-full bg-info shrink-0" />
+              <div className="flex-1">
+                <div className="text-sm font-semibold">CVLI sem relatar</div>
+                <div className="text-xs text-muted-foreground">IP de homicídios pendentes</div>
+              </div>
+              <span className="text-[10px] font-bold bg-info/15 text-info border border-info/30 px-2 py-1 rounded">
+                188
+              </span>
+            </li>
+            <li className="flex items-center gap-3">
+              <span className="h-2 w-2 rounded-full bg-purple shrink-0" />
+              <div className="flex-1">
+                <div className="text-sm font-semibold">Crimes Sexuais sem relatar</div>
+                <div className="text-xs text-muted-foreground">Aguardando conclusão</div>
+              </div>
+              <span className="text-[10px] font-bold bg-purple/15 text-purple border border-purple/30 px-2 py-1 rounded">
+                25
+              </span>
+            </li>
           </ul>
         </Panel>
 
-        <Panel
-          title="ALERTAS RECENTES"
-          accent="warning"
-          icon={<Bell className="h-4 w-4 text-warning" />}
-          action={
-            <button className="text-xs text-warning flex items-center gap-1 hover:underline">
-              Ver todos <ChevronRight className="h-3 w-3" />
-            </button>
-          }
-        >
+        <Panel title="PENDÊNCIAS POR CATEGORIA" accent="warning" icon={<Bell className="h-4 w-4 text-warning" />}>
           <ul className="space-y-3">
-            {alerts.map((a, i) => (
-              <li key={i} className="flex items-start gap-3">
+            {PENDENTES_ESPECIFICOS.map((p) => (
+              <li key={p.label} className="flex items-start gap-3">
                 <span className="h-2 w-2 rounded-full bg-warning mt-1.5 shrink-0" />
-                <div className="flex-1 text-sm">{a.text}</div>
-                <div className="text-xs text-muted-foreground whitespace-nowrap">{a.time}</div>
+                <div className="flex-1 text-sm">{p.label}</div>
+                <div className="text-sm font-bold tabular-nums text-warning">{p.value}</div>
               </li>
             ))}
           </ul>
         </Panel>
 
-        <Panel title="SITUAÇÃO OPERACIONAL" accent="success">
+        <Panel title="META DE CONCLUSÃO" accent="success">
           <ul className="space-y-3 text-sm">
-            <Row label="Inquéritos ativos" value="512" color="var(--success)" />
-            <Row label="Vencidos" value="12" color="var(--destructive)" />
-            <Row label="Sem atualização (+15 dias)" value="37" color="var(--warning)" />
-            <Row label="Sem prazo definido" value="23" color="var(--purple)" />
+            <Row label="Procedimentos cadastrados" value={String(total)} color="var(--info)" />
+            <Row label="Relatórios enviados" value={String(finalizados)} color="var(--success)" />
+            <Row label="Em andamento" value={String(PANORAMA.emAndamento)} color="var(--warning)" />
+            <Row label="Relatados não enviados" value={String(PANORAMA.relatadosNaoEnviados)} color="var(--purple)" />
           </ul>
           <div className="mt-4 p-3 rounded-lg bg-success/5 border border-success/20 flex items-center gap-3">
             <div className="flex-1">
-              <div className="text-xs font-semibold">Taxa de resolução</div>
-              <div className="text-[11px] text-muted-foreground">142 de 684 finalizados</div>
+              <div className="text-xs font-semibold">Taxa de conclusão atual</div>
+              <div className="text-[11px] text-muted-foreground">
+                Meta: {PANORAMA.metaConclusao}% — atual {PANORAMA.taxaConclusao}%
+              </div>
             </div>
             <div className="relative h-12 w-12">
               <svg viewBox="0 0 36 36" className="h-12 w-12 -rotate-90">
@@ -170,12 +165,12 @@ function Dashboard() {
                   fill="none"
                   stroke="var(--success)"
                   strokeWidth="3"
-                  strokeDasharray={`${21 * 0.94} 100`}
+                  strokeDasharray={`${(PANORAMA.taxaConclusao / 100) * 94} 100`}
                   strokeLinecap="round"
                 />
               </svg>
-              <div className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-success">
-                21%
+              <div className="absolute inset-0 flex items-center justify-center text-[9px] font-bold text-success">
+                {Math.round(PANORAMA.taxaConclusao)}%
               </div>
             </div>
           </div>
@@ -184,49 +179,48 @@ function Dashboard() {
 
       {/* Donut row */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-6">
-        <DonutPanel title="POR SITUAÇÃO" data={situationData} total={684} />
+        <DonutPanel title="POR STATUS DE DILIGÊNCIA" data={POR_STATUS} total={POR_STATUS.reduce((a, b) => a + b.value, 0)} />
+        <DonutPanel title="POR PRIORIDADE" data={POR_PRIORIDADE} total={POR_PRIORIDADE.reduce((a, b) => a + b.value, 0)} />
         <Panel
-          title="POR EQUIPE"
+          title="PROCEDIMENTOS POR TIPO"
           accent="success"
-          action={
-            <button className="text-muted-foreground hover:text-foreground">
-              <Maximize2 className="h-3.5 w-3.5" />
-            </button>
-          }
+          action={<Maximize2 className="h-3.5 w-3.5 text-muted-foreground" />}
         >
           <ul className="space-y-3.5">
-            {teamData.map((t) => (
-              <li key={t.name} className="flex items-center gap-3">
-                <span className="text-xs text-muted-foreground w-16">{t.name}</span>
+            {PROCEDIMENTOS.map((t) => (
+              <li key={t.sigla} className="flex items-center gap-3">
+                <span className="text-xs text-muted-foreground w-12 font-bold">{t.sigla}</span>
                 <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
                   <div
                     className="h-full bg-success rounded-full"
-                    style={{ width: `${(t.value / 256) * 100}%` }}
+                    style={{ width: `${(t.total / 623) * 100}%` }}
                   />
                 </div>
                 <span className="text-xs tabular-nums text-muted-foreground w-20 text-right">
-                  {t.value} ({t.pct}%)
+                  {t.total}
                 </span>
               </li>
             ))}
           </ul>
+          <div className="mt-4 text-[11px] text-muted-foreground">
+            IP: Inquéritos · APF: Flagrantes · TCO: Termos · BOC: Boletins · AIAI: Ato Infracional
+          </div>
         </Panel>
-        <DonutPanel title="POR GRAVIDADE" data={gravityData} total={684} />
       </div>
 
-      {/* Bottom row: chart + table */}
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
-        <Panel title="CVLI – COMPARATIVO DE ELUCIDAÇÃO" accent="success" className="xl:col-span-2">
+      {/* CVLI Chart */}
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-5 mb-6">
+        <Panel title="CVLI — COMPARATIVO ANUAL" accent="success" className="xl:col-span-2">
           <div className="flex items-center gap-5 text-xs mb-3">
-            <Legend color="var(--success)" label="Elucidados" />
             <Legend color="var(--info)" label="Registros" />
+            <Legend color="var(--success)" label="Elucidados" />
             <Legend color="var(--foreground)" label="Taxa de elucidação (%)" line />
           </div>
           <div className="h-72">
             <ResponsiveContainer width="100%" height="100%">
-              <ComposedChart data={cvliData} margin={{ top: 20, right: 20, bottom: 0, left: -10 }}>
+              <ComposedChart data={CVLI_ANUAL} margin={{ top: 20, right: 20, bottom: 0, left: -10 }}>
                 <CartesianGrid stroke="var(--border)" vertical={false} />
-                <XAxis dataKey="year" stroke="var(--muted-foreground)" fontSize={11} />
+                <XAxis dataKey="ano" stroke="var(--muted-foreground)" fontSize={11} />
                 <YAxis yAxisId="left" stroke="var(--muted-foreground)" fontSize={11} />
                 <YAxis
                   yAxisId="right"
@@ -243,8 +237,8 @@ function Dashboard() {
                     fontSize: 12,
                   }}
                 />
-                <Bar yAxisId="left" dataKey="elucidados" fill="var(--success)" radius={[4, 4, 0, 0]} />
                 <Bar yAxisId="left" dataKey="registros" fill="var(--info)" radius={[4, 4, 0, 0]} />
+                <Bar yAxisId="left" dataKey="elucidados" fill="var(--success)" radius={[4, 4, 0, 0]} />
                 <Line
                   yAxisId="right"
                   type="monotone"
@@ -256,25 +250,27 @@ function Dashboard() {
               </ComposedChart>
             </ResponsiveContainer>
           </div>
-          <p className="text-center text-[11px] text-muted-foreground mt-2">
-            Clique nas barras para filtrar os casos do ano selecionado
-          </p>
         </Panel>
 
         <div className="bg-card border border-border rounded-xl overflow-hidden">
+          <div className="px-4 py-3 border-b border-border bg-muted/20">
+            <div className="text-[10px] tracking-[0.15em] text-muted-foreground font-bold">
+              CVLI — RESUMO ANUAL
+            </div>
+          </div>
           <table className="w-full text-sm">
             <thead className="bg-muted/40 text-[10px] tracking-[0.15em] text-muted-foreground">
               <tr>
                 <th className="text-left px-4 py-3 font-bold">ANO</th>
-                <th className="text-right px-4 py-3 font-bold">REGISTROS</th>
-                <th className="text-right px-4 py-3 font-bold">ELUCIDADOS</th>
+                <th className="text-right px-4 py-3 font-bold">REG</th>
+                <th className="text-right px-4 py-3 font-bold">ELUC</th>
                 <th className="text-right px-4 py-3 font-bold">%</th>
               </tr>
             </thead>
             <tbody>
-              {cvliData.map((r) => (
-                <tr key={r.year} className="border-t border-border">
-                  <td className="px-4 py-3 font-semibold">{r.year}</td>
+              {CVLI_ANUAL.map((r) => (
+                <tr key={r.ano} className="border-t border-border">
+                  <td className="px-4 py-3 font-semibold">{r.ano}</td>
                   <td className="px-4 py-3 text-right tabular-nums">{r.registros}</td>
                   <td className="px-4 py-3 text-right tabular-nums">{r.elucidados}</td>
                   <td className="px-4 py-3 text-right tabular-nums text-success font-semibold">
@@ -284,13 +280,124 @@ function Dashboard() {
               ))}
               <tr className="border-t border-border bg-muted/30 font-bold">
                 <td className="px-4 py-3">TOTAL</td>
-                <td className="px-4 py-3 text-right tabular-nums">684</td>
-                <td className="px-4 py-3 text-right tabular-nums">323</td>
-                <td className="px-4 py-3 text-right tabular-nums text-success">47,2%</td>
+                <td className="px-4 py-3 text-right tabular-nums">
+                  {CVLI_ANUAL.reduce((a, b) => a + b.registros, 0)}
+                </td>
+                <td className="px-4 py-3 text-right tabular-nums">
+                  {CVLI_ANUAL.reduce((a, b) => a + b.elucidados, 0)}
+                </td>
+                <td className="px-4 py-3 text-right tabular-nums text-success">61,1%</td>
               </tr>
             </tbody>
           </table>
         </div>
+      </div>
+
+      {/* CVLI mensal + Bairros */}
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-5 mb-6">
+        <Panel title="CVLI — REGISTROS MENSAIS (2023–2026)" accent="info">
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={CVLI_MENSAL} margin={{ top: 10, right: 10, bottom: 0, left: -20 }}>
+                <CartesianGrid stroke="var(--border)" vertical={false} />
+                <XAxis dataKey="mes" stroke="var(--muted-foreground)" fontSize={10} />
+                <YAxis stroke="var(--muted-foreground)" fontSize={10} />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: "var(--card)",
+                    border: "1px solid var(--border)",
+                    borderRadius: 8,
+                    fontSize: 12,
+                  }}
+                />
+                <Bar dataKey="r2023" fill="var(--muted-foreground)" name="2023" />
+                <Bar dataKey="r2024" fill="var(--info)" name="2024" />
+                <Bar dataKey="r2025" fill="var(--warning)" name="2025" />
+                <Bar dataKey="r2026" fill="var(--destructive)" name="2026" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </Panel>
+
+        <Panel title="ANÁLISE POR LOCALIDADE" accent="warning">
+          <div className="overflow-auto max-h-72">
+            <table className="w-full text-sm">
+              <thead className="text-[10px] tracking-[0.15em] text-muted-foreground sticky top-0 bg-card">
+                <tr className="border-b border-border">
+                  <th className="text-left py-2 font-bold">BAIRRO</th>
+                  <th className="text-right py-2 font-bold">TOTAL</th>
+                  <th className="text-right py-2 font-bold">CVLI</th>
+                  <th className="text-right py-2 font-bold">ALTA</th>
+                </tr>
+              </thead>
+              <tbody>
+                {POR_BAIRRO.map((b) => (
+                  <tr key={b.bairro} className="border-b border-border/50">
+                    <td className="py-2.5 font-medium">{b.bairro}</td>
+                    <td className="py-2.5 text-right tabular-nums">{b.total}</td>
+                    <td className="py-2.5 text-right tabular-nums text-destructive">{b.cvli}</td>
+                    <td className="py-2.5 text-right tabular-nums text-warning">{b.alta}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Panel>
+      </div>
+
+      {/* Gravidade + Equipe */}
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
+        <Panel title="ANÁLISE POR GRAVIDADE" accent="destructive">
+          <div className="h-72">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={POR_GRAVIDADE} layout="vertical" margin={{ top: 5, right: 20, bottom: 0, left: 10 }}>
+                <CartesianGrid stroke="var(--border)" horizontal={false} />
+                <XAxis type="number" stroke="var(--muted-foreground)" fontSize={11} />
+                <YAxis type="category" dataKey="name" stroke="var(--muted-foreground)" fontSize={10} width={140} />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: "var(--card)",
+                    border: "1px solid var(--border)",
+                    borderRadius: 8,
+                    fontSize: 12,
+                  }}
+                />
+                <Bar dataKey="value" fill="var(--destructive)" radius={[0, 4, 4, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </Panel>
+
+        <Panel
+          title="DISTRIBUIÇÃO POR EQUIPE"
+          accent="success"
+          action={<ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />}
+        >
+          <ul className="space-y-3.5">
+            {EQUIPES.map((t) => (
+              <li key={t.name} className="flex items-center gap-3">
+                <span className="text-xs text-muted-foreground w-44 truncate">{t.name}</span>
+                <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-success rounded-full"
+                    style={{ width: `${t.pct}%` }}
+                  />
+                </div>
+                <span className="text-xs tabular-nums text-muted-foreground w-20 text-right">
+                  {t.value} ({t.pct}%)
+                </span>
+              </li>
+            ))}
+          </ul>
+          <div className="mt-5 p-3 rounded-lg bg-info/5 border border-info/20">
+            <div className="text-xs font-semibold mb-1 flex items-center gap-2">
+              <Info className="h-3.5 w-3.5 text-info" /> Elucidações CVLI 2025
+            </div>
+            <div className="text-[11px] text-muted-foreground">
+              Equipe IPC Marluan / IPC Rivaldo: <span className="text-success font-bold">21 casos elucidados</span>
+            </div>
+          </div>
+        </Panel>
       </div>
     </AppLayout>
   );
@@ -336,11 +443,7 @@ function DonutPanel({
     <Panel
       title={title}
       accent="success"
-      action={
-        <button className="text-muted-foreground hover:text-foreground">
-          <Maximize2 className="h-3.5 w-3.5" />
-        </button>
-      }
+      action={<Maximize2 className="h-3.5 w-3.5 text-muted-foreground" />}
     >
       <div className="flex items-center gap-4">
         <div className="relative h-36 w-36 shrink-0">
@@ -370,8 +473,8 @@ function DonutPanel({
             const pct = Math.round((d.value / total) * 100);
             return (
               <li key={d.name} className="flex items-center gap-2">
-                <span className="h-2.5 w-2.5 rounded-sm" style={{ backgroundColor: d.color }} />
-                <span className="flex-1 text-foreground/90">{d.name}</span>
+                <span className="h-2.5 w-2.5 rounded-sm shrink-0" style={{ backgroundColor: d.color }} />
+                <span className="flex-1 text-foreground/90 text-xs truncate">{d.name}</span>
                 <span className="tabular-nums text-muted-foreground text-xs">
                   {d.value} ({pct}%)
                 </span>
