@@ -4,7 +4,7 @@ interface Props {
   title: string;
   icon?: ReactNode;
   action?: ReactNode;
-  accent?: "success" | "warning" | "destructive" | "muted";
+  accent?: "success" | "warning" | "destructive" | "muted" | "info" | "primary" | "purple";
   children: ReactNode;
   className?: string;
 }
@@ -14,6 +14,9 @@ const accentColor = {
   warning: "var(--warning)",
   destructive: "var(--destructive)",
   muted: "var(--muted-foreground)",
+  info: "var(--info)",
+  primary: "var(--primary)",
+  purple: "var(--purple)",
 };
 
 export function Panel({ title, icon, action, accent = "muted", children, className = "" }: Props) {
