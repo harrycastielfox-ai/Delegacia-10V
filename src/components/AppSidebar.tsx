@@ -1,9 +1,10 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { LayoutDashboard, FileText, FilePlus2, Bell, ShieldCheck, Shield, LogOut } from "lucide-react";
+import { LayoutDashboard, FileText, FilePlus2, Bell, ShieldCheck, Shield, LogOut, Gavel } from "lucide-react";
 
 const items = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
   { title: "Inquéritos", url: "/inqueritos", icon: FileText },
+  { title: "Representações", url: "/representacoes", icon: Gavel },
   { title: "Novo Caso", url: "/novo-caso", icon: FilePlus2 },
   { title: "Alertas", url: "/alertas", icon: Bell, badge: 5 },
   { title: "Auditoria", url: "/auditoria", icon: ShieldCheck },

@@ -9,12 +9,18 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as RepresentacoesRouteImport } from './routes/representacoes'
 import { Route as NovoCasoRouteImport } from './routes/novo-caso'
 import { Route as InqueritosRouteImport } from './routes/inqueritos'
 import { Route as AuditoriaRouteImport } from './routes/auditoria'
 import { Route as AlertasRouteImport } from './routes/alertas'
 import { Route as IndexRouteImport } from './routes/index'
 
+const RepresentacoesRoute = RepresentacoesRouteImport.update({
+  id: '/representacoes',
+  path: '/representacoes',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const NovoCasoRoute = NovoCasoRouteImport.update({
   id: '/novo-caso',
   path: '/novo-caso',
@@ -47,6 +53,7 @@ export interface FileRoutesByFullPath {
   '/auditoria': typeof AuditoriaRoute
   '/inqueritos': typeof InqueritosRoute
   '/novo-caso': typeof NovoCasoRoute
+  '/representacoes': typeof RepresentacoesRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -54,6 +61,7 @@ export interface FileRoutesByTo {
   '/auditoria': typeof AuditoriaRoute
   '/inqueritos': typeof InqueritosRoute
   '/novo-caso': typeof NovoCasoRoute
+  '/representacoes': typeof RepresentacoesRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -62,12 +70,25 @@ export interface FileRoutesById {
   '/auditoria': typeof AuditoriaRoute
   '/inqueritos': typeof InqueritosRoute
   '/novo-caso': typeof NovoCasoRoute
+  '/representacoes': typeof RepresentacoesRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/alertas' | '/auditoria' | '/inqueritos' | '/novo-caso'
+  fullPaths:
+    | '/'
+    | '/alertas'
+    | '/auditoria'
+    | '/inqueritos'
+    | '/novo-caso'
+    | '/representacoes'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/alertas' | '/auditoria' | '/inqueritos' | '/novo-caso'
+  to:
+    | '/'
+    | '/alertas'
+    | '/auditoria'
+    | '/inqueritos'
+    | '/novo-caso'
+    | '/representacoes'
   id:
     | '__root__'
     | '/'
@@ -75,6 +96,7 @@ export interface FileRouteTypes {
     | '/auditoria'
     | '/inqueritos'
     | '/novo-caso'
+    | '/representacoes'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -83,10 +105,18 @@ export interface RootRouteChildren {
   AuditoriaRoute: typeof AuditoriaRoute
   InqueritosRoute: typeof InqueritosRoute
   NovoCasoRoute: typeof NovoCasoRoute
+  RepresentacoesRoute: typeof RepresentacoesRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/representacoes': {
+      id: '/representacoes'
+      path: '/representacoes'
+      fullPath: '/representacoes'
+      preLoaderRoute: typeof RepresentacoesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/novo-caso': {
       id: '/novo-caso'
       path: '/novo-caso'
@@ -131,6 +161,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuditoriaRoute: AuditoriaRoute,
   InqueritosRoute: InqueritosRoute,
   NovoCasoRoute: NovoCasoRoute,
+  RepresentacoesRoute: RepresentacoesRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
