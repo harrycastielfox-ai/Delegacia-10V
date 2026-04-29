@@ -1,0 +1,8 @@
+<?php $pageTitle = 'Inquéritos — SIPI'; include __DIR__ . '/../includes/header.php'; ?>
+<body class='min-h-screen flex w-full bg-background text-foreground'>
+<?php include __DIR__ . '/../includes/sidebar.php'; ?>
+<main class='flex-1 min-w-0 p-6 lg:p-8 overflow-x-hidden'>
+<header class='mb-6'><h1 class='text-2xl font-bold'>Inquéritos</h1><p class='text-sm text-muted-foreground'>2.487 procedimentos cadastrados — 1.203 concluídos</p></header>
+<div class='flex flex-col md:flex-row gap-3 mb-5'><input placeholder='Buscar por PPE, tipificação ou bairro...' class='w-full bg-card border border-border rounded-lg px-4 py-2.5 text-sm'><button class='border border-border bg-card px-4 py-2.5 rounded-lg text-sm'>Filtros</button></div>
+<div class='bg-card border border-border rounded-xl overflow-hidden'><table class='w-full text-sm'><thead class='bg-muted/40 text-[10px] tracking-[0.15em] text-muted-foreground'><tr><th class='text-left px-4 py-3 font-bold'>Nº PPE</th><th class='text-left px-4 py-3 font-bold'>PRIOR.</th><th class='text-left px-4 py-3 font-bold'>TIPIFICAÇÃO</th><th class='text-left px-4 py-3 font-bold'>STATUS</th></tr></thead><tbody><tr class='border-t border-border'><td class='px-4 py-3 font-semibold'>IPL 2026.0001001-1</td><td class='px-4 py-3'><span class='text-[10px] font-bold px-2 py-1 rounded border bg-destructive/10 text-destructive border-destructive/30'>ALTA</span></td><td class='px-4 py-3 text-xs'>Homicídio Qualificado</td><td class='px-4 py-3'><span class='text-[10px] font-bold px-2 py-1 rounded border bg-info/15 text-info border-info/30'>EM ANDAMENTO</span></td></tr></tbody></table></div>
+</main></body></html>
