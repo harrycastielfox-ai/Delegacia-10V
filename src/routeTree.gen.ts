@@ -11,6 +11,8 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as RepresentacoesRouteImport } from './routes/representacoes'
 import { Route as NovoCasoRouteImport } from './routes/novo-caso'
+import { Route as ModulosRouteImport } from './routes/modulos'
+import { Route as LoginRouteImport } from './routes/login'
 import { Route as InqueritosRouteImport } from './routes/inqueritos'
 import { Route as AuditoriaRouteImport } from './routes/auditoria'
 import { Route as AlertasRouteImport } from './routes/alertas'
@@ -24,6 +26,16 @@ const RepresentacoesRoute = RepresentacoesRouteImport.update({
 const NovoCasoRoute = NovoCasoRouteImport.update({
   id: '/novo-caso',
   path: '/novo-caso',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ModulosRoute = ModulosRouteImport.update({
+  id: '/modulos',
+  path: '/modulos',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
 const InqueritosRoute = InqueritosRouteImport.update({
@@ -52,6 +64,8 @@ export interface FileRoutesByFullPath {
   '/alertas': typeof AlertasRoute
   '/auditoria': typeof AuditoriaRoute
   '/inqueritos': typeof InqueritosRoute
+  '/login': typeof LoginRoute
+  '/modulos': typeof ModulosRoute
   '/novo-caso': typeof NovoCasoRoute
   '/representacoes': typeof RepresentacoesRoute
 }
@@ -60,6 +74,8 @@ export interface FileRoutesByTo {
   '/alertas': typeof AlertasRoute
   '/auditoria': typeof AuditoriaRoute
   '/inqueritos': typeof InqueritosRoute
+  '/login': typeof LoginRoute
+  '/modulos': typeof ModulosRoute
   '/novo-caso': typeof NovoCasoRoute
   '/representacoes': typeof RepresentacoesRoute
 }
@@ -69,6 +85,8 @@ export interface FileRoutesById {
   '/alertas': typeof AlertasRoute
   '/auditoria': typeof AuditoriaRoute
   '/inqueritos': typeof InqueritosRoute
+  '/login': typeof LoginRoute
+  '/modulos': typeof ModulosRoute
   '/novo-caso': typeof NovoCasoRoute
   '/representacoes': typeof RepresentacoesRoute
 }
@@ -79,6 +97,8 @@ export interface FileRouteTypes {
     | '/alertas'
     | '/auditoria'
     | '/inqueritos'
+    | '/login'
+    | '/modulos'
     | '/novo-caso'
     | '/representacoes'
   fileRoutesByTo: FileRoutesByTo
@@ -87,6 +107,8 @@ export interface FileRouteTypes {
     | '/alertas'
     | '/auditoria'
     | '/inqueritos'
+    | '/login'
+    | '/modulos'
     | '/novo-caso'
     | '/representacoes'
   id:
@@ -95,6 +117,8 @@ export interface FileRouteTypes {
     | '/alertas'
     | '/auditoria'
     | '/inqueritos'
+    | '/login'
+    | '/modulos'
     | '/novo-caso'
     | '/representacoes'
   fileRoutesById: FileRoutesById
@@ -104,6 +128,8 @@ export interface RootRouteChildren {
   AlertasRoute: typeof AlertasRoute
   AuditoriaRoute: typeof AuditoriaRoute
   InqueritosRoute: typeof InqueritosRoute
+  LoginRoute: typeof LoginRoute
+  ModulosRoute: typeof ModulosRoute
   NovoCasoRoute: typeof NovoCasoRoute
   RepresentacoesRoute: typeof RepresentacoesRoute
 }
@@ -122,6 +148,20 @@ declare module '@tanstack/react-router' {
       path: '/novo-caso'
       fullPath: '/novo-caso'
       preLoaderRoute: typeof NovoCasoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/modulos': {
+      id: '/modulos'
+      path: '/modulos'
+      fullPath: '/modulos'
+      preLoaderRoute: typeof ModulosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/inqueritos': {
@@ -160,6 +200,8 @@ const rootRouteChildren: RootRouteChildren = {
   AlertasRoute: AlertasRoute,
   AuditoriaRoute: AuditoriaRoute,
   InqueritosRoute: InqueritosRoute,
+  LoginRoute: LoginRoute,
+  ModulosRoute: ModulosRoute,
   NovoCasoRoute: NovoCasoRoute,
   RepresentacoesRoute: RepresentacoesRoute,
 }
