@@ -1,8 +1,10 @@
-import { Link, useRouterState } from "@tanstack/react-router";
-import { LayoutDashboard, FileText, FilePlus2, Bell, ShieldCheck, Shield, LogOut, Gavel } from "lucide-react";
+import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
+import { LayoutDashboard, FileText, FilePlus2, Bell, ShieldCheck, Shield, LogOut, Gavel, LayoutGrid } from "lucide-react";
+import { logout } from "@/lib/auth";
 
 const items = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
+  { title: "Módulos", url: "/modulos", icon: LayoutGrid },
   { title: "Inquéritos", url: "/inqueritos", icon: FileText },
   { title: "Representações", url: "/representacoes", icon: Gavel },
   { title: "Novo Caso", url: "/novo-caso", icon: FilePlus2 },
@@ -12,6 +14,12 @@ const items = [
 
 export function AppSidebar() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const navigate = useNavigate();
+
+  function handleLogout() {
+    logout();
+    navigate({ to: "/login" });
+  }
 
   return (
     <aside className="hidden md:flex w-64 shrink-0 flex-col bg-sidebar border-r border-sidebar-border">
@@ -64,7 +72,12 @@ export function AppSidebar() {
           <div className="text-xs font-semibold text-sidebar-foreground truncate">DELEGADO ALVES</div>
           <div className="text-[10px] text-muted-foreground truncate">d.alves@policia.gov.br</div>
         </div>
-        <button className="text-muted-foreground hover:text-foreground">
+        <button
+          onClick={handleLogout}
+          className="text-muted-foreground hover:text-destructive transition-colors"
+          aria-label="Sair"
+          title="Sair"
+        >
           <LogOut className="h-4 w-4" />
         </button>
       </div>
