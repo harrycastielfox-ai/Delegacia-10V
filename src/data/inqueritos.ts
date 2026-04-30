@@ -3,6 +3,7 @@ import { INQUERITOS_AMOSTRA } from "@/data/sipi";
 export type VisibilidadeCaso = "Público" | "Privado";
 
 export type InqueritoCaso = {
+  id: string;
   ppe: string;
   numeroFisico?: string;
   numeroBo?: string;
@@ -38,6 +39,7 @@ export type InqueritoCaso = {
 };
 
 export const INQUERITOS_CASOS: InqueritoCaso[] = INQUERITOS_AMOSTRA.map((item) => ({
+  id: item.ppe.replace(/\//g, "-"),
   ppe: item.ppe,
   prioridade: item.prior,
   dataFato: item.dataFato,
@@ -54,6 +56,5 @@ export const INQUERITOS_CASOS: InqueritoCaso[] = INQUERITOS_AMOSTRA.map((item) =
 }));
 
 export function getInqueritoByCaseId(caseId: string) {
-  const ppe = decodeURIComponent(caseId);
-  return INQUERITOS_CASOS.find((item) => item.ppe === ppe);
+  return INQUERITOS_CASOS.find((item) => item.id === caseId);
 }
