@@ -34,7 +34,7 @@ const MODULOS: Modulo[] = [
     descricao: "IP, APF, TCO, BOC e AIAI — controle de prazos, situações e equipes.",
     icon: FileText,
     tone: "success",
-    to: "/inqueritos",
+    to: "/",
     disponivel: true,
   },
   {
