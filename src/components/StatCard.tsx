@@ -18,13 +18,15 @@ interface Props {
   hint: string;
   icon: LucideIcon;
   tone: Tone;
+  onClick?: () => void;
 }
 
-export function StatCard({ label, value, hint, icon: Icon, tone }: Props) {
+export function StatCard({ label, value, hint, icon: Icon, tone, onClick }: Props) {
   return (
     <div
-      className="stat-card stat-card-border p-5"
+      className={`stat-card stat-card-border p-5 ${onClick ? "cursor-pointer hover:opacity-95 transition" : ""}`}
       style={{ ["--stat-color" as never]: toneVar[tone] }}
+      onClick={onClick}
     >
       <div className="flex items-start justify-between mb-4">
         <span

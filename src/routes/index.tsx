@@ -77,15 +77,16 @@ function Dashboard() {
       <PageHeader
         title="Painel de Controle"
         subtitle={`${META.unidade} — atualizado em ${META.atualizadoEm}`}
+        showActions={false}
       />
 
       {/* KPI cards */}
       <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-7 gap-4 mb-6">
-        <StatCard label="TOTAL" value={total} hint="Procedimentos cadastrados" icon={FileText} tone="success" />
-        <StatCard label="EM ANDAMENTO" value={PANORAMA.emAndamento} hint={`${Math.round((PANORAMA.emAndamento / total) * 100)}% do total`} icon={Clock} tone="info" />
-        <StatCard label="CONCLUÍDOS" value={finalizados} hint={`${PANORAMA.taxaConclusao}% taxa atual`} icon={CheckCircle2} tone="primary" />
-        <StatCard label="PRIOR. ALTA" value={PANORAMA.prioridadeAlta} hint="Requer atenção" icon={TrendingUp} tone="warning" />
-        <StatCard label="PRAZO CRÍTICO" value={PANORAMA.prazoCritico} hint="< 3 dias" icon={AlertTriangle} tone="destructive" />
+        <StatCard label="TOTAL" value={total} hint="Procedimentos cadastrados" icon={FileText} tone="success" onClick={() => navigate({ to: "/inqueritos" })} />
+        <StatCard label="EM ANDAMENTO" value={PANORAMA.emAndamento} hint={`${Math.round((PANORAMA.emAndamento / total) * 100)}% do total`} icon={Clock} tone="info" onClick={() => navigate({ to: "/inqueritos", search: { status: "andamento" } })} />
+        <StatCard label="CONCLUÍDOS" value={finalizados} hint={`${PANORAMA.taxaConclusao}% taxa atual`} icon={CheckCircle2} tone="primary" onClick={() => navigate({ to: "/inqueritos", search: { status: "concluido" } })} />
+        <StatCard label="PRIOR. ALTA" value={PANORAMA.prioridadeAlta} hint="Requer atenção" icon={TrendingUp} tone="warning" onClick={() => navigate({ to: "/inqueritos", search: { prioridade: "alta" } })} />
+        <StatCard label="PRAZO CRÍTICO" value={PANORAMA.prazoCritico} hint="< 3 dias" icon={AlertTriangle} tone="destructive" onClick={() => navigate({ to: "/inqueritos", search: { prazo: "critico" } })} />
         <StatCard label="RÉU PRESO" value={PANORAMA.reuPreso} hint="Casos com prisão" icon={Shield} tone="purple" />
         <StatCard label="MED. PROTETIVAS" value={PANORAMA.medidasProtetivas} hint="Ativas" icon={Gavel} tone="warning" />
       </div>
