@@ -1,10 +1,15 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { AppLayout } from "@/components/AppLayout";
 import { PageHeader } from "@/components/PageHeader";
 import { Search, Filter } from "lucide-react";
 import { INQUERITOS_AMOSTRA, PANORAMA } from "@/data/sipi";
 
 export const Route = createFileRoute("/inqueritos")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    status: typeof search.status === "string" ? search.status : undefined,
+    prioridade: typeof search.prioridade === "string" ? search.prioridade : undefined,
+    prazo: typeof search.prazo === "string" ? search.prazo : undefined,
+  }),
   head: () => ({
     meta: [
       { title: "Inquéritos — DT Itabela" },
@@ -26,6 +31,42 @@ const statusTone: Record<string, string> = {
 };
 
 function Inqueritos() {
+  const navigate = useNavigate();
+  const search = Route.useSearch();
+
+  const normalizedStatusFilter = normalizeText(search.status);
+  const normalizedPriorityFilter = normalizeText(search.prioridade);
+  const normalizedPrazoFilter = normalizeText(search.prazo);
+
+  const filteredInqueritos = INQUERITOS_AMOSTRA.filter((r) => {
+    if (normalizedStatusFilter) {
+      const status = normalizeText(r.status);
+      const isAndamento = normalizedStatusFilter === "andamento" && status.includes("andamento");
+      const isConcluido =
+        normalizedStatusFilter === "concluido" &&
+        (status.includes("concluida") || status.includes("concluido"));
+      if (!isAndamento && !isConcluido) return false;
+    }
+
+    if (normalizedPriorityFilter) {
+      const priority = normalizeText(r.prior);
+      if (normalizedPriorityFilter === "alta" && priority !== "alta") return false;
+    }
+
+    if (normalizedPrazoFilter) {
+      const isCritico = r.dias <= 3;
+      if (normalizedPrazoFilter === "critico" && !isCritico) return false;
+    }
+
+    return true;
+  });
+
+  const activeFilterLabel = getActiveFilterLabel({
+    status: normalizedStatusFilter,
+    prioridade: normalizedPriorityFilter,
+    prazo: normalizedPrazoFilter,
+  });
+
   return (
     <AppLayout>
       <PageHeader
@@ -53,6 +94,20 @@ function Inqueritos() {
         </button>
       </div>
 
+      {activeFilterLabel && (
+        <div className="mb-4 flex flex-wrap items-center gap-3">
+          <div className="text-xs border border-border rounded-md bg-muted/30 px-3 py-1.5">
+            Filtro ativo: {activeFilterLabel}
+          </div>
+          <button
+            className="text-xs border border-border bg-card px-3 py-1.5 rounded-md hover:bg-accent"
+            onClick={() => navigate({ to: "/inqueritos" })}
+          >
+            Limpar filtro
+          </button>
+        </div>
+      )}
+
       <div className="bg-card border border-border rounded-xl overflow-hidden">
         <div className="overflow-auto">
           <table className="w-full text-sm min-w-[1000px]">
@@ -70,7 +125,7 @@ function Inqueritos() {
               </tr>
             </thead>
             <tbody>
-              {INQUERITOS_AMOSTRA.map((r) => (
+              {filteredInqueritos.map((r) => (
                 <tr key={r.ppe + r.tipif} className="border-t border-border hover:bg-muted/20">
                   <td className="px-4 py-3 font-semibold whitespace-nowrap">{r.ppe}</td>
                   <td className="px-4 py-3">
@@ -107,11 +162,36 @@ function Inqueritos() {
           </table>
         </div>
         <div className="px-4 py-3 border-t border-border text-xs text-muted-foreground bg-muted/20">
-          Exibindo {INQUERITOS_AMOSTRA.length} de {PANORAMA.totalCadastrados} procedimentos
+          Exibindo {filteredInqueritos.length} de {PANORAMA.totalCadastrados} procedimentos
+          {activeFilterLabel ? ` (filtrados por ${activeFilterLabel})` : ""}
         </div>
       </div>
     </AppLayout>
   );
+}
+
+function normalizeText(value?: string) {
+  return (value ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+}
+
+function getActiveFilterLabel({
+  status,
+  prioridade,
+  prazo,
+}: {
+  status?: string;
+  prioridade?: string;
+  prazo?: string;
+}) {
+  if (status === "andamento") return "Status — Em andamento";
+  if (status === "concluido") return "Status — Concluído";
+  if (prioridade === "alta") return "Prioridade — Alta";
+  if (prazo === "critico") return "Prazo — Crítico";
+  return "";
 }
 
 function Mini({ label, value, tone }: { label: string; value: number; tone: "info" | "success" | "warning" | "destructive" }) {
