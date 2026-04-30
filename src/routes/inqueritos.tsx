@@ -1,8 +1,9 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { AppLayout } from "@/components/AppLayout";
 import { PageHeader } from "@/components/PageHeader";
 import { Search, Filter } from "lucide-react";
-import { INQUERITOS_AMOSTRA, PANORAMA } from "@/data/sipi";
+import { PANORAMA } from "@/data/sipi";
+import { INQUERITOS_CASOS } from "@/data/inqueritos";
 
 export const Route = createFileRoute("/inqueritos")({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -38,9 +39,9 @@ function Inqueritos() {
   const normalizedPriorityFilter = normalizeText(search.prioridade);
   const normalizedPrazoFilter = normalizeText(search.prazo);
 
-  const filteredInqueritos = INQUERITOS_AMOSTRA.filter((r) => {
+  const filteredInqueritos = INQUERITOS_CASOS.filter((r) => {
     if (normalizedStatusFilter) {
-      const status = normalizeText(r.status);
+      const status = normalizeText(r.statusDiligencias);
       const isAndamento = normalizedStatusFilter === "andamento" && status.includes("andamento");
       const isConcluido =
         normalizedStatusFilter === "concluido" &&
@@ -49,12 +50,12 @@ function Inqueritos() {
     }
 
     if (normalizedPriorityFilter) {
-      const priority = normalizeText(r.prior);
+      const priority = normalizeText(r.prioridade);
       if (normalizedPriorityFilter === "alta" && priority !== "alta") return false;
     }
 
     if (normalizedPrazoFilter) {
-      const isCritico = r.dias <= 3;
+      const isCritico = r.diasCorridos <= 3;
       if (normalizedPrazoFilter === "critico" && !isCritico) return false;
     }
 
@@ -122,23 +123,24 @@ function Inqueritos() {
                 <th className="text-left px-4 py-3 font-bold">RÉU PRESO</th>
                 <th className="text-left px-4 py-3 font-bold">STATUS</th>
                 <th className="text-right px-4 py-3 font-bold">DIAS</th>
+                <th className="text-right px-4 py-3 font-bold">AÇÃO</th>
               </tr>
             </thead>
             <tbody>
               {filteredInqueritos.map((r) => (
-                <tr key={r.ppe + r.tipif} className="border-t border-border hover:bg-muted/20">
+                <tr key={r.ppe + r.tipificacao} className="border-t border-border hover:bg-muted/20">
                   <td className="px-4 py-3 font-semibold whitespace-nowrap">{r.ppe}</td>
                   <td className="px-4 py-3">
-                    <span className={`text-[10px] font-bold px-2 py-1 rounded border ${priorTone[r.prior]}`}>
-                      {r.prior}
+                    <span className={`text-[10px] font-bold px-2 py-1 rounded border ${priorTone[r.prioridade]}`}>
+                      {r.prioridade}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-xs max-w-[260px] truncate" title={r.tipif}>
-                    {r.tipif}
+                  <td className="px-4 py-3 text-xs max-w-[260px] truncate" title={r.tipificacao}>
+                    {r.tipificacao}
                   </td>
-                  <td className="px-4 py-3 text-muted-foreground text-xs">{r.grav}</td>
+                  <td className="px-4 py-3 text-muted-foreground text-xs">{r.gravidade}</td>
                   <td className="px-4 py-3 text-xs font-mono">{r.tipo}</td>
-                  <td className="px-4 py-3 text-muted-foreground text-xs">{r.bairro}</td>
+                  <td className="px-4 py-3 text-muted-foreground text-xs">{r.bairroDistrito}</td>
                   <td className="px-4 py-3">
                     {r.reuPreso ? (
                       <span className="text-[10px] font-bold px-2 py-1 rounded border bg-destructive/15 text-destructive border-destructive/30">
@@ -149,12 +151,21 @@ function Inqueritos() {
                     )}
                   </td>
                   <td className="px-4 py-3">
-                    <span className={`text-[10px] font-bold px-2 py-1 rounded border ${statusTone[r.status] ?? ""}`}>
-                      {r.status.toUpperCase()}
+                    <span className={`text-[10px] font-bold px-2 py-1 rounded border ${statusTone[r.statusDiligencias] ?? ""}`}>
+                      {r.statusDiligencias.toUpperCase()}
                     </span>
                   </td>
-                  <td className={`px-4 py-3 text-xs text-right tabular-nums ${r.dias < 0 ? "text-destructive font-semibold" : "text-muted-foreground"}`}>
-                    {r.dias < 0 ? `Vencido ${Math.abs(r.dias)}d` : `${r.dias}d`}
+                  <td className={`px-4 py-3 text-xs text-right tabular-nums ${r.diasCorridos < 0 ? "text-destructive font-semibold" : "text-muted-foreground"}`}>
+                    {r.diasCorridos < 0 ? `Vencido ${Math.abs(r.diasCorridos)}d` : `${r.diasCorridos}d`}
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    <Link
+                      to="/inqueritos/$caseId"
+                      params={{ caseId: encodeURIComponent(r.ppe) }}
+                      className="inline-flex items-center rounded-md border border-border bg-card px-3 py-1.5 text-xs font-semibold hover:bg-accent"
+                    >
+                      Abrir
+                    </Link>
                   </td>
                 </tr>
               ))}
