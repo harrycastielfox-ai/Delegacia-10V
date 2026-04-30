@@ -1,9 +1,9 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { FileText, Car, Package, ArrowRight, LockKeyhole, Construction } from "lucide-react";
+import { FileText, Car, Package, ArrowRight, LockKeyhole, Construction, Shield, LogOut } from "lucide-react";
 import { AppLayout } from "@/components/AppLayout";
 import { PageHeader } from "@/components/PageHeader";
-import { isLoggedIn } from "@/lib/auth";
+import { isLoggedIn, logout } from "@/lib/auth";
 
 export const Route = createFileRoute("/modulos")({
   head: () => ({
@@ -81,6 +81,32 @@ function ModulosPage() {
         title="Módulos do Sistema"
         subtitle="Selecione um módulo para acessar suas funcionalidades"
       />
+      <div className="mb-5 rounded-xl border border-border bg-card/70 backdrop-blur-sm px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <div className="h-10 w-10 rounded-lg bg-primary/15 border border-primary/30 flex items-center justify-center">
+            <Shield className="h-5 w-5 text-primary" />
+          </div>
+          <div>
+            <div className="text-sm font-bold tracking-wide">SIPI</div>
+            <div className="text-xs text-muted-foreground">DT Itabela — 23ª COORPIN</div>
+          </div>
+        </div>
+        <div className="flex items-center gap-3">
+          <div className="text-right">
+            <div className="text-xs font-semibold">Admin</div>
+            <div className="text-[10px] text-muted-foreground">Sessão temporária</div>
+          </div>
+          <button
+            onClick={() => {
+              logout();
+              navigate({ to: "/login" });
+            }}
+            className="inline-flex items-center gap-2 rounded-md border border-border bg-background px-3 py-2 text-xs font-semibold hover:bg-accent transition-colors"
+          >
+            <LogOut className="h-3.5 w-3.5" /> Sair
+          </button>
+        </div>
+      </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
         {MODULOS.map((m) => (
@@ -144,7 +170,7 @@ function ModuloCard({
   const cardContent = (
     <div
       className={`group relative h-full bg-card border border-border rounded-xl p-6 flex flex-col transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xl ${styles.ring} ${
-        modulo.disponivel ? "cursor-pointer" : "cursor-pointer opacity-95"
+        modulo.disponivel ? "cursor-pointer" : "cursor-not-allowed opacity-95"
       }`}
     >
       <div className="flex items-start justify-between mb-5">
@@ -190,7 +216,7 @@ function ModuloCard({
   }
 
   return (
-    <button type="button" onClick={onIndisponivel} className="block h-full text-left w-full">
+    <button type="button" onClick={onIndisponivel} className="block h-full text-left w-full cursor-not-allowed">
       {cardContent}
     </button>
   );

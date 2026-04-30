@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useEffect } from "react";
 import {
   FileText,
   Clock,
@@ -32,6 +33,7 @@ import { AppLayout } from "@/components/AppLayout";
 import { PageHeader } from "@/components/PageHeader";
 import { StatCard } from "@/components/StatCard";
 import { Panel } from "@/components/Panel";
+import { isLoggedIn } from "@/lib/auth";
 import {
   META,
   PANORAMA,
@@ -57,6 +59,16 @@ export const Route = createFileRoute("/")({
 });
 
 function Dashboard() {
+  const navigate = Route.useNavigate();
+
+  useEffect(() => {
+    if (!isLoggedIn()) {
+      navigate({ to: "/login" });
+    }
+  }, [navigate]);
+
+  if (!isLoggedIn()) return null;
+
   const finalizados = PANORAMA.relatorioEnviado;
   const total = PANORAMA.totalCadastrados;
 
