@@ -1,8 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { FileText, Car, Package, ArrowRight, LockKeyhole, Construction, Shield, LogOut } from "lucide-react";
-import { AppLayout } from "@/components/AppLayout";
-import { PageHeader } from "@/components/PageHeader";
 import { isLoggedIn, logout } from "@/lib/auth";
 
 export const Route = createFileRoute("/modulos")({
@@ -76,12 +74,14 @@ function ModulosPage() {
   }, [aviso]);
 
   return (
-    <AppLayout>
-      <PageHeader
-        title="Módulos do Sistema"
-        subtitle="Selecione um módulo para acessar suas funcionalidades"
-      />
-      <div className="mb-5 rounded-xl border border-border bg-card/70 backdrop-blur-sm px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+    <div className="min-h-screen w-full bg-background text-foreground px-4 py-6 sm:px-6 lg:px-8">
+      <div className="mx-auto w-full max-w-7xl">
+        <div className="mb-4">
+          <h1 className="text-2xl font-bold tracking-wide text-foreground">Módulos do Sistema</h1>
+          <p className="text-sm text-muted-foreground">Selecione um módulo para acessar suas funcionalidades</p>
+        </div>
+
+        <div className="mb-5 rounded-xl border border-border bg-card/70 backdrop-blur-sm px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div className="flex items-center gap-3">
           <div className="h-10 w-10 rounded-lg bg-primary/15 border border-primary/30 flex items-center justify-center">
             <Shield className="h-5 w-5 text-primary" />
@@ -120,13 +120,14 @@ function ModulosPage() {
         ))}
       </div>
 
-      {aviso && (
+        {aviso && (
         <div className="fixed bottom-6 right-6 z-50 max-w-sm rounded-lg border border-warning/40 bg-card shadow-2xl px-4 py-3 flex items-start gap-3">
           <Construction className="h-4 w-4 text-warning mt-0.5 shrink-0" />
           <div className="text-sm text-foreground">{aviso}</div>
         </div>
       )}
-    </AppLayout>
+      </div>
+    </div>
   );
 }
 
