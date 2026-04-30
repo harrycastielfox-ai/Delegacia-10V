@@ -53,8 +53,8 @@ function LoginPage() {
     <div className="min-h-screen w-full flex items-center justify-center bg-background px-4 py-10 relative overflow-hidden">
       {/* Brilho de fundo tático */}
       <div className="pointer-events-none absolute inset-0 opacity-60">
-        <div className="absolute -top-32 -left-32 h-96 w-96 rounded-full bg-primary/10 blur-3xl" />
-        <div className="absolute -bottom-32 -right-32 h-96 w-96 rounded-full bg-info/10 blur-3xl" />
+        <div className="absolute -top-32 -left-32 h-96 w-96 rounded-full bg-primary/20 blur-3xl" />
+        <div className="absolute -bottom-32 -right-32 h-96 w-96 rounded-full bg-success/20 blur-3xl" />
       </div>
 
       <div className="relative w-full max-w-md">
@@ -154,7 +154,7 @@ function LoginPage() {
           </form>
 
           <div className="px-8 py-3 border-t border-border bg-muted/20 text-center text-[10px] text-muted-foreground tracking-wider">
-            v2.0.0 · SIPI © 2026
+            © 2026 Polícia Civil — Uso restrito a agentes autorizados
           </div>
         </div>
       </div>
