@@ -8,8 +8,17 @@ export const Route = createFileRoute("/inqueritos/$caseId")({
 });
 
 function InqueritoDetalhes() {
-  const { caseId } = Route.useParams();
+  const params = Route.useParams();
+  const caseId = params.caseId;
   const caso = getInqueritoByCaseId(caseId);
+
+  const formatFieldValue = (value: unknown) => {
+    if (value === null || value === undefined) return "—";
+    if (typeof value === "string") return value.trim() ? value : "—";
+
+    const text = String(value).trim();
+    return text ? text : "—";
+  };
 
   if (!caso) {
     return (
@@ -74,7 +83,7 @@ function InqueritoDetalhes() {
           {fields.map(([label, value]) => (
             <div key={label} className="rounded-lg border border-border/70 bg-muted/10 p-3">
               <div className="text-[10px] font-bold tracking-[0.12em] text-muted-foreground">{label.toUpperCase()}</div>
-              <div className="mt-1 text-sm text-foreground">{value?.trim() ? value : "—"}</div>
+              <div className="mt-1 text-sm text-foreground">{formatFieldValue(value)}</div>
             </div>
           ))}
         </div>
