@@ -38,8 +38,8 @@ export type InqueritoCaso = {
   visibilidade: VisibilidadeCaso;
 };
 
-export const INQUERITOS_CASOS: InqueritoCaso[] = INQUERITOS_AMOSTRA.map((item) => ({
-  id: item.ppe.replace(/\//g, "-"),
+export const INQUERITOS_CASOS: InqueritoCaso[] = INQUERITOS_AMOSTRA.map((item, index) => ({
+  id: `INQ-${String(index + 1).padStart(6, "0")}`,
   ppe: item.ppe,
   prioridade: item.prior,
   dataFato: item.dataFato,
@@ -56,29 +56,8 @@ export const INQUERITOS_CASOS: InqueritoCaso[] = INQUERITOS_AMOSTRA.map((item) =
 }));
 
 export function getInqueritoByCaseId(caseId: string) {
-  const safeDecode = (value: string) => {
-    try {
-      return decodeURIComponent(value);
-    } catch {
-      return value;
-    }
-  };
-
   const raw = (caseId ?? "").trim();
   if (!raw) return undefined;
 
-  const decoded = safeDecode(raw);
-  const candidates = Array.from(
-    new Set([
-      raw,
-      decoded,
-      raw.replace(/-/g, "/"),
-      decoded.replace(/-/g, "/"),
-    ]),
-  );
-
-  return INQUERITOS_CASOS.find((item) => {
-    const legacyId = item.ppe.replace(/\//g, "-");
-    return candidates.some((candidate) => candidate === item.id || candidate === item.ppe || candidate === legacyId);
-  });
+  return INQUERITOS_CASOS.find((item) => item.id === raw);
 }

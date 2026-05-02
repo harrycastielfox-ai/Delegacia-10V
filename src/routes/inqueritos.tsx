@@ -156,7 +156,7 @@ function Inqueritos() {
             <tbody>
               {filteredInqueritos.length > 0 ? (
                 filteredInqueritos.map((r) => (
-                  <tr key={r.ppe + r.tipificacao} className="border-t border-border hover:bg-muted/20">
+                  <tr key={r.id} className="border-t border-border hover:bg-muted/20">
                     <td className="px-4 py-3 font-semibold whitespace-nowrap">{r.ppe}</td>
                     <td className="px-4 py-3">
                       <span className={`text-[10px] font-bold px-2 py-1 rounded border ${priorTone[r.prioridade]}`}>
@@ -189,7 +189,7 @@ function Inqueritos() {
                     <td className="px-4 py-3 text-right">
                       <Link
                         to="/inqueritos/$caseId"
-                        params={{ caseId: encodeURIComponent(r.ppe) }}
+                        params={{ caseId: r.id }}
                         className="inline-flex items-center rounded-md border border-border bg-card px-3 py-1.5 text-xs font-semibold hover:bg-accent"
                       >
                         Abrir
