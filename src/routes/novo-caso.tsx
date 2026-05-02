@@ -14,7 +14,7 @@ function NovoCaso() {
 
       <form className="grid grid-cols-1 lg:grid-cols-2 gap-5 max-w-5xl">
         <Section title="Identificação" />
-        <Field label="ID Interno" placeholder="INQ-000001" />
+        <Field label="ID Interno" value="INQ-000001" readOnly helperText="Gerado automaticamente pelo sistema" />
         <Field label="PPE" placeholder="PPE 0000/2026" />
         <Field label="Nº Físico" placeholder="IPL 2026.0000000-0" />
         <Select label="Tipo de Procedimento" options={["Inquérito Policial", "TCO", "Verificação Preliminar", "Outros"]} />
@@ -106,14 +106,21 @@ function Section({ title }: { title: string }) {
   return <h2 className="lg:col-span-2 text-sm font-semibold text-foreground pt-2 border-t border-border/60">{title}</h2>;
 }
 
-function Field({ label, ...props }: { label: string } & React.InputHTMLAttributes<HTMLInputElement>) {
+function Field({
+  label,
+  helperText,
+  ...props
+}: { label: string; helperText?: string } & React.InputHTMLAttributes<HTMLInputElement>) {
+  const readOnlyStyles = props.readOnly || props.disabled ? "bg-muted/40 text-muted-foreground cursor-not-allowed" : "";
+
   return (
     <div>
       <label className="block text-xs font-bold tracking-wider text-muted-foreground mb-2">{label.toUpperCase()}</label>
       <input
         {...props}
-        className="w-full bg-card border border-border rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-primary"
+        className={`w-full bg-card border border-border rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-primary ${readOnlyStyles}`}
       />
+      {helperText ? <p className="mt-1 text-xs text-muted-foreground">{helperText}</p> : null}
     </div>
   );
 }
