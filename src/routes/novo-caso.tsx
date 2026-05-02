@@ -12,84 +12,94 @@ function NovoCaso() {
     <AppLayout>
       <PageHeader title="Novo Inquérito" subtitle="Cadastre um novo inquérito policial" showActions={false} />
 
-      <form className="grid grid-cols-1 lg:grid-cols-2 gap-5 max-w-5xl">
-        <Section title="Identificação" />
-        <Field label="ID Interno" value="INQ-000001" readOnly helperText="Gerado automaticamente pelo sistema" />
-        <Field label="PPE" placeholder="PPE 0000/2026" />
-        <Field label="Nº Físico" placeholder="IPL 2026.0000000-0" />
-        <Select label="Tipo de Procedimento" options={["Inquérito Policial", "TCO", "Verificação Preliminar", "Outros"]} />
-        <Select label="Prioridade" options={["Alta", "Média", "Baixa"]} />
+      <form className="space-y-5 max-w-6xl pb-6">
+        <SectionCard title="Identificação do Procedimento">
+          <Field label="PPE" placeholder="Ex.: 001/2026-DPPC" />
+          <Field label="Nº do B.O." placeholder="Ex.: 2026.000001" />
+          <Field label="Nº Físico" placeholder="Ex.: 2026.001.0001" />
+          <Select label="Tipo de Procedimento" options={["Inquérito Policial", "TCO", "Verificação Preliminar", "Outros"]} />
+          <Select label="Visibilidade" options={["Público", "Privado"]} />
+        </SectionCard>
 
-        <Section title="Datas e Prazos" />
-        <Field label="Data do Fato" type="date" />
-        <Field label="Data de Instauração" type="date" />
-        <Field label="Prazo" type="number" placeholder="30" />
-        <Field label="Data Limite" type="date" />
-        <Field label="Dias Corridos" type="number" placeholder="0" />
+        <SectionCard title="Datas">
+          <Field label="Data do Fato" type="date" />
+          <Field label="Data de Instauração" type="date" />
+          <Field label="Prazo" type="number" placeholder="30" />
+        </SectionCard>
 
-        <Section title="Classificação" />
-        <Field label="Tipificação" placeholder="Ex.: Art. 157 CP" />
-        <Select label="Gravidade" options={["Alta", "Média", "Baixa"]} />
-        <Select
-          label="Situação"
-          options={[
-            "Instaurado",
-            "Em Andamento",
-            "Para Relatar",
-            "Relatado",
-            "Aguardando Diligência",
-            "Aguardando Laudo Pericial",
-            "Requisição Ministerial/Judicial",
-          ]}
-        />
-
-        <Section title="Pessoas Envolvidas" />
-        <Field label="Vítima" placeholder="Nome da vítima" />
-        <Field label="Autor / Investigado" placeholder="Nome do autor/investigado" />
-        <Select label="Autoria Determinada ou Indeterminada" options={["Determinada", "Indeterminada"]} />
-        <Select label="Réu Preso" options={["Sim", "Não"]} />
-
-        <Section title="Vínculo Operacional" />
-        <Select label="Vinculado a Facção" options={["Sim", "Não"]} />
-        <Field label="Nome da Facção" placeholder="Informe a facção, se houver" />
-        <Field label="Bairro / Distrito" placeholder="Bairro ou distrito" />
-        <Field label="Motivação" placeholder="Motivação principal" />
-        <Select label="Equipe Responsável" options={["Equipe 1", "Equipe 2", "Equipe 3"]} />
-        <Field label="Escrivão" placeholder="Nome do escrivão" />
-
-        <Section title="Diligências e Andamento" />
-        <Select
-          label="Status de Diligências"
-          options={[
-            "Pendente",
-            "Em Andamento",
-            "Concluída",
-            "Aguardando Terceiros",
-            "Aguardando Aprovação/Revisão",
-          ]}
-        />
-        <Field label="Diligências Pendentes" placeholder="Resumo das diligências" />
-        <Field label="Última Atualização" type="date" />
-        <div className="lg:col-span-2">
-          <label className="block text-xs font-bold tracking-wider text-muted-foreground mb-2">OBSERVAÇÕES</label>
-          <textarea
-            rows={4}
-            placeholder="Observações gerais do caso..."
-            className="w-full bg-card border border-border rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-primary"
+        <SectionCard title="Classificação do Caso">
+          <Field label="Tipificação" placeholder="Ex.: Homicídio Qualificado" />
+          <Select label="Tipo" options={["IP", "APF", "TCO", "BOC", "AIAI"]} />
+          <Select
+            label="Categoria do Caso"
+            options={[
+              "CVLI",
+              "MIAE",
+              "Drogas",
+              "Crimes Contra o Patrimônio",
+              "Crimes Sexuais",
+              "Violência Doméstica",
+              "Violento",
+              "Violência contra a Criança e o Adolescente",
+              "Violência contra a Pessoa Idosa",
+              "Crimes de Trânsito",
+              "MAE",
+              "Outro",
+            ]}
           />
-        </div>
+          <Select
+            label="Situação"
+            options={[
+              "Instaurado",
+              "Em Andamento",
+              "Para Relatar",
+              "Relatado",
+              "Aguardando Diligência",
+              "Aguardando Laudo Pericial",
+              "Requisição Ministerial/Judicial",
+            ]}
+          />
+        </SectionCard>
 
-        <Section title="Medidas e Relatório" />
-        <Select label="Medida Protetiva" options={["Sim", "Não"]} />
-        <Field label="Nº Processo da Medida" placeholder="0000000-00.0000.0.00.0000" />
-        <Select label="Relatório Enviado" options={["Sim", "Não"]} />
-        <Field label="Data de Envio do Relatório" type="date" />
-        <Field label="Quantidade de Representações" type="number" placeholder="0" />
+        <SectionCard title="Pessoas Envolvidas">
+          <Field label="Vítima" placeholder="Nome completo da vítima" />
+          <Field label="Autor / Investigado" placeholder="Nome ou 'Desconhecido'" />
+          <Select label="Autoria Determinada ou Indeterminada" options={["Determinada", "Indeterminada", "Desconhecida", "Sem Autoria"]} />
+          <Select label="Réu Preso" options={["Sim", "Não"]} />
+        </SectionCard>
 
-        <Section title="Controle do Sistema" />
-        <Select label="Visibilidade" options={["Público", "Privado"]} />
+        <SectionCard title="Dados Operacionais">
+          <Field label="Delegado Responsável" placeholder="Del. Nome Completo" />
+          <Field label="Equipe Responsável" placeholder="Ex.: DHPP - Equipe Alpha" />
+          <Field label="Escrivão" placeholder="Nome completo" />
+          <Field label="Bairro" placeholder="Informe o bairro" />
+          <Field label="Distrito" placeholder="Ex.: 1º DP" />
+          <Field label="Motivação" placeholder="Motivação principal" />
+          <Select label="Vinculado a Facção" options={["Sim", "Não", "A definir"]} />
+          <Field label="Nome da Facção" placeholder="Informe se houver" />
+          <Select
+            label="Status de Diligências"
+            options={[
+              "Pendente",
+              "Em Andamento",
+              "Concluída",
+              "Aguardando Terceiros",
+              "Aguardando Aprovação/Revisão",
+            ]}
+          />
+          <TextArea label="Diligências Pendentes" rows={4} placeholder="Descreva as diligências pendentes..." />
+          <TextArea label="Observações" rows={5} placeholder="Informações complementares..." />
+        </SectionCard>
 
-        <div className="lg:col-span-2 flex gap-3 justify-end">
+        <SectionCard title="Relatório e Jurídico">
+          <Select label="Medida Protetiva" options={["Sim", "Não"]} />
+          <Field label="Nº Processo da Medida" placeholder="0001234-55.2025.8.17.0001" />
+          <Select label="Relatório Enviado" options={["Sim", "Não"]} />
+          <Field label="Data de Envio do Relatório" type="date" />
+          <Field label="Representações Legais" type="number" placeholder="0" />
+        </SectionCard>
+
+        <div className="flex gap-3 justify-end">
           <button type="button" className="px-5 py-2.5 rounded-lg text-sm border border-border hover:bg-accent">
             Cancelar
           </button>
@@ -102,25 +112,33 @@ function NovoCaso() {
   );
 }
 
-function Section({ title }: { title: string }) {
-  return <h2 className="lg:col-span-2 text-sm font-semibold text-foreground pt-2 border-t border-border/60">{title}</h2>;
+function SectionCard({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <section className="rounded-xl border border-border/60 bg-background/70 p-5 lg:p-7">
+      <h2 className="text-sm font-bold tracking-[0.2em] text-primary uppercase mb-5">{title}</h2>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">{children}</div>
+    </section>
+  );
 }
 
-function Field({
-  label,
-  helperText,
-  ...props
-}: { label: string; helperText?: string } & React.InputHTMLAttributes<HTMLInputElement>) {
-  const readOnlyStyles = props.readOnly || props.disabled ? "bg-muted/40 text-muted-foreground cursor-not-allowed" : "";
-
+function Field({ label, ...props }: { label: string } & React.InputHTMLAttributes<HTMLInputElement>) {
   return (
     <div>
       <label className="block text-xs font-bold tracking-wider text-muted-foreground mb-2">{label.toUpperCase()}</label>
-      <input
+      <input {...props} className="w-full bg-card border border-border rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-primary" />
+    </div>
+  );
+}
+
+function TextArea({ label, rows = 4, ...props }: { label: string; rows?: number } & React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
+  return (
+    <div className="md:col-span-2 lg:col-span-3">
+      <label className="block text-xs font-bold tracking-wider text-muted-foreground mb-2">{label.toUpperCase()}</label>
+      <textarea
+        rows={rows}
         {...props}
-        className={`w-full bg-card border border-border rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-primary ${readOnlyStyles}`}
+        className="w-full bg-card border border-border rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-primary"
       />
-      {helperText ? <p className="mt-1 text-xs text-muted-foreground">{helperText}</p> : null}
     </div>
   );
 }
