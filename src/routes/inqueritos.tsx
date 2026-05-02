@@ -1,4 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useMemo, useState } from "react";
 import { AppLayout } from "@/components/AppLayout";
 import { PageHeader } from "@/components/PageHeader";
 import { Search, Filter } from "lucide-react";
@@ -34,33 +35,57 @@ const statusTone: Record<string, string> = {
 function Inqueritos() {
   const navigate = useNavigate();
   const search = Route.useSearch();
+  const [searchTerm, setSearchTerm] = useState("");
 
   const normalizedStatusFilter = normalizeText(search.status);
   const normalizedPriorityFilter = normalizeText(search.prioridade);
   const normalizedPrazoFilter = normalizeText(search.prazo);
 
-  const filteredInqueritos = INQUERITOS_CASOS.filter((r) => {
-    if (normalizedStatusFilter) {
-      const status = normalizeText(r.statusDiligencias);
-      const isAndamento = normalizedStatusFilter === "andamento" && status.includes("andamento");
-      const isConcluido =
-        normalizedStatusFilter === "concluido" &&
-        (status.includes("concluida") || status.includes("concluido"));
-      if (!isAndamento && !isConcluido) return false;
-    }
+  const normalizedSearchTerm = normalizeText(searchTerm);
 
-    if (normalizedPriorityFilter) {
-      const priority = normalizeText(r.prioridade);
-      if (normalizedPriorityFilter === "alta" && priority !== "alta") return false;
-    }
+  const filteredInqueritos = useMemo(
+    () =>
+      INQUERITOS_CASOS.filter((r) => {
+        if (normalizedStatusFilter) {
+          const status = normalizeText(r.statusDiligencias);
+          const isAndamento = normalizedStatusFilter === "andamento" && status.includes("andamento");
+          const isConcluido =
+            normalizedStatusFilter === "concluido" &&
+            (status.includes("concluida") || status.includes("concluido"));
+          if (!isAndamento && !isConcluido) return false;
+        }
 
-    if (normalizedPrazoFilter) {
-      const isCritico = r.diasCorridos <= 3;
-      if (normalizedPrazoFilter === "critico" && !isCritico) return false;
-    }
+        if (normalizedPriorityFilter) {
+          const priority = normalizeText(r.prioridade);
+          if (normalizedPriorityFilter === "alta" && priority !== "alta") return false;
+        }
 
-    return true;
-  });
+        if (normalizedPrazoFilter) {
+          const isCritico = r.diasCorridos <= 3;
+          if (normalizedPrazoFilter === "critico" && !isCritico) return false;
+        }
+
+        if (!normalizedSearchTerm) return true;
+
+        const valuesForSearch = [
+          r.ppe,
+          r.tipificacao,
+          r.bairroDistrito,
+          r.prioridade,
+          r.gravidade,
+          r.tipo,
+          r.statusDiligencias,
+          r.situacao,
+          r.reuPreso ? "sim" : "nao",
+          r.reuPreso ? "reu preso" : "sem reu preso",
+        ]
+          .map((value) => normalizeText(String(value ?? "")))
+          .filter(Boolean);
+
+        return valuesForSearch.some((value) => value.includes(normalizedSearchTerm));
+      }),
+    [normalizedPriorityFilter, normalizedPrazoFilter, normalizedSearchTerm, normalizedStatusFilter],
+  );
 
   const activeFilterLabel = getActiveFilterLabel({
     status: normalizedStatusFilter,
@@ -87,6 +112,8 @@ function Inqueritos() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <input
             placeholder="Buscar por PPE, tipificação ou bairro..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full bg-card border border-border rounded-lg pl-10 pr-4 py-2.5 text-sm placeholder:text-muted-foreground focus:outline-none focus:border-primary"
           />
         </div>
@@ -127,48 +154,56 @@ function Inqueritos() {
               </tr>
             </thead>
             <tbody>
-              {filteredInqueritos.map((r) => (
-                <tr key={r.ppe + r.tipificacao} className="border-t border-border hover:bg-muted/20">
-                  <td className="px-4 py-3 font-semibold whitespace-nowrap">{r.ppe}</td>
-                  <td className="px-4 py-3">
-                    <span className={`text-[10px] font-bold px-2 py-1 rounded border ${priorTone[r.prioridade]}`}>
-                      {r.prioridade}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-xs max-w-[260px] truncate" title={r.tipificacao}>
-                    {r.tipificacao}
-                  </td>
-                  <td className="px-4 py-3 text-muted-foreground text-xs">{r.gravidade}</td>
-                  <td className="px-4 py-3 text-xs font-mono">{r.tipo}</td>
-                  <td className="px-4 py-3 text-muted-foreground text-xs">{r.bairroDistrito}</td>
-                  <td className="px-4 py-3">
-                    {r.reuPreso ? (
-                      <span className="text-[10px] font-bold px-2 py-1 rounded border bg-destructive/15 text-destructive border-destructive/30">
-                        SIM
+              {filteredInqueritos.length > 0 ? (
+                filteredInqueritos.map((r) => (
+                  <tr key={r.ppe + r.tipificacao} className="border-t border-border hover:bg-muted/20">
+                    <td className="px-4 py-3 font-semibold whitespace-nowrap">{r.ppe}</td>
+                    <td className="px-4 py-3">
+                      <span className={`text-[10px] font-bold px-2 py-1 rounded border ${priorTone[r.prioridade]}`}>
+                        {r.prioridade}
                       </span>
-                    ) : (
-                      <span className="text-[10px] text-muted-foreground">—</span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className={`text-[10px] font-bold px-2 py-1 rounded border ${statusTone[r.statusDiligencias] ?? ""}`}>
-                      {r.statusDiligencias.toUpperCase()}
-                    </span>
-                  </td>
-                  <td className={`px-4 py-3 text-xs text-right tabular-nums ${r.diasCorridos < 0 ? "text-destructive font-semibold" : "text-muted-foreground"}`}>
-                    {r.diasCorridos < 0 ? `Vencido ${Math.abs(r.diasCorridos)}d` : `${r.diasCorridos}d`}
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <Link
-                      to="/inqueritos/$caseId"
-                      params={{ caseId: r.id }}
-                      className="inline-flex items-center rounded-md border border-border bg-card px-3 py-1.5 text-xs font-semibold hover:bg-accent"
-                    >
-                      Abrir
-                    </Link>
+                    </td>
+                    <td className="px-4 py-3 text-xs max-w-[260px] truncate" title={r.tipificacao}>
+                      {r.tipificacao}
+                    </td>
+                    <td className="px-4 py-3 text-muted-foreground text-xs">{r.gravidade}</td>
+                    <td className="px-4 py-3 text-xs font-mono">{r.tipo}</td>
+                    <td className="px-4 py-3 text-muted-foreground text-xs">{r.bairroDistrito}</td>
+                    <td className="px-4 py-3">
+                      {r.reuPreso ? (
+                        <span className="text-[10px] font-bold px-2 py-1 rounded border bg-destructive/15 text-destructive border-destructive/30">
+                          SIM
+                        </span>
+                      ) : (
+                        <span className="text-[10px] text-muted-foreground">—</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className={`text-[10px] font-bold px-2 py-1 rounded border ${statusTone[r.statusDiligencias] ?? ""}`}>
+                        {r.statusDiligencias.toUpperCase()}
+                      </span>
+                    </td>
+                    <td className={`px-4 py-3 text-xs text-right tabular-nums ${r.diasCorridos < 0 ? "text-destructive font-semibold" : "text-muted-foreground"}`}>
+                      {r.diasCorridos < 0 ? `Vencido ${Math.abs(r.diasCorridos)}d` : `${r.diasCorridos}d`}
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <Link
+                        to="/inqueritos/$caseId"
+                        params={{ caseId: r.id }}
+                        className="inline-flex items-center rounded-md border border-border bg-card px-3 py-1.5 text-xs font-semibold hover:bg-accent"
+                      >
+                        Abrir
+                      </Link>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr className="border-t border-border">
+                  <td colSpan={10} className="px-4 py-8 text-center text-sm text-muted-foreground">
+                    Nenhum inquérito encontrado para a busca/filtros informados.
                   </td>
                 </tr>
-              ))}
+              )}
             </tbody>
           </table>
         </div>
