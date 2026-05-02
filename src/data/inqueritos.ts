@@ -56,5 +56,29 @@ export const INQUERITOS_CASOS: InqueritoCaso[] = INQUERITOS_AMOSTRA.map((item) =
 }));
 
 export function getInqueritoByCaseId(caseId: string) {
-  return INQUERITOS_CASOS.find((item) => item.id === caseId);
+  const safeDecode = (value: string) => {
+    try {
+      return decodeURIComponent(value);
+    } catch {
+      return value;
+    }
+  };
+
+  const raw = (caseId ?? "").trim();
+  if (!raw) return undefined;
+
+  const decoded = safeDecode(raw);
+  const candidates = Array.from(
+    new Set([
+      raw,
+      decoded,
+      raw.replace(/-/g, "/"),
+      decoded.replace(/-/g, "/"),
+    ]),
+  );
+
+  return INQUERITOS_CASOS.find((item) => {
+    const legacyId = item.ppe.replace(/\//g, "-");
+    return candidates.some((candidate) => candidate === item.id || candidate === item.ppe || candidate === legacyId);
+  });
 }
