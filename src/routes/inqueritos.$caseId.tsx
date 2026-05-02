@@ -23,6 +23,7 @@ function InqueritoDetalhes() {
   }
 
   const fields = [
+    ["ID Interno", caso.id],
     ["PPE", caso.ppe],
     ["Nº Físico", caso.numeroFisico],
     ["Nº B.O.", caso.numeroBo],
