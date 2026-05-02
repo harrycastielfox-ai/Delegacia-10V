@@ -55,6 +55,19 @@ export const INQUERITOS_CASOS: InqueritoCaso[] = INQUERITOS_AMOSTRA.map((item) =
   observacoes: "",
 }));
 
+export function toInqueritoCaseId(ppe: string) {
+  return encodeURIComponent(ppe);
+}
+
 export function getInqueritoByCaseId(caseId: string) {
-  return INQUERITOS_CASOS.find((item) => item.id === caseId);
+  const decodedCaseId = decodeURIComponent(caseId);
+
+  return INQUERITOS_CASOS.find(
+    (item) =>
+      item.id === caseId ||
+      item.id === decodedCaseId ||
+      item.ppe === caseId ||
+      item.ppe === decodedCaseId ||
+      toInqueritoCaseId(item.ppe) === caseId,
+  );
 }

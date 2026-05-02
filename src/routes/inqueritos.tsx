@@ -4,7 +4,7 @@ import { AppLayout } from "@/components/AppLayout";
 import { PageHeader } from "@/components/PageHeader";
 import { Search, Filter } from "lucide-react";
 import { PANORAMA } from "@/data/sipi";
-import { INQUERITOS_CASOS } from "@/data/inqueritos";
+import { INQUERITOS_CASOS, toInqueritoCaseId } from "@/data/inqueritos";
 
 export const Route = createFileRoute("/inqueritos")({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -189,7 +189,7 @@ function Inqueritos() {
                     <td className="px-4 py-3 text-right">
                       <Link
                         to="/inqueritos/$caseId"
-                        params={{ caseId: r.id }}
+                        params={{ caseId: toInqueritoCaseId(r.ppe) }}
                         className="inline-flex items-center rounded-md border border-border bg-card px-3 py-1.5 text-xs font-semibold hover:bg-accent"
                       >
                         Abrir
