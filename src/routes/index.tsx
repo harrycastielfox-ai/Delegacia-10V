@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   FileText,
   Clock,
@@ -34,19 +34,8 @@ import { PageHeader } from "@/components/PageHeader";
 import { StatCard } from "@/components/StatCard";
 import { Panel } from "@/components/Panel";
 import { isLoggedIn } from "@/lib/auth";
-import {
-  META,
-  PANORAMA,
-  POR_STATUS,
-  POR_PRIORIDADE,
-  POR_GRAVIDADE,
-  CVLI_ANUAL,
-  CVLI_MENSAL,
-  POR_BAIRRO,
-  EQUIPES,
-  PROCEDIMENTOS,
-  PENDENTES_ESPECIFICOS,
-} from "@/data/sipi";
+import { listInqueritos, type InqueritoRecord } from "@/lib/repositories/inqueritosRepository";
+import { listRepresentacoes, type RepresentacaoRecord } from "@/lib/repositories/representacoesRepository";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -60,6 +49,9 @@ export const Route = createFileRoute("/")({
 
 function Dashboard() {
   const navigate = Route.useNavigate();
+  const [inqueritos, setInqueritos] = useState<InqueritoRecord[]>([]);
+  const [representacoes, setRepresentacoes] = useState<RepresentacaoRecord[]>([]);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isLoggedIn()) {
@@ -67,28 +59,101 @@ function Dashboard() {
     }
   }, [navigate]);
 
+  useEffect(() => {
+    async function loadDashboardData() {
+      try {
+        setLoadError(null);
+        const [inqueritosData, representacoesData] = await Promise.all([listInqueritos(), listRepresentacoes()]);
+        setInqueritos(inqueritosData);
+        setRepresentacoes(representacoesData);
+      } catch {
+        setLoadError("Não foi possível atualizar os indicadores do dashboard.");
+        setInqueritos([]);
+        setRepresentacoes([]);
+      }
+    }
+
+    void loadDashboardData();
+  }, []);
+
   if (!isLoggedIn()) return null;
 
-  const finalizados = PANORAMA.relatorioEnviado;
-  const total = PANORAMA.totalCadastrados;
+  const total = inqueritos.length;
+  const totalRepresentacoes = representacoes.length;
+  const emAndamento = inqueritos.filter((i) => i.situacao?.toLowerCase().includes("andamento")).length;
+  const finalizados = inqueritos.filter((i) => i.relatorio_enviado?.toLowerCase() === "sim" || i.situacao?.toLowerCase().includes("conclu")).length;
+  const prioridadeAlta = inqueritos.filter((i) => i.prioridade?.toLowerCase().includes("alta")).length;
+  const reuPreso = inqueritos.filter((i) => i.reu_preso?.toLowerCase() === "sim").length;
+  const medidasProtetivas = inqueritos.filter((i) => i.medida_protetiva?.toLowerCase() === "sim").length;
+  const prazoCritico = inqueritos.filter((i) => {
+    if (!i.prazo) return false;
+    const prazoDate = new Date(i.prazo);
+    if (Number.isNaN(prazoDate.getTime())) return false;
+    const diffDays = (prazoDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24);
+    return diffDays >= 0 && diffDays <= 3;
+  }).length;
+  const taxaConclusao = total === 0 ? 0 : Number(((finalizados / total) * 100).toFixed(1));
+  const relatadosNaoEnviados = Math.max(total - finalizados, 0);
+  const updatedAtLabel = useMemo(() => new Date().toLocaleDateString("pt-BR"), []);
+  const POR_STATUS = useMemo(
+    () => [
+      { name: "Em andamento", value: emAndamento, color: "var(--info)" },
+      { name: "Concluídos", value: finalizados, color: "var(--success)" },
+    ],
+    [emAndamento, finalizados],
+  );
+  const POR_PRIORIDADE = useMemo(
+    () => [
+      { name: "Alta", value: prioridadeAlta, color: "var(--warning)" },
+      { name: "Outras", value: Math.max(total - prioridadeAlta, 0), color: "var(--muted-foreground)" },
+    ],
+    [prioridadeAlta, total],
+  );
+  const POR_GRAVIDADE = useMemo(
+    () => ["alta", "média", "baixa"].map((g) => ({ name: g.toUpperCase(), value: inqueritos.filter((i) => i.gravidade?.toLowerCase().includes(g)).length })),
+    [inqueritos],
+  );
+  const PROCEDIMENTOS = useMemo(
+    () => ["IP", "APF", "TCO", "BOC", "AIAI"].map((sigla) => ({ sigla, total: inqueritos.filter((i) => i.tipo?.toUpperCase().includes(sigla)).length })),
+    [inqueritos],
+  );
+  const CVLI_ANUAL = useMemo(() => [{ ano: new Date().getFullYear(), registros: total, elucidados: finalizados, taxa: taxaConclusao }], [total, finalizados, taxaConclusao]);
+  const CVLI_MENSAL = useMemo(() => ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"].map((mes) => ({ mes, r2023: 0, r2024: 0, r2025: 0, r2026: 0 })), []);
+  const POR_BAIRRO = useMemo(() => {
+    const byBairro = new Map<string, { total: number; cvli: number; alta: number }>();
+    inqueritos.forEach((i) => {
+      const key = i.bairro || "Não informado";
+      const current = byBairro.get(key) || { total: 0, cvli: 0, alta: 0 };
+      current.total += 1;
+      current.alta += i.prioridade?.toLowerCase().includes("alta") ? 1 : 0;
+      byBairro.set(key, current);
+    });
+    return Array.from(byBairro.entries()).map(([bairro, v]) => ({ bairro, ...v }));
+  }, [inqueritos]);
+  const EQUIPES = useMemo(() => {
+    const byEquipe = new Map<string, number>();
+    inqueritos.forEach((i) => byEquipe.set(i.equipe || "Sem equipe", (byEquipe.get(i.equipe || "Sem equipe") || 0) + 1));
+    return Array.from(byEquipe.entries()).map(([name, value]) => ({ name, value, pct: total === 0 ? 0 : Math.round((value / total) * 100) }));
+  }, [inqueritos, total]);
 
   return (
     <AppLayout>
       <PageHeader
         title="Painel de Controle"
-        subtitle={`${META.unidade} — atualizado em ${META.atualizadoEm}`}
+        subtitle={`SIPI — atualizado em ${updatedAtLabel}`}
         showActions={false}
       />
+      {loadError ? <p className="text-xs text-muted-foreground mb-3">{loadError}</p> : null}
 
       {/* KPI cards */}
       <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-7 gap-4 mb-6">
         <StatCard label="TOTAL" value={total} hint="Procedimentos cadastrados" icon={FileText} tone="success" onClick={() => navigate({ to: "/inqueritos" })} />
-        <StatCard label="EM ANDAMENTO" value={PANORAMA.emAndamento} hint={`${Math.round((PANORAMA.emAndamento / total) * 100)}% do total`} icon={Clock} tone="info" onClick={() => navigate({ to: "/inqueritos", search: { status: "andamento" } })} />
-        <StatCard label="CONCLUÍDOS" value={finalizados} hint={`${PANORAMA.taxaConclusao}% taxa atual`} icon={CheckCircle2} tone="primary" onClick={() => navigate({ to: "/inqueritos", search: { status: "concluido" } })} />
-        <StatCard label="PRIOR. ALTA" value={PANORAMA.prioridadeAlta} hint="Requer atenção" icon={TrendingUp} tone="warning" onClick={() => navigate({ to: "/inqueritos", search: { prioridade: "alta" } })} />
-        <StatCard label="PRAZO CRÍTICO" value={PANORAMA.prazoCritico} hint="< 3 dias" icon={AlertTriangle} tone="destructive" onClick={() => navigate({ to: "/inqueritos", search: { prazo: "critico" } })} />
-        <StatCard label="RÉU PRESO" value={PANORAMA.reuPreso} hint="Casos com prisão" icon={Shield} tone="purple" />
-        <StatCard label="MED. PROTETIVAS" value={PANORAMA.medidasProtetivas} hint="Ativas" icon={Gavel} tone="warning" />
+        <StatCard label="EM ANDAMENTO" value={emAndamento} hint={`${total === 0 ? 0 : Math.round((emAndamento / total) * 100)}% do total`} icon={Clock} tone="info" onClick={() => navigate({ to: "/inqueritos", search: { status: "andamento" } })} />
+        <StatCard label="CONCLUÍDOS" value={finalizados} hint={`${taxaConclusao}% taxa atual`} icon={CheckCircle2} tone="primary" onClick={() => navigate({ to: "/inqueritos", search: { status: "concluido" } })} />
+        <StatCard label="PRIOR. ALTA" value={prioridadeAlta} hint="Requer atenção" icon={TrendingUp} tone="warning" onClick={() => navigate({ to: "/inqueritos", search: { prioridade: "alta" } })} />
+        <StatCard label="PRAZO CRÍTICO" value={prazoCritico} hint="< 3 dias" icon={AlertTriangle} tone="destructive" onClick={() => navigate({ to: "/inqueritos", search: { prazo: "critico" } })} />
+        <StatCard label="RÉU PRESO" value={reuPreso} hint="Casos com prisão" icon={Shield} tone="purple" />
+        <StatCard label="MED. PROTETIVAS" value={medidasProtetivas} hint="Ativas" icon={Gavel} tone="warning" />
       </div>
 
       {/* Mid row */}
@@ -106,7 +171,7 @@ function Dashboard() {
                 <div className="text-xs text-muted-foreground">Menos de 3 dias para vencer</div>
               </div>
               <span className="text-[10px] font-bold bg-destructive/15 text-destructive border border-destructive/30 px-2 py-1 rounded">
-                {PANORAMA.prazoCritico}
+                {prazoCritico}
               </span>
             </li>
             <li className="flex items-center gap-3">
@@ -116,7 +181,7 @@ function Dashboard() {
                 <div className="text-xs text-muted-foreground">Demandam ação imediata</div>
               </div>
               <span className="text-[10px] font-bold bg-warning/15 text-warning border border-warning/30 px-2 py-1 rounded">
-                {PANORAMA.prioridadeAlta}
+                {prioridadeAlta}
               </span>
             </li>
             <li className="flex items-center gap-3">
@@ -126,7 +191,7 @@ function Dashboard() {
                 <div className="text-xs text-muted-foreground">IP de homicídios pendentes</div>
               </div>
               <span className="text-[10px] font-bold bg-info/15 text-info border border-info/30 px-2 py-1 rounded">
-                188
+                {0}
               </span>
             </li>
             <li className="flex items-center gap-3">
@@ -136,7 +201,7 @@ function Dashboard() {
                 <div className="text-xs text-muted-foreground">Aguardando conclusão</div>
               </div>
               <span className="text-[10px] font-bold bg-purple/15 text-purple border border-purple/30 px-2 py-1 rounded">
-                25
+                {0}
               </span>
             </li>
           </ul>
@@ -144,7 +209,7 @@ function Dashboard() {
 
         <Panel title="PENDÊNCIAS POR CATEGORIA" accent="warning" icon={<Bell className="h-4 w-4 text-warning" />}>
           <ul className="space-y-3">
-            {PENDENTES_ESPECIFICOS.map((p) => (
+            {[{ label: "Representações", value: totalRepresentacoes }, { label: "Em andamento", value: emAndamento }, { label: "Concluídos", value: finalizados }, { label: "Alertas/Prazos", value: prazoCritico }].map((p) => (
               <li key={p.label} className="flex items-start gap-3">
                 <span className="h-2 w-2 rounded-full bg-warning mt-1.5 shrink-0" />
                 <div className="flex-1 text-sm">{p.label}</div>
@@ -158,14 +223,14 @@ function Dashboard() {
           <ul className="space-y-3 text-sm">
             <Row label="Procedimentos cadastrados" value={String(total)} color="var(--info)" />
             <Row label="Relatórios enviados" value={String(finalizados)} color="var(--success)" />
-            <Row label="Em andamento" value={String(PANORAMA.emAndamento)} color="var(--warning)" />
-            <Row label="Relatados não enviados" value={String(PANORAMA.relatadosNaoEnviados)} color="var(--purple)" />
+            <Row label="Em andamento" value={String(emAndamento)} color="var(--warning)" />
+            <Row label="Relatados não enviados" value={String(relatadosNaoEnviados)} color="var(--purple)" />
           </ul>
           <div className="mt-4 p-3 rounded-lg bg-success/5 border border-success/20 flex items-center gap-3">
             <div className="flex-1">
               <div className="text-xs font-semibold">Taxa de conclusão atual</div>
               <div className="text-[11px] text-muted-foreground">
-                Meta: {PANORAMA.metaConclusao}% — atual {PANORAMA.taxaConclusao}%
+                Meta: 100% — atual {taxaConclusao}%
               </div>
             </div>
             <div className="relative h-12 w-12">
@@ -178,12 +243,12 @@ function Dashboard() {
                   fill="none"
                   stroke="var(--success)"
                   strokeWidth="3"
-                  strokeDasharray={`${(PANORAMA.taxaConclusao / 100) * 94} 100`}
+                  strokeDasharray={`${(taxaConclusao / 100) * 94} 100`}
                   strokeLinecap="round"
                 />
               </svg>
               <div className="absolute inset-0 flex items-center justify-center text-[9px] font-bold text-success">
-                {Math.round(PANORAMA.taxaConclusao)}%
+                {Math.round(taxaConclusao)}%
               </div>
             </div>
           </div>
@@ -325,7 +390,7 @@ function Dashboard() {
                 />
                 <Bar dataKey="r2023" fill="var(--muted-foreground)" name="2023" />
                 <Bar dataKey="r2024" fill="var(--info)" name="2024" />
-                <Bar dataKey="r2025" fill="var(--warning)" name="2025" />
+                <Bar dataKey="r20{0}" fill="var(--warning)" name="20{0}" />
                 <Bar dataKey="r2026" fill="var(--destructive)" name="2026" />
               </BarChart>
             </ResponsiveContainer>
@@ -404,7 +469,7 @@ function Dashboard() {
           </ul>
           <div className="mt-5 p-3 rounded-lg bg-info/5 border border-info/20">
             <div className="text-xs font-semibold mb-1 flex items-center gap-2">
-              <Info className="h-3.5 w-3.5 text-info" /> Elucidações CVLI 2025
+              <Info className="h-3.5 w-3.5 text-info" /> Elucidações CVLI 20{0}
             </div>
             <div className="text-[11px] text-muted-foreground">
               Equipe IPC Marluan / IPC Rivaldo: <span className="text-success font-bold">21 casos elucidados</span>
