@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { AppLayout } from "@/components/AppLayout";
-import { getInqueritoById, softDeleteInquerito, type InqueritoRecord } from "@/lib/repositories/inqueritosRepository";
+import { getInqueritoById, hardDeleteInquerito, type InqueritoRecord } from "@/lib/repositories/inqueritosRepository";
 
 export const Route = createFileRoute("/inqueritos/$caseId")({ component: InqueritoDetalhes });
 
@@ -133,9 +133,17 @@ function InqueritoDetalhes() {
   if (!caso || !detalhe) return <AppLayout><div className="space-y-4"><h1 className="text-xl font-bold">Inquérito não encontrado</h1><Link to="/inqueritos" className="px-4 py-2 border border-border rounded-lg inline-block">Voltar</Link></div></AppLayout>;
 
   const remove = async () => {
-    if (!confirm("Deseja remover este inquérito?")) return;
-    await softDeleteInquerito(caso.id);
-    navigate({ to: "/inqueritos" });
+    if (!confirm("Excluir este inquérito DEFINITIVAMENTE? Esta ação não pode ser desfeita.")) return;
+    try {
+      await hardDeleteInquerito(caso.id);
+      navigate({ to: "/inqueritos" });
+    } catch (error) {
+      const message =
+        typeof error === "object" && error !== null && "message" in error && typeof error.message === "string"
+          ? error.message
+          : "Erro desconhecido";
+      alert(`Falha ao excluir inquérito: ${message}`);
+    }
   };
 
   const badges = [
