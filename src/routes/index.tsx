@@ -47,6 +47,9 @@ export const Route = createFileRoute("/")({
 
 function Dashboard() {
   const navigate = Route.useNavigate();
+  const [isClient, setIsClient] = useState(false);
+  const [updatedAtLabel, setUpdatedAtLabel] = useState("");
+  const [nowTs, setNowTs] = useState<number | null>(null);
   const [inqueritos, setInqueritos] = useState<InqueritoRecord[]>([]);
   const [representacoes, setRepresentacoes] = useState<RepresentacaoRecord[]>([]);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -56,6 +59,12 @@ function Dashboard() {
       navigate({ to: "/login" });
     }
   }, [navigate]);
+
+  useEffect(() => {
+    setIsClient(true);
+    setUpdatedAtLabel(new Date().toLocaleDateString("pt-BR"));
+    setNowTs(Date.now());
+  }, []);
 
   useEffect(() => {
     async function loadDashboardData() {
@@ -84,15 +93,14 @@ function Dashboard() {
   const reuPreso = inqueritos.filter((i) => i.reu_preso?.toLowerCase() === "sim").length;
   const medidasProtetivas = inqueritos.filter((i) => i.medida_protetiva?.toLowerCase() === "sim").length;
   const prazoCritico = inqueritos.filter((i) => {
-    if (!i.prazo) return false;
+    if (!i.prazo || nowTs === null) return false;
     const prazoDate = new Date(i.prazo);
     if (Number.isNaN(prazoDate.getTime())) return false;
-    const diffDays = (prazoDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24);
+    const diffDays = (prazoDate.getTime() - nowTs) / (1000 * 60 * 60 * 24);
     return diffDays >= 0 && diffDays <= 3;
   }).length;
   const taxaConclusao = total === 0 ? 0 : Number(((finalizados / total) * 100).toFixed(1));
   const relatadosNaoEnviados = Math.max(total - finalizados, 0);
-  const updatedAtLabel = useMemo(() => new Date().toLocaleDateString("pt-BR"), []);
   const POR_STATUS = useMemo(
     () => [
       { name: "Em andamento", value: emAndamento, color: "var(--info)" },
@@ -137,11 +145,7 @@ function Dashboard() {
 
   return (
     <AppLayout>
-      <PageHeader
-        title="Painel de Controle"
-        subtitle={`SIPI — atualizado em ${updatedAtLabel}`}
-        showActions={false}
-      />
+      <PageHeader title="Painel de Controle" subtitle={`SIPI — atualizado em ${updatedAtLabel || "—"}`} showActions={false} />
       {loadError ? <p className="text-xs text-muted-foreground mb-3">{loadError}</p> : null}
 
       {/* KPI cards */}
@@ -293,9 +297,10 @@ function Dashboard() {
             <Legend color="var(--success)" label="Elucidados" />
             <Legend color="var(--foreground)" label="Taxa de elucidação (%)" line />
           </div>
-          <div className="h-72">
-            <ResponsiveContainer width="100%" height="100%">
-              <ComposedChart data={CVLI_ANUAL} margin={{ top: 20, right: 20, bottom: 0, left: -10 }}>
+          <div className="h-[220px] min-h-[220px]">
+            {isClient && CVLI_ANUAL.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <ComposedChart data={CVLI_ANUAL} margin={{ top: 20, right: 20, bottom: 0, left: -10 }}>
                 <CartesianGrid stroke="var(--border)" vertical={false} />
                 <XAxis dataKey="ano" stroke="var(--muted-foreground)" fontSize={11} />
                 <YAxis yAxisId="left" stroke="var(--muted-foreground)" fontSize={11} />
@@ -324,8 +329,11 @@ function Dashboard() {
                   strokeWidth={2}
                   dot={{ r: 3, fill: "var(--foreground)" }}
                 />
-              </ComposedChart>
-            </ResponsiveContainer>
+                </ComposedChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-full flex items-center justify-center text-sm text-muted-foreground">Nenhum dado disponível.</div>
+            )}
           </div>
         </Panel>
 
@@ -375,9 +383,10 @@ function Dashboard() {
       {/* CVLI mensal + Bairros */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-5 mb-6">
         <Panel title="CVLI — REGISTROS MENSAIS (2023–2026)" accent="info">
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={CVLI_MENSAL} margin={{ top: 10, right: 10, bottom: 0, left: -20 }}>
+          <div className="h-[220px] min-h-[220px]">
+            {isClient && CVLI_MENSAL.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={CVLI_MENSAL} margin={{ top: 10, right: 10, bottom: 0, left: -20 }}>
                 <CartesianGrid stroke="var(--border)" vertical={false} />
                 <XAxis dataKey="mes" stroke="var(--muted-foreground)" fontSize={10} />
                 <YAxis stroke="var(--muted-foreground)" fontSize={10} />
@@ -393,8 +402,11 @@ function Dashboard() {
                 <Bar dataKey="r2024" fill="var(--info)" name="2024" />
                 <Bar dataKey="r20{0}" fill="var(--warning)" name="20{0}" />
                 <Bar dataKey="r2026" fill="var(--destructive)" name="2026" />
-              </BarChart>
-            </ResponsiveContainer>
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-full flex items-center justify-center text-sm text-muted-foreground">Nenhum dado disponível.</div>
+            )}
           </div>
         </Panel>
 
@@ -435,9 +447,10 @@ function Dashboard() {
       {/* Gravidade + Equipe */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
         <Panel title="ANÁLISE POR GRAVIDADE" accent="destructive">
-          <div className="h-72">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={POR_GRAVIDADE} layout="vertical" margin={{ top: 5, right: 20, bottom: 0, left: 10 }}>
+          <div className="h-[220px] min-h-[220px]">
+            {isClient && POR_GRAVIDADE.some((item) => item.value > 0) ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={POR_GRAVIDADE} layout="vertical" margin={{ top: 5, right: 20, bottom: 0, left: 10 }}>
                 <CartesianGrid stroke="var(--border)" horizontal={false} />
                 <XAxis type="number" stroke="var(--muted-foreground)" fontSize={11} />
                 <YAxis type="category" dataKey="name" stroke="var(--muted-foreground)" fontSize={10} width={140} />
@@ -450,8 +463,11 @@ function Dashboard() {
                   }}
                 />
                 <Bar dataKey="value" fill="var(--destructive)" radius={[0, 4, 4, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-full flex items-center justify-center text-sm text-muted-foreground">Nenhum dado disponível.</div>
+            )}
           </div>
         </Panel>
 
@@ -522,6 +538,8 @@ function DonutPanel({
   data: { name: string; value: number; color: string }[];
   total: number;
 }) {
+  const hasData = data.some((item) => item.value > 0);
+
   return (
     <Panel
       title={title}
@@ -530,22 +548,26 @@ function DonutPanel({
     >
       <div className="flex items-center gap-4">
         <div className="relative h-36 w-36 shrink-0">
-          <ResponsiveContainer width="100%" height="100%">
-            <PieChart>
-              <Pie
-                data={data}
-                dataKey="value"
-                innerRadius={45}
-                outerRadius={68}
-                paddingAngle={2}
-                stroke="none"
-              >
-                {data.map((d) => (
-                  <Cell key={d.name} fill={d.color} />
-                ))}
-              </Pie>
-            </PieChart>
-          </ResponsiveContainer>
+          {hasData ? (
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={data}
+                  dataKey="value"
+                  innerRadius={45}
+                  outerRadius={68}
+                  paddingAngle={2}
+                  stroke="none"
+                >
+                  {data.map((d) => (
+                    <Cell key={d.name} fill={d.color} />
+                  ))}
+                </Pie>
+              </PieChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="h-full w-full flex items-center justify-center text-xs text-muted-foreground">Nenhum dado disponível.</div>
+          )}
           <div className="absolute inset-0 flex flex-col items-center justify-center">
             <span className="text-2xl font-bold tabular-nums">{total}</span>
             <span className="text-[10px] text-muted-foreground">Total</span>
