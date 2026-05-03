@@ -1,7 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { FormEvent, useMemo, useState } from "react";
 import { AppLayout } from "@/components/AppLayout";
-import { REPRESENTACOES_LISTA } from "@/data/sipi";
 import { PageHeader } from "@/components/PageHeader";
 
 export const Route = createFileRoute("/nova-representacao")({
@@ -39,7 +38,6 @@ function NovaRepresentacao() {
   const [status, setStatus] = useState("");
   const [feedback, setFeedback] = useState("");
 
-  const proximoIdPrevisto = useMemo(() => `RPT-${String(REPRESENTACOES_LISTA.length + 1).padStart(5, "0")}`, []);
   const exibeCampoOutra = tipoRepresentacao === "Outra";
   const exibeDataDecisao = useMemo(() => statusComDecisao.has(status), [status]);
   const exibeBlocoCumprimento = useMemo(() => statusComCumprimento.has(status), [status]);
@@ -59,7 +57,6 @@ function NovaRepresentacao() {
 
       <form className="space-y-5 max-w-6xl pb-6" onSubmit={handleSubmit}>
         <SectionCard title="Identificação da Representação">
-          <ReadOnlyInfo label="ID da Representação" value={proximoIdPrevisto} hint="Prévia local para organização visual. O ID definitivo será gerado pela persistência futura." />
           <Field label="Nº PPE / Procedimento relacionado" placeholder="Ex.: 72921/2025" />
           <Field label="Nº Processo Judicial" placeholder="Ex.: 8001619-92.2025.8.05.0111" />
           <Select
@@ -192,5 +189,3 @@ function Select({
   );
 }
 
-
-function ReadOnlyInfo({ label, value, hint }: { label: string; value: string; hint: string }) { return <div><label className="block text-xs font-bold tracking-wider text-muted-foreground mb-2">{label.toUpperCase()}</label><input value={value} readOnly className="w-full bg-muted/30 border border-border rounded-lg px-4 py-2.5 text-sm" /><p className="text-[11px] text-muted-foreground mt-1">{hint}</p></div>; }
