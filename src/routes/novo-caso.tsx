@@ -1,7 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { type FormEvent, useState } from "react";
 import { AppLayout } from "@/components/AppLayout";
 import { PageHeader } from "@/components/PageHeader";
+import { loadInqueritos, saveInqueritos } from "@/lib/casesLocalState";
+import type { InqueritoCaso } from "@/data/inqueritos";
 
 export const Route = createFileRoute("/novo-caso")({
   head: () => ({ meta: [{ title: "Novo Caso — SIPI" }] }),
@@ -11,6 +13,12 @@ export const Route = createFileRoute("/novo-caso")({
 function NovoCaso() {
   const [houveArmaDeFogo, setHouveArmaDeFogo] = useState("");
   const [armaUtilizada, setArmaUtilizada] = useState("");
+  const [ppe, setPpe] = useState("");
+  const [tipificacao, setTipificacao] = useState("");
+  const [vitima, setVitima] = useState("");
+  const [prazo, setPrazo] = useState("");
+  const [dataFato, setDataFato] = useState("");
+  const [dataInstauracao, setDataInstauracao] = useState("");
 
   const handleHouveArmaDeFogoChange = (value: string) => {
     setHouveArmaDeFogo(value);
@@ -19,13 +27,42 @@ function NovoCaso() {
     }
   };
 
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const listaAtual = loadInqueritos();
+    const nextId = `INQ-${String(listaAtual.length + 1).padStart(6, "0")}`;
+    const novoCaso: InqueritoCaso = {
+      id: nextId,
+      ppe: ppe.trim() || `PPE-${nextId}`,
+      numeroBo: "",
+      numeroFisico: "",
+      prioridade: "MÉDIA",
+      dataFato: dataFato || new Date().toISOString().slice(0, 10),
+      dataInstauracao: dataInstauracao || undefined,
+      prazo: prazo || undefined,
+      dataLimite: prazo || undefined,
+      diasCorridos: 0,
+      tipificacao: tipificacao.trim() || "Não informado",
+      gravidade: "Média",
+      tipo: "IP",
+      reuPreso: false,
+      vitima: vitima.trim() || undefined,
+      bairroDistrito: "Não informado",
+      statusDiligencias: "Pendente",
+      visibilidade: "Público",
+    };
+
+    saveInqueritos([novoCaso, ...listaAtual]);
+    window.location.href = "/inqueritos";
+  };
+
   return (
     <AppLayout>
       <PageHeader title="Novo Inquérito" subtitle="Cadastre um novo inquérito policial" showActions={false} />
 
-      <form className="space-y-5 max-w-6xl pb-6">
+      <form className="space-y-5 max-w-6xl pb-6" onSubmit={handleSubmit}>
         <SectionCard title="Identificação do Procedimento">
-          <Field label="PPE" placeholder="Ex.: 001/2026-DPPC" />
+          <Field label="PPE" placeholder="Ex.: 001/2026-DPPC" value={ppe} onChange={(e) => setPpe(e.target.value)} />
           <Field label="Nº do B.O." placeholder="Ex.: 2026.000001" />
           <Field label="Nº Físico" placeholder="Ex.: 2026.001.0001" />
           <Select label="Tipo de Procedimento" options={["Inquérito Policial", "TCO", "Verificação Preliminar", "Outros"]} />
@@ -33,13 +70,13 @@ function NovoCaso() {
         </SectionCard>
 
         <SectionCard title="Datas">
-          <Field label="Data do Fato" type="date" />
-          <Field label="Data de Instauração" type="date" />
-          <Field label="Prazo" type="number" placeholder="30" />
+          <Field label="Data do Fato" type="date" value={dataFato} onChange={(e) => setDataFato(e.target.value)} />
+          <Field label="Data de Instauração" type="date" value={dataInstauracao} onChange={(e) => setDataInstauracao(e.target.value)} />
+          <Field label="Prazo" type="date" value={prazo} onChange={(e) => setPrazo(e.target.value)} />
         </SectionCard>
 
         <SectionCard title="Classificação do Caso">
-          <Field label="Tipificação" placeholder="Ex.: Homicídio Qualificado" />
+          <Field label="Tipificação" placeholder="Ex.: Homicídio Qualificado" value={tipificacao} onChange={(e) => setTipificacao(e.target.value)} />
           <Select label="Tipo" options={["IP", "APF", "TCO", "BOC", "AIAI"]} />
           <Select
             label="Categoria do Caso"
@@ -79,7 +116,7 @@ function NovoCaso() {
         </SectionCard>
 
         <SectionCard title="Pessoas Envolvidas">
-          <Field label="Vítima" placeholder="Nome completo da vítima" />
+          <Field label="Vítima" placeholder="Nome completo da vítima" value={vitima} onChange={(e) => setVitima(e.target.value)} />
           <Field label="Autor / Investigado" placeholder="Nome ou 'Desconhecido'" />
           <Select label="Autoria Determinada ou Indeterminada" options={["Determinada", "Indeterminada", "Desconhecida", "Sem Autoria"]} />
           <Select label="Réu Preso" options={["Sim", "Não"]} />
