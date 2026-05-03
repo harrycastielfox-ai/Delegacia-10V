@@ -19,14 +19,14 @@ function InqueritoDetalhes() {
 
   const badges = [caso.prioridade, caso.statusDiligencias, caso.gravidade, caso.tipo, caso.autorDeterminado === "Sim" ? "Elucidado" : "Não elucidado"];
 
-  return <AppLayout><div className="space-y-6">
+  return <AppLayout><div className="space-y-5">
     <header className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-      <div className="space-y-3">
+      <div className="space-y-2">
         <div className="flex items-center gap-3">
           <Link to="/inqueritos" className="rounded-lg border border-border bg-card px-3 py-2 text-sm hover:bg-accent">←</Link>
-          <h1 className="text-4xl font-black leading-none">{caso.id}</h1>
+          <h1 className="text-2xl font-extrabold leading-tight lg:text-3xl">{caso.id}</h1>
         </div>
-        <p className="text-xl text-muted-foreground">{caso.tipificacao}</p>
+        <p className="max-w-3xl text-base leading-relaxed text-muted-foreground lg:text-lg">{caso.tipificacao}</p>
         <p className="text-sm text-muted-foreground">Última edição: <span className="text-foreground font-semibold">{caso.ultimaAtualizacao ?? "não registrada"}</span></p>
       </div>
       <div className="flex gap-2">
@@ -38,15 +38,15 @@ function InqueritoDetalhes() {
 
     <div className="flex flex-wrap gap-2">{badges.map((badge) => <span key={badge} className="rounded-full border border-border bg-card px-3 py-1 text-xs font-semibold">{badge}</span>)}</div>
 
-    <section className="grid gap-4 xl:grid-cols-2">
+    <section className="grid gap-3 xl:grid-cols-2">
       {[
         ["Dados Gerais", [["Nº PPE", caso.ppe], ["Nº físico", caso.numeroFisico], ["Nº BO", caso.numeroBo], ["Data instauração", caso.dataInstauracao], ["Data do fato", caso.dataFato], ["Prazo", caso.prazo], ["Dias decorridos", `${caso.diasCorridos}`]]],
         ["Classificação", [["Tipificação", caso.tipificacao], ["Gravidade", caso.gravidade], ["Tipo", caso.tipo], ["Prioridade", caso.prioridade], ["Elucidado", caso.autorDeterminado], ["Arma utilizada", caso.motivacao]]],
         ["Pessoas Envolvidas", [["Vítima", caso.vitima], ["Suspeito", caso.autorInvestigado], ["Réu preso", caso.reuPreso ? "Sim" : "Não"]]],
         ["Dados Operacionais", [["Delegado responsável", caso.escrivao], ["Equipe", caso.equipeResponsavel], ["Situação", caso.situacao], ["Status diligências", caso.statusDiligencias], ["Bairro / distrito", caso.bairroDistrito], ["Facção", caso.nomeFaccao || "—"]]],
-      ].map(([title, items]) => <article key={String(title)} className="rounded-2xl border border-border bg-card p-6">
-        <h2 className="text-sm tracking-[0.2em] text-primary font-bold uppercase mb-5">{String(title)}</h2>
-        <div className="grid gap-5 sm:grid-cols-2">{(items as string[][]).map(([k, v]) => <div key={k}><p className="text-[11px] tracking-[0.15em] uppercase text-muted-foreground">{k}</p><p className="mt-1 text-2xl leading-tight">{v || "—"}</p></div>)}</div>
+      ].map(([title, items]) => <article key={String(title)} className="rounded-xl border border-border bg-card p-4 lg:p-5">
+        <h2 className="mb-4 text-xs font-bold uppercase tracking-[0.16em] text-primary">{String(title)}</h2>
+        <div className="grid gap-4 sm:grid-cols-2">{(items as string[][]).map(([k, v]) => <div key={k}><p className="text-[10px] tracking-[0.14em] uppercase text-muted-foreground">{k}</p><p className="mt-1 text-lg leading-snug lg:text-xl">{v || "—"}</p></div>)}</div>
       </article>)}
     </section>
   </div></AppLayout>;
