@@ -105,6 +105,9 @@ function NovoCaso() {
       navigate({ to: "/inqueritos/$caseId", params: { caseId: created.id } });
     } catch (error) {
       console.error("resposta/erro do Supabase", error);
+      if (typeof error === "object" && error !== null && "message" in error) {
+        console.error("mensagem do erro Supabase:", error.message);
+      }
       const isRlsError =
         typeof error === "object" &&
         error !== null &&
