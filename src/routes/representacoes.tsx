@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppLayout } from "@/components/AppLayout";
 import { PageHeader } from "@/components/PageHeader";
 import { StatCard } from "@/components/StatCard";
@@ -27,7 +27,16 @@ const statusTone: Record<string, string> = {
 function Representacoes() {
   return (
     <AppLayout>
-      <PageHeader title="Representações Judiciais" subtitle="Medidas requeridas ao Poder Judiciário" />
+      <PageHeader title="Representações Judiciais" subtitle="Medidas requeridas ao Poder Judiciário" showActions={false} />
+
+      <div className="mb-6 flex justify-end">
+        <Link
+          to="/nova-representacao"
+          className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2.5 rounded-lg text-sm font-semibold hover:opacity-90 transition shadow-lg shadow-primary/20"
+        >
+          Cadastrar Representação
+        </Link>
+      </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         <StatCard label="TOTAL" value={REPRESENTACOES.total} hint="Representações" icon={Gavel} tone="info" />
