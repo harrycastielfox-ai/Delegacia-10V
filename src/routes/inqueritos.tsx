@@ -59,28 +59,28 @@ function Inqueritos() {
       <table className="w-full min-w-[1080px] text-sm">
         <thead className="text-[11px] tracking-[0.16em] text-muted-foreground">
           <tr>
-            <th className="px-4 py-4 text-left font-bold">PPE</th>
-            <th className="px-4 py-4 text-left font-bold">TIPIFICAÇÃO</th>
-            <th className="px-4 py-4 text-left font-bold">VÍTIMA</th>
-            <th className="px-4 py-4 text-left font-bold">PRIORIDADE</th>
-            <th className="px-4 py-4 text-left font-bold">GRAVIDADE</th>
-            <th className="px-4 py-4 text-left font-bold">SITUAÇÃO</th>
-            <th className="px-4 py-4 text-left font-bold">EQUIPE</th>
-            <th className="px-4 py-4 text-left font-bold">PRAZO</th>
-            <th className="px-4 py-4 text-right font-bold">AÇÃO</th>
+            <th className="px-4 py-3 text-left font-bold">PPE</th>
+            <th className="px-4 py-3 text-left font-bold">TIPIFICAÇÃO</th>
+            <th className="px-4 py-3 text-left font-bold">VÍTIMA</th>
+            <th className="px-4 py-3 text-left font-bold">PRIORIDADE</th>
+            <th className="px-4 py-3 text-left font-bold">GRAVIDADE</th>
+            <th className="px-4 py-3 text-left font-bold">SITUAÇÃO</th>
+            <th className="px-4 py-3 text-left font-bold">EQUIPE</th>
+            <th className="px-4 py-3 text-left font-bold">PRAZO</th>
+            <th className="px-4 py-3 text-right font-bold">AÇÃO</th>
           </tr>
         </thead>
         <tbody>
           {filtered.map((r) => <tr key={r.id} className="border-t border-border/70 hover:bg-muted/20">
-            <td className="px-4 py-4 font-semibold text-primary">{r.ppe}</td>
-            <td className="px-4 py-4">{r.tipificacao}</td>
-            <td className="px-4 py-4">{r.vitima || "—"}</td>
-            <td className="px-4 py-4"><span className={`inline-flex rounded-full border px-2.5 py-1 text-[11px] font-bold ${priorTone[r.prioridade]}`}>{r.prioridade}</span></td>
-            <td className="px-4 py-4">{r.gravidade}</td>
-            <td className="px-4 py-4"><span className={`inline-flex rounded-full border px-2.5 py-1 text-[11px] font-bold ${statusTone[r.statusDiligencias] ?? ""}`}>{r.statusDiligencias}</span></td>
-            <td className="px-4 py-4">{r.equipeResponsavel || "—"}</td>
-            <td className="px-4 py-4">{r.prazo || `${formatDiasCorridos(r)} corridos`}</td>
-            <td className="px-4 py-4 text-right"><button className="rounded-lg border border-info/30 bg-info/10 px-3 py-1.5 text-xs font-semibold" onClick={() => navigate({ to: "/inqueritos/$caseId", params: { caseId: r.id } })}>Abrir</button></td>
+            <td className="px-4 py-2.5 font-semibold text-primary">{r.ppe}</td>
+            <td className="px-4 py-2.5">{r.tipificacao}</td>
+            <td className="px-4 py-2.5">{r.vitima || "—"}</td>
+            <td className="px-4 py-2.5"><span className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-bold ${priorTone[r.prioridade]}`}>{r.prioridade}</span></td>
+            <td className="px-4 py-2.5">{r.gravidade}</td>
+            <td className="px-4 py-2.5"><span className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-bold ${statusTone[r.statusDiligencias] ?? ""}`}>{r.statusDiligencias}</span></td>
+            <td className="px-4 py-2.5">{r.equipeResponsavel || "—"}</td>
+            <td className="px-4 py-2.5">{formatPrazoFinal(r.prazo ?? r.dataLimite)}</td>
+            <td className="px-4 py-2.5 text-right"><button className="rounded-lg border border-info/30 bg-info/10 px-3 py-1 text-[11px] font-semibold" onClick={() => navigate({ to: "/inqueritos/$caseId", params: { caseId: r.id } })}>Abrir</button></td>
           </tr>)}
         </tbody>
       </table>
@@ -90,14 +90,10 @@ function Inqueritos() {
   </div></AppLayout>;
 }
 
-function formatDiasCorridos(row: { diasCorridos?: number | null; dataFato?: string | null }) {
-  if (Number.isFinite(row.diasCorridos)) return `${Math.max(0, Number(row.diasCorridos))}d`;
-  const parsedDate = parseDateOnly(row.dataFato);
+function formatPrazoFinal(value?: string | null) {
+  const parsedDate = parseDateOnly(value);
   if (!parsedDate) return "—";
-  const today = new Date();
-  const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
-  const diffMs = startOfToday - parsedDate.getTime();
-  return `${Math.max(0, Math.floor(diffMs / 86_400_000))}d`;
+  return parsedDate.toISOString().slice(0, 10);
 }
 
 function parseDateOnly(value?: string | null) {
