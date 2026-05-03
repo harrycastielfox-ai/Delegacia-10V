@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useState } from "react";
 import { AppLayout } from "@/components/AppLayout";
 import { PageHeader } from "@/components/PageHeader";
 
@@ -8,6 +9,16 @@ export const Route = createFileRoute("/novo-caso")({
 });
 
 function NovoCaso() {
+  const [houveArmaDeFogo, setHouveArmaDeFogo] = useState("");
+  const [armaUtilizada, setArmaUtilizada] = useState("");
+
+  const handleHouveArmaDeFogoChange = (value: string) => {
+    setHouveArmaDeFogo(value);
+    if (value !== "Sim") {
+      setArmaUtilizada("");
+    }
+  };
+
   return (
     <AppLayout>
       <PageHeader title="Novo Inquérito" subtitle="Cadastre um novo inquérito policial" showActions={false} />
@@ -34,6 +45,7 @@ function NovoCaso() {
             label="Categoria do Caso"
             options={[
               "CVLI",
+              "CVP",
               "MIAE",
               "Drogas",
               "Crimes Contra o Patrimônio",
@@ -57,8 +69,13 @@ function NovoCaso() {
               "Aguardando Diligência",
               "Aguardando Laudo Pericial",
               "Requisição Ministerial/Judicial",
+              "Remetido",
+              "Arquivado",
             ]}
           />
+          <Select label="Elucidado" options={["Sim", "Não"]} />
+          <Select label="Houve arma de fogo?" options={["Sim", "Não"]} value={houveArmaDeFogo} onChange={handleHouveArmaDeFogoChange} />
+          {houveArmaDeFogo === "Sim" && <Field label="Arma Utilizada" placeholder="Ex: revólver calibre .38" value={armaUtilizada} onChange={(e) => setArmaUtilizada(e.target.value)} />}
         </SectionCard>
 
         <SectionCard title="Pessoas Envolvidas">
@@ -143,11 +160,25 @@ function TextArea({ label, rows = 4, ...props }: { label: string; rows?: number 
   );
 }
 
-function Select({ label, options }: { label: string; options: string[] }) {
+function Select({
+  label,
+  options,
+  value,
+  onChange,
+}: {
+  label: string;
+  options: string[];
+  value?: string;
+  onChange?: (value: string) => void;
+}) {
   return (
     <div>
       <label className="block text-xs font-bold tracking-wider text-muted-foreground mb-2">{label.toUpperCase()}</label>
-      <select className="w-full bg-card border border-border rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-primary">
+      <select
+        value={value}
+        onChange={(e) => onChange?.(e.target.value)}
+        className="w-full bg-card border border-border rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-primary"
+      >
         <option value="">Selecione…</option>
         {options.map((o) => (
           <option key={o}>{o}</option>
