@@ -1,5 +1,6 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { FormEvent, useMemo, useState } from "react";
+import { createRepresentacao } from "@/lib/repositories/representacoesRepository";
 import { AppLayout } from "@/components/AppLayout";
 import { PageHeader } from "@/components/PageHeader";
 
@@ -36,15 +37,28 @@ const statusComCumprimento = new Set(["Cumprida", "Cumprida parcialmente"]);
 function NovaRepresentacao() {
   const [tipoRepresentacao, setTipoRepresentacao] = useState("");
   const [status, setStatus] = useState("");
+  const navigate = useNavigate();
   const [feedback, setFeedback] = useState("");
+  const [erro, setErro] = useState("");
+  const [ppe, setPpe] = useState("");
+  const [processo, setProcesso] = useState("");
+  const [vitima, setVitima] = useState("");
+  const [investigado, setInvestigado] = useState("");
 
   const exibeCampoOutra = tipoRepresentacao === "Outra";
   const exibeDataDecisao = useMemo(() => statusComDecisao.has(status), [status]);
   const exibeBlocoCumprimento = useMemo(() => statusComCumprimento.has(status), [status]);
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setFeedback("Representação cadastrada localmente. O ID definitivo será gerado pela persistência futura no backend.");
+    setErro("");
+    try {
+      await createRepresentacao({ numero_ppe: ppe || null, processo_judicial: processo || null, vitima: vitima || null, investigado: investigado || null, tipo: tipoRepresentacao || null, status: status || null });
+      setFeedback("Representação salva com sucesso.");
+      navigate({ to: "/representacoes" });
+    } catch {
+      setErro("Falha ao salvar representação no Supabase.");
+    }
   }
 
   return (
@@ -57,8 +71,8 @@ function NovaRepresentacao() {
 
       <form className="space-y-5 max-w-6xl pb-6" onSubmit={handleSubmit}>
         <SectionCard title="Identificação da Representação">
-          <Field label="Nº PPE / Procedimento relacionado" placeholder="Ex.: 72921/2025" />
-          <Field label="Nº Processo Judicial" placeholder="Ex.: 8001619-92.2025.8.05.0111" />
+          <Field label="Nº PPE / Procedimento relacionado" placeholder="Ex.: 72921/2025" value={ppe} onChange={(e)=>setPpe(e.target.value)} />
+          <Field label="Nº Processo Judicial" placeholder="Ex.: 8001619-92.2025.8.05.0111" value={processo} onChange={(e)=>setProcesso(e.target.value)} />
           <Select
             label="Tipo de Representação"
             options={tiposRepresentacao}
@@ -71,8 +85,8 @@ function NovaRepresentacao() {
         </SectionCard>
 
         <SectionCard title="Pessoas Envolvidas">
-          <Field label="Vítima" placeholder="Nome completo da vítima" />
-          <Field label="Investigado / Representado" placeholder="Nome do investigado" />
+          <Field label="Vítima" placeholder="Nome completo da vítima" value={vitima} onChange={(e)=>setVitima(e.target.value)} />
+          <Field label="Investigado / Representado" placeholder="Nome do investigado" value={investigado} onChange={(e)=>setInvestigado(e.target.value)} />
           <Select label="Autor preso?" options={["Sim", "Não", "Não informado"]} />
         </SectionCard>
 
@@ -104,6 +118,8 @@ function NovaRepresentacao() {
           <Select label="Pedido sigiloso?" options={["Sim", "Não"]} />
           <TextArea label="Observações internas" placeholder="Anotações internas da unidade sobre o acompanhamento da representação..." />
         </SectionCard>
+
+        {erro && <div className="rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">{erro}</div>}
 
         {feedback && (
           <div className="rounded-lg border border-success/30 bg-success/10 px-4 py-3 text-sm text-success">
