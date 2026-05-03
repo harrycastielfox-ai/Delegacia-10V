@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { type FormEvent, useEffect, useState } from "react";
+import { type FormEvent, type InputHTMLAttributes, type ReactNode, type TextareaHTMLAttributes, useEffect, useState } from "react";
 import { AppLayout } from "@/components/AppLayout";
 import { getInqueritoById, updateInquerito } from "@/lib/repositories/inqueritosRepository";
 
@@ -64,8 +64,6 @@ function EditarInquerito() {
   const [numeroProcessoMedida, setNumeroProcessoMedida] = useState("");
 
   useEffect(() => {
-    console.log("rota editar carregou");
-    console.log("caseId editar", caseId);
     let ativo = true;
     const carregar = async () => {
       setLoading(true);
@@ -73,7 +71,6 @@ function EditarInquerito() {
       setNotFound(false);
       try {
         const inquerito = await getInqueritoById(caseId);
-        console.log("registro editar Supabase", inquerito);
         if (!ativo) return;
         if (!inquerito) {
           setNotFound(true);
@@ -109,9 +106,8 @@ function EditarInquerito() {
         setMedidaProtetiva(inquerito.medida_protetiva ?? "");
         setNumeroProcessoMedida(inquerito.numero_processo_medida ?? "");
       } catch (error) {
-        console.log("erro editar Supabase", error);
         if (!ativo) return;
-        setErro(getErrorMessage(error, "Falha ao carregar dados do inquérito"));
+        setErro(getErrorMessage(error, "Erro ao carregar"));
       } finally {
         if (ativo) setLoading(false);
       }
@@ -161,12 +157,12 @@ function EditarInquerito() {
         numero_processo_medida: numeroProcessoMedida.trim() || null,
       });
 
-      setFeedback("Inquérito atualizado com sucesso. Redirecionando para os detalhes...");
+      setFeedback("Inquérito atualizado com sucesso");
       setTimeout(() => {
         navigate({ to: "/inqueritos/$caseId", params: { caseId } });
       }, 300);
     } catch (error) {
-      setErro(getErrorMessage(error, "Falha ao salvar alterações no Supabase"));
+      setErro(getErrorMessage(error, "Erro ao salvar"));
     } finally {
       setSaving(false);
     }
@@ -178,23 +174,8 @@ function EditarInquerito() {
     return (
       <AppLayout>
         <div className="max-w-3xl space-y-3">
-          <Link to="/inqueritos/$caseId" params={{ caseId }} className="text-xs border border-border rounded-md px-3 py-1.5 inline-block">
-            ← Voltar aos detalhes
-          </Link>
-          <p className="rounded-lg border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive">Registro não encontrado para este ID.</p>
-        </div>
-      </AppLayout>
-    );
-  }
-
-  if (erro) {
-    return (
-      <AppLayout>
-        <div className="max-w-3xl space-y-3">
-          <Link to="/inqueritos/$caseId" params={{ caseId }} className="text-xs border border-border rounded-md px-3 py-1.5 inline-block">
-            ← Voltar aos detalhes
-          </Link>
-          <p className="rounded-lg border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive">{erro}</p>
+          <Link to="/inqueritos/$caseId" params={{ caseId }} className="text-xs border border-border rounded-md px-3 py-1.5 inline-block">← Voltar aos detalhes</Link>
+          <p className="rounded-lg border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive">Inquérito não encontrado</p>
         </div>
       </AppLayout>
     );
@@ -203,9 +184,7 @@ function EditarInquerito() {
   return (
     <AppLayout>
       <div className="max-w-6xl space-y-4 pb-6">
-        <Link to="/inqueritos/$caseId" params={{ caseId }} className="text-xs border border-border rounded-md px-3 py-1.5 inline-block">
-          ← Voltar aos detalhes
-        </Link>
+        <Link to="/inqueritos/$caseId" params={{ caseId }} className="text-xs border border-border rounded-md px-3 py-1.5 inline-block">← Voltar aos detalhes</Link>
         <h1 className="text-2xl font-bold">Editar Inquérito</h1>
 
         <form className="space-y-5" onSubmit={handleSubmit}>
@@ -246,20 +225,17 @@ function EditarInquerito() {
             <TextArea label="Observações" value={observacoes} onChange={(e) => setObservacoes(e.target.value)} />
           </SectionCard>
 
-          {(erro || feedback) && (
+          {(erro || feedback || saving) && (
             <div className="space-y-2">
               {erro && <p className="rounded-lg border border-destructive/50 bg-destructive/10 px-4 py-2 text-sm text-destructive">{erro}</p>}
-              {feedback && <p className="rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-4 py-2 text-sm text-emerald-400">{feedback}</p>}
+              {saving && <p className="rounded-lg border border-border px-4 py-2 text-sm text-muted-foreground">Salvando...</p>}
+              {feedback && <p className="rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-4 py-2 text-sm text-emerald-400">Inquérito atualizado com sucesso</p>}
             </div>
           )}
 
           <div className="flex gap-3 justify-end">
-            <button type="button" onClick={() => navigate({ to: "/inqueritos/$caseId", params: { caseId } })} className="px-5 py-2.5 rounded-lg text-sm border border-border hover:bg-accent">
-              Cancelar
-            </button>
-            <button type="submit" disabled={saving} className="px-5 py-2.5 rounded-lg text-sm font-semibold bg-primary text-primary-foreground disabled:cursor-not-allowed disabled:opacity-60">
-              {saving ? "Salvando..." : "Salvar alterações"}
-            </button>
+            <button type="button" onClick={() => navigate({ to: "/inqueritos/$caseId", params: { caseId } })} className="px-5 py-2.5 rounded-lg text-sm border border-border hover:bg-accent">Cancelar</button>
+            <button type="submit" disabled={saving} className="px-5 py-2.5 rounded-lg text-sm font-semibold bg-primary text-primary-foreground disabled:cursor-not-allowed disabled:opacity-60">{saving ? "Salvando..." : "Salvar alterações"}</button>
           </div>
         </form>
       </div>
@@ -267,7 +243,7 @@ function EditarInquerito() {
   );
 }
 
-function SectionCard({ title, children }: { title: string; children: React.ReactNode }) {
+function SectionCard({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section className="rounded-xl border border-border/60 bg-background/70 p-5 lg:p-7">
       <h2 className="text-sm font-bold tracking-[0.2em] text-primary uppercase mb-5">{title}</h2>
@@ -276,7 +252,7 @@ function SectionCard({ title, children }: { title: string; children: React.React
   );
 }
 
-function Field({ label, ...props }: { label: string } & React.InputHTMLAttributes<HTMLInputElement>) {
+function Field({ label, ...props }: { label: string } & InputHTMLAttributes<HTMLInputElement>) {
   return (
     <div>
       <label className="block text-xs font-bold tracking-wider text-muted-foreground mb-2">{label.toUpperCase()}</label>
@@ -285,7 +261,7 @@ function Field({ label, ...props }: { label: string } & React.InputHTMLAttribute
   );
 }
 
-function TextArea({ label, ...props }: { label: string } & React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
+function TextArea({ label, ...props }: { label: string } & TextareaHTMLAttributes<HTMLTextAreaElement>) {
   return (
     <div className="md:col-span-2 lg:col-span-3">
       <label className="block text-xs font-bold tracking-wider text-muted-foreground mb-2">{label.toUpperCase()}</label>
