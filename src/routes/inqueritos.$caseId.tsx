@@ -17,15 +17,50 @@ function InqueritoDetalhes() {
     navigate({ to: "/inqueritos", search: { feedback: "Inquérito removido localmente." } });
   };
 
-  const prazoVencido = caso.prazo && new Date(caso.prazo).getTime() < Date.now();
+  const getPrioridadeBadgeClass = (prioridade?: string) => {
+    const valor = (prioridade || "").toLowerCase();
+    if (valor === "alta") return "border-destructive/30 bg-destructive/10 text-destructive";
+    if (valor === "média" || valor === "media") return "border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300";
+    if (valor === "baixa") return "border-sky-500/30 bg-sky-500/10 text-sky-700 dark:text-sky-300";
+    return "border-border bg-card text-foreground";
+  };
+
+  const getSituacaoBadgeClass = (situacao?: string) => {
+    const valor = (situacao || "").toLowerCase();
+    if (valor.includes("conclu")) return "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300";
+    if (valor.includes("instaurado") || valor.includes("andamento")) return "border-cyan-500/30 bg-cyan-500/10 text-cyan-700 dark:text-cyan-300";
+    if (valor.includes("pendente")) return "border-muted-foreground/30 bg-muted text-muted-foreground";
+    return "border-border bg-card text-foreground";
+  };
+
+  const getGravidadeBadgeClass = (gravidade?: string) => {
+    const valor = (gravidade || "").toLowerCase();
+    if (valor.includes("cvli") || valor.includes("cyli")) return "border-destructive/30 bg-destructive/10 text-destructive";
+    return "border-border bg-secondary text-secondary-foreground";
+  };
+
+  const getTipoBadgeClass = () => "border-border bg-secondary text-secondary-foreground";
+
+  const getStatusBadgeClass = (status?: string) => {
+    const valor = (status || "").toLowerCase();
+    if (valor.includes("pendente")) return "border-muted-foreground/30 bg-muted text-muted-foreground";
+    return "border-border bg-card text-foreground";
+  };
+
+  const getElucidacaoBadgeClass = (autorDeterminado?: string) => {
+    const valor = (autorDeterminado || "").toLowerCase();
+    if (valor === "sim") return "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300";
+    return "border-border bg-secondary text-secondary-foreground";
+  };
+
   const badges = [
-    caso.prioridade,
-    caso.statusDiligencias,
-    caso.gravidade,
-    caso.tipo,
-    caso.autorDeterminado === "Sim" ? "Elucidado" : "Não elucidado",
-    ...(prazoVencido ? ["VENCIDO"] : []),
-  ].filter(Boolean);
+    { label: caso.prioridade, className: getPrioridadeBadgeClass(caso.prioridade) },
+    { label: caso.situacao, className: getSituacaoBadgeClass(caso.situacao) },
+    { label: caso.gravidade, className: getGravidadeBadgeClass(caso.gravidade) },
+    { label: caso.tipo, className: getTipoBadgeClass() },
+    { label: caso.statusDiligencias, className: getStatusBadgeClass(caso.statusDiligencias) },
+    ...(caso.autorDeterminado ? [{ label: caso.autorDeterminado === "Sim" ? "Elucidado" : "Não elucidado", className: getElucidacaoBadgeClass(caso.autorDeterminado) }] : []),
+  ].filter((badge) => Boolean(badge.label));
 
   return <AppLayout><div className="space-y-4">
     <header className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
@@ -44,7 +79,7 @@ function InqueritoDetalhes() {
       </div>
     </header>
 
-    <div className="flex flex-wrap gap-1.5">{badges.map((badge) => <span key={badge} className="rounded-full border border-border bg-card px-2.5 py-0.5 text-[11px] font-semibold">{badge}</span>)}</div>
+    <div className="flex flex-wrap gap-1.5">{badges.map((badge) => <span key={badge.label} className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold border ${badge.className}`}>{badge.label}</span>)}</div>
 
     <section className="grid gap-2.5 xl:grid-cols-2">
       {[
