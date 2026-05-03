@@ -15,7 +15,9 @@ export type InqueritoRecord = {
   data_fato: string | null;
   data_instauracao: string | null;
   prazo: string | null;
+  dias_decorridos: string | null;
   bairro: string | null;
+  distrito: string | null;
   vitima: string | null;
   investigado: string | null;
   reu_preso: string | null;
@@ -30,6 +32,10 @@ export type InqueritoRecord = {
   data_envio_relatorio: string | null;
   medida_protetiva: string | null;
   numero_processo_medida: string | null;
+  representacoes_legais: string | null;
+  diligencias_pendentes: string | null;
+  delegado_responsavel: string | null;
+  motivacao: string | null;
   observacoes: string | null;
   created_at: string | null;
   updated_at: string | null;

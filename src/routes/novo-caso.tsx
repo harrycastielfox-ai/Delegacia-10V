@@ -19,9 +19,34 @@ function NovoCaso() {
   const [ppe, setPpe] = useState("");
   const [tipificacao, setTipificacao] = useState("");
   const [vitima, setVitima] = useState("");
+  const [investigado, setInvestigado] = useState("");
+  const [numeroBo, setNumeroBo] = useState("");
+  const [numeroFisico, setNumeroFisico] = useState("");
   const [prazo, setPrazo] = useState("");
   const [dataFato, setDataFato] = useState("");
   const [dataInstauracao, setDataInstauracao] = useState("");
+  const [tipo, setTipo] = useState("IP");
+  const [prioridade, setPrioridade] = useState("MÉDIA");
+  const [gravidade, setGravidade] = useState("Média");
+  const [situacao, setSituacao] = useState("Instaurado");
+  const [statusDiligencias, setStatusDiligencias] = useState("Pendente");
+  const [elucidado, setElucidado] = useState("");
+  const [reuPreso, setReuPreso] = useState("");
+  const [delegadoResponsavel, setDelegadoResponsavel] = useState("");
+  const [equipe, setEquipe] = useState("");
+  const [escrivao, setEscrivao] = useState("");
+  const [bairro, setBairro] = useState("");
+  const [distrito, setDistrito] = useState("");
+  const [motivacao, setMotivacao] = useState("");
+  const [vinculadoFaccao, setVinculadoFaccao] = useState("");
+  const [nomeFaccao, setNomeFaccao] = useState("");
+  const [diligenciasPendentes, setDiligenciasPendentes] = useState("");
+  const [observacoes, setObservacoes] = useState("");
+  const [medidaProtetiva, setMedidaProtetiva] = useState("");
+  const [numeroProcessoMedida, setNumeroProcessoMedida] = useState("");
+  const [relatorioEnviado, setRelatorioEnviado] = useState("");
+  const [dataEnvioRelatorio, setDataEnvioRelatorio] = useState("");
+  const [representacoesLegais, setRepresentacoesLegais] = useState("");
 
   const handleHouveArmaDeFogoChange = (value: string) => {
     setHouveArmaDeFogo(value);
@@ -39,18 +64,38 @@ function NovoCaso() {
     setLoading(true);
     const payload = {
       numero_ppe: ppe.trim() || null,
+      numero_bo: numeroBo.trim() || null,
+      numero_fisico: numeroFisico.trim() || null,
       tipificacao: tipificacao.trim() || null,
       vitima: vitima.trim() || null,
+      investigado: investigado.trim() || null,
+      reu_preso: reuPreso || null,
       prazo: prazo || null,
       data_fato: dataFato || null,
       data_instauracao: dataInstauracao || null,
-      tipo: "IP",
-      prioridade: "MÉDIA",
-      gravidade: "Média",
-      status_diligencias: "Pendente",
-      situacao: "Instaurado",
+      tipo: tipo || null,
+      prioridade: prioridade || null,
+      gravidade: gravidade || null,
+      status_diligencias: statusDiligencias || null,
+      situacao: situacao || null,
+      elucidado: elucidado || null,
       houve_arma_fogo: houveArmaDeFogo || null,
       arma_utilizada: armaUtilizada || null,
+      delegado_responsavel: delegadoResponsavel.trim() || null,
+      equipe: equipe.trim() || null,
+      escrivao: escrivao.trim() || null,
+      bairro: bairro.trim() || null,
+      distrito: distrito.trim() || null,
+      motivacao: motivacao.trim() || null,
+      faccao: vinculadoFaccao || null,
+      nome_faccao: nomeFaccao.trim() || null,
+      diligencias_pendentes: diligenciasPendentes.trim() || null,
+      observacoes: observacoes.trim() || null,
+      medida_protetiva: medidaProtetiva || null,
+      numero_processo_medida: numeroProcessoMedida.trim() || null,
+      relatorio_enviado: relatorioEnviado || null,
+      data_envio_relatorio: dataEnvioRelatorio || null,
+      representacoes_legais: representacoesLegais.trim() || null,
     };
     console.log("payload enviado", payload);
     try {
@@ -82,8 +127,8 @@ function NovoCaso() {
       <form className="space-y-5 max-w-6xl pb-6" onSubmit={handleSubmit}>
         <SectionCard title="Identificação do Procedimento">
           <Field label="PPE" placeholder="Ex.: 001/2026-DPPC" value={ppe} onChange={(e) => setPpe(e.target.value)} />
-          <Field label="Nº do B.O." placeholder="Ex.: 2026.000001" />
-          <Field label="Nº Físico" placeholder="Ex.: 2026.001.0001" />
+          <Field label="Nº do B.O." placeholder="Ex.: 2026.000001" value={numeroBo} onChange={(e) => setNumeroBo(e.target.value)} />
+          <Field label="Nº Físico" placeholder="Ex.: 2026.001.0001" value={numeroFisico} onChange={(e) => setNumeroFisico(e.target.value)} />
           <Select label="Tipo de Procedimento" options={["Inquérito Policial", "TCO", "Verificação Preliminar", "Outros"]} />
           <Select label="Visibilidade" options={["Público", "Privado"]} />
         </SectionCard>
@@ -96,7 +141,7 @@ function NovoCaso() {
 
         <SectionCard title="Classificação do Caso">
           <Field label="Tipificação" placeholder="Ex.: Homicídio Qualificado" value={tipificacao} onChange={(e) => setTipificacao(e.target.value)} />
-          <Select label="Tipo" options={["IP", "APF", "TCO", "BOC", "AIAI"]} />
+          <Select label="Tipo" options={["IP", "APF", "TCO", "BOC", "AIAI"]} value={tipo} onChange={setTipo} />
           <Select
             label="Categoria do Caso"
             options={[
@@ -116,7 +161,7 @@ function NovoCaso() {
             ]}
           />
           <Select
-            label="Situação"
+            label="Situação" value={situacao} onChange={setSituacao}
             options={[
               "Instaurado",
               "Em Andamento",
@@ -129,29 +174,29 @@ function NovoCaso() {
               "Arquivado",
             ]}
           />
-          <Select label="Elucidado" options={["Sim", "Não"]} />
+          <Select label="Elucidado" options={["Sim", "Não"]} value={elucidado} onChange={setElucidado} />
           <Select label="Houve arma de fogo?" options={["Sim", "Não"]} value={houveArmaDeFogo} onChange={handleHouveArmaDeFogoChange} />
           {houveArmaDeFogo === "Sim" && <Field label="Arma Utilizada" placeholder="Ex: revólver calibre .38" value={armaUtilizada} onChange={(e) => setArmaUtilizada(e.target.value)} />}
         </SectionCard>
 
         <SectionCard title="Pessoas Envolvidas">
           <Field label="Vítima" placeholder="Nome completo da vítima" value={vitima} onChange={(e) => setVitima(e.target.value)} />
-          <Field label="Autor / Investigado" placeholder="Nome ou 'Desconhecido'" />
+          <Field label="Autor / Investigado" placeholder="Nome ou 'Desconhecido'" value={investigado} onChange={(e) => setInvestigado(e.target.value)} />
           <Select label="Autoria Determinada ou Indeterminada" options={["Determinada", "Indeterminada", "Desconhecida", "Sem Autoria"]} />
-          <Select label="Réu Preso" options={["Sim", "Não"]} />
+          <Select label="Réu Preso" options={["Sim", "Não"]} value={reuPreso} onChange={setReuPreso} />
         </SectionCard>
 
         <SectionCard title="Dados Operacionais">
-          <Field label="Delegado Responsável" placeholder="Del. Nome Completo" />
-          <Field label="Equipe Responsável" placeholder="Ex.: DHPP - Equipe Alpha" />
-          <Field label="Escrivão" placeholder="Nome completo" />
-          <Field label="Bairro" placeholder="Informe o bairro" />
-          <Field label="Distrito" placeholder="Ex.: 1º DP" />
-          <Field label="Motivação" placeholder="Motivação principal" />
-          <Select label="Vinculado a Facção" options={["Sim", "Não", "A definir"]} />
-          <Field label="Nome da Facção" placeholder="Informe se houver" />
+          <Field label="Delegado Responsável" placeholder="Del. Nome Completo" value={delegadoResponsavel} onChange={(e) => setDelegadoResponsavel(e.target.value)} />
+          <Field label="Equipe Responsável" placeholder="Ex.: DHPP - Equipe Alpha" value={equipe} onChange={(e) => setEquipe(e.target.value)} />
+          <Field label="Escrivão" placeholder="Nome completo" value={escrivao} onChange={(e) => setEscrivao(e.target.value)} />
+          <Field label="Bairro" placeholder="Informe o bairro" value={bairro} onChange={(e) => setBairro(e.target.value)} />
+          <Field label="Distrito" placeholder="Ex.: 1º DP" value={distrito} onChange={(e) => setDistrito(e.target.value)} />
+          <Field label="Motivação" placeholder="Motivação principal" value={motivacao} onChange={(e) => setMotivacao(e.target.value)} />
+          <Select label="Vinculado a Facção" options={["Sim", "Não", "A definir"]} value={vinculadoFaccao} onChange={setVinculadoFaccao} />
+          <Field label="Nome da Facção" placeholder="Informe se houver" value={nomeFaccao} onChange={(e) => setNomeFaccao(e.target.value)} />
           <Select
-            label="Status de Diligências"
+            label="Status de Diligências" value={statusDiligencias} onChange={setStatusDiligencias}
             options={[
               "Pendente",
               "Em Andamento",
@@ -160,16 +205,16 @@ function NovoCaso() {
               "Aguardando Aprovação/Revisão",
             ]}
           />
-          <TextArea label="Diligências Pendentes" rows={4} placeholder="Descreva as diligências pendentes..." />
-          <TextArea label="Observações" rows={5} placeholder="Informações complementares..." />
+          <TextArea label="Diligências Pendentes" rows={4} placeholder="Descreva as diligências pendentes..." value={diligenciasPendentes} onChange={(e) => setDiligenciasPendentes(e.target.value)} />
+          <TextArea label="Observações" rows={5} placeholder="Informações complementares..." value={observacoes} onChange={(e) => setObservacoes(e.target.value)} />
         </SectionCard>
 
         <SectionCard title="Relatório e Jurídico">
-          <Select label="Medida Protetiva" options={["Sim", "Não"]} />
-          <Field label="Nº Processo da Medida" placeholder="0001234-55.2025.8.17.0001" />
-          <Select label="Relatório Enviado" options={["Sim", "Não"]} />
-          <Field label="Data de Envio do Relatório" type="date" />
-          <Field label="Representações Legais" type="number" placeholder="0" />
+          <Select label="Medida Protetiva" options={["Sim", "Não"]} value={medidaProtetiva} onChange={setMedidaProtetiva} />
+          <Field label="Nº Processo da Medida" placeholder="0001234-55.2025.8.17.0001" value={numeroProcessoMedida} onChange={(e) => setNumeroProcessoMedida(e.target.value)} />
+          <Select label="Relatório Enviado" options={["Sim", "Não"]} value={relatorioEnviado} onChange={setRelatorioEnviado} />
+          <Field label="Data de Envio do Relatório" type="date" value={dataEnvioRelatorio} onChange={(e) => setDataEnvioRelatorio(e.target.value)} />
+          <Field label="Representações Legais" type="number" placeholder="0" value={representacoesLegais} onChange={(e) => setRepresentacoesLegais(e.target.value)} />
         </SectionCard>
 
         {(erro || feedback) && (
