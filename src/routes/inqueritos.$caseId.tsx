@@ -68,7 +68,7 @@ function normalizeInqueritoForDetail(caso: InqueritoRecord): InqueritoDetalheUI 
     numeroFisico: pick(raw, "numero_fisico", "numeroFisico"),
     numeroBo: pick(raw, "numero_bo", "numeroBo"),
     tipo: pick(raw, "tipo"),
-    situacao: pick(raw, "situacao"),
+    situacao: pick(raw, "situacao", "status_diligencias"),
     prioridade: pick(raw, "prioridade"),
     gravidade: pick(raw, "gravidade"),
     dataFato: pick(raw, "data_fato", "dataFato"),
@@ -80,7 +80,7 @@ function normalizeInqueritoForDetail(caso: InqueritoRecord): InqueritoDetalheUI 
     bairro: pick(raw, "bairro", "bairroDistrito"),
     distrito: pick(raw, "distrito"),
     vitima: pick(raw, "vitima"),
-    investigado: pick(raw, "investigado", "autorInvestigado", "suspeito"),
+    investigado: pick(raw, "investigado", "suspeito", "autor_investigado", "autorInvestigado"),
     reuPreso: pick(raw, "reu_preso", "reuPreso"),
     elucidado: pick(raw, "elucidado"),
     houveArmaFogo: pick(raw, "houve_arma_fogo", "houveArmaFogo"),
@@ -89,7 +89,7 @@ function normalizeInqueritoForDetail(caso: InqueritoRecord): InqueritoDetalheUI 
     escrivao: pick(raw, "escrivao"),
     vinculadoFaccao: pick(raw, "vinculado_faccao", "vinculadoFaccao", "faccao"),
     nomeFaccao: pick(raw, "nome_faccao", "nomeFaccao"),
-    statusDiligencias: pick(raw, "status_diligencias", "statusDiligencias"),
+    statusDiligencias: pick(raw, "status_diligencias", "situacao", "statusDiligencias"),
     relatorioEnviado: pick(raw, "relatorio_enviado", "relatorioEnviado"),
     dataEnvioRelatorio: pick(raw, "data_envio_relatorio", "dataEnvioRelatorio"),
     medidaProtetiva: pick(raw, "medida_protetiva", "medidaProtetiva"),
@@ -111,7 +111,9 @@ function InqueritoDetalhes() {
   useEffect(() => {
     (async () => {
       try {
-        setCaso(await getInqueritoById(caseId));
+        const inquerito = await getInqueritoById(caseId);
+        console.log("registro detalhe Supabase", inquerito);
+        setCaso(inquerito);
       } finally {
         setLoading(false);
       }
