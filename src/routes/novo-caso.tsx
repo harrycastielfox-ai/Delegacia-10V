@@ -13,6 +13,7 @@ function NovoCaso() {
   const navigate = useNavigate();
   const [feedback, setFeedback] = useState("");
   const [erro, setErro] = useState("");
+  const [loading, setLoading] = useState(false);
   const [houveArmaDeFogo, setHouveArmaDeFogo] = useState("");
   const [armaUtilizada, setArmaUtilizada] = useState("");
   const [ppe, setPpe] = useState("");
@@ -31,28 +32,46 @@ function NovoCaso() {
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    console.log("submit novo caso iniciado");
+    if (loading) return;
     setErro("");
     setFeedback("");
+    setLoading(true);
+    const payload = {
+      numero_ppe: ppe.trim() || null,
+      tipificacao: tipificacao.trim() || null,
+      vitima: vitima.trim() || null,
+      prazo: prazo || null,
+      data_fato: dataFato || null,
+      data_instauracao: dataInstauracao || null,
+      tipo: "IP",
+      prioridade: "MÉDIA",
+      gravidade: "Média",
+      status_diligencias: "Pendente",
+      situacao: "Instaurado",
+      houve_arma_fogo: houveArmaDeFogo || null,
+      arma_utilizada: armaUtilizada || null,
+    };
+    console.log("payload enviado", payload);
     try {
-      const created = await createInquerito({
-        numero_ppe: ppe.trim() || null,
-        tipificacao: tipificacao.trim() || null,
-        vitima: vitima.trim() || null,
-        prazo: prazo || null,
-        data_fato: dataFato || null,
-        data_instauracao: dataInstauracao || null,
-        tipo: "IP",
-        prioridade: "MÉDIA",
-        gravidade: "Média",
-        status_diligencias: "Pendente",
-        situacao: "Instaurado",
-        houve_arma_fogo: houveArmaDeFogo || null,
-        arma_utilizada: armaUtilizada || null,
-      });
+      const created = await createInquerito(payload);
+      console.log("resposta/erro do Supabase", created);
       setFeedback("Inquérito salvo com sucesso.");
       navigate({ to: "/inqueritos/$caseId", params: { caseId: created.id } });
-    } catch {
-      setErro("Falha ao salvar no Supabase.");
+    } catch (error) {
+      console.error("resposta/erro do Supabase", error);
+      const isRlsError =
+        typeof error === "object" &&
+        error !== null &&
+        "code" in error &&
+        (error.code === "42501" || error.code === "PGRST301");
+      setErro(
+        isRlsError
+          ? "Permissão negada ao inserir no Supabase (RLS). Verifique as políticas de INSERT da tabela public.inqueritos para a chave pública."
+          : "Falha ao salvar no Supabase.",
+      );
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -153,12 +172,23 @@ function NovoCaso() {
           <Field label="Representações Legais" type="number" placeholder="0" />
         </SectionCard>
 
+        {(erro || feedback) && (
+          <div className="space-y-2">
+            {erro && <p className="rounded-lg border border-destructive/50 bg-destructive/10 px-4 py-2 text-sm text-destructive">{erro}</p>}
+            {feedback && <p className="rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-4 py-2 text-sm text-emerald-400">{feedback}</p>}
+          </div>
+        )}
+
         <div className="flex gap-3 justify-end">
           <button type="button" className="px-5 py-2.5 rounded-lg text-sm border border-border hover:bg-accent">
             Cancelar
           </button>
-          <button className="px-5 py-2.5 rounded-lg text-sm font-semibold bg-primary text-primary-foreground hover:opacity-90 shadow-lg shadow-primary/20">
-            Cadastrar Inquérito
+          <button
+            type="submit"
+            disabled={loading}
+            className="px-5 py-2.5 rounded-lg text-sm font-semibold bg-primary text-primary-foreground hover:opacity-90 shadow-lg shadow-primary/20 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {loading ? "Salvando..." : "Cadastrar Inquérito"}
           </button>
         </div>
       </form>
