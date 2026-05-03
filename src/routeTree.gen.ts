@@ -13,6 +13,8 @@ import { Route as RepresentacoesRouteImport } from './routes/representacoes'
 import { Route as NovoCasoRouteImport } from './routes/novo-caso'
 import { Route as ModulosRouteImport } from './routes/modulos'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as InqueritosEditarRouteImport } from './routes/inqueritos.$caseId.editar'
+import { Route as InqueritosCaseIdRouteImport } from './routes/inqueritos.$caseId'
 import { Route as InqueritosRouteImport } from './routes/inqueritos'
 import { Route as AuditoriaRouteImport } from './routes/auditoria'
 import { Route as AlertasRouteImport } from './routes/alertas'
@@ -43,6 +45,16 @@ const InqueritosRoute = InqueritosRouteImport.update({
   path: '/inqueritos',
   getParentRoute: () => rootRouteImport,
 } as any)
+const InqueritosCaseIdRoute = InqueritosCaseIdRouteImport.update({
+  id: '/$caseId',
+  path: '/$caseId',
+  getParentRoute: () => InqueritosRoute,
+} as any)
+const InqueritosEditarRoute = InqueritosEditarRouteImport.update({
+  id: '/editar',
+  path: '/editar',
+  getParentRoute: () => InqueritosCaseIdRoute,
+} as any)
 const AuditoriaRoute = AuditoriaRouteImport.update({
   id: '/auditoria',
   path: '/auditoria',
@@ -64,6 +76,8 @@ export interface FileRoutesByFullPath {
   '/alertas': typeof AlertasRoute
   '/auditoria': typeof AuditoriaRoute
   '/inqueritos': typeof InqueritosRoute
+  '/inqueritos/$caseId': typeof InqueritosCaseIdRoute
+  '/inqueritos/$caseId/editar': typeof InqueritosEditarRoute
   '/login': typeof LoginRoute
   '/modulos': typeof ModulosRoute
   '/novo-caso': typeof NovoCasoRoute
@@ -74,6 +88,8 @@ export interface FileRoutesByTo {
   '/alertas': typeof AlertasRoute
   '/auditoria': typeof AuditoriaRoute
   '/inqueritos': typeof InqueritosRoute
+  '/inqueritos/$caseId': typeof InqueritosCaseIdRoute
+  '/inqueritos/$caseId/editar': typeof InqueritosEditarRoute
   '/login': typeof LoginRoute
   '/modulos': typeof ModulosRoute
   '/novo-caso': typeof NovoCasoRoute
@@ -85,6 +101,8 @@ export interface FileRoutesById {
   '/alertas': typeof AlertasRoute
   '/auditoria': typeof AuditoriaRoute
   '/inqueritos': typeof InqueritosRoute
+  '/inqueritos/$caseId': typeof InqueritosCaseIdRoute
+  '/inqueritos/$caseId/editar': typeof InqueritosEditarRoute
   '/login': typeof LoginRoute
   '/modulos': typeof ModulosRoute
   '/novo-caso': typeof NovoCasoRoute
@@ -97,6 +115,8 @@ export interface FileRouteTypes {
     | '/alertas'
     | '/auditoria'
     | '/inqueritos'
+    | '/inqueritos/$caseId'
+    | '/inqueritos/$caseId/editar'
     | '/login'
     | '/modulos'
     | '/novo-caso'
@@ -107,6 +127,8 @@ export interface FileRouteTypes {
     | '/alertas'
     | '/auditoria'
     | '/inqueritos'
+    | '/inqueritos/$caseId'
+    | '/inqueritos/$caseId/editar'
     | '/login'
     | '/modulos'
     | '/novo-caso'
@@ -117,6 +139,8 @@ export interface FileRouteTypes {
     | '/alertas'
     | '/auditoria'
     | '/inqueritos'
+    | '/inqueritos/$caseId'
+    | '/inqueritos/$caseId/editar'
     | '/login'
     | '/modulos'
     | '/novo-caso'
@@ -171,6 +195,21 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof InqueritosRouteImport
       parentRoute: typeof rootRouteImport
     }
+
+    '/inqueritos/$caseId': {
+      id: '/inqueritos/$caseId'
+      path: '/$caseId'
+      fullPath: '/inqueritos/$caseId'
+      preLoaderRoute: typeof InqueritosCaseIdRouteImport
+      parentRoute: typeof InqueritosRoute
+    }
+    '/inqueritos/$caseId/editar': {
+      id: '/inqueritos/$caseId/editar'
+      path: '/editar'
+      fullPath: '/inqueritos/$caseId/editar'
+      preLoaderRoute: typeof InqueritosEditarRouteImport
+      parentRoute: typeof InqueritosCaseIdRoute
+    }
     '/auditoria': {
       id: '/auditoria'
       path: '/auditoria'
@@ -195,11 +234,27 @@ declare module '@tanstack/react-router' {
   }
 }
 
+const InqueritosCaseIdRouteChildren = {
+  InqueritosEditarRoute: InqueritosEditarRoute,
+}
+
+const InqueritosCaseIdRouteWithChildren = InqueritosCaseIdRoute._addFileChildren(
+  InqueritosCaseIdRouteChildren,
+)
+
+const InqueritosRouteChildren = {
+  InqueritosCaseIdRoute: InqueritosCaseIdRouteWithChildren,
+}
+
+const InqueritosRouteWithChildren = InqueritosRoute._addFileChildren(
+  InqueritosRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AlertasRoute: AlertasRoute,
   AuditoriaRoute: AuditoriaRoute,
-  InqueritosRoute: InqueritosRoute,
+  InqueritosRoute: InqueritosRouteWithChildren,
   LoginRoute: LoginRoute,
   ModulosRoute: ModulosRoute,
   NovoCasoRoute: NovoCasoRoute,

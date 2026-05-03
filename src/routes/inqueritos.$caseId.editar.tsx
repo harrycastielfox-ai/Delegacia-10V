@@ -32,6 +32,7 @@ function EditarInquerito() {
   const [saving, setSaving] = useState(false);
   const [erro, setErro] = useState("");
   const [feedback, setFeedback] = useState("");
+  const [notFound, setNotFound] = useState(false);
 
   const [numeroPpe, setNumeroPpe] = useState("");
   const [numeroFisico, setNumeroFisico] = useState("");
@@ -63,15 +64,19 @@ function EditarInquerito() {
   const [numeroProcessoMedida, setNumeroProcessoMedida] = useState("");
 
   useEffect(() => {
+    console.log("rota editar carregou");
+    console.log("caseId editar", caseId);
     let ativo = true;
     const carregar = async () => {
       setLoading(true);
       setErro("");
+      setNotFound(false);
       try {
         const inquerito = await getInqueritoById(caseId);
+        console.log("registro editar Supabase", inquerito);
         if (!ativo) return;
         if (!inquerito) {
-          setErro("Inquérito não encontrado.");
+          setNotFound(true);
           return;
         }
 
@@ -104,6 +109,7 @@ function EditarInquerito() {
         setMedidaProtetiva(inquerito.medida_protetiva ?? "");
         setNumeroProcessoMedida(inquerito.numero_processo_medida ?? "");
       } catch (error) {
+        console.log("erro editar Supabase", error);
         if (!ativo) return;
         setErro(getErrorMessage(error, "Falha ao carregar dados do inquérito"));
       } finally {
@@ -168,7 +174,20 @@ function EditarInquerito() {
 
   if (loading) return <AppLayout><div className="rounded-lg border border-border bg-card px-4 py-3 text-sm text-muted-foreground">Carregando dados do inquérito...</div></AppLayout>;
 
-  if (erro && !numeroPpe && !numeroFisico && !numeroBo) {
+  if (notFound) {
+    return (
+      <AppLayout>
+        <div className="max-w-3xl space-y-3">
+          <Link to="/inqueritos/$caseId" params={{ caseId }} className="text-xs border border-border rounded-md px-3 py-1.5 inline-block">
+            ← Voltar aos detalhes
+          </Link>
+          <p className="rounded-lg border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive">Registro não encontrado para este ID.</p>
+        </div>
+      </AppLayout>
+    );
+  }
+
+  if (erro) {
     return (
       <AppLayout>
         <div className="max-w-3xl space-y-3">
