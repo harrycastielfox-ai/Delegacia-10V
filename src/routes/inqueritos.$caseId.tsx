@@ -107,13 +107,19 @@ function InqueritoDetalhes() {
   const navigate = useNavigate();
   const [caso, setCaso] = useState<InqueritoRecord | null>(null);
   const [loading, setLoading] = useState(true);
+  const [erro, setErro] = useState("");
 
   useEffect(() => {
     (async () => {
       try {
+        setErro("");
         const inquerito = await getInqueritoById(caseId);
-        console.log("registro detalhe Supabase", inquerito);
         setCaso(inquerito);
+      } catch (error) {
+        const message = typeof error === "object" && error !== null && "message" in error && typeof error.message === "string"
+          ? error.message
+          : "Erro desconhecido";
+        setErro(`Falha ao carregar detalhe do inquérito (${message})`);
       } finally {
         setLoading(false);
       }
@@ -123,6 +129,7 @@ function InqueritoDetalhes() {
   const detalhe = useMemo(() => (caso ? normalizeInqueritoForDetail(caso) : null), [caso]);
 
   if (loading) return <AppLayout><div className="text-sm text-muted-foreground">Carregando…</div></AppLayout>;
+  if (erro) return <AppLayout><div className="space-y-4"><p className="rounded-lg border border-destructive/50 bg-destructive/10 px-4 py-2 text-sm text-destructive">{erro}</p><Link to="/inqueritos" className="px-4 py-2 border border-border rounded-lg inline-block">Voltar</Link></div></AppLayout>;
   if (!caso || !detalhe) return <AppLayout><div className="space-y-4"><h1 className="text-xl font-bold">Inquérito não encontrado</h1><Link to="/inqueritos" className="px-4 py-2 border border-border rounded-lg inline-block">Voltar</Link></div></AppLayout>;
 
   const remove = async () => {

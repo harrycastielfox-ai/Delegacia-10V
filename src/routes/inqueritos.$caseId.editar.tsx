@@ -5,6 +5,18 @@ import { getInqueritoById, updateInquerito } from "@/lib/repositories/inqueritos
 
 export const Route = createFileRoute("/inqueritos/$caseId/editar")({ component: EditarInquerito });
 
+function toInputDate(value: string | null | undefined) {
+  if (!value) return "";
+  return value.slice(0, 10);
+}
+
+function getErrorMessage(error: unknown, fallback: string) {
+  if (typeof error === "object" && error !== null && "message" in error && typeof error.message === "string" && error.message.trim()) {
+    return `${fallback} (${error.message})`;
+  }
+  return fallback;
+}
+
 function EditarInquerito() {
   const { caseId } = Route.useParams();
   const navigate = useNavigate();
@@ -64,9 +76,9 @@ function EditarInquerito() {
         setPrioridade(inquerito.prioridade ?? "");
         setSituacao(inquerito.situacao ?? "");
         setStatusDiligencias(inquerito.status_diligencias ?? "");
-        setDataFato(inquerito.data_fato ?? "");
-        setDataInstauracao(inquerito.data_instauracao ?? "");
-        setPrazo(inquerito.prazo ?? "");
+        setDataFato(toInputDate(inquerito.data_fato));
+        setDataInstauracao(toInputDate(inquerito.data_instauracao));
+        setPrazo(toInputDate(inquerito.prazo));
         setVitima(inquerito.vitima ?? "");
         setInvestigado(inquerito.investigado ?? "");
         setReuPreso(inquerito.reu_preso ?? "");
@@ -80,12 +92,12 @@ function EditarInquerito() {
         setDiligenciasPendentes(inquerito.diligencias_pendentes ?? "");
         setObservacoes(inquerito.observacoes ?? "");
         setRelatorioEnviado(inquerito.relatorio_enviado ?? "");
-        setDataEnvioRelatorio(inquerito.data_envio_relatorio ?? "");
+        setDataEnvioRelatorio(toInputDate(inquerito.data_envio_relatorio));
         setMedidaProtetiva(inquerito.medida_protetiva ?? "");
         setNumeroProcessoMedida(inquerito.numero_processo_medida ?? "");
-      } catch {
+      } catch (error) {
         if (!ativo) return;
-        setErro("Falha ao carregar dados do inquérito.");
+        setErro(getErrorMessage(error, "Falha ao carregar dados do inquérito"));
       } finally {
         if (ativo) setLoading(false);
       }
@@ -137,8 +149,8 @@ function EditarInquerito() {
 
       setFeedback("Inquérito atualizado com sucesso.");
       navigate({ to: "/inqueritos/$caseId", params: { caseId } });
-    } catch {
-      setErro("Falha ao salvar alterações no Supabase.");
+    } catch (error) {
+      setErro(getErrorMessage(error, "Falha ao salvar alterações no Supabase"));
     } finally {
       setSaving(false);
     }
