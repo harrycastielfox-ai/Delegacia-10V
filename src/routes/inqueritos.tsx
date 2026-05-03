@@ -1,8 +1,7 @@
 import { Outlet, createFileRoute, useLocation, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { AppLayout } from "@/components/AppLayout";
-import { PageHeader } from "@/components/PageHeader";
-import { Search, Filter } from "lucide-react";
+import { Search, Filter, Plus } from "lucide-react";
 import { PANORAMA } from "@/data/sipi";
 import { loadInqueritos, saveInqueritos } from "@/lib/casesLocalState";
 
@@ -26,48 +25,87 @@ function Inqueritos() {
   useEffect(() => { saveInqueritos(rows); }, [rows]);
 
   const filtered = useMemo(() => rows.filter((r) => {
-    const nst = normalizeText(searchTerm); if (!nst) return true;
-    return [r.id, r.ppe, r.tipificacao, r.bairroDistrito, r.prioridade, r.gravidade, r.tipo, r.statusDiligencias].map((v) => normalizeText(String(v))).some((v) => v.includes(nst));
+    const nst = normalizeText(searchTerm);
+    if (!nst) return true;
+    return [r.id, r.ppe, r.tipificacao, r.vitima, r.bairroDistrito, r.prioridade, r.gravidade, r.tipo, r.statusDiligencias].map((v) => normalizeText(String(v))).some((v) => v.includes(nst));
   }), [rows, searchTerm]);
 
   const activeFilterLabel = getActiveFilterLabel({ status: normalizeText(search.status), prioridade: normalizeText(search.prioridade), prazo: normalizeText(search.prazo) });
 
-  if (!isInqueritosIndex) {
-    return <Outlet />;
-  }
+  if (!isInqueritosIndex) return <Outlet />;
 
-  return <AppLayout><PageHeader title="Inquéritos" subtitle={`${PANORAMA.totalCadastrados} procedimentos cadastrados — ${PANORAMA.relatorioEnviado} concluídos`} />
-    <div className="flex flex-col md:flex-row gap-3 mb-5"><div className="flex-1 relative"><Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><input placeholder="Buscar por PPE, tipificação ou bairro..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full bg-card border border-border rounded-lg pl-10 pr-4 py-2.5 text-sm" /></div><button className="inline-flex items-center gap-2 border border-border bg-card px-4 py-2.5 rounded-lg text-sm hover:bg-accent"><Filter className="h-4 w-4" /> Filtros</button></div>
-    {activeFilterLabel && <button className="text-xs border border-border bg-card px-3 py-1.5 rounded-md hover:bg-accent mb-3" onClick={() => navigate({ to: "/inqueritos" })}>Limpar filtro ({activeFilterLabel})</button>}
-    <div className="bg-card border border-border rounded-xl overflow-auto"><table className="w-full text-sm min-w-[1200px]"><thead className="bg-muted/40 text-[10px] tracking-[0.15em] text-muted-foreground"><tr><th className="text-left px-4 py-3 font-bold">ID</th><th className="text-left px-4 py-3 font-bold">Nº PPE</th><th className="text-left px-4 py-3 font-bold">PRIOR.</th><th className="text-left px-4 py-3 font-bold">TIPIFICAÇÃO</th><th className="text-left px-4 py-3 font-bold">GRAVIDADE</th><th className="text-left px-4 py-3 font-bold">TIPO</th><th className="text-left px-4 py-3 font-bold">BAIRRO</th><th className="text-left px-4 py-3 font-bold">RÉU PRESO</th><th className="text-left px-4 py-3 font-bold">STATUS</th><th className="text-right px-4 py-3 font-bold">DIAS</th><th className="text-right px-4 py-3 font-bold">AÇÃO</th></tr></thead><tbody>{filtered.map((r) => <tr key={r.id} className="border-t border-border hover:bg-muted/20"><td className="px-4 py-3 font-semibold">{r.id}</td><td className="px-4 py-3 font-semibold">{r.ppe}</td><td className="px-4 py-3"><span className={`text-[10px] font-bold px-2 py-1 rounded border ${priorTone[r.prioridade]}`}>{r.prioridade}</span></td><td className="px-4 py-3 text-xs">{r.tipificacao}</td><td className="px-4 py-3 text-xs">{r.gravidade}</td><td className="px-4 py-3 text-xs">{r.tipo}</td><td className="px-4 py-3 text-xs">{r.bairroDistrito}</td><td className="px-4 py-3 text-xs">{r.reuPreso ? "SIM" : "—"}</td><td className="px-4 py-3"><span className={`text-[10px] font-bold px-2 py-1 rounded border ${statusTone[r.statusDiligencias] ?? ""}`}>{r.statusDiligencias.toUpperCase()}</span></td><td className="px-4 py-3 text-right text-xs">{formatDiasCorridos(r)}</td><td className="px-4 py-3 text-right"><button className="rounded-md border border-info/30 bg-info/10 px-2.5 py-1 text-[11px]" onClick={() => navigate({ to: "/inqueritos/$caseId", params: { caseId: r.id } })}>Abrir</button></td></tr>)}</tbody></table></div>
-  </AppLayout>;
+  return <AppLayout><div className="space-y-6">
+    <header className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+      <div>
+        <h1 className="text-3xl font-black tracking-tight">Inquéritos</h1>
+        <p className="text-sm text-muted-foreground mt-1">{filtered.length} de {rows.length} caso(s) encontrado(s)</p>
+      </div>
+      <button className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground hover:brightness-110" onClick={() => navigate({ to: "/novo-caso" })}>
+        <Plus className="h-4 w-4" /> Novo Caso
+      </button>
+    </header>
+
+    <div className="flex flex-col md:flex-row gap-3">
+      <div className="relative flex-1">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <input placeholder="Buscar por PPE, vítima ou suspeito..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full rounded-xl border border-border bg-card pl-10 pr-4 py-3 text-sm" />
+      </div>
+      <button className="inline-flex items-center justify-center gap-2 rounded-xl border border-border bg-card px-4 py-3 text-sm font-medium hover:bg-accent"><Filter className="h-4 w-4" />Filtros</button>
+    </div>
+
+    {activeFilterLabel && <button className="text-xs border border-border bg-card px-3 py-1.5 rounded-md hover:bg-accent" onClick={() => navigate({ to: "/inqueritos" })}>Limpar filtro ({activeFilterLabel})</button>}
+
+    <div className="overflow-auto rounded-xl border border-border bg-card">
+      <table className="w-full min-w-[1080px] text-sm">
+        <thead className="text-[11px] tracking-[0.16em] text-muted-foreground">
+          <tr>
+            <th className="px-4 py-4 text-left font-bold">PPE</th>
+            <th className="px-4 py-4 text-left font-bold">TIPIFICAÇÃO</th>
+            <th className="px-4 py-4 text-left font-bold">VÍTIMA</th>
+            <th className="px-4 py-4 text-left font-bold">PRIORIDADE</th>
+            <th className="px-4 py-4 text-left font-bold">GRAVIDADE</th>
+            <th className="px-4 py-4 text-left font-bold">SITUAÇÃO</th>
+            <th className="px-4 py-4 text-left font-bold">EQUIPE</th>
+            <th className="px-4 py-4 text-left font-bold">PRAZO</th>
+            <th className="px-4 py-4 text-right font-bold">AÇÃO</th>
+          </tr>
+        </thead>
+        <tbody>
+          {filtered.map((r) => <tr key={r.id} className="border-t border-border/70 hover:bg-muted/20">
+            <td className="px-4 py-4 font-semibold text-primary">{r.ppe}</td>
+            <td className="px-4 py-4">{r.tipificacao}</td>
+            <td className="px-4 py-4">{r.vitima || "—"}</td>
+            <td className="px-4 py-4"><span className={`inline-flex rounded-full border px-2.5 py-1 text-[11px] font-bold ${priorTone[r.prioridade]}`}>{r.prioridade}</span></td>
+            <td className="px-4 py-4">{r.gravidade}</td>
+            <td className="px-4 py-4"><span className={`inline-flex rounded-full border px-2.5 py-1 text-[11px] font-bold ${statusTone[r.statusDiligencias] ?? ""}`}>{r.statusDiligencias}</span></td>
+            <td className="px-4 py-4">{r.equipeResponsavel || "—"}</td>
+            <td className="px-4 py-4">{r.prazo || `${formatDiasCorridos(r)} corridos`}</td>
+            <td className="px-4 py-4 text-right"><button className="rounded-lg border border-info/30 bg-info/10 px-3 py-1.5 text-xs font-semibold" onClick={() => navigate({ to: "/inqueritos/$caseId", params: { caseId: r.id } })}>Abrir</button></td>
+          </tr>)}
+        </tbody>
+      </table>
+    </div>
+
+    <p className="text-xs text-muted-foreground">Resumo geral: {PANORAMA.totalCadastrados} procedimentos cadastrados e {PANORAMA.relatorioEnviado} concluídos.</p>
+  </div></AppLayout>;
 }
 
-
 function formatDiasCorridos(row: { diasCorridos?: number | null; dataFato?: string | null }) {
-  if (Number.isFinite(row.diasCorridos)) {
-    return `${Math.max(0, Number(row.diasCorridos))}d`;
-  }
-
+  if (Number.isFinite(row.diasCorridos)) return `${Math.max(0, Number(row.diasCorridos))}d`;
   const parsedDate = parseDateOnly(row.dataFato);
   if (!parsedDate) return "—";
-
   const today = new Date();
   const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
   const diffMs = startOfToday - parsedDate.getTime();
-  const diffDays = Math.floor(diffMs / 86_400_000);
-
-  return `${Math.max(0, diffDays)}d`;
+  return `${Math.max(0, Math.floor(diffMs / 86_400_000))}d`;
 }
 
 function parseDateOnly(value?: string | null) {
   const raw = (value ?? "").trim();
   if (!raw) return null;
-
   const normalized = /^\d{4}-\d{2}-\d{2}$/.test(raw) ? `${raw}T00:00:00` : raw;
   const date = new Date(normalized);
   if (Number.isNaN(date.getTime())) return null;
-
   return new Date(date.getFullYear(), date.getMonth(), date.getDate());
 }
 
