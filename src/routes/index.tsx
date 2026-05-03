@@ -6,8 +6,6 @@ import {
   CheckCircle2,
   TrendingUp,
   AlertTriangle,
-  CalendarX,
-  Info,
   AlertOctagon,
   Bell,
   Maximize2,
@@ -117,6 +115,7 @@ function Dashboard() {
     () => ["IP", "APF", "TCO", "BOC", "AIAI"].map((sigla) => ({ sigla, total: inqueritos.filter((i) => i.tipo?.toUpperCase().includes(sigla)).length })),
     [inqueritos],
   );
+  const totalProcedimentos = useMemo(() => PROCEDIMENTOS.reduce((acc, item) => acc + item.total, 0), [PROCEDIMENTOS]);
   const CVLI_ANUAL = useMemo(() => [{ ano: new Date().getFullYear(), registros: total, elucidados: finalizados, taxa: taxaConclusao }], [total, finalizados, taxaConclusao]);
   const CVLI_MENSAL = useMemo(() => ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"].map((mes) => ({ mes, r2023: 0, r2024: 0, r2025: 0, r2026: 0 })), []);
   const POR_BAIRRO = useMemo(() => {
@@ -271,7 +270,7 @@ function Dashboard() {
                 <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
                   <div
                     className="h-full bg-success rounded-full"
-                    style={{ width: `${(t.total / 623) * 100}%` }}
+                    style={{ width: `${totalProcedimentos === 0 ? 0 : (t.total / totalProcedimentos) * 100}%` }}
                   />
                 </div>
                 <span className="text-xs tabular-nums text-muted-foreground w-20 text-right">
@@ -364,7 +363,9 @@ function Dashboard() {
                 <td className="px-4 py-3 text-right tabular-nums">
                   {CVLI_ANUAL.reduce((a, b) => a + b.elucidados, 0)}
                 </td>
-                <td className="px-4 py-3 text-right tabular-nums text-success">61,1%</td>
+                <td className="px-4 py-3 text-right tabular-nums text-success">
+                  {taxaConclusao.toString().replace(".", ",")}%
+                </td>
               </tr>
             </tbody>
           </table>
@@ -409,14 +410,22 @@ function Dashboard() {
                 </tr>
               </thead>
               <tbody>
-                {POR_BAIRRO.map((b) => (
-                  <tr key={b.bairro} className="border-b border-border/50">
-                    <td className="py-2.5 font-medium">{b.bairro}</td>
-                    <td className="py-2.5 text-right tabular-nums">{b.total}</td>
-                    <td className="py-2.5 text-right tabular-nums text-destructive">{b.cvli}</td>
-                    <td className="py-2.5 text-right tabular-nums text-warning">{b.alta}</td>
+                {POR_BAIRRO.length === 0 ? (
+                  <tr>
+                    <td colSpan={4} className="py-6 text-center text-sm text-muted-foreground">
+                      Nenhum dado disponível.
+                    </td>
                   </tr>
-                ))}
+                ) : (
+                  POR_BAIRRO.map((b) => (
+                    <tr key={b.bairro} className="border-b border-border/50">
+                      <td className="py-2.5 font-medium">{b.bairro}</td>
+                      <td className="py-2.5 text-right tabular-nums">{b.total}</td>
+                      <td className="py-2.5 text-right tabular-nums text-destructive">{b.cvli}</td>
+                      <td className="py-2.5 text-right tabular-nums text-warning">{b.alta}</td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
@@ -451,30 +460,26 @@ function Dashboard() {
           accent="success"
           action={<ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />}
         >
-          <ul className="space-y-3.5">
-            {EQUIPES.map((t) => (
-              <li key={t.name} className="flex items-center gap-3">
-                <span className="text-xs text-muted-foreground w-44 truncate">{t.name}</span>
-                <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-success rounded-full"
-                    style={{ width: `${t.pct}%` }}
-                  />
-                </div>
-                <span className="text-xs tabular-nums text-muted-foreground w-20 text-right">
-                  {t.value} ({t.pct}%)
-                </span>
-              </li>
-            ))}
-          </ul>
-          <div className="mt-5 p-3 rounded-lg bg-info/5 border border-info/20">
-            <div className="text-xs font-semibold mb-1 flex items-center gap-2">
-              <Info className="h-3.5 w-3.5 text-info" /> Elucidações CVLI 20{0}
-            </div>
-            <div className="text-[11px] text-muted-foreground">
-              Equipe IPC Marluan / IPC Rivaldo: <span className="text-success font-bold">21 casos elucidados</span>
-            </div>
-          </div>
+          {EQUIPES.length === 0 ? (
+            <div className="py-6 text-sm text-muted-foreground">Nenhum dado disponível.</div>
+          ) : (
+            <ul className="space-y-3.5">
+              {EQUIPES.map((t) => (
+                <li key={t.name} className="flex items-center gap-3">
+                  <span className="text-xs text-muted-foreground w-44 truncate">{t.name}</span>
+                  <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-success rounded-full"
+                      style={{ width: `${t.pct}%` }}
+                    />
+                  </div>
+                  <span className="text-xs tabular-nums text-muted-foreground w-20 text-right">
+                    {t.value} ({t.pct}%)
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
         </Panel>
       </div>
     </AppLayout>
@@ -548,7 +553,7 @@ function DonutPanel({
         </div>
         <ul className="flex-1 space-y-2 text-sm">
           {data.map((d) => {
-            const pct = Math.round((d.value / total) * 100);
+            const pct = total === 0 ? 0 : Math.round((d.value / total) * 100);
             return (
               <li key={d.name} className="flex items-center gap-2">
                 <span className="h-2.5 w-2.5 rounded-sm shrink-0" style={{ backgroundColor: d.color }} />
