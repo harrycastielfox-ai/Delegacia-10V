@@ -72,3 +72,9 @@ export async function softDeleteInquerito(id: string) {
   const { error } = await supabase.from("inqueritos").update({ deleted_at: new Date().toISOString() }).eq("id", id).is("deleted_at", null);
   if (error) throw error;
 }
+
+// Exclusão definitiva: remove o registro do banco no Supabase.
+export async function hardDeleteInquerito(id: string) {
+  const { error } = await supabase.from("inqueritos").delete().eq("id", id);
+  if (error) throw error;
+}

@@ -1,7 +1,7 @@
 import { INQUERITOS_CASOS, type InqueritoCaso } from "@/data/inqueritos";
 import { REPRESENTACOES_LISTA } from "@/data/sipi";
 
-export type RepresentacaoItem = (typeof REPRESENTACOES_LISTA)[number] & { localRef: string; id: string };
+export type RepresentacaoItem = Omit<(typeof REPRESENTACOES_LISTA)[number], "id"> & { localRef: string; id: string };
 
 const INQUERITOS_KEY = "sipi.local.inqueritos";
 const REPRESENTACOES_KEY = "sipi.local.representacoes";
