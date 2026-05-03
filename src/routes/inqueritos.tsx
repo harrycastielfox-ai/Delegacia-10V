@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { Outlet, createFileRoute, useLocation, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { AppLayout } from "@/components/AppLayout";
 import { PageHeader } from "@/components/PageHeader";
@@ -16,7 +16,10 @@ const statusTone: Record<string, string> = { "Em Andamento": "bg-info/15 text-in
 
 function Inqueritos() {
   const navigate = useNavigate();
+  const location = useLocation();
   const search = Route.useSearch();
+  const isInqueritosIndex = location.pathname === "/inqueritos";
+
   const [searchTerm, setSearchTerm] = useState("");
   const [rows, setRows] = useState(loadInqueritos);
 
@@ -28,6 +31,10 @@ function Inqueritos() {
   }), [rows, searchTerm]);
 
   const activeFilterLabel = getActiveFilterLabel({ status: normalizeText(search.status), prioridade: normalizeText(search.prioridade), prazo: normalizeText(search.prazo) });
+
+  if (!isInqueritosIndex) {
+    return <Outlet />;
+  }
 
   return <AppLayout><PageHeader title="Inquéritos" subtitle={`${PANORAMA.totalCadastrados} procedimentos cadastrados — ${PANORAMA.relatorioEnviado} concluídos`} />
     <div className="flex flex-col md:flex-row gap-3 mb-5"><div className="flex-1 relative"><Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><input placeholder="Buscar por PPE, tipificação ou bairro..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full bg-card border border-border rounded-lg pl-10 pr-4 py-2.5 text-sm" /></div><button className="inline-flex items-center gap-2 border border-border bg-card px-4 py-2.5 rounded-lg text-sm hover:bg-accent"><Filter className="h-4 w-4" /> Filtros</button></div>
