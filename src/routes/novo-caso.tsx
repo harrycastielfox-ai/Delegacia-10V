@@ -1,9 +1,8 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { type FormEvent, useState } from "react";
 import { AppLayout } from "@/components/AppLayout";
 import { PageHeader } from "@/components/PageHeader";
-import { loadInqueritos, saveInqueritos } from "@/lib/casesLocalState";
-import type { InqueritoCaso } from "@/data/inqueritos";
+import { createInquerito } from "@/lib/repositories/inqueritosRepository";
 
 export const Route = createFileRoute("/novo-caso")({
   head: () => ({ meta: [{ title: "Novo Caso — SIPI" }] }),
@@ -11,6 +10,9 @@ export const Route = createFileRoute("/novo-caso")({
 });
 
 function NovoCaso() {
+  const navigate = useNavigate();
+  const [feedback, setFeedback] = useState("");
+  const [erro, setErro] = useState("");
   const [houveArmaDeFogo, setHouveArmaDeFogo] = useState("");
   const [armaUtilizada, setArmaUtilizada] = useState("");
   const [ppe, setPpe] = useState("");
@@ -27,33 +29,31 @@ function NovoCaso() {
     }
   };
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const listaAtual = loadInqueritos();
-    const nextId = `INQ-${String(listaAtual.length + 1).padStart(6, "0")}`;
-    const novoCaso: InqueritoCaso = {
-      id: nextId,
-      ppe: ppe.trim() || `PPE-${nextId}`,
-      numeroBo: "",
-      numeroFisico: "",
-      prioridade: "MÉDIA",
-      dataFato: dataFato || new Date().toISOString().slice(0, 10),
-      dataInstauracao: dataInstauracao || undefined,
-      prazo: prazo || undefined,
-      dataLimite: prazo || undefined,
-      diasCorridos: 0,
-      tipificacao: tipificacao.trim() || "Não informado",
-      gravidade: "Média",
-      tipo: "IP",
-      reuPreso: false,
-      vitima: vitima.trim() || undefined,
-      bairroDistrito: "Não informado",
-      statusDiligencias: "Pendente",
-      visibilidade: "Público",
-    };
-
-    saveInqueritos([novoCaso, ...listaAtual]);
-    window.location.href = "/inqueritos";
+    setErro("");
+    setFeedback("");
+    try {
+      const created = await createInquerito({
+        numero_ppe: ppe.trim() || null,
+        tipificacao: tipificacao.trim() || null,
+        vitima: vitima.trim() || null,
+        prazo: prazo || null,
+        data_fato: dataFato || null,
+        data_instauracao: dataInstauracao || null,
+        tipo: "IP",
+        prioridade: "MÉDIA",
+        gravidade: "Média",
+        status_diligencias: "Pendente",
+        situacao: "Instaurado",
+        houve_arma_fogo: houveArmaDeFogo || null,
+        arma_utilizada: armaUtilizada || null,
+      });
+      setFeedback("Inquérito salvo com sucesso.");
+      navigate({ to: "/inqueritos/$caseId", params: { caseId: created.id } });
+    } catch {
+      setErro("Falha ao salvar no Supabase.");
+    }
   };
 
   return (
