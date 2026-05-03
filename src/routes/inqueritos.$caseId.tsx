@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { AppLayout } from "@/components/AppLayout";
 import { getInqueritoById, softDeleteInquerito, type InqueritoRecord } from "@/lib/repositories/inqueritosRepository";
@@ -127,6 +127,10 @@ function InqueritoDetalhes() {
   }, [caseId]);
 
   const detalhe = useMemo(() => (caso ? normalizeInqueritoForDetail(caso) : null), [caso]);
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
+  const isEditingChildRoute = pathname.endsWith("/editar");
+
+  if (isEditingChildRoute) return <Outlet />;
 
   if (loading) return <AppLayout><div className="text-sm text-muted-foreground">Carregando…</div></AppLayout>;
   if (erro) return <AppLayout><div className="space-y-4"><p className="rounded-lg border border-destructive/50 bg-destructive/10 px-4 py-2 text-sm text-destructive">{erro}</p><Link to="/inqueritos" className="px-4 py-2 border border-border rounded-lg inline-block">Voltar</Link></div></AppLayout>;
