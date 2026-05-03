@@ -11,12 +11,17 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as RepresentacoesRouteImport } from './routes/representacoes'
 import { Route as NovoCasoRouteImport } from './routes/novo-caso'
+import { Route as NovaRepresentacaoRouteImport } from './routes/nova-representacao'
 import { Route as ModulosRouteImport } from './routes/modulos'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as InqueritosRouteImport } from './routes/inqueritos'
 import { Route as AuditoriaRouteImport } from './routes/auditoria'
 import { Route as AlertasRouteImport } from './routes/alertas'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as RepresentacoesRepresentacaoIdRouteImport } from './routes/representacoes.$representacaoId'
+import { Route as InqueritosCaseIdRouteImport } from './routes/inqueritos.$caseId'
+import { Route as RepresentacoesRepresentacaoIdEditarRouteImport } from './routes/representacoes.$representacaoId.editar'
+import { Route as InqueritosCaseIdEditarRouteImport } from './routes/inqueritos.$caseId.editar'
 
 const RepresentacoesRoute = RepresentacoesRouteImport.update({
   id: '/representacoes',
@@ -26,6 +31,11 @@ const RepresentacoesRoute = RepresentacoesRouteImport.update({
 const NovoCasoRoute = NovoCasoRouteImport.update({
   id: '/novo-caso',
   path: '/novo-caso',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const NovaRepresentacaoRoute = NovaRepresentacaoRouteImport.update({
+  id: '/nova-representacao',
+  path: '/nova-representacao',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ModulosRoute = ModulosRouteImport.update({
@@ -58,37 +68,74 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const RepresentacoesRepresentacaoIdRoute =
+  RepresentacoesRepresentacaoIdRouteImport.update({
+    id: '/$representacaoId',
+    path: '/$representacaoId',
+    getParentRoute: () => RepresentacoesRoute,
+  } as any)
+const InqueritosCaseIdRoute = InqueritosCaseIdRouteImport.update({
+  id: '/$caseId',
+  path: '/$caseId',
+  getParentRoute: () => InqueritosRoute,
+} as any)
+const RepresentacoesRepresentacaoIdEditarRoute =
+  RepresentacoesRepresentacaoIdEditarRouteImport.update({
+    id: '/editar',
+    path: '/editar',
+    getParentRoute: () => RepresentacoesRepresentacaoIdRoute,
+  } as any)
+const InqueritosCaseIdEditarRoute = InqueritosCaseIdEditarRouteImport.update({
+  id: '/editar',
+  path: '/editar',
+  getParentRoute: () => InqueritosCaseIdRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/alertas': typeof AlertasRoute
   '/auditoria': typeof AuditoriaRoute
-  '/inqueritos': typeof InqueritosRoute
+  '/inqueritos': typeof InqueritosRouteWithChildren
   '/login': typeof LoginRoute
   '/modulos': typeof ModulosRoute
+  '/nova-representacao': typeof NovaRepresentacaoRoute
   '/novo-caso': typeof NovoCasoRoute
-  '/representacoes': typeof RepresentacoesRoute
+  '/representacoes': typeof RepresentacoesRouteWithChildren
+  '/inqueritos/$caseId': typeof InqueritosCaseIdRouteWithChildren
+  '/representacoes/$representacaoId': typeof RepresentacoesRepresentacaoIdRouteWithChildren
+  '/inqueritos/$caseId/editar': typeof InqueritosCaseIdEditarRoute
+  '/representacoes/$representacaoId/editar': typeof RepresentacoesRepresentacaoIdEditarRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/alertas': typeof AlertasRoute
   '/auditoria': typeof AuditoriaRoute
-  '/inqueritos': typeof InqueritosRoute
+  '/inqueritos': typeof InqueritosRouteWithChildren
   '/login': typeof LoginRoute
   '/modulos': typeof ModulosRoute
+  '/nova-representacao': typeof NovaRepresentacaoRoute
   '/novo-caso': typeof NovoCasoRoute
-  '/representacoes': typeof RepresentacoesRoute
+  '/representacoes': typeof RepresentacoesRouteWithChildren
+  '/inqueritos/$caseId': typeof InqueritosCaseIdRouteWithChildren
+  '/representacoes/$representacaoId': typeof RepresentacoesRepresentacaoIdRouteWithChildren
+  '/inqueritos/$caseId/editar': typeof InqueritosCaseIdEditarRoute
+  '/representacoes/$representacaoId/editar': typeof RepresentacoesRepresentacaoIdEditarRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/alertas': typeof AlertasRoute
   '/auditoria': typeof AuditoriaRoute
-  '/inqueritos': typeof InqueritosRoute
+  '/inqueritos': typeof InqueritosRouteWithChildren
   '/login': typeof LoginRoute
   '/modulos': typeof ModulosRoute
+  '/nova-representacao': typeof NovaRepresentacaoRoute
   '/novo-caso': typeof NovoCasoRoute
-  '/representacoes': typeof RepresentacoesRoute
+  '/representacoes': typeof RepresentacoesRouteWithChildren
+  '/inqueritos/$caseId': typeof InqueritosCaseIdRouteWithChildren
+  '/representacoes/$representacaoId': typeof RepresentacoesRepresentacaoIdRouteWithChildren
+  '/inqueritos/$caseId/editar': typeof InqueritosCaseIdEditarRoute
+  '/representacoes/$representacaoId/editar': typeof RepresentacoesRepresentacaoIdEditarRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -99,8 +146,13 @@ export interface FileRouteTypes {
     | '/inqueritos'
     | '/login'
     | '/modulos'
+    | '/nova-representacao'
     | '/novo-caso'
     | '/representacoes'
+    | '/inqueritos/$caseId'
+    | '/representacoes/$representacaoId'
+    | '/inqueritos/$caseId/editar'
+    | '/representacoes/$representacaoId/editar'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -109,8 +161,13 @@ export interface FileRouteTypes {
     | '/inqueritos'
     | '/login'
     | '/modulos'
+    | '/nova-representacao'
     | '/novo-caso'
     | '/representacoes'
+    | '/inqueritos/$caseId'
+    | '/representacoes/$representacaoId'
+    | '/inqueritos/$caseId/editar'
+    | '/representacoes/$representacaoId/editar'
   id:
     | '__root__'
     | '/'
@@ -119,19 +176,25 @@ export interface FileRouteTypes {
     | '/inqueritos'
     | '/login'
     | '/modulos'
+    | '/nova-representacao'
     | '/novo-caso'
     | '/representacoes'
+    | '/inqueritos/$caseId'
+    | '/representacoes/$representacaoId'
+    | '/inqueritos/$caseId/editar'
+    | '/representacoes/$representacaoId/editar'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AlertasRoute: typeof AlertasRoute
   AuditoriaRoute: typeof AuditoriaRoute
-  InqueritosRoute: typeof InqueritosRoute
+  InqueritosRoute: typeof InqueritosRouteWithChildren
   LoginRoute: typeof LoginRoute
   ModulosRoute: typeof ModulosRoute
+  NovaRepresentacaoRoute: typeof NovaRepresentacaoRoute
   NovoCasoRoute: typeof NovoCasoRoute
-  RepresentacoesRoute: typeof RepresentacoesRoute
+  RepresentacoesRoute: typeof RepresentacoesRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
@@ -148,6 +211,13 @@ declare module '@tanstack/react-router' {
       path: '/novo-caso'
       fullPath: '/novo-caso'
       preLoaderRoute: typeof NovoCasoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/nova-representacao': {
+      id: '/nova-representacao'
+      path: '/nova-representacao'
+      fullPath: '/nova-representacao'
+      preLoaderRoute: typeof NovaRepresentacaoRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/modulos': {
@@ -192,18 +262,98 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/representacoes/$representacaoId': {
+      id: '/representacoes/$representacaoId'
+      path: '/$representacaoId'
+      fullPath: '/representacoes/$representacaoId'
+      preLoaderRoute: typeof RepresentacoesRepresentacaoIdRouteImport
+      parentRoute: typeof RepresentacoesRoute
+    }
+    '/inqueritos/$caseId': {
+      id: '/inqueritos/$caseId'
+      path: '/$caseId'
+      fullPath: '/inqueritos/$caseId'
+      preLoaderRoute: typeof InqueritosCaseIdRouteImport
+      parentRoute: typeof InqueritosRoute
+    }
+    '/representacoes/$representacaoId/editar': {
+      id: '/representacoes/$representacaoId/editar'
+      path: '/editar'
+      fullPath: '/representacoes/$representacaoId/editar'
+      preLoaderRoute: typeof RepresentacoesRepresentacaoIdEditarRouteImport
+      parentRoute: typeof RepresentacoesRepresentacaoIdRoute
+    }
+    '/inqueritos/$caseId/editar': {
+      id: '/inqueritos/$caseId/editar'
+      path: '/editar'
+      fullPath: '/inqueritos/$caseId/editar'
+      preLoaderRoute: typeof InqueritosCaseIdEditarRouteImport
+      parentRoute: typeof InqueritosCaseIdRoute
+    }
   }
 }
+
+interface InqueritosCaseIdRouteChildren {
+  InqueritosCaseIdEditarRoute: typeof InqueritosCaseIdEditarRoute
+}
+
+const InqueritosCaseIdRouteChildren: InqueritosCaseIdRouteChildren = {
+  InqueritosCaseIdEditarRoute: InqueritosCaseIdEditarRoute,
+}
+
+const InqueritosCaseIdRouteWithChildren =
+  InqueritosCaseIdRoute._addFileChildren(InqueritosCaseIdRouteChildren)
+
+interface InqueritosRouteChildren {
+  InqueritosCaseIdRoute: typeof InqueritosCaseIdRouteWithChildren
+}
+
+const InqueritosRouteChildren: InqueritosRouteChildren = {
+  InqueritosCaseIdRoute: InqueritosCaseIdRouteWithChildren,
+}
+
+const InqueritosRouteWithChildren = InqueritosRoute._addFileChildren(
+  InqueritosRouteChildren,
+)
+
+interface RepresentacoesRepresentacaoIdRouteChildren {
+  RepresentacoesRepresentacaoIdEditarRoute: typeof RepresentacoesRepresentacaoIdEditarRoute
+}
+
+const RepresentacoesRepresentacaoIdRouteChildren: RepresentacoesRepresentacaoIdRouteChildren =
+  {
+    RepresentacoesRepresentacaoIdEditarRoute:
+      RepresentacoesRepresentacaoIdEditarRoute,
+  }
+
+const RepresentacoesRepresentacaoIdRouteWithChildren =
+  RepresentacoesRepresentacaoIdRoute._addFileChildren(
+    RepresentacoesRepresentacaoIdRouteChildren,
+  )
+
+interface RepresentacoesRouteChildren {
+  RepresentacoesRepresentacaoIdRoute: typeof RepresentacoesRepresentacaoIdRouteWithChildren
+}
+
+const RepresentacoesRouteChildren: RepresentacoesRouteChildren = {
+  RepresentacoesRepresentacaoIdRoute:
+    RepresentacoesRepresentacaoIdRouteWithChildren,
+}
+
+const RepresentacoesRouteWithChildren = RepresentacoesRoute._addFileChildren(
+  RepresentacoesRouteChildren,
+)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AlertasRoute: AlertasRoute,
   AuditoriaRoute: AuditoriaRoute,
-  InqueritosRoute: InqueritosRoute,
+  InqueritosRoute: InqueritosRouteWithChildren,
   LoginRoute: LoginRoute,
   ModulosRoute: ModulosRoute,
+  NovaRepresentacaoRoute: NovaRepresentacaoRoute,
   NovoCasoRoute: NovoCasoRoute,
-  RepresentacoesRoute: RepresentacoesRoute,
+  RepresentacoesRoute: RepresentacoesRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
