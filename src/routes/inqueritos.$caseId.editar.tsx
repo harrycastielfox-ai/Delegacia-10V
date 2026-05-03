@@ -7,7 +7,15 @@ export const Route = createFileRoute("/inqueritos/$caseId/editar")({ component: 
 
 function toInputDate(value: string | null | undefined) {
   if (!value) return "";
-  return value.slice(0, 10);
+  const normalized = value.trim();
+  if (!normalized) return "";
+  if (/^\d{4}-\d{2}-\d{2}$/.test(normalized)) return normalized;
+  const date = new Date(normalized);
+  if (Number.isNaN(date.getTime())) return "";
+  const year = String(date.getUTCFullYear());
+  const month = String(date.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(date.getUTCDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
 
 function getErrorMessage(error: unknown, fallback: string) {
@@ -147,8 +155,10 @@ function EditarInquerito() {
         numero_processo_medida: numeroProcessoMedida.trim() || null,
       });
 
-      setFeedback("Inquérito atualizado com sucesso.");
-      navigate({ to: "/inqueritos/$caseId", params: { caseId } });
+      setFeedback("Inquérito atualizado com sucesso. Redirecionando para os detalhes...");
+      setTimeout(() => {
+        navigate({ to: "/inqueritos/$caseId", params: { caseId } });
+      }, 300);
     } catch (error) {
       setErro(getErrorMessage(error, "Falha ao salvar alterações no Supabase"));
     } finally {
@@ -156,7 +166,20 @@ function EditarInquerito() {
     }
   };
 
-  if (loading) return <AppLayout><div>Carregando...</div></AppLayout>;
+  if (loading) return <AppLayout><div className="rounded-lg border border-border bg-card px-4 py-3 text-sm text-muted-foreground">Carregando dados do inquérito...</div></AppLayout>;
+
+  if (erro && !numeroPpe && !numeroFisico && !numeroBo) {
+    return (
+      <AppLayout>
+        <div className="max-w-3xl space-y-3">
+          <Link to="/inqueritos/$caseId" params={{ caseId }} className="text-xs border border-border rounded-md px-3 py-1.5 inline-block">
+            ← Voltar aos detalhes
+          </Link>
+          <p className="rounded-lg border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive">{erro}</p>
+        </div>
+      </AppLayout>
+    );
+  }
 
   return (
     <AppLayout>
