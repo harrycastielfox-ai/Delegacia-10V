@@ -71,4 +71,5 @@ export async function updateInquerito(id: string, payload: InqueritoPayload) {
 export async function softDeleteInquerito(id: string) {
   const { error } = await supabase.from("inqueritos").update({ deleted_at: new Date().toISOString() }).eq("id", id).is("deleted_at", null);
   if (error) throw error;
+  return true;
 }
