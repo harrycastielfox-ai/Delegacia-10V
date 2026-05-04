@@ -145,7 +145,6 @@ function InqueritoDetalhes() {
       setDeleting(true);
       setDeleteError(null);
       setDeleteSuccess(null);
-      console.log("remove inquerito chamado", { caseId: caso.id, numero_ppe: detalhe.numeroPpe });
       await softDeleteInquerito(caso.id);
       setDeleteSuccess("Inquérito excluído com sucesso.");
       navigate({ to: "/inqueritos" });
