@@ -69,7 +69,20 @@ export async function updateInquerito(id: string, payload: InqueritoPayload) {
 }
 
 export async function softDeleteInquerito(id: string) {
-  const { error } = await supabase.from("inqueritos").update({ deleted_at: new Date().toISOString() }).eq("id", id).is("deleted_at", null);
-  if (error) throw error;
+  const deletedAt = new Date().toISOString();
+  console.log("softDeleteInquerito payload", { id, deleted_at: deletedAt });
+
+  const { error } = await supabase.from("inqueritos").update({ deleted_at: deletedAt }).eq("id", id).is("deleted_at", null);
+
+  if (error) {
+    console.error("softDeleteInquerito error", {
+      message: error.message,
+      code: error.code,
+      details: error.details,
+      hint: error.hint,
+      fullError: error,
+    });
+    throw error;
+  }
   return true;
 }

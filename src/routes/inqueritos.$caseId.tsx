@@ -145,6 +145,7 @@ function InqueritoDetalhes() {
       setDeleting(true);
       setDeleteError(null);
       setDeleteSuccess(null);
+      console.log("remove inquerito chamado", { caseId: caso.id, numero_ppe: detalhe.numeroPpe });
       await softDeleteInquerito(caso.id);
       setDeleteSuccess("Inquérito excluído com sucesso.");
       navigate({ to: "/inqueritos" });
@@ -152,13 +153,10 @@ function InqueritoDetalhes() {
       const message = typeof error === "object" && error !== null && "message" in error && typeof error.message === "string"
         ? error.message
         : "Erro desconhecido";
-      const normalizedMessage = message.toLowerCase();
-      const isPermissionError = ["rls", "permission", "permiss", "update", "42501", "pgrst", "unauthorized"].some((term) => normalizedMessage.includes(term));
-      setDeleteError(
-        isPermissionError
-          ? "Permissão negada ao excluir no Supabase. Verifique a policy de UPDATE da tabela public.inqueritos."
-          : `Falha ao excluir inquérito (${message})`,
-      );
+      const code = typeof error === "object" && error !== null && "code" in error && typeof error.code === "string" ? error.code : "";
+      const details = typeof error === "object" && error !== null && "details" in error && typeof error.details === "string" ? error.details : "";
+      const hint = typeof error === "object" && error !== null && "hint" in error && typeof error.hint === "string" ? error.hint : "";
+      setDeleteError(`Falha ao excluir inquérito (${message}${code ? ` | code: ${code}` : ""}${details ? ` | details: ${details}` : ""}${hint ? ` | hint: ${hint}` : ""})`);
     } finally {
       setDeleting(false);
     }
