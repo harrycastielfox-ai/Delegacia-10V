@@ -218,10 +218,8 @@ function InqueritoDetalhes() {
       <div className="space-y-4">
         <InfoCard title="Classificação" icon={<FileSearch className="h-4 w-4 text-primary" />} items={[["Tipificação", detalhe.tipificacao], ["Prioridade", detalhe.prioridade], ["Gravidade", detalhe.gravidade], ["Tipo", detalhe.tipo], ["Situação", detalhe.situacao], ["Elucidado", detalhe.elucidado], ["Houve arma de fogo?", detalhe.houveArmaFogo], ["Arma utilizada", detalhe.armaUtilizada], ["Vinculado à facção?", detalhe.vinculadoFaccao], ["Nome da facção", detalhe.nomeFaccao]]} highlightFirst />
         <InfoCard title="Dados Operacionais" icon={<ShieldCheck className="h-4 w-4 text-primary" />} items={[["Delegado responsável", detalhe.delegadoResponsavel], ["Equipe", detalhe.equipe], ["Escrivão", detalhe.escrivao], ["Bairro", detalhe.bairro], ["Distrito", detalhe.distrito], ["Status diligências", detalhe.statusDiligencias], ["Última atualização", formatDateTime(detalhe.ultimaEdicao)]]} />
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-          <InfoCard title="Diligências Pendentes" icon={<NotebookPen className="h-4 w-4 text-primary" />} items={[["Diligências pendentes", detalhe.diligenciasPendentes]]} stacked />
-          <InfoCard title="Observações" icon={<NotebookPen className="h-4 w-4 text-primary" />} items={[["Observações", detalhe.observacoes]]} stacked preWrapValues />
-        </div>
+        <InfoCard title="Diligências Pendentes" icon={<NotebookPen className="h-4 w-4 text-primary" />} items={[["Diligências pendentes", detalhe.diligenciasPendentes]]} stacked preWrapValues />
+        <InfoCard title="Observações" icon={<NotebookPen className="h-4 w-4 text-primary" />} items={[["Observações", detalhe.observacoes]]} stacked preWrapValues />
       </div>
     </section>
   </div></AppLayout>;
