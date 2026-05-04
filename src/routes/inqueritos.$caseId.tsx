@@ -108,6 +108,9 @@ function InqueritoDetalhes() {
   const [caso, setCaso] = useState<InqueritoRecord | null>(null);
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState("");
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [deleteSuccess, setDeleteSuccess] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -138,8 +141,27 @@ function InqueritoDetalhes() {
 
   const remove = async () => {
     if (!confirm("Deseja remover este inquérito?")) return;
-    await softDeleteInquerito(caso.id);
-    navigate({ to: "/inqueritos" });
+    try {
+      setDeleting(true);
+      setDeleteError(null);
+      setDeleteSuccess(null);
+      await softDeleteInquerito(caso.id);
+      setDeleteSuccess("Inquérito excluído com sucesso.");
+      navigate({ to: "/inqueritos" });
+    } catch (error) {
+      const message = typeof error === "object" && error !== null && "message" in error && typeof error.message === "string"
+        ? error.message
+        : "Erro desconhecido";
+      const normalizedMessage = message.toLowerCase();
+      const isPermissionError = ["rls", "permission", "permiss", "update", "42501", "pgrst", "unauthorized"].some((term) => normalizedMessage.includes(term));
+      setDeleteError(
+        isPermissionError
+          ? "Permissão negada ao excluir no Supabase. Verifique a policy de UPDATE da tabela public.inqueritos."
+          : `Falha ao excluir inquérito (${message})`,
+      );
+    } finally {
+      setDeleting(false);
+    }
   };
 
   const badges = [
@@ -151,7 +173,7 @@ function InqueritoDetalhes() {
     ["Elucidado", detalhe.elucidado, "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-100"],
   ] as const;
 
-  return <AppLayout><div className="space-y-3"><header className="flex flex-col gap-2 lg:flex-row lg:items-start lg:justify-between"><div className="space-y-1.5"><div className="flex items-center gap-2"><Link to="/inqueritos" className="rounded-md border border-border bg-card px-2 py-1 text-xs hover:bg-accent">← Voltar</Link><h1 className="text-lg font-semibold leading-tight">{detalhe.numeroPpe}</h1></div><p className="text-xs text-muted-foreground">{detalhe.tipificacao}</p>{detalhe.ultimaEdicao !== FALLBACK && <p className="text-[11px] text-muted-foreground">Última edição: {detalhe.ultimaEdicao}</p>}<div className="flex flex-wrap gap-1.5 pt-0.5">{badges.map(([label, value, style]) => <span key={label} className={`rounded-md px-2 py-0.5 text-[10px] font-medium ${style}`}>{label}: {value}</span>)}{detalhe.prazo !== FALLBACK && new Date(detalhe.prazo) < new Date() && <span className="rounded-md bg-red-100 px-2 py-0.5 text-[10px] font-medium text-red-800 dark:bg-red-900/40 dark:text-red-100">Vencido</span>}</div></div><div className="flex gap-2"><button onClick={() => window.print()} className="px-3 py-1.5 text-xs rounded-md border border-border bg-card hover:bg-accent">Gerar PDF</button><button onClick={() => navigate({ to: "/inqueritos/$caseId/editar", params: { caseId: caso.id } })} className="px-3 py-1.5 text-xs rounded-md bg-primary text-primary-foreground font-semibold">Editar</button><button onClick={remove} className="px-3 py-1.5 text-xs rounded-md border border-destructive/30 bg-destructive/10 text-destructive">Excluir</button></div></header>
+  return <AppLayout><div className="space-y-3"><header className="flex flex-col gap-2 lg:flex-row lg:items-start lg:justify-between"><div className="space-y-1.5"><div className="flex items-center gap-2"><Link to="/inqueritos" className="rounded-md border border-border bg-card px-2 py-1 text-xs hover:bg-accent">← Voltar</Link><h1 className="text-lg font-semibold leading-tight">{detalhe.numeroPpe}</h1></div><p className="text-xs text-muted-foreground">{detalhe.tipificacao}</p>{detalhe.ultimaEdicao !== FALLBACK && <p className="text-[11px] text-muted-foreground">Última edição: {detalhe.ultimaEdicao}</p>}<div className="flex flex-wrap gap-1.5 pt-0.5">{badges.map(([label, value, style]) => <span key={label} className={`rounded-md px-2 py-0.5 text-[10px] font-medium ${style}`}>{label}: {value}</span>)}{detalhe.prazo !== FALLBACK && new Date(detalhe.prazo) < new Date() && <span className="rounded-md bg-red-100 px-2 py-0.5 text-[10px] font-medium text-red-800 dark:bg-red-900/40 dark:text-red-100">Vencido</span>}</div>{deleteSuccess && <p className="rounded-lg border border-success/40 bg-success/10 px-3 py-1.5 text-xs text-success">{deleteSuccess}</p>}{deleteError && <p className="rounded-lg border border-destructive/50 bg-destructive/10 px-3 py-1.5 text-xs text-destructive">{deleteError}</p>}</div><div className="flex gap-2"><button onClick={() => window.print()} className="px-3 py-1.5 text-xs rounded-md border border-border bg-card hover:bg-accent">Gerar PDF</button><button onClick={() => navigate({ to: "/inqueritos/$caseId/editar", params: { caseId: caso.id } })} className="px-3 py-1.5 text-xs rounded-md bg-primary text-primary-foreground font-semibold">Editar</button><button onClick={remove} disabled={deleting} className="px-3 py-1.5 text-xs rounded-md border border-destructive/30 bg-destructive/10 text-destructive disabled:cursor-not-allowed disabled:opacity-70">{deleting ? "Excluindo..." : "Excluir"}</button></div></header>
 
     <section className="grid gap-3 md:grid-cols-2">
       <InfoCard title="Dados Gerais" items={[["Nº PPE", detalhe.numeroPpe], ["Nº físico", detalhe.numeroFisico], ["Nº BO", detalhe.numeroBo], ["Data do fato", detalhe.dataFato], ["Data instauração", detalhe.dataInstauracao], ["Prazo", detalhe.prazo], ["Dias decorridos", detalhe.diasDecorridos], ["Situação", detalhe.situacao]]} />
