@@ -209,29 +209,36 @@ function InqueritoDetalhes() {
       {deleteError && <p className="mt-3 rounded-lg border border-destructive/50 bg-destructive/10 px-3 py-1.5 text-xs text-destructive">{deleteError}</p>}
     </header>
 
-    <section className="grid grid-cols-1 items-start gap-4 2xl:grid-cols-12">
-      <InfoCard className="2xl:col-span-6" title="Dados Gerais" icon={<BookOpen className="h-4 w-4 text-primary" />} items={[["Nº PPE", detalhe.numeroPpe], ["Nº físico", detalhe.numeroFisico], ["Nº BO", detalhe.numeroBo], ["Data do fato", detalhe.dataFato], ["Data de instauração", detalhe.dataInstauracao], ["Prazo", detalhe.prazo], ["Data limite", detalhe.prazo], ["Dias corridos", detalhe.diasDecorridos]]} />
-      <InfoCard className="2xl:col-span-6" title="Classificação" icon={<FileSearch className="h-4 w-4 text-primary" />} items={[["Tipificação", detalhe.tipificacao], ["Prioridade", detalhe.prioridade], ["Gravidade", detalhe.gravidade], ["Tipo", detalhe.tipo], ["Situação", detalhe.situacao], ["Elucidado", detalhe.elucidado], ["Houve arma de fogo?", detalhe.houveArmaFogo], ["Arma utilizada", detalhe.armaUtilizada], ["Vinculado à facção?", detalhe.vinculadoFaccao], ["Nome da facção", detalhe.nomeFaccao]]} highlightFirst />
-      <InfoCard className="2xl:col-span-6" title="Pessoas Envolvidas" icon={<UserRound className="h-4 w-4 text-primary" />} items={[["Vítima", detalhe.vitima], ["Autor / Investigado", detalhe.investigado], ["Autoria determinada ou indeterminada", detalhe.autoriaDeterminada], ["Réu preso", detalhe.reuPreso], ["Motivação", detalhe.motivacao]]} />
-      <InfoCard className="2xl:col-span-6" title="Dados Operacionais" icon={<ShieldCheck className="h-4 w-4 text-primary" />} items={[["Delegado responsável", detalhe.delegadoResponsavel], ["Equipe", detalhe.equipe], ["Escrivão", detalhe.escrivao], ["Bairro", detalhe.bairro], ["Distrito", detalhe.distrito], ["Status diligências", detalhe.statusDiligencias], ["Última atualização", formatDateTime(detalhe.ultimaEdicao)]]} />
-      <InfoCard className="2xl:col-span-6" title="Relatório e Jurídico" icon={<Scale className="h-4 w-4 text-primary" />} items={[["Relatório enviado?", detalhe.relatorioEnviado], ["Data envio relatório", detalhe.dataEnvioRelatorio], ["Medida protetiva?", detalhe.medidaProtetiva], ["Nº processo medida", detalhe.numeroProcessoMedida], ["Qtd. representações", detalhe.representacoesLegais]]} />
-      <InfoCard className="2xl:col-span-6" title="Andamento e Observações" icon={<NotebookPen className="h-4 w-4 text-primary" />} items={[["Diligências pendentes", detalhe.diligenciasPendentes], ["Observações", detalhe.observacoes]]} separatedBlocks splitDesktop />
+    <section className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+      <div className="space-y-4">
+        <InfoCard title="Dados Gerais" icon={<BookOpen className="h-4 w-4 text-primary" />} items={[["Nº PPE", detalhe.numeroPpe], ["Nº físico", detalhe.numeroFisico], ["Nº BO", detalhe.numeroBo], ["Data do fato", detalhe.dataFato], ["Data de instauração", detalhe.dataInstauracao], ["Prazo", detalhe.prazo], ["Data limite", detalhe.prazo], ["Dias corridos", detalhe.diasDecorridos]]} />
+        <InfoCard title="Pessoas Envolvidas" icon={<UserRound className="h-4 w-4 text-primary" />} items={[["Vítima", detalhe.vitima], ["Autor / Investigado", detalhe.investigado], ["Autoria determinada ou indeterminada", detalhe.autoriaDeterminada], ["Réu preso", detalhe.reuPreso], ["Motivação", detalhe.motivacao]]} />
+        <InfoCard title="Relatório e Jurídico" icon={<Scale className="h-4 w-4 text-primary" />} items={[["Relatório enviado?", detalhe.relatorioEnviado], ["Data envio relatório", detalhe.dataEnvioRelatorio], ["Medida protetiva?", detalhe.medidaProtetiva], ["Nº processo medida", detalhe.numeroProcessoMedida], ["Qtd. representações", detalhe.representacoesLegais]]} />
+      </div>
+      <div className="space-y-4">
+        <InfoCard title="Classificação" icon={<FileSearch className="h-4 w-4 text-primary" />} items={[["Tipificação", detalhe.tipificacao], ["Prioridade", detalhe.prioridade], ["Gravidade", detalhe.gravidade], ["Tipo", detalhe.tipo], ["Situação", detalhe.situacao], ["Elucidado", detalhe.elucidado], ["Houve arma de fogo?", detalhe.houveArmaFogo], ["Arma utilizada", detalhe.armaUtilizada], ["Vinculado à facção?", detalhe.vinculadoFaccao], ["Nome da facção", detalhe.nomeFaccao]]} highlightFirst />
+        <InfoCard title="Dados Operacionais" icon={<ShieldCheck className="h-4 w-4 text-primary" />} items={[["Delegado responsável", detalhe.delegadoResponsavel], ["Equipe", detalhe.equipe], ["Escrivão", detalhe.escrivao], ["Bairro", detalhe.bairro], ["Distrito", detalhe.distrito], ["Status diligências", detalhe.statusDiligencias], ["Última atualização", formatDateTime(detalhe.ultimaEdicao)]]} />
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+          <InfoCard title="Diligências Pendentes" icon={<NotebookPen className="h-4 w-4 text-primary" />} items={[["Diligências pendentes", detalhe.diligenciasPendentes]]} stacked />
+          <InfoCard title="Observações" icon={<NotebookPen className="h-4 w-4 text-primary" />} items={[["Observações", detalhe.observacoes]]} stacked preWrapValues />
+        </div>
+      </div>
     </section>
   </div></AppLayout>;
 }
 
-function InfoCard({ title, items, icon, className = "", stacked = false, highlightFirst = false, separatedBlocks = false, splitDesktop = false }: { title: string; items: [string, string][]; icon?: React.ReactNode; className?: string; stacked?: boolean; highlightFirst?: boolean; separatedBlocks?: boolean; splitDesktop?: boolean }) {
+function InfoCard({ title, items, icon, className = "", stacked = false, highlightFirst = false, preWrapValues = false }: { title: string; items: [string, string][]; icon?: React.ReactNode; className?: string; stacked?: boolean; highlightFirst?: boolean; preWrapValues?: boolean }) {
   return <article className={`self-start rounded-xl border border-border/60 bg-card/80 p-4 lg:p-5 ${className}`}>
     <div className="flex items-center gap-2 pb-2">
       {icon}
       <h2 className="text-xs font-extrabold uppercase tracking-[0.16em] text-primary">{title}</h2>
     </div>
     <div className="mb-3 h-px w-full bg-border/70" />
-    <div className={`grid grid-cols-1 gap-3 ${splitDesktop ? "lg:grid-cols-2" : stacked ? "" : "md:grid-cols-2"}`}>
+    <div className={`grid grid-cols-1 gap-3 ${stacked ? "" : "md:grid-cols-2"}`}>
       {items.map(([k, v], idx) => (
-        <div key={k} className={`min-w-0 space-y-1 ${separatedBlocks ? "rounded-lg border border-border/50 bg-background/30 p-3" : ""} ${highlightFirst && idx === 0 ? "md:col-span-2 rounded-lg border border-border/60 bg-background/30 p-3" : ""}`}>
+        <div key={k} className={`min-w-0 space-y-1 ${highlightFirst && idx === 0 ? "md:col-span-2 rounded-lg border border-border/60 bg-background/30 p-3" : ""}`}>
           <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">{k}</p>
-          <p className={`text-sm text-foreground break-words ${highlightFirst && idx === 0 ? "text-base font-semibold leading-7" : "leading-5"}`}>{v || FALLBACK}</p>
+          <p className={`text-sm text-foreground break-words ${preWrapValues ? "whitespace-pre-wrap" : ""} ${highlightFirst && idx === 0 ? "text-base font-semibold leading-7" : "leading-5"}`}>{v || FALLBACK}</p>
         </div>
       ))}
     </div>
