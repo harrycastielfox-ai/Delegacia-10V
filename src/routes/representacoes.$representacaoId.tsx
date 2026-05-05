@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { Outlet, createFileRoute, Link, useMatchRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { AppLayout } from "@/components/AppLayout";
 import { getRepresentacaoById, softDeleteRepresentacao, type RepresentacaoRecord } from "@/lib/repositories/representacoesRepository";
@@ -8,6 +8,12 @@ export const Route = createFileRoute("/representacoes/$representacaoId")({ compo
 function DetalheRepresentacao() {
   const { representacaoId } = Route.useParams();
   const navigate = useNavigate();
+  const matchRoute = useMatchRoute();
+  const isEditingRoute = Boolean(matchRoute({ to: "/representacoes/$representacaoId/editar", params: { representacaoId } }));
+
+  if (isEditingRoute) {
+    return <Outlet />;
+  }
   const [item, setItem] = useState<RepresentacaoRecord | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
