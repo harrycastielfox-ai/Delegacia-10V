@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { Outlet, createFileRoute, Link, useLocation, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { AppLayout } from "@/components/AppLayout";
 import { PageHeader } from "@/components/PageHeader";
@@ -10,11 +10,15 @@ const normalizeText = (v?: string)=> (v??"").normalize("NFD").replace(/[\u0300-\
 
 function Representacoes() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const isRepresentacoesIndex = location.pathname === "/representacoes";
   const [searchTerm, setSearchTerm] = useState("");
   const [representacoes, setRepresentacoes] = useState<RepresentacaoRecord[]>([]);
   const [error, setError] = useState("");
   useEffect(() => { (async()=>{ try { setRepresentacoes(await listRepresentacoes()); } catch { setError("Não foi possível carregar representações agora."); } })(); }, []);
   const filtered = useMemo(() => { const s = normalizeText(searchTerm); if (!s) return representacoes; return representacoes.filter((r) => [r.id, r.numero_ppe, r.vitima, r.investigado, r.tipo, r.processo_judicial, r.status].map((value) => normalizeText(String(value ?? ""))).some((value) => value.includes(s))); }, [representacoes, searchTerm]);
+
+  if (!isRepresentacoesIndex) return <Outlet />;
 
   return <AppLayout><PageHeader title="Representações Judiciais" subtitle="Medidas requeridas ao Poder Judiciário" showActions={false} />
     <div className="mb-6 flex justify-end"><Link to="/nova-representacao" className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2.5 rounded-lg text-sm font-semibold">Cadastrar Representação</Link></div>
