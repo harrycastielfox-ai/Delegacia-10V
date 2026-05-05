@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { type FormEvent, type InputHTMLAttributes, type ReactNode, type TextareaHTMLAttributes, useEffect, useMemo, useState } from "react";
 import { AppLayout } from "@/components/AppLayout";
 import { PageHeader } from "@/components/PageHeader";
 import { getRepresentacaoById, updateRepresentacao } from "@/lib/repositories/representacoesRepository";
@@ -21,6 +21,7 @@ function EditarRepresentacao() {
   const [loadingInitial, setLoadingInitial] = useState(true);
   const [loadingSubmit, setLoadingSubmit] = useState(false);
   const [erro, setErro] = useState("");
+  const [naoEncontrada, setNaoEncontrada] = useState(false);
 
   const [ppe, setPpe] = useState("");
   const [processo, setProcesso] = useState("");
@@ -57,24 +58,24 @@ function EditarRepresentacao() {
     (async () => {
       setLoadingInitial(true);
       setErro("");
+      setNaoEncontrada(false);
 
       try {
         const data = await getRepresentacaoById(representacaoId);
         if (!active) return;
 
         if (!data) {
-          setErro("Representação não encontrada.");
+          setNaoEncontrada(true);
           return;
         }
 
-        setPpe(data.numero_ppe ?? "");
-        setProcesso(data.processo_judicial ?? "");
-
         const tipoAtual = data.tipo ?? "";
         const tipoConhecido = tiposRepresentacao.includes(tipoAtual as (typeof tiposRepresentacao)[number]);
+
+        setPpe(data.numero_ppe ?? "");
+        setProcesso(data.processo_judicial ?? "");
         setTipoRepresentacao(tipoConhecido ? tipoAtual : tipoAtual ? "Outra" : "");
         setTipoOutra(tipoConhecido ? "" : tipoAtual);
-
         setDataRepresentacao(data.data_representacao ?? "");
         setResponsavel(data.responsavel ?? "");
         setVitima(data.vitima ?? "");
@@ -115,7 +116,7 @@ function EditarRepresentacao() {
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (loadingSubmit || erro === "Representação não encontrada.") return;
+    if (loadingSubmit || naoEncontrada) return;
 
     setLoadingSubmit(true);
     setErro("");
@@ -149,7 +150,7 @@ function EditarRepresentacao() {
         observacoes_internas: observacoesInternas.trim() || null,
       });
 
-      navigate({ to: "/representacoes/$representacaoId", params: { representacaoId } });
+      await navigate({ to: "/representacoes/$representacaoId", params: { representacaoId } });
     } catch (error) {
       const err = error as { code?: string };
       if (err?.code === "42501" || err?.code === "PGRST301") {
@@ -163,7 +164,7 @@ function EditarRepresentacao() {
   }
 
   if (loadingInitial) return <AppLayout>Carregando representação...</AppLayout>;
-  if (erro === "Representação não encontrada.") return <AppLayout>{erro}</AppLayout>;
+  if (naoEncontrada) return <AppLayout>Representação não encontrada.</AppLayout>;
 
   return (
     <AppLayout>
@@ -216,7 +217,9 @@ function EditarRepresentacao() {
         {erro && <div className="rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">{erro}</div>}
 
         <div className="flex gap-3 justify-end">
-          <Link to="/representacoes/$representacaoId" params={{ representacaoId }} className="px-5 py-2.5 rounded-lg text-sm border border-border hover:bg-accent">Cancelar</Link>
+          <Link to="/representacoes/$representacaoId" params={{ representacaoId }} className="px-5 py-2.5 rounded-lg text-sm border border-border hover:bg-accent">
+            Cancelar
+          </Link>
           <button type="submit" disabled={loadingSubmit} className="px-5 py-2.5 rounded-lg text-sm font-semibold bg-primary text-primary-foreground hover:opacity-90 shadow-lg shadow-primary/20 disabled:cursor-not-allowed disabled:opacity-60">
             {loadingSubmit ? "Salvando..." : "Salvar alterações"}
           </button>
@@ -226,7 +229,15 @@ function EditarRepresentacao() {
   );
 }
 
-function SectionCard({ title, children }: { title: string; children: React.ReactNode }) { return <section className="rounded-xl border border-border/60 bg-background/70 p-5 lg:p-7"><h2 className="text-sm font-bold tracking-[0.2em] text-primary uppercase mb-5">{title}</h2><div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">{children}</div></section>; }
-function Field({ label, ...props }: { label: string } & React.InputHTMLAttributes<HTMLInputElement>) { return <div><label className="block text-xs font-bold tracking-wider text-muted-foreground mb-2">{label.toUpperCase()}</label><input {...props} className="w-full bg-card border border-border rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-primary" /></div>; }
-function TextArea({ label, rows = 4, ...props }: { label: string; rows?: number } & React.TextareaHTMLAttributes<HTMLTextAreaElement>) { return <div className="md:col-span-2 lg:col-span-3"><label className="block text-xs font-bold tracking-wider text-muted-foreground mb-2">{label.toUpperCase()}</label><textarea rows={rows} {...props} className="w-full bg-card border border-border rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-primary" /></div>; }
-function Select({ label, options, value, onChange }: { label: string; options: readonly string[]; value?: string; onChange?: (value: string) => void; }) { return <div><label className="block text-xs font-bold tracking-wider text-muted-foreground mb-2">{label.toUpperCase()}</label><select value={value} onChange={(e) => onChange?.(e.target.value)} className="w-full bg-card border border-border rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-primary"><option value="">Selecione…</option>{options.map((option) => <option key={option}>{option}</option>)}</select></div>; }
+function SectionCard({ title, children }: { title: string; children: ReactNode }) {
+  return <section className="rounded-xl border border-border/60 bg-background/70 p-5 lg:p-7"><h2 className="text-sm font-bold tracking-[0.2em] text-primary uppercase mb-5">{title}</h2><div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">{children}</div></section>;
+}
+function Field({ label, ...props }: { label: string } & InputHTMLAttributes<HTMLInputElement>) {
+  return <div><label className="block text-xs font-bold tracking-wider text-muted-foreground mb-2">{label.toUpperCase()}</label><input {...props} className="w-full bg-card border border-border rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-primary" /></div>;
+}
+function TextArea({ label, rows = 4, ...props }: { label: string; rows?: number } & TextareaHTMLAttributes<HTMLTextAreaElement>) {
+  return <div className="md:col-span-2 lg:col-span-3"><label className="block text-xs font-bold tracking-wider text-muted-foreground mb-2">{label.toUpperCase()}</label><textarea rows={rows} {...props} className="w-full bg-card border border-border rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-primary" /></div>;
+}
+function Select({ label, options, value, onChange }: { label: string; options: readonly string[]; value?: string; onChange?: (value: string) => void }) {
+  return <div><label className="block text-xs font-bold tracking-wider text-muted-foreground mb-2">{label.toUpperCase()}</label><select value={value ?? ""} onChange={(e) => onChange?.(e.target.value)} className="w-full bg-card border border-border rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-primary"><option value="">Selecione…</option>{options.map((option) => <option key={option}>{option}</option>)}</select></div>;
+}
