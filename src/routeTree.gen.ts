@@ -13,6 +13,9 @@ import { Route as RepresentacoesRouteImport } from './routes/representacoes'
 import { Route as NovoCasoRouteImport } from './routes/novo-caso'
 import { Route as ModulosRouteImport } from './routes/modulos'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as RepresentacoesRepresentacaoIdEditarRouteImport } from './routes/representacoes.$representacaoId.editar'
+import { Route as RepresentacoesRepresentacaoIdRouteImport } from './routes/representacoes.$representacaoId'
+import { Route as NovaRepresentacaoRouteImport } from './routes/nova-representacao'
 import { Route as InqueritosEditarRouteImport } from './routes/inqueritos.$caseId.editar'
 import { Route as InqueritosCaseIdRouteImport } from './routes/inqueritos.$caseId'
 import { Route as InqueritosRouteImport } from './routes/inqueritos'
@@ -25,6 +28,18 @@ const RepresentacoesRoute = RepresentacoesRouteImport.update({
   path: '/representacoes',
   getParentRoute: () => rootRouteImport,
 } as any)
+const RepresentacoesRepresentacaoIdRoute =
+  RepresentacoesRepresentacaoIdRouteImport.update({
+    id: '/$representacaoId',
+    path: '/$representacaoId',
+    getParentRoute: () => RepresentacoesRoute,
+  } as any)
+const RepresentacoesRepresentacaoIdEditarRoute =
+  RepresentacoesRepresentacaoIdEditarRouteImport.update({
+    id: '/editar',
+    path: '/editar',
+    getParentRoute: () => RepresentacoesRepresentacaoIdRoute,
+  } as any)
 const NovoCasoRoute = NovoCasoRouteImport.update({
   id: '/novo-caso',
   path: '/novo-caso',
@@ -38,6 +53,11 @@ const ModulosRoute = ModulosRouteImport.update({
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const NovaRepresentacaoRoute = NovaRepresentacaoRouteImport.update({
+  id: '/nova-representacao',
+  path: '/nova-representacao',
   getParentRoute: () => rootRouteImport,
 } as any)
 const InqueritosRoute = InqueritosRouteImport.update({
@@ -81,7 +101,10 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/modulos': typeof ModulosRoute
   '/novo-caso': typeof NovoCasoRoute
+  '/nova-representacao': typeof NovaRepresentacaoRoute
   '/representacoes': typeof RepresentacoesRoute
+  '/representacoes/$representacaoId': typeof RepresentacoesRepresentacaoIdRoute
+  '/representacoes/$representacaoId/editar': typeof RepresentacoesRepresentacaoIdEditarRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -93,7 +116,10 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/modulos': typeof ModulosRoute
   '/novo-caso': typeof NovoCasoRoute
+  '/nova-representacao': typeof NovaRepresentacaoRoute
   '/representacoes': typeof RepresentacoesRoute
+  '/representacoes/$representacaoId': typeof RepresentacoesRepresentacaoIdRoute
+  '/representacoes/$representacaoId/editar': typeof RepresentacoesRepresentacaoIdEditarRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -106,7 +132,10 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/modulos': typeof ModulosRoute
   '/novo-caso': typeof NovoCasoRoute
+  '/nova-representacao': typeof NovaRepresentacaoRoute
   '/representacoes': typeof RepresentacoesRoute
+  '/representacoes/$representacaoId': typeof RepresentacoesRepresentacaoIdRoute
+  '/representacoes/$representacaoId/editar': typeof RepresentacoesRepresentacaoIdEditarRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -120,7 +149,10 @@ export interface FileRouteTypes {
     | '/login'
     | '/modulos'
     | '/novo-caso'
+    | '/nova-representacao'
     | '/representacoes'
+    | '/representacoes/$representacaoId'
+    | '/representacoes/$representacaoId/editar'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -132,7 +164,10 @@ export interface FileRouteTypes {
     | '/login'
     | '/modulos'
     | '/novo-caso'
+    | '/nova-representacao'
     | '/representacoes'
+    | '/representacoes/$representacaoId'
+    | '/representacoes/$representacaoId/editar'
   id:
     | '__root__'
     | '/'
@@ -144,7 +179,10 @@ export interface FileRouteTypes {
     | '/login'
     | '/modulos'
     | '/novo-caso'
+    | '/nova-representacao'
     | '/representacoes'
+    | '/representacoes/$representacaoId'
+    | '/representacoes/$representacaoId/editar'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -155,7 +193,8 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   ModulosRoute: typeof ModulosRoute
   NovoCasoRoute: typeof NovoCasoRoute
-  RepresentacoesRoute: typeof RepresentacoesRoute
+  NovaRepresentacaoRoute: typeof NovaRepresentacaoRoute
+  RepresentacoesRoute: typeof RepresentacoesRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
@@ -173,6 +212,27 @@ declare module '@tanstack/react-router' {
       fullPath: '/novo-caso'
       preLoaderRoute: typeof NovoCasoRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/nova-representacao': {
+      id: '/nova-representacao'
+      path: '/nova-representacao'
+      fullPath: '/nova-representacao'
+      preLoaderRoute: typeof NovaRepresentacaoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/representacoes/$representacaoId': {
+      id: '/representacoes/$representacaoId'
+      path: '/$representacaoId'
+      fullPath: '/representacoes/$representacaoId'
+      preLoaderRoute: typeof RepresentacoesRepresentacaoIdRouteImport
+      parentRoute: typeof RepresentacoesRoute
+    }
+    '/representacoes/$representacaoId/editar': {
+      id: '/representacoes/$representacaoId/editar'
+      path: '/editar'
+      fullPath: '/representacoes/$representacaoId/editar'
+      preLoaderRoute: typeof RepresentacoesRepresentacaoIdEditarRouteImport
+      parentRoute: typeof RepresentacoesRepresentacaoIdRoute
     }
     '/modulos': {
       id: '/modulos'
@@ -234,6 +294,22 @@ declare module '@tanstack/react-router' {
   }
 }
 
+const RepresentacoesRepresentacaoIdRouteChildren = {
+  RepresentacoesRepresentacaoIdEditarRoute: RepresentacoesRepresentacaoIdEditarRoute,
+}
+
+const RepresentacoesRepresentacaoIdRouteWithChildren =
+  RepresentacoesRepresentacaoIdRoute._addFileChildren(
+    RepresentacoesRepresentacaoIdRouteChildren,
+  )
+
+const RepresentacoesRouteChildren = {
+  RepresentacoesRepresentacaoIdRoute: RepresentacoesRepresentacaoIdRouteWithChildren,
+}
+
+const RepresentacoesRouteWithChildren =
+  RepresentacoesRoute._addFileChildren(RepresentacoesRouteChildren)
+
 const InqueritosCaseIdRouteChildren = {
   InqueritosEditarRoute: InqueritosEditarRoute,
 }
@@ -258,7 +334,8 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   ModulosRoute: ModulosRoute,
   NovoCasoRoute: NovoCasoRoute,
-  RepresentacoesRoute: RepresentacoesRoute,
+  NovaRepresentacaoRoute: NovaRepresentacaoRoute,
+  RepresentacoesRoute: RepresentacoesRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
