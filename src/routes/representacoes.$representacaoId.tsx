@@ -1,23 +1,61 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import { AppLayout } from "@/components/AppLayout";
-import { formatRepresentacaoId, loadRepresentacoes, saveRepresentacoes } from "@/lib/casesLocalState";
+import { getRepresentacaoById, softDeleteRepresentacao, type RepresentacaoRecord } from "@/lib/repositories/representacoesRepository";
 
 export const Route = createFileRoute("/representacoes/$representacaoId")({ component: DetalheRepresentacao });
 
 function DetalheRepresentacao() {
   const { representacaoId } = Route.useParams();
   const navigate = useNavigate();
-  const item = loadRepresentacoes().find((r) => r.id === representacaoId);
+  const [item, setItem] = useState<RepresentacaoRecord | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
+  useEffect(() => {
+    let active = true;
+
+    (async () => {
+      setLoading(true);
+      setError("");
+
+      try {
+        const data = await getRepresentacaoById(representacaoId);
+        if (!active) return;
+        setItem(data);
+      } catch (err: unknown) {
+        if (!active) return;
+        const maybeError = err as { code?: string; message?: string };
+        if (maybeError?.code === "42501") {
+          setError("Sem permissão para visualizar esta representação. Verifique a policy de SELECT da tabela public.representacoes.");
+        } else {
+          setError("Não foi possível carregar a representação agora.");
+        }
+      } finally {
+        if (active) setLoading(false);
+      }
+    })();
+
+    return () => {
+      active = false;
+    };
+  }, [representacaoId]);
+
+  if (loading) return <AppLayout>Carregando representação...</AppLayout>;
+  if (error) return <AppLayout>{error}</AppLayout>;
   if (!item) return <AppLayout>Representação não encontrada.</AppLayout>;
 
-  const remove = () => {
+  const remove = async () => {
     if (!confirm("Deseja remover esta representação? No sistema final, esta ação deverá ser registrada em auditoria.")) return;
-    saveRepresentacoes(loadRepresentacoes().filter((r) => r.id !== item.id));
-    navigate({ to: "/representacoes" });
+    try {
+      await softDeleteRepresentacao(item.id);
+      navigate({ to: "/representacoes" });
+    } catch {
+      alert("Não foi possível excluir a representação agora.");
+    }
   };
 
-  const subtitleParts = [item.tipo, item.processo ? `Processo: ${item.processo}` : ""].filter(Boolean);
+  const subtitleParts = [item.tipo, item.processo_judicial ? `Processo: ${item.processo_judicial}` : ""].filter(Boolean);
 
   return (
     <AppLayout>
@@ -28,11 +66,11 @@ function DetalheRepresentacao() {
               <Link to="/representacoes" className="mb-3 inline-flex items-center rounded-md border border-border px-3 py-1.5 text-xs hover:bg-accent/40">
                 ← Voltar para lista
               </Link>
-              <h1 className="text-2xl font-extrabold break-words">{item.ppe ? `Representação ${item.ppe}` : "Representação"}</h1>
+              <h1 className="text-2xl font-extrabold break-words">{item.numero_ppe ? `Representação ${item.numero_ppe}` : "Representação"}</h1>
               <p className="mt-1 text-sm text-muted-foreground break-words">
                 {subtitleParts.length > 0 ? subtitleParts.join(" • ") : "Detalhes da representação cadastrada"}
               </p>
-              <p className="mt-1 text-xs text-muted-foreground">ID interno: {formatRepresentacaoId(item.id)}</p>
+              <p className="mt-1 text-xs text-muted-foreground">ID interno: {item.id}</p>
             </div>
 
             <div className="flex flex-wrap items-center gap-2 md:justify-end">
@@ -60,12 +98,12 @@ function DetalheRepresentacao() {
             [
               "Identificação da Representação",
               [
-                ["ID", formatRepresentacaoId(item.id)],
-                ["Nº PPE / Procedimento relacionado", item.ppe],
-                ["Nº Processo Judicial", item.processo],
+                ["ID", item.id],
+                ["Nº PPE / Procedimento relacionado", item.numero_ppe],
+                ["Nº Processo Judicial", item.processo_judicial],
                 ["Tipo de Representação", item.tipo],
-                ["Data da Representação", item.data],
-                ["Responsável pela Representação", "—"],
+                ["Data da Representação", item.data_representacao],
+                ["Responsável pela Representação", item.responsavel],
               ],
             ],
             [
@@ -73,33 +111,33 @@ function DetalheRepresentacao() {
               [
                 ["Vítima", item.vitima],
                 ["Investigado / Representado", item.investigado],
-                ["Autor preso?", "Não informado"],
+                ["Autor preso?", item.autor_preso],
               ],
             ],
             [
               "Fundamentação e Finalidade",
               [
-                ["Resumo dos fatos", "—"],
-                ["Fundamentação da medida", "—"],
-                ["Objetivo da representação", "—"],
-                ["Diligências relacionadas", "—"],
+                ["Resumo dos fatos", item.resumo_fatos],
+                ["Fundamentação da medida", item.fundamentacao],
+                ["Objetivo da representação", item.objetivo],
+                ["Diligências relacionadas", item.diligencias_relacionadas],
               ],
             ],
             [
               "Tramitação Judicial",
               [
                 ["Status", item.status],
-                ["Data de envio ao Judiciário", "—"],
-                ["Data da decisão", "—"],
-                ["Observações da decisão", "—"],
+                ["Data de envio ao Judiciário", item.data_envio_judiciario],
+                ["Data da decisão", item.data_decisao_judicial],
+                ["Observações da decisão", item.observacoes_decisao],
               ],
             ],
             [
               "Controle Interno",
               [
-                ["Prioridade operacional", "—"],
-                ["Pedido sigiloso", "—"],
-                ["Observações internas", "—"],
+                ["Prioridade operacional", item.prioridade_operacional],
+                ["Pedido sigiloso", item.pedido_sigiloso],
+                ["Observações internas", item.observacoes_internas],
               ],
             ],
           ].map(([title, items]) => (
