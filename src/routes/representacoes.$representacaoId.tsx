@@ -100,11 +100,11 @@ function DetalheRepresentacao() {
   const statusText = withFallback(item.status);
   const prioridadeText = withFallback(item.prioridade_operacional);
   const sectionCardClass =
-    "self-start rounded-xl border border-emerald-400/20 bg-zinc-950/90 p-4 shadow-[0_0_0_1px_rgba(16,185,129,0.08),0_8px_24px_rgba(0,0,0,0.35)] transition-colors duration-200 hover:border-emerald-300/35 hover:shadow-[0_0_0_1px_rgba(52,211,153,0.2),0_10px_24px_rgba(0,0,0,0.4)]";
+    "self-start rounded-xl border border-emerald-400/25 bg-zinc-950/95 p-4 shadow-[0_0_0_1px_rgba(16,185,129,0.1),0_10px_26px_rgba(0,0,0,0.42)] transition-colors duration-200 hover:border-emerald-300/35";
   const sectionTitleClass = "mb-3 text-[11px] font-bold uppercase tracking-[0.2em] text-emerald-300";
   const infoRowClass = "grid gap-1 py-2.5 sm:grid-cols-[190px_1fr] sm:gap-3";
   const summaryCardClass =
-    "rounded-lg border border-emerald-400/20 bg-zinc-950/85 px-3 py-2.5 shadow-[inset_0_0_0_1px_rgba(16,185,129,0.06)] transition-colors duration-200 hover:border-emerald-300/35 hover:bg-zinc-950";
+    "self-start rounded-lg border border-emerald-400/25 bg-zinc-950/90 px-3 py-2.5 shadow-[inset_0_0_0_1px_rgba(16,185,129,0.07)] transition-colors duration-200 hover:border-emerald-300/35";
   const cardSections: Array<{ title: string; items: Array<[string, string | null | undefined]> }> = [
     {
       title: "Identificação da Representação",
@@ -125,15 +125,6 @@ function DetalheRepresentacao() {
       ],
     },
     {
-      title: "Fundamentação e Finalidade",
-      items: [
-        ["Resumo dos fatos", item.resumo_fatos],
-        ["Fundamentação da medida", item.fundamentacao],
-        ["Objetivo da representação", item.objetivo],
-        ["Diligências relacionadas", item.diligencias_relacionadas],
-      ],
-    },
-    {
       title: "Tramitação Judicial",
       items: [
         ["Status", item.status],
@@ -150,6 +141,12 @@ function DetalheRepresentacao() {
         ["Observações internas", item.observacoes_internas],
       ],
     },
+  ];
+  const fundamentacaoCards: Array<[string, string | null | undefined]> = [
+    ["Resumo dos fatos", item.resumo_fatos],
+    ["Fundamentação da medida", item.fundamentacao],
+    ["Objetivo da representação", item.objetivo],
+    ["Diligências relacionadas", item.diligencias_relacionadas],
   ];
 
   return (
@@ -211,54 +208,52 @@ function DetalheRepresentacao() {
         </section>
 
         <section className="grid items-start gap-4 md:grid-cols-2">
-          <div className="space-y-4">
-            {[cardSections[0], cardSections[2], cardSections[4]].map(({ title, items }) => (
-              <article key={title} className={sectionCardClass}>
-                <h2 className={sectionTitleClass}>{title}</h2>
-                {title === "Fundamentação e Finalidade" ? (
-                  <div className="space-y-2.5">
-                    {items.map(([label, value]) => (
-                      <div key={label} className="rounded-lg border border-emerald-400/15 bg-zinc-900/45 px-3 py-2.5">
-                        <p className="text-[10px] uppercase tracking-[0.16em] text-zinc-500">{label}</p>
-                        <p className="mt-1 text-sm text-zinc-100 whitespace-pre-wrap break-words">{withFallback(value)}</p>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="divide-y divide-emerald-500/10">
-                    {items.map(([label, value]) => (
-                      <div key={label} className={infoRowClass}>
-                        <p className="text-[11px] uppercase tracking-wide text-zinc-500">{label}</p>
-                        <p className="text-sm text-zinc-100 whitespace-pre-wrap break-words">{withFallback(value)}</p>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </article>
-            ))}
-          </div>
-
-          <div className="space-y-4">
-            {[cardSections[1], cardSections[3]].map(({ title, items }) => (
+          <div className="space-y-4 self-start">
+            {[cardSections[0], cardSections[3]].map(({ title, items }) => (
               <article key={title} className={sectionCardClass}>
                 <h2 className={sectionTitleClass}>{title}</h2>
                 <div className="divide-y divide-emerald-500/10">
-                {items.map(([label, value]) => (
-                  <div key={label} className="grid gap-1 py-2.5 sm:grid-cols-[170px_1fr] sm:gap-3">
-                    <p className="text-[11px] uppercase tracking-wide text-zinc-500">{label}</p>
-                    {title === "Tramitação Judicial" && label === "Status" ? (
-                      <span className={`mt-0.5 inline-flex w-fit items-center rounded-md border px-2 py-0.5 text-xs font-semibold ${getStatusBadgeClass(item.status)}`}>
-                        {withFallback(value)}
-                      </span>
-                    ) : (
+                  {items.map(([label, value]) => (
+                    <div key={label} className={infoRowClass}>
+                      <p className="text-[11px] uppercase tracking-wide text-zinc-500">{label}</p>
                       <p className="text-sm text-zinc-100 whitespace-pre-wrap break-words">{withFallback(value)}</p>
-                    )}
-                  </div>
-                ))}
+                    </div>
+                  ))}
                 </div>
               </article>
             ))}
           </div>
+
+          <div className="space-y-4 self-start">
+            {[cardSections[1], cardSections[2]].map(({ title, items }) => (
+              <article key={title} className={sectionCardClass}>
+                <h2 className={sectionTitleClass}>{title}</h2>
+                <div className="divide-y divide-emerald-500/10">
+                  {items.map(([label, value]) => (
+                    <div key={label} className="grid gap-1 py-2.5 sm:grid-cols-[170px_1fr] sm:gap-3">
+                      <p className="text-[11px] uppercase tracking-wide text-zinc-500">{label}</p>
+                      {title === "Tramitação Judicial" && label === "Status" ? (
+                        <span className={`mt-0.5 inline-flex w-fit items-center rounded-md border px-2 py-0.5 text-xs font-semibold ${getStatusBadgeClass(item.status)}`}>
+                          {withFallback(value)}
+                        </span>
+                      ) : (
+                        <p className="text-sm text-zinc-100 whitespace-pre-wrap break-words">{withFallback(value)}</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <section className="grid items-start gap-3 md:grid-cols-2">
+          {fundamentacaoCards.map(([title, value]) => (
+            <article key={title} className={sectionCardClass}>
+              <h2 className={sectionTitleClass}>{title}</h2>
+              <p className="text-sm text-zinc-100 whitespace-pre-wrap break-words">{withFallback(value)}</p>
+            </article>
+          ))}
         </section>
       </div>
 
