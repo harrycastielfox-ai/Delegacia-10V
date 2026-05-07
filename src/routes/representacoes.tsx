@@ -124,11 +124,11 @@ function Representacoes() {
   if (!isRepresentacoesIndex) return <Outlet />;
 
   const summaryCards = [
-    { label: "TOTAL", value: stats.total, hint: "Representações", tone: "border-cyan-400/35 bg-gradient-to-br from-slate-950 via-slate-900 to-cyan-950/60 text-cyan-200 shadow-[0_0_24px_rgba(34,211,238,0.16)]" },
-    { label: "DEFERIDAS", value: stats.deferidas, hint: "Pedidos acolhidos", tone: "border-emerald-400/35 bg-gradient-to-br from-slate-950 via-slate-900 to-emerald-950/65 text-emerald-200 shadow-[0_0_24px_rgba(16,185,129,0.18)]" },
-    { label: "CUMPRIDAS", value: stats.cumpridas, hint: "Medidas cumpridas", tone: "border-teal-400/35 bg-gradient-to-br from-slate-950 via-slate-900 to-teal-950/65 text-teal-200 shadow-[0_0_24px_rgba(20,184,166,0.18)]" },
-    { label: "INDEFERIDAS", value: stats.indeferidas, hint: "Pedidos rejeitados", tone: "border-rose-400/35 bg-gradient-to-br from-slate-950 via-slate-900 to-rose-950/65 text-rose-200 shadow-[0_0_24px_rgba(244,63,94,0.18)]" },
-    { label: "PENDENTES", value: stats.pendentes, hint: "Em acompanhamento", tone: "border-amber-400/35 bg-gradient-to-br from-slate-950 via-slate-900 to-amber-950/65 text-amber-200 shadow-[0_0_24px_rgba(245,158,11,0.18)]" },
+    { label: "TOTAL", value: stats.total, hint: "Representações", tone: "border-cyan-400/35 bg-gradient-to-br from-slate-950 via-slate-900 to-cyan-950/60 text-cyan-200 shadow-[0_0_24px_rgba(34,211,238,0.16)]", hoverTone: "hover:border-cyan-300/50 hover:shadow-[0_0_34px_rgba(34,211,238,0.26)]" },
+    { label: "DEFERIDAS", value: stats.deferidas, hint: "Pedidos acolhidos", tone: "border-emerald-400/35 bg-gradient-to-br from-slate-950 via-slate-900 to-emerald-950/65 text-emerald-200 shadow-[0_0_24px_rgba(16,185,129,0.18)]", hoverTone: "hover:border-emerald-300/50 hover:shadow-[0_0_34px_rgba(16,185,129,0.28)]" },
+    { label: "CUMPRIDAS", value: stats.cumpridas, hint: "Medidas cumpridas", tone: "border-teal-400/35 bg-gradient-to-br from-slate-950 via-slate-900 to-teal-950/65 text-teal-200 shadow-[0_0_24px_rgba(20,184,166,0.18)]", hoverTone: "hover:border-teal-300/50 hover:shadow-[0_0_34px_rgba(20,184,166,0.28)]" },
+    { label: "INDEFERIDAS", value: stats.indeferidas, hint: "Pedidos rejeitados", tone: "border-rose-400/35 bg-gradient-to-br from-slate-950 via-slate-900 to-rose-950/65 text-rose-200 shadow-[0_0_24px_rgba(244,63,94,0.18)]", hoverTone: "hover:border-rose-300/55 hover:shadow-[0_0_34px_rgba(244,63,94,0.28)]" },
+    { label: "PENDENTES", value: stats.pendentes, hint: "Em acompanhamento", tone: "border-amber-400/35 bg-gradient-to-br from-slate-950 via-slate-900 to-amber-950/65 text-amber-200 shadow-[0_0_24px_rgba(245,158,11,0.18)]", hoverTone: "hover:border-amber-300/50 hover:shadow-[0_0_34px_rgba(245,158,11,0.28)]" },
   ];
 
   return (
@@ -151,16 +151,21 @@ function Representacoes() {
 
       <section className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
         {summaryCards.map((card) => (
-          <div key={card.label} className={`rounded-xl border p-4 backdrop-blur-sm transition hover:-translate-y-0.5 ${card.tone}`}>
+          <div
+            key={card.label}
+            className={`group rounded-xl border p-4 backdrop-blur-sm transition-all duration-300 ease-out hover:-translate-y-1 hover:brightness-110 ${card.tone} ${card.hoverTone}`}
+          >
             <p className="text-[10px] font-bold tracking-[0.22em]">{card.label}</p>
-            <p className="mt-2 text-3xl font-bold leading-none tracking-tight text-white">{card.value}</p>
+            <p className="mt-2 text-3xl font-bold leading-none tracking-tight text-white transition-all duration-300 group-hover:text-white group-hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.35)]">
+              {card.value}
+            </p>
             <p className="mt-2 text-xs text-slate-300/90">{card.hint}</p>
           </div>
         ))}
       </section>
 
       <section className="mb-6 grid grid-cols-1 items-start gap-4 xl:grid-cols-3">
-        <div className="overflow-hidden rounded-xl border border-cyan-500/20 bg-gradient-to-b from-slate-950/90 to-slate-900/85 shadow-[0_0_24px_rgba(34,211,238,0.08)] xl:col-span-2">
+        <div className="overflow-hidden rounded-xl border border-cyan-500/20 bg-gradient-to-b from-slate-950/90 to-slate-900/85 shadow-[0_0_24px_rgba(34,211,238,0.08)] transition-all duration-300 ease-out hover:-translate-y-0.5 hover:border-cyan-400/35 hover:shadow-[0_0_28px_rgba(34,211,238,0.16)] xl:col-span-2">
           <div className="border-b border-white/10 px-5 py-4">
             <h2 className="text-sm tracking-[0.18em] font-semibold text-cyan-200">POR TIPO DE REPRESENTAÇÃO</h2>
           </div>
@@ -179,7 +184,7 @@ function Representacoes() {
                 {stats.porTipo.map((item) => {
                   const sucesso = item.total > 0 ? (item.deferidas / item.total) * 100 : 0;
                   return (
-                    <tr key={item.tipo} className="border-t border-white/10 hover:bg-white/[0.02]">
+                    <tr key={item.tipo} className="border-t border-white/10 transition-colors hover:bg-sky-900/20">
                       <td className="px-4 py-3">{item.tipo}</td>
                       <td className="px-4 py-3 text-right">{item.total}</td>
                       <td className="px-4 py-3 text-right text-emerald-300">{item.deferidas}</td>
@@ -200,7 +205,7 @@ function Representacoes() {
           </div>
         </div>
 
-        <div className="overflow-hidden rounded-xl border border-amber-400/25 bg-gradient-to-b from-slate-950/90 to-slate-900/85 shadow-[0_0_20px_rgba(245,158,11,0.08)]">
+        <div className="overflow-hidden rounded-xl border border-amber-400/25 bg-gradient-to-b from-slate-950/90 to-slate-900/85 shadow-[0_0_20px_rgba(245,158,11,0.08)] transition-all duration-300 ease-out hover:-translate-y-0.5 hover:border-amber-300/40 hover:shadow-[0_0_28px_rgba(245,158,11,0.16)]">
           <div className="border-b border-border p-4">
             <h2 className="text-sm tracking-[0.18em] font-semibold text-amber-200">STATUS GERAL</h2>
           </div>
@@ -254,7 +259,7 @@ function Representacoes() {
             </thead>
             <tbody>
               {filtered.map((r) => (
-                <tr key={r.id} className="border-t border-white/10 hover:bg-white/[0.03]">
+                <tr key={r.id} className="border-t border-white/10 transition-colors duration-200 hover:bg-sky-950/55">
                   <td className="px-4 py-3 font-semibold">{r.numero_ppe || "—"}</td>
                   <td className="max-w-[220px] truncate px-4 py-3 text-xs text-slate-200">{r.vitima || "—"}</td>
                   <td className="max-w-[220px] truncate px-4 py-3 text-xs text-slate-200">{r.investigado || "—"}</td>
