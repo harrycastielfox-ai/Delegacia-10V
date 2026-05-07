@@ -54,7 +54,7 @@ function LoginPage() {
       <style>{`
         .sipi-logo-sheen {
           transform: translateX(-180%) skewX(-18deg);
-          animation: sipiLogoSheen 5.4s ease-in-out infinite;
+          animation: sipiLogoSheen 4.8s ease-in-out infinite;
           will-change: transform, opacity;
         }
 
@@ -102,7 +102,7 @@ function LoginPage() {
           {/* Cabeçalho */}
           <div className="px-8 pt-8 pb-6 text-center border-b border-border bg-gradient-to-b from-primary/5 to-transparent">
             <div className="relative mx-auto h-24 w-24 rounded-lg bg-primary/12 border border-primary/25 shadow-[0_0_12px_rgba(34,197,94,0.16)] flex items-center justify-center mb-3 p-2 overflow-hidden">
-              <img src="/sipi-logo.png" alt="Logo SIPI" className="h-[84%] w-[84%] object-contain" />
+              <img src="/sipi-logo.png" alt="Logo SIPI" className="h-[88%] w-[88%] object-contain" />
               <span
                 aria-hidden="true"
                 className="sipi-logo-sheen pointer-events-none absolute inset-y-[-20%] left-[-35%] w-[42%] bg-gradient-to-r from-transparent via-primary/35 to-transparent blur-[1px]"
