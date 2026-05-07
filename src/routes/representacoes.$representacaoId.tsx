@@ -5,6 +5,36 @@ import { getRepresentacaoById, softDeleteRepresentacao, type RepresentacaoRecord
 
 export const Route = createFileRoute("/representacoes/$representacaoId")({ component: DetalheRepresentacao });
 
+function withFallback(value?: string | null) {
+  return value?.trim() ? value : "—";
+}
+
+function getStatusBadgeClass(status?: string | null) {
+  const normalized = status?.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "") ?? "";
+  if (normalized.includes("deferida") || normalized.includes("cumprida")) {
+    return "border-emerald-400/35 bg-emerald-400/10 text-emerald-200";
+  }
+  if (normalized.includes("indeferida")) {
+    return "border-rose-400/35 bg-rose-400/10 text-rose-200";
+  }
+  if (normalized.includes("aguardando") || normalized.includes("pendente")) {
+    return "border-amber-300/35 bg-amber-300/10 text-amber-100";
+  }
+  if (normalized.includes("enviada") || normalized.includes("analise")) {
+    return "border-cyan-300/35 bg-cyan-300/10 text-cyan-100";
+  }
+  return "border-primary/35 bg-primary/10 text-primary";
+}
+
+function getPrioridadeBadgeClass(prioridade?: string | null) {
+  const normalized = prioridade?.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "") ?? "";
+  if (normalized.includes("urgente")) return "border-violet-300/35 bg-violet-300/10 text-violet-100";
+  if (normalized.includes("alta")) return "border-rose-300/35 bg-rose-300/10 text-rose-100";
+  if (normalized.includes("media")) return "border-amber-300/35 bg-amber-300/10 text-amber-100";
+  if (normalized.includes("baixa") || normalized.includes("normal")) return "border-cyan-300/35 bg-cyan-300/10 text-cyan-100";
+  return "border-muted-foreground/35 bg-muted/20 text-muted-foreground";
+}
+
 function DetalheRepresentacao() {
   const { representacaoId } = Route.useParams();
   const navigate = useNavigate();
@@ -67,103 +97,144 @@ function DetalheRepresentacao() {
   };
 
   const subtitleParts = [item.tipo, item.processo_judicial ? `Processo: ${item.processo_judicial}` : ""].filter(Boolean);
+  const statusText = withFallback(item.status);
+  const prioridadeText = withFallback(item.prioridade_operacional);
+  const cardSections: Array<{ title: string; items: Array<[string, string | null | undefined]> }> = [
+    {
+      title: "Identificação da Representação",
+      items: [
+        ["Nº PPE / Procedimento relacionado", item.numero_ppe],
+        ["Nº Processo Judicial", item.processo_judicial],
+        ["Tipo de Representação", item.tipo],
+        ["Data da Representação", item.data_representacao],
+        ["Responsável pela Representação", item.responsavel],
+        ["ID interno", item.id],
+      ],
+    },
+    {
+      title: "Pessoas Envolvidas",
+      items: [
+        ["Vítima", item.vitima],
+        ["Investigado / Representado", item.investigado],
+        ["Autor preso?", item.autor_preso],
+      ],
+    },
+    {
+      title: "Fundamentação e Finalidade",
+      items: [
+        ["Resumo dos fatos", item.resumo_fatos],
+        ["Fundamentação da medida", item.fundamentacao],
+        ["Objetivo da representação", item.objetivo],
+        ["Diligências relacionadas", item.diligencias_relacionadas],
+      ],
+    },
+    {
+      title: "Tramitação Judicial",
+      items: [
+        ["Status", item.status],
+        ["Data de envio ao Judiciário", item.data_envio_judiciario],
+        ["Data da decisão", item.data_decisao_judicial],
+        ["Observações da decisão", item.observacoes_decisao],
+      ],
+    },
+    {
+      title: "Controle Interno",
+      items: [
+        ["Prioridade operacional", item.prioridade_operacional],
+        ["Pedido sigiloso", item.pedido_sigiloso],
+        ["Observações internas", item.observacoes_internas],
+      ],
+    },
+  ];
 
   return (
     <AppLayout>
       <div className="space-y-5">
-        <header className="rounded-xl border border-border bg-card p-5">
+        <header className="rounded-xl border border-emerald-400/25 bg-gradient-to-br from-card via-card to-emerald-950/15 p-5 shadow-lg shadow-black/20">
           <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
             <div className="min-w-0">
-              <Link to="/representacoes" className="mb-3 inline-flex items-center rounded-md border border-border px-3 py-1.5 text-xs hover:bg-accent/40">
+              <Link to="/representacoes" className="mb-3 inline-flex items-center rounded-md border border-cyan-300/25 bg-cyan-300/5 px-2.5 py-1 text-[11px] text-cyan-100 transition hover:bg-cyan-300/10">
                 ← Voltar para lista
               </Link>
-              <h1 className="text-2xl font-extrabold break-words">{item.numero_ppe ? `Representação ${item.numero_ppe}` : "Representação"}</h1>
+              <h1 className="text-2xl font-extrabold break-words text-foreground">Representação</h1>
               <p className="mt-1 text-sm text-muted-foreground break-words">
                 {subtitleParts.length > 0 ? subtitleParts.join(" • ") : "Detalhes da representação cadastrada"}
               </p>
-              <p className="mt-1 text-xs text-muted-foreground">ID interno: {item.id}</p>
+              <p className="mt-2 text-sm text-emerald-200/90 break-words">{item.numero_ppe ? `PPE/Procedimento: ${item.numero_ppe}` : `Processo/PPE: ${withFallback(item.processo_judicial)}`}</p>
             </div>
 
             <div className="flex flex-wrap items-center gap-2 md:justify-end">
-              <span className="inline-flex items-center rounded-md border border-info/30 bg-info/10 px-2.5 py-1 text-[11px] font-semibold text-info">
-                {item.status || "—"}
+              <span className={`inline-flex items-center rounded-md border px-2.5 py-1 text-[11px] font-semibold ${getStatusBadgeClass(item.status)}`}>
+                {statusText}
               </span>
-              <button onClick={() => window.print()} className="rounded-md border border-border px-3 py-1.5 text-xs hover:bg-accent/40">
+              <button onClick={() => window.print()} className="rounded-md border border-cyan-300/30 bg-cyan-300/5 px-3 py-1.5 text-xs text-cyan-100 transition hover:bg-cyan-300/10">
                 Imprimir
               </button>
               <button
                 onClick={() => navigate({ to: "/representacoes/$representacaoId/editar", params: { representacaoId: item.id } })}
-                className="rounded-md border border-border px-3 py-1.5 text-xs hover:bg-accent/40"
+                className="rounded-md border border-cyan-300/40 px-3 py-1.5 text-xs text-cyan-100 transition hover:bg-cyan-300/10"
               >
                 Editar
               </button>
-              <button onClick={() => setShowDeleteModal(true)} className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-1.5 text-xs text-destructive">
+              <button onClick={() => setShowDeleteModal(true)} className="rounded-md border border-rose-400/35 bg-rose-400/10 px-3 py-1.5 text-xs text-rose-200 transition hover:bg-rose-400/15">
                 Excluir
               </button>
             </div>
           </div>
         </header>
 
-        <section className="grid gap-4 md:grid-cols-2">
+        <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {[
-            [
-              "Identificação da Representação",
-              [
-                ["ID", item.id],
-                ["Nº PPE / Procedimento relacionado", item.numero_ppe],
-                ["Nº Processo Judicial", item.processo_judicial],
-                ["Tipo de Representação", item.tipo],
-                ["Data da Representação", item.data_representacao],
-                ["Responsável pela Representação", item.responsavel],
-              ],
-            ],
-            [
-              "Pessoas Envolvidas",
-              [
-                ["Vítima", item.vitima],
-                ["Investigado / Representado", item.investigado],
-                ["Autor preso?", item.autor_preso],
-              ],
-            ],
-            [
-              "Fundamentação e Finalidade",
-              [
-                ["Resumo dos fatos", item.resumo_fatos],
-                ["Fundamentação da medida", item.fundamentacao],
-                ["Objetivo da representação", item.objetivo],
-                ["Diligências relacionadas", item.diligencias_relacionadas],
-              ],
-            ],
-            [
-              "Tramitação Judicial",
-              [
-                ["Status", item.status],
-                ["Data de envio ao Judiciário", item.data_envio_judiciario],
-                ["Data da decisão", item.data_decisao_judicial],
-                ["Observações da decisão", item.observacoes_decisao],
-              ],
-            ],
-            [
-              "Controle Interno",
-              [
-                ["Prioridade operacional", item.prioridade_operacional],
-                ["Pedido sigiloso", item.pedido_sigiloso],
-                ["Observações internas", item.observacoes_internas],
-              ],
-            ],
-          ].map(([title, items]) => (
-            <article key={String(title)} className="rounded-xl border border-border bg-card p-4">
-              <h2 className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-primary">{String(title)}</h2>
-              <div className="space-y-2">
-                {(items as string[][]).map(([label, value]) => (
-                  <p key={label} className="text-sm whitespace-pre-wrap break-words">
-                    <span className="text-muted-foreground">{label}: </span>
-                    {value || "—"}
-                  </p>
+            ["Tipo", withFallback(item.tipo), "text-cyan-100"],
+            ["Status", statusText, "text-emerald-100"],
+            ["Prioridade", prioridadeText, "text-violet-100"],
+            ["Processo/PPE", withFallback(item.processo_judicial || item.numero_ppe), "text-foreground"],
+          ].map(([label, value, valueClass]) => (
+            <article key={label} className="rounded-lg border border-cyan-300/20 bg-card/70 px-3 py-3">
+              <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">{label}</p>
+              {label === "Status" ? (
+                <span className={`mt-1 inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-semibold ${getStatusBadgeClass(item.status)}`}>{value}</span>
+              ) : label === "Prioridade" ? (
+                <span className={`mt-1 inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-semibold ${getPrioridadeBadgeClass(item.prioridade_operacional)}`}>
+                  {value}
+                </span>
+              ) : (
+                <p className={`mt-1 text-sm font-semibold break-words ${valueClass}`}>{value}</p>
+              )}
+            </article>
+          ))}
+        </section>
+
+        <section className="grid gap-4 md:grid-cols-2">
+          {[cardSections[0], cardSections[2], cardSections[4]].map(({ title, items }) => (
+            <article key={title} className="rounded-xl border border-emerald-400/20 bg-card/90 p-4">
+              <h2 className="mb-3 text-xs font-bold uppercase tracking-[0.22em] text-cyan-200">{title}</h2>
+              <div className="divide-y divide-border/40">
+                {items.map(([label, value]) => (
+                  <div key={label} className="grid gap-1 py-2.5 sm:grid-cols-[190px_1fr] sm:gap-3">
+                    <p className="text-[11px] uppercase tracking-wide text-muted-foreground">{label}</p>
+                    <p className="text-sm text-foreground whitespace-pre-wrap break-words">{withFallback(value)}</p>
+                  </div>
                 ))}
               </div>
             </article>
           ))}
+
+          <div className="space-y-4">
+            {[cardSections[1], cardSections[3]].map(({ title, items }) => (
+              <article key={title} className="rounded-xl border border-cyan-300/20 bg-card/90 p-4">
+                <h2 className="mb-3 text-xs font-bold uppercase tracking-[0.22em] text-cyan-200">{title}</h2>
+                <div className="divide-y divide-border/40">
+                  {items.map(([label, value]) => (
+                    <div key={label} className="grid gap-1 py-2.5 sm:grid-cols-[170px_1fr] sm:gap-3">
+                      <p className="text-[11px] uppercase tracking-wide text-muted-foreground">{label}</p>
+                      <p className="text-sm text-foreground whitespace-pre-wrap break-words">{withFallback(value)}</p>
+                    </div>
+                  ))}
+                </div>
+              </article>
+            ))}
+          </div>
         </section>
       </div>
 
