@@ -1,7 +1,9 @@
 import { supabase } from "@/lib/supabaseClient";
 import type { UserProfile } from "@/lib/authz";
 
-const PROFILE_SELECT = "id,nome,email,login,avatar_url,cargo,status_autorizacao,created_at,updated_at";
+const PROFILE_SELECT = "id,nome,email,login,avatar_url,avatar_path,cargo,status_autorizacao,created_at,updated_at";
+const AVATAR_BUCKET = "profile-avatars";
+const MAX_AVATAR_BYTES = 2 * 1024 * 1024;
 
 export async function getSession() {
   const { data, error } = await supabase.auth.getSession();
@@ -44,22 +46,69 @@ export async function signInWithLoginOrEmail(loginOrEmail: string, password: str
   return getCurrentProfile();
 }
 
+async function uploadProfileAvatar(userId: string, avatarFile: File): Promise<string> {
+  if (!avatarFile.type.startsWith("image/")) throw new Error("AVATAR_INVALID_TYPE");
+  if (avatarFile.size > MAX_AVATAR_BYTES) throw new Error("AVATAR_TOO_LARGE");
+
+  const ext = avatarFile.name.split(".").pop()?.toLowerCase() || "jpg";
+  const path = `${userId}/${Date.now()}.${ext}`;
+  const { error } = await supabase.storage.from(AVATAR_BUCKET).upload(path, avatarFile, { upsert: true });
+  if (error) throw error;
+
+  const { error: avatarUpdateError } = await supabase.rpc("update_own_avatar", {
+    input_avatar_path: path,
+  });
+  if (avatarUpdateError) throw avatarUpdateError;
+
+  return path;
+}
+
 export async function signUpUser(payload: {
   nome: string;
   email: string;
   login: string;
   password: string;
-  avatarUrl?: string | null;
+  avatarFile?: File | null;
 }) {
-  const { nome, email, login, password, avatarUrl } = payload;
+  const { nome, email, login, password, avatarFile } = payload;
+  const cleanEmail = email.trim().toLowerCase();
+  const cleanLogin = login.trim();
+
+  const { data: existingLogin, error: loginCheckError } = await supabase.rpc("resolve_login_to_email", {
+    input_login: cleanLogin,
+  });
+  if (loginCheckError) console.error("[signUpUser] Falha ao verificar login", loginCheckError);
+  if (existingLogin) throw new Error("LOGIN_ALREADY_EXISTS");
+
   const { data, error } = await supabase.auth.signUp({
-    email: email.trim().toLowerCase(),
+    email: cleanEmail,
     password,
     options: {
-      data: { nome: nome.trim(), login: login.trim(), avatar_url: avatarUrl ?? null },
+      data: { nome: nome.trim(), login: cleanLogin },
     },
   });
-  if (error) throw error;
+
+  if (error) {
+    console.error("[signUpUser] Erro do Supabase Auth", error);
+    throw error;
+  }
+
+  let avatarUploadWarning = false;
+  if (avatarFile && data.user?.id) {
+    try {
+      const session = data.session ?? (await getSession());
+      if (session?.user?.id === data.user.id) {
+        await uploadProfileAvatar(data.user.id, avatarFile);
+      } else {
+        avatarUploadWarning = true;
+        console.warn("[signUpUser] Cadastro criado sem sessão ativa (confirmação de e-mail habilitada). Upload será feito depois.");
+      }
+    } catch (avatarError) {
+      avatarUploadWarning = true;
+      console.error("[signUpUser] Falha no upload opcional do avatar", avatarError);
+    }
+  }
+
   await supabase.auth.signOut();
-  return data;
+  return { ...data, avatarUploadWarning };
 }

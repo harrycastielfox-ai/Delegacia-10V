@@ -105,6 +105,7 @@ create table if not exists public.profiles (
   email text not null unique,
   login text not null unique,
   avatar_url text,
+  avatar_path text,
   cargo public.user_role not null default 'membro',
   status_autorizacao public.authorization_status not null default 'aguardando',
   created_at timestamptz not null default now(),
@@ -138,6 +139,30 @@ $$;
 revoke all on function public.resolve_login_to_email(text) from public;
 grant execute on function public.resolve_login_to_email(text) to anon, authenticated;
 
+
+
+create or replace function public.update_own_avatar(input_avatar_path text)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if auth.uid() is null then
+    raise exception 'NOT_AUTHENTICATED';
+  end if;
+
+  update public.profiles
+  set avatar_path = input_avatar_path,
+      avatar_url = input_avatar_path,
+      updated_at = now()
+  where id = auth.uid();
+end;
+$$;
+
+revoke all on function public.update_own_avatar(text) from public;
+grant execute on function public.update_own_avatar(text) to authenticated;
+
 create or replace function public.handle_new_user_profile()
 returns trigger
 language plpgsql
@@ -145,13 +170,14 @@ security definer
 set search_path = public
 as $$
 begin
-  insert into public.profiles (id, nome, email, login, avatar_url, cargo, status_autorizacao)
+  insert into public.profiles (id, nome, email, login, avatar_url, avatar_path, cargo, status_autorizacao)
   values (
     new.id,
     coalesce(new.raw_user_meta_data->>'nome', split_part(new.email, '@', 1)),
     new.email,
     coalesce(new.raw_user_meta_data->>'login', split_part(new.email, '@', 1)),
-    new.raw_user_meta_data->>'avatar_url',
+    coalesce(new.raw_user_meta_data->>'avatar_path', new.raw_user_meta_data->>'avatar_url'),
+    coalesce(new.raw_user_meta_data->>'avatar_path', new.raw_user_meta_data->>'avatar_url'),
     'membro',
     'aguardando'
   )
@@ -161,6 +187,7 @@ begin
     email = excluded.email,
     login = excluded.login,
     avatar_url = excluded.avatar_url,
+    avatar_path = excluded.avatar_path,
     updated_at = now();
 
   return new;
@@ -171,4 +198,48 @@ drop trigger if exists on_auth_user_created_profile on auth.users;
 create trigger on_auth_user_created_profile
 after insert on auth.users
 for each row execute procedure public.handle_new_user_profile();
+
+
+
+-- Bucket e policies para avatar de perfil.
+insert into storage.buckets (id, name, public)
+values ('profile-avatars', 'profile-avatars', true)
+on conflict (id) do nothing;
+
+drop policy if exists "avatars_public_read" on storage.objects;
+create policy "avatars_public_read" on storage.objects
+for select
+to anon, authenticated
+using (bucket_id = 'profile-avatars');
+
+drop policy if exists "avatars_owner_insert" on storage.objects;
+create policy "avatars_owner_insert" on storage.objects
+for insert
+to authenticated
+with check (
+  bucket_id = 'profile-avatars'
+  and auth.uid()::text = (storage.foldername(name))[1]
+);
+
+drop policy if exists "avatars_owner_update" on storage.objects;
+create policy "avatars_owner_update" on storage.objects
+for update
+to authenticated
+using (
+  bucket_id = 'profile-avatars'
+  and auth.uid()::text = (storage.foldername(name))[1]
+)
+with check (
+  bucket_id = 'profile-avatars'
+  and auth.uid()::text = (storage.foldername(name))[1]
+);
+
+drop policy if exists "avatars_owner_delete" on storage.objects;
+create policy "avatars_owner_delete" on storage.objects
+for delete
+to authenticated
+using (
+  bucket_id = 'profile-avatars'
+  and auth.uid()::text = (storage.foldername(name))[1]
+);
 
