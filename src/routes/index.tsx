@@ -142,6 +142,10 @@ function Dashboard() {
     inqueritos.forEach((i) => byEquipe.set(i.equipe || "Sem equipe", (byEquipe.get(i.equipe || "Sem equipe") || 0) + 1));
     return Array.from(byEquipe.entries()).map(([name, value]) => ({ name, value, pct: total === 0 ? 0 : Math.round((value / total) * 100) }));
   }, [inqueritos, total]);
+  const panelFxClass =
+    "rounded-xl transition-all duration-300 border border-border/70 hover:border-success/55 hover:shadow-[0_0_0_1px_rgba(34,197,94,0.25),0_14px_28px_-22px_rgba(34,197,94,0.75)]";
+  const kpiFxClass =
+    "rounded-xl transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_0_0_1px_rgba(34,197,94,0.25),0_14px_30px_-22px_rgba(34,197,94,0.85)]";
 
   return (
     <AppLayout>
@@ -150,24 +154,24 @@ function Dashboard() {
 
       {/* KPI cards */}
       <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-7 gap-4 mb-6">
-        <StatCard label="TOTAL" value={total} hint="Procedimentos cadastrados" icon={FileText} tone="success" onClick={() => navigate({ to: "/inqueritos" })} />
-        <StatCard label="EM ANDAMENTO" value={emAndamento} hint={`${total === 0 ? 0 : Math.round((emAndamento / total) * 100)}% do total`} icon={Clock} tone="info" onClick={() => navigate({ to: "/inqueritos", search: { status: "andamento" } })} />
-        <StatCard label="CONCLUÍDOS" value={finalizados} hint={`${taxaConclusao}% taxa atual`} icon={CheckCircle2} tone="primary" onClick={() => navigate({ to: "/inqueritos", search: { status: "concluido" } })} />
-        <StatCard label="PRIOR. ALTA" value={prioridadeAlta} hint="Requer atenção" icon={TrendingUp} tone="warning" onClick={() => navigate({ to: "/inqueritos", search: { prioridade: "alta" } })} />
-        <StatCard label="PRAZO CRÍTICO" value={prazoCritico} hint="< 3 dias" icon={AlertTriangle} tone="destructive" onClick={() => navigate({ to: "/inqueritos", search: { prazo: "critico" } })} />
-        <StatCard label="RÉU PRESO" value={reuPreso} hint="Casos com prisão" icon={Shield} tone="purple" />
-        <StatCard label="MED. PROTETIVAS" value={medidasProtetivas} hint="Ativas" icon={Gavel} tone="warning" />
+        <div className={kpiFxClass}><StatCard label="TOTAL" value={total} hint="Procedimentos cadastrados" icon={FileText} tone="success" onClick={() => navigate({ to: "/inqueritos" })} /></div>
+        <div className={kpiFxClass}><StatCard label="EM ANDAMENTO" value={emAndamento} hint={`${total === 0 ? 0 : Math.round((emAndamento / total) * 100)}% do total`} icon={Clock} tone="info" onClick={() => navigate({ to: "/inqueritos", search: { status: "andamento" } })} /></div>
+        <div className={kpiFxClass}><StatCard label="CONCLUÍDOS" value={finalizados} hint={`${taxaConclusao}% taxa atual`} icon={CheckCircle2} tone="primary" onClick={() => navigate({ to: "/inqueritos", search: { status: "concluido" } })} /></div>
+        <div className={kpiFxClass}><StatCard label="PRIOR. ALTA" value={prioridadeAlta} hint="Requer atenção" icon={TrendingUp} tone="warning" onClick={() => navigate({ to: "/inqueritos", search: { prioridade: "alta" } })} /></div>
+        <div className={kpiFxClass}><StatCard label="PRAZO CRÍTICO" value={prazoCritico} hint="< 3 dias" icon={AlertTriangle} tone="destructive" onClick={() => navigate({ to: "/inqueritos", search: { prazo: "critico" } })} /></div>
+        <div className={kpiFxClass}><StatCard label="RÉU PRESO" value={reuPreso} hint="Casos com prisão" icon={Shield} tone="purple" /></div>
+        <div className={kpiFxClass}><StatCard label="MED. PROTETIVAS" value={medidasProtetivas} hint="Ativas" icon={Gavel} tone="warning" /></div>
       </div>
 
       {/* Mid row */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-6">
-        <Panel
+        <div className={panelFxClass}><Panel
           title="ALERTAS CRÍTICOS"
           accent="destructive"
           icon={<AlertOctagon className="h-4 w-4 text-destructive" />}
         >
           <ul className="space-y-3">
-            <li className="flex items-center gap-3">
+            <li className="flex items-center gap-3 rounded-md px-1.5 py-1 transition-colors duration-200 hover:bg-success/10">
               <span className="h-2 w-2 rounded-full bg-destructive shrink-0" />
               <div className="flex-1">
                 <div className="text-sm font-semibold">Inquéritos em prazo crítico</div>
@@ -177,7 +181,7 @@ function Dashboard() {
                 {prazoCritico}
               </span>
             </li>
-            <li className="flex items-center gap-3">
+            <li className="flex items-center gap-3 rounded-md px-1.5 py-1 transition-colors duration-200 hover:bg-success/10">
               <span className="h-2 w-2 rounded-full bg-warning shrink-0" />
               <div className="flex-1">
                 <div className="text-sm font-semibold">Casos prioridade ALTA</div>
@@ -187,7 +191,7 @@ function Dashboard() {
                 {prioridadeAlta}
               </span>
             </li>
-            <li className="flex items-center gap-3">
+            <li className="flex items-center gap-3 rounded-md px-1.5 py-1 transition-colors duration-200 hover:bg-success/10">
               <span className="h-2 w-2 rounded-full bg-info shrink-0" />
               <div className="flex-1">
                 <div className="text-sm font-semibold">CVLI sem relatar</div>
@@ -197,7 +201,7 @@ function Dashboard() {
                 {0}
               </span>
             </li>
-            <li className="flex items-center gap-3">
+            <li className="flex items-center gap-3 rounded-md px-1.5 py-1 transition-colors duration-200 hover:bg-success/10">
               <span className="h-2 w-2 rounded-full bg-purple shrink-0" />
               <div className="flex-1">
                 <div className="text-sm font-semibold">Crimes Sexuais sem relatar</div>
@@ -208,21 +212,21 @@ function Dashboard() {
               </span>
             </li>
           </ul>
-        </Panel>
+        </Panel></div>
 
-        <Panel title="PENDÊNCIAS POR CATEGORIA" accent="warning" icon={<Bell className="h-4 w-4 text-warning" />}>
+        <div className={panelFxClass}><Panel title="PENDÊNCIAS POR CATEGORIA" accent="warning" icon={<Bell className="h-4 w-4 text-warning" />}>
           <ul className="space-y-3">
             {[{ label: "Representações", value: totalRepresentacoes }, { label: "Em andamento", value: emAndamento }, { label: "Concluídos", value: finalizados }, { label: "Alertas/Prazos", value: prazoCritico }].map((p) => (
-              <li key={p.label} className="flex items-start gap-3">
+              <li key={p.label} className="flex items-start gap-3 rounded-md px-1.5 py-1 transition-colors duration-200 hover:bg-success/10">
                 <span className="h-2 w-2 rounded-full bg-warning mt-1.5 shrink-0" />
                 <div className="flex-1 text-sm">{p.label}</div>
                 <div className="text-sm font-bold tabular-nums text-warning">{p.value}</div>
               </li>
             ))}
           </ul>
-        </Panel>
+        </Panel></div>
 
-        <Panel title="META DE CONCLUSÃO" accent="success">
+        <div className={panelFxClass}><Panel title="META DE CONCLUSÃO" accent="success">
           <ul className="space-y-3 text-sm">
             <Row label="Procedimentos cadastrados" value={String(total)} color="var(--info)" />
             <Row label="Relatórios enviados" value={String(finalizados)} color="var(--success)" />
@@ -255,14 +259,14 @@ function Dashboard() {
               </div>
             </div>
           </div>
-        </Panel>
+        </Panel></div>
       </div>
 
       {/* Donut row */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-6">
-        <DonutPanel title="POR STATUS DE DILIGÊNCIA" data={POR_STATUS} total={POR_STATUS.reduce((a, b) => a + b.value, 0)} />
-        <DonutPanel title="POR PRIORIDADE" data={POR_PRIORIDADE} total={POR_PRIORIDADE.reduce((a, b) => a + b.value, 0)} />
-        <Panel
+        <div className={panelFxClass}><DonutPanel title="POR STATUS DE DILIGÊNCIA" data={POR_STATUS} total={POR_STATUS.reduce((a, b) => a + b.value, 0)} /></div>
+        <div className={panelFxClass}><DonutPanel title="POR PRIORIDADE" data={POR_PRIORIDADE} total={POR_PRIORIDADE.reduce((a, b) => a + b.value, 0)} /></div>
+        <div className={panelFxClass}><Panel
           title="PROCEDIMENTOS POR TIPO"
           accent="success"
           action={<Maximize2 className="h-3.5 w-3.5 text-muted-foreground" />}
@@ -286,12 +290,12 @@ function Dashboard() {
           <div className="mt-4 text-[11px] text-muted-foreground">
             IP: Inquéritos · APF: Flagrantes · TCO: Termos · BOC: Boletins · AIAI: Ato Infracional
           </div>
-        </Panel>
+        </Panel></div>
       </div>
 
       {/* CVLI Chart */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-5 mb-6">
-        <Panel title="CVLI — COMPARATIVO ANUAL" accent="success" className="xl:col-span-2">
+        <div className={panelFxClass}><Panel title="CVLI — COMPARATIVO ANUAL" accent="success" className="xl:col-span-2">
           <div className="flex items-center gap-5 text-xs mb-3">
             <Legend color="var(--info)" label="Registros" />
             <Legend color="var(--success)" label="Elucidados" />
@@ -335,9 +339,9 @@ function Dashboard() {
               <div className="h-full flex items-center justify-center text-sm text-muted-foreground">Nenhum dado disponível.</div>
             )}
           </div>
-        </Panel>
+        </Panel></div>
 
-        <div className="bg-card border border-border rounded-xl overflow-hidden">
+        <div className="bg-card border border-border rounded-xl overflow-hidden transition-all duration-300 hover:border-success/55 hover:shadow-[0_0_0_1px_rgba(34,197,94,0.25),0_14px_28px_-22px_rgba(34,197,94,0.75)]">
           <div className="px-4 py-3 border-b border-border bg-muted/20">
             <div className="text-[10px] tracking-[0.15em] text-muted-foreground font-bold">
               CVLI — RESUMO ANUAL
@@ -354,7 +358,7 @@ function Dashboard() {
             </thead>
             <tbody>
               {CVLI_ANUAL.map((r) => (
-                <tr key={r.ano} className="border-t border-border">
+                <tr key={r.ano} className="border-t border-border transition-colors duration-200 hover:bg-success/10">
                   <td className="px-4 py-3 font-semibold">{r.ano}</td>
                   <td className="px-4 py-3 text-right tabular-nums">{r.registros}</td>
                   <td className="px-4 py-3 text-right tabular-nums">{r.elucidados}</td>
@@ -382,7 +386,7 @@ function Dashboard() {
 
       {/* CVLI mensal + Bairros */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-5 mb-6">
-        <Panel title="CVLI — REGISTROS MENSAIS (2023–2026)" accent="info">
+        <div className={panelFxClass}><Panel title="CVLI — REGISTROS MENSAIS (2023–2026)" accent="info">
           <div className="h-[220px] min-h-[220px]">
             {isClient && CVLI_MENSAL.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
@@ -408,9 +412,9 @@ function Dashboard() {
               <div className="h-full flex items-center justify-center text-sm text-muted-foreground">Nenhum dado disponível.</div>
             )}
           </div>
-        </Panel>
+        </Panel></div>
 
-        <Panel title="ANÁLISE POR LOCALIDADE" accent="warning">
+        <div className={panelFxClass}><Panel title="ANÁLISE POR LOCALIDADE" accent="warning">
           <div className="overflow-auto max-h-72">
             <table className="w-full text-sm">
               <thead className="text-[10px] tracking-[0.15em] text-muted-foreground sticky top-0 bg-card">
@@ -430,7 +434,7 @@ function Dashboard() {
                   </tr>
                 ) : (
                   POR_BAIRRO.map((b) => (
-                    <tr key={b.bairro} className="border-b border-border/50">
+                    <tr key={b.bairro} className="border-b border-border/50 transition-colors duration-200 hover:bg-success/10">
                       <td className="py-2.5 font-medium">{b.bairro}</td>
                       <td className="py-2.5 text-right tabular-nums">{b.total}</td>
                       <td className="py-2.5 text-right tabular-nums text-destructive">{b.cvli}</td>
@@ -441,12 +445,12 @@ function Dashboard() {
               </tbody>
             </table>
           </div>
-        </Panel>
+        </Panel></div>
       </div>
 
       {/* Gravidade + Equipe */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
-        <Panel title="ANÁLISE POR GRAVIDADE" accent="destructive">
+        <div className={panelFxClass}><Panel title="ANÁLISE POR GRAVIDADE" accent="destructive">
           <div className="h-[220px] min-h-[220px]">
             {isClient && POR_GRAVIDADE.some((item) => item.value > 0) ? (
               <ResponsiveContainer width="100%" height="100%">
@@ -469,9 +473,9 @@ function Dashboard() {
               <div className="h-full flex items-center justify-center text-sm text-muted-foreground">Nenhum dado disponível.</div>
             )}
           </div>
-        </Panel>
+        </Panel></div>
 
-        <Panel
+        <div className={panelFxClass}><Panel
           title="DISTRIBUIÇÃO POR EQUIPE"
           accent="success"
           action={<ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />}
@@ -496,7 +500,7 @@ function Dashboard() {
               ))}
             </ul>
           )}
-        </Panel>
+        </Panel></div>
       </div>
     </AppLayout>
   );
