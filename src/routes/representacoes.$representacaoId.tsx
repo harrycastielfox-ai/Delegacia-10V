@@ -1,4 +1,4 @@
-import { Outlet, createFileRoute, Link, useMatchRoute, useNavigate } from "@tanstack/react-router";
+import { Outlet, createFileRoute, Link, useLocation, useMatchRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { AppLayout } from "@/components/AppLayout";
 import { getRepresentacaoById, softDeleteRepresentacao, type RepresentacaoRecord } from "@/lib/repositories/representacoesRepository";
@@ -8,10 +8,13 @@ export const Route = createFileRoute("/representacoes/$representacaoId")({ compo
 function DetalheRepresentacao() {
   const { representacaoId } = Route.useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const matchRoute = useMatchRoute();
   const isEditingRoute = Boolean(matchRoute({ to: "/representacoes/$representacaoId/editar", params: { representacaoId } }));
   const [item, setItem] = useState<RepresentacaoRecord | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -41,7 +44,7 @@ function DetalheRepresentacao() {
     return () => {
       active = false;
     };
-  }, [representacaoId]);
+  }, [representacaoId, location.pathname]);
 
   if (isEditingRoute) return <Outlet />;
   if (loading) return <AppLayout>Carregando representação...</AppLayout>;
@@ -49,12 +52,17 @@ function DetalheRepresentacao() {
   if (!item) return <AppLayout>Representação não encontrada.</AppLayout>;
 
   const remove = async () => {
-    if (!confirm("Deseja remover esta representação? No sistema final, esta ação deverá ser registrada em auditoria.")) return;
+    if (!item || isDeleting) return;
+
+    setIsDeleting(true);
     try {
       await softDeleteRepresentacao(item.id);
+      setShowDeleteModal(false);
       navigate({ to: "/representacoes" });
     } catch {
       alert("Não foi possível excluir a representação agora.");
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -89,7 +97,7 @@ function DetalheRepresentacao() {
               >
                 Editar
               </button>
-              <button onClick={remove} className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-1.5 text-xs text-destructive">
+              <button onClick={() => setShowDeleteModal(true)} className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-1.5 text-xs text-destructive">
                 Excluir
               </button>
             </div>
@@ -158,6 +166,35 @@ function DetalheRepresentacao() {
           ))}
         </section>
       </div>
+
+      {showDeleteModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
+          <div className="w-full max-w-md rounded-xl border border-border bg-card p-5 shadow-2xl">
+            <h2 className="text-lg font-bold text-foreground">Excluir representação</h2>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Deseja remover esta representação? Esta ação poderá ser registrada em auditoria no sistema final.
+            </p>
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setShowDeleteModal(false)}
+                disabled={isDeleting}
+                className="rounded-md border border-border px-3 py-1.5 text-xs hover:bg-accent/40 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={remove}
+                disabled={isDeleting}
+                className="rounded-md border border-destructive/30 bg-destructive px-3 py-1.5 text-xs font-semibold text-destructive-foreground disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {isDeleting ? "Excluindo..." : "Excluir"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </AppLayout>
   );
 }
