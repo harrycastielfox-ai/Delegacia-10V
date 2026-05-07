@@ -132,6 +132,7 @@ function Representacoes() {
 
   return (
     <AppLayout>
+      <div className="rounded-2xl bg-black px-3 py-4 md:px-4 md:py-5">
       <div className="mb-5 flex flex-col gap-3 rounded-2xl border border-emerald-500/25 bg-gradient-to-r from-[#050606]/95 via-[#0b0f0e]/94 to-[#080b0a]/95 px-5 py-3.5 md:flex-row md:items-center md:justify-between md:px-6 md:py-3.5">
         <div className="flex items-start gap-3">
           <Activity className="mt-0.5 h-6 w-6 text-emerald-300" />
@@ -311,6 +312,7 @@ function Representacoes() {
             </tbody>
           </table>
         </div>
+      </div>
       </div>
     </AppLayout>
   );
