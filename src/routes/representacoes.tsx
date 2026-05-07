@@ -107,18 +107,25 @@ function Representacoes() {
 
   if (!isRepresentacoesIndex) return <Outlet />;
 
+  const summaryCards = [
+    { label: "TOTAL", value: stats.total, hint: "Representações", tone: "border-info/40 bg-info/10 text-info" },
+    { label: "DEFERIDAS", value: stats.deferidas, hint: "Pedidos acolhidos", tone: "border-emerald-500/40 bg-emerald-500/10 text-emerald-300" },
+    { label: "CUMPRIDAS", value: stats.cumpridas, hint: "Medidas cumpridas", tone: "border-teal-500/40 bg-teal-500/10 text-teal-300" },
+    { label: "INDEFERIDAS", value: stats.indeferidas, hint: "Pedidos rejeitados", tone: "border-rose-500/40 bg-rose-500/10 text-rose-300" },
+    { label: "PENDENTES", value: stats.pendentes, hint: "Em acompanhamento", tone: "border-amber-500/40 bg-amber-500/10 text-amber-300" },
+  ];
+
   return (
     <AppLayout>
-      <PageHeader
-        title="Representações Judiciais"
-        subtitle="Medidas requeridas ao Poder Judiciário"
-        showActions={false}
-      />
-
-      <div className="mb-6 flex justify-end">
+      <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+        <PageHeader
+          title="Representações Judiciais"
+          subtitle="Medidas requeridas ao Poder Judiciário"
+          showActions={false}
+        />
         <Link
           to="/nova-representacao"
-          className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2.5 rounded-lg text-sm font-semibold"
+          className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm md:mt-1"
         >
           Cadastrar Representação
         </Link>
@@ -126,32 +133,18 @@ function Representacoes() {
 
       {error && <p className="mb-3 text-xs text-destructive">{error}</p>}
 
-      <section className="mb-6 grid grid-cols-1 gap-4 xl:grid-cols-5">
-        <div className="rounded-xl border border-info/40 bg-info/10 p-4">
-          <p className="text-[11px] font-semibold tracking-[0.2em] text-info">TOTAL</p>
-          <p className="mt-3 text-3xl font-semibold text-foreground">{stats.total}</p>
-          <p className="mt-1 text-xs text-muted-foreground">Representações</p>
-        </div>
-        <div className="rounded-xl border border-emerald-500/40 bg-emerald-500/10 p-4">
-          <p className="text-[11px] font-semibold tracking-[0.2em] text-emerald-400">DEFERIDAS</p>
-          <p className="mt-3 text-3xl font-semibold text-emerald-300">{stats.deferidas}</p>
-        </div>
-        <div className="rounded-xl border border-teal-500/40 bg-teal-500/10 p-4">
-          <p className="text-[11px] font-semibold tracking-[0.2em] text-teal-300">CUMPRIDAS</p>
-          <p className="mt-3 text-3xl font-semibold text-teal-300">{stats.cumpridas}</p>
-        </div>
-        <div className="rounded-xl border border-rose-500/40 bg-rose-500/10 p-4">
-          <p className="text-[11px] font-semibold tracking-[0.2em] text-rose-400">INDEFERIDAS</p>
-          <p className="mt-3 text-3xl font-semibold text-rose-300">{stats.indeferidas}</p>
-        </div>
-        <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 p-4">
-          <p className="text-[11px] font-semibold tracking-[0.2em] text-amber-300">PENDENTES</p>
-          <p className="mt-3 text-3xl font-semibold text-amber-300">{stats.pendentes}</p>
-        </div>
+      <section className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
+        {summaryCards.map((card) => (
+          <div key={card.label} className={`rounded-xl border p-4 shadow-sm ${card.tone}`}>
+            <p className="text-[10px] font-bold tracking-[0.22em]">{card.label}</p>
+            <p className="mt-2 text-3xl font-semibold leading-none">{card.value}</p>
+            <p className="mt-2 text-xs text-muted-foreground">{card.hint}</p>
+          </div>
+        ))}
       </section>
 
-      <section className="mb-6 grid grid-cols-1 gap-4 xl:grid-cols-3">
-        <div className="xl:col-span-2 rounded-xl border border-border bg-card overflow-hidden">
+      <section className="mb-6 grid grid-cols-1 items-start gap-4 xl:grid-cols-3">
+        <div className="overflow-hidden rounded-xl border border-border bg-card xl:col-span-2">
           <div className="border-b border-border p-4">
             <h2 className="text-xs tracking-[0.2em] font-semibold text-primary">POR TIPO DE REPRESENTAÇÃO</h2>
           </div>
@@ -181,7 +174,7 @@ function Representacoes() {
                 })}
                 {stats.porTipo.length === 0 && (
                   <tr>
-                    <td colSpan={5} className="px-4 py-4 text-center text-muted-foreground">
+                    <td colSpan={5} className="px-4 py-8 text-center text-sm text-muted-foreground">
                       Nenhuma representação cadastrada ainda.
                     </td>
                   </tr>
@@ -191,7 +184,7 @@ function Representacoes() {
           </div>
         </div>
 
-        <div className="rounded-xl border border-border bg-card overflow-hidden">
+        <div className="overflow-hidden rounded-xl border border-border bg-card">
           <div className="border-b border-border p-4">
             <h2 className="text-xs tracking-[0.2em] font-semibold text-amber-300">STATUS GERAL</h2>
           </div>
@@ -225,9 +218,9 @@ function Representacoes() {
         </div>
       </div>
 
-      <div className="bg-card border border-border rounded-xl overflow-hidden">
+      <div className="overflow-hidden rounded-xl border border-border bg-card">
         <div className="px-4 py-3 border-b border-border text-xs tracking-[0.2em] font-semibold text-muted-foreground">
-          REPRESENTAÇÕES CADASTRADAS
+          REPRESENTAÇÕES RECENTES
         </div>
         <div className="overflow-auto">
           <table className="w-full text-sm min-w-[1100px]">
@@ -252,7 +245,11 @@ function Representacoes() {
                   <td className="px-4 py-3 text-xs">{r.tipo || "Não informado"}</td>
                   <td className="px-4 py-3 text-xs">{r.processo_judicial || "—"}</td>
                   <td className="px-4 py-3 text-xs">{r.data_representacao || "—"}</td>
-                  <td className="px-4 py-3 text-xs">{r.status || "—"}</td>
+                  <td className="px-4 py-3 text-xs">
+                    <span className="inline-flex rounded-full border border-border bg-muted/30 px-2.5 py-1 text-[11px] font-semibold">
+                      {r.status || "—"}
+                    </span>
+                  </td>
                   <td className="px-4 py-3 text-right">
                     <button
                       onClick={() =>
@@ -261,7 +258,7 @@ function Representacoes() {
                           params: { representacaoId: r.id },
                         })
                       }
-                      className="rounded-md border border-info/30 bg-info/10 px-2.5 py-1 text-[11px] font-semibold text-info"
+                      className="rounded-md border border-info/30 bg-info/10 px-3 py-1.5 text-[11px] font-semibold text-info"
                     >
                       Abrir
                     </button>
