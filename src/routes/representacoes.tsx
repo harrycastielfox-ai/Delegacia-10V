@@ -124,11 +124,11 @@ function Representacoes() {
   if (!isRepresentacoesIndex) return <Outlet />;
 
   const summaryCards = [
-    { label: "TOTAL", value: stats.total, hint: "Representações", tone: "border-cyan-400/35 bg-gradient-to-br from-slate-950 via-slate-900 to-cyan-950/60 text-cyan-200 shadow-[0_0_24px_rgba(34,211,238,0.16)]", hoverTone: "hover:border-cyan-300/50 hover:shadow-[0_0_34px_rgba(34,211,238,0.26)]" },
-    { label: "DEFERIDAS", value: stats.deferidas, hint: "Pedidos acolhidos", tone: "border-emerald-400/35 bg-gradient-to-br from-slate-950 via-slate-900 to-emerald-950/65 text-emerald-200 shadow-[0_0_24px_rgba(16,185,129,0.18)]", hoverTone: "hover:border-emerald-300/50 hover:shadow-[0_0_34px_rgba(16,185,129,0.28)]" },
-    { label: "CUMPRIDAS", value: stats.cumpridas, hint: "Medidas cumpridas", tone: "border-teal-400/35 bg-gradient-to-br from-slate-950 via-slate-900 to-teal-950/65 text-teal-200 shadow-[0_0_24px_rgba(20,184,166,0.18)]", hoverTone: "hover:border-teal-300/50 hover:shadow-[0_0_34px_rgba(20,184,166,0.28)]" },
-    { label: "INDEFERIDAS", value: stats.indeferidas, hint: "Pedidos rejeitados", tone: "border-rose-400/35 bg-gradient-to-br from-slate-950 via-slate-900 to-rose-950/65 text-rose-200 shadow-[0_0_24px_rgba(244,63,94,0.18)]", hoverTone: "hover:border-rose-300/55 hover:shadow-[0_0_34px_rgba(244,63,94,0.28)]" },
-    { label: "PENDENTES", value: stats.pendentes, hint: "Em acompanhamento", tone: "border-amber-400/35 bg-gradient-to-br from-slate-950 via-slate-900 to-amber-950/65 text-amber-200 shadow-[0_0_24px_rgba(245,158,11,0.18)]", hoverTone: "hover:border-amber-300/50 hover:shadow-[0_0_34px_rgba(245,158,11,0.28)]" },
+    { label: "TOTAL", value: stats.total, hint: "Representações", tone: "border-cyan-400/35 bg-gradient-to-br from-slate-950 via-slate-900 to-cyan-950/60 text-cyan-200 shadow-[0_0_24px_rgba(34,211,238,0.16)]", hoverTone: "hover:border-cyan-200/80 hover:shadow-[0_0_44px_rgba(34,211,238,0.42),0_0_70px_rgba(59,130,246,0.24)]", valueHoverTone: "group-hover:drop-shadow-[0_0_18px_rgba(34,211,238,0.9)]" },
+    { label: "DEFERIDAS", value: stats.deferidas, hint: "Pedidos acolhidos", tone: "border-emerald-400/35 bg-gradient-to-br from-slate-950 via-slate-900 to-emerald-950/65 text-emerald-200 shadow-[0_0_24px_rgba(16,185,129,0.18)]", hoverTone: "hover:border-emerald-200/80 hover:shadow-[0_0_44px_rgba(16,185,129,0.44),0_0_70px_rgba(34,197,94,0.22)]", valueHoverTone: "group-hover:drop-shadow-[0_0_18px_rgba(16,185,129,0.9)]" },
+    { label: "CUMPRIDAS", value: stats.cumpridas, hint: "Medidas cumpridas", tone: "border-teal-400/35 bg-gradient-to-br from-slate-950 via-slate-900 to-teal-950/65 text-teal-200 shadow-[0_0_24px_rgba(20,184,166,0.18)]", hoverTone: "hover:border-teal-200/80 hover:shadow-[0_0_44px_rgba(20,184,166,0.44),0_0_70px_rgba(34,211,238,0.2)]", valueHoverTone: "group-hover:drop-shadow-[0_0_18px_rgba(20,184,166,0.9)]" },
+    { label: "INDEFERIDAS", value: stats.indeferidas, hint: "Pedidos rejeitados", tone: "border-rose-400/35 bg-gradient-to-br from-slate-950 via-slate-900 to-rose-950/65 text-rose-200 shadow-[0_0_24px_rgba(244,63,94,0.18)]", hoverTone: "hover:border-rose-200/80 hover:shadow-[0_0_44px_rgba(244,63,94,0.46),0_0_70px_rgba(236,72,153,0.24)]", valueHoverTone: "group-hover:drop-shadow-[0_0_18px_rgba(244,63,94,0.92)]" },
+    { label: "PENDENTES", value: stats.pendentes, hint: "Em acompanhamento", tone: "border-amber-400/35 bg-gradient-to-br from-slate-950 via-slate-900 to-amber-950/65 text-amber-200 shadow-[0_0_24px_rgba(245,158,11,0.18)]", hoverTone: "hover:border-amber-200/80 hover:shadow-[0_0_44px_rgba(245,158,11,0.44),0_0_70px_rgba(250,204,21,0.24)]", valueHoverTone: "group-hover:drop-shadow-[0_0_18px_rgba(245,158,11,0.92)]" },
   ];
 
   return (
@@ -153,10 +153,10 @@ function Representacoes() {
         {summaryCards.map((card) => (
           <div
             key={card.label}
-            className={`group rounded-xl border p-4 backdrop-blur-sm transition-all duration-300 ease-out hover:-translate-y-1 hover:brightness-110 ${card.tone} ${card.hoverTone}`}
+            className={`group rounded-xl border p-4 backdrop-blur-sm transition-all duration-300 ease-out hover:-translate-y-1 hover:scale-[1.01] hover:brightness-110 ${card.tone} ${card.hoverTone}`}
           >
             <p className="text-[10px] font-bold tracking-[0.22em]">{card.label}</p>
-            <p className="mt-2 text-3xl font-bold leading-none tracking-tight text-white transition-all duration-300 group-hover:text-white group-hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.35)]">
+            <p className={`mt-2 text-3xl font-bold leading-none tracking-tight text-white transition-all duration-300 group-hover:text-white group-hover:[text-shadow:0_0_14px_rgba(255,255,255,0.5)] ${card.valueHoverTone}`}>
               {card.value}
             </p>
             <p className="mt-2 text-xs text-slate-300/90">{card.hint}</p>
@@ -165,7 +165,7 @@ function Representacoes() {
       </section>
 
       <section className="mb-6 grid grid-cols-1 items-start gap-4 xl:grid-cols-3">
-        <div className="overflow-hidden rounded-xl border border-cyan-500/20 bg-gradient-to-b from-slate-950/90 to-slate-900/85 shadow-[0_0_24px_rgba(34,211,238,0.08)] transition-all duration-300 ease-out hover:-translate-y-0.5 hover:border-cyan-400/35 hover:shadow-[0_0_28px_rgba(34,211,238,0.16)] xl:col-span-2">
+        <div className="overflow-hidden rounded-xl border border-cyan-500/20 bg-gradient-to-b from-slate-950/90 to-slate-900/85 shadow-[0_0_24px_rgba(34,211,238,0.08)] transition-all duration-300 ease-out hover:border-cyan-300/45 hover:shadow-[0_0_30px_rgba(34,211,238,0.18)] xl:col-span-2">
           <div className="border-b border-white/10 px-5 py-4">
             <h2 className="text-sm tracking-[0.18em] font-semibold text-cyan-200">POR TIPO DE REPRESENTAÇÃO</h2>
           </div>
@@ -205,7 +205,7 @@ function Representacoes() {
           </div>
         </div>
 
-        <div className="overflow-hidden rounded-xl border border-amber-400/25 bg-gradient-to-b from-slate-950/90 to-slate-900/85 shadow-[0_0_20px_rgba(245,158,11,0.08)] transition-all duration-300 ease-out hover:-translate-y-0.5 hover:border-amber-300/40 hover:shadow-[0_0_28px_rgba(245,158,11,0.16)]">
+        <div className="overflow-hidden rounded-xl border border-amber-400/25 bg-gradient-to-b from-slate-950/90 to-slate-900/85 shadow-[0_0_20px_rgba(245,158,11,0.08)] transition-all duration-300 ease-out hover:border-amber-300/50 hover:shadow-[0_0_30px_rgba(245,158,11,0.18)]">
           <div className="border-b border-border p-4">
             <h2 className="text-sm tracking-[0.18em] font-semibold text-amber-200">STATUS GERAL</h2>
           </div>
@@ -259,7 +259,7 @@ function Representacoes() {
             </thead>
             <tbody>
               {filtered.map((r) => (
-                <tr key={r.id} className="border-t border-white/10 transition-colors duration-200 hover:bg-sky-950/55">
+                <tr key={r.id} className="border-t border-white/10 transition-colors duration-200 hover:bg-sky-900/40">
                   <td className="px-4 py-3 font-semibold">{r.numero_ppe || "—"}</td>
                   <td className="max-w-[220px] truncate px-4 py-3 text-xs text-slate-200">{r.vitima || "—"}</td>
                   <td className="max-w-[220px] truncate px-4 py-3 text-xs text-slate-200">{r.investigado || "—"}</td>
