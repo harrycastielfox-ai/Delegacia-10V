@@ -65,11 +65,11 @@ function LoginPage() {
           <span className="h-px w-8 bg-destructive/50" />
         </div>
 
-        <div className="bg-card border border-border rounded-2xl shadow-2xl shadow-black/40 overflow-hidden">
+        <div className="bg-card border border-border rounded-2xl shadow-2xl shadow-black/40">
           {/* Cabeçalho */}
           <div className="px-8 pt-8 pb-6 text-center border-b border-border bg-gradient-to-b from-primary/5 to-transparent">
-            <div className="mx-auto h-24 w-24 rounded-xl bg-primary/15 border border-primary/30 shadow-[0_0_20px_rgba(34,197,94,0.20)] flex items-center justify-center mb-3 overflow-hidden">
-              <img src="/sipi-logo.png" alt="Logo SIPI" className="h-full w-full object-contain scale-[1.6]" />
+            <div className="mx-auto h-32 w-32 rounded-xl bg-primary/15 border border-primary/30 shadow-[0_0_24px_rgba(34,197,94,0.28)] flex items-center justify-center mb-3 p-2">
+              <img src="/sipi-logo.png" alt="Logo SIPI" className="h-full w-full object-contain" />
             </div>
             <h1 className="text-2xl font-bold tracking-wide text-foreground">SIPI</h1>
             <p className="text-xs text-muted-foreground mt-1">Sistema de Inquéritos Policiais</p>

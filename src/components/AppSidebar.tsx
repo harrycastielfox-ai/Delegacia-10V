@@ -23,8 +23,8 @@ export function AppSidebar() {
   return (
     <aside className="hidden md:flex w-64 shrink-0 flex-col bg-sidebar border-r border-sidebar-border">
       <div className="px-5 py-5 flex items-center gap-3">
-        <div className="h-12 w-12 rounded-lg bg-primary/15 border border-primary/30 shadow-[0_0_16px_rgba(34,197,94,0.20)] flex items-center justify-center overflow-hidden">
-          <img src="/sipi-logo.png" alt="Logo SIPI" className="h-full w-full object-contain scale-[1.25]" />
+        <div className="h-14 w-14 rounded-lg bg-primary/15 border border-primary/30 shadow-[0_0_18px_rgba(34,197,94,0.24)] flex items-center justify-center p-1.5">
+          <img src="/sipi-logo.png" alt="Logo SIPI" className="h-full w-full object-contain" />
         </div>
         <div>
           <div className="font-bold text-sidebar-foreground tracking-wide">SIPI</div>
