@@ -1,5 +1,5 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { LayoutDashboard, FileText, FilePlus2, Bell, ShieldCheck, Shield, LogOut, Gavel } from "lucide-react";
+import { LayoutDashboard, FileText, FilePlus2, Bell, ShieldCheck, LogOut, Gavel } from "lucide-react";
 import { logout } from "@/lib/auth";
 
 const items = [
@@ -23,8 +23,8 @@ export function AppSidebar() {
   return (
     <aside className="hidden md:flex w-64 shrink-0 flex-col bg-sidebar border-r border-sidebar-border">
       <div className="px-5 py-5 flex items-center gap-3">
-        <div className="h-10 w-10 rounded-lg bg-primary/15 border border-primary/30 flex items-center justify-center">
-          <Shield className="h-5 w-5 text-primary" />
+        <div className="h-10 w-10 rounded-lg bg-primary/15 border border-primary/30 shadow-[0_0_16px_rgba(34,197,94,0.20)] flex items-center justify-center overflow-hidden">
+          <img src="/sipi-logo.png" alt="Logo SIPI" className="h-7 w-7 object-contain" />
         </div>
         <div>
           <div className="font-bold text-sidebar-foreground tracking-wide">SIPI</div>
