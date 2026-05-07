@@ -21,18 +21,18 @@ function getStatusBadgeClass(status?: string | null) {
     return "border-amber-300/35 bg-amber-300/10 text-amber-100";
   }
   if (normalized.includes("enviada") || normalized.includes("analise")) {
-    return "border-cyan-300/35 bg-cyan-300/10 text-cyan-100";
+    return "border-emerald-300/30 bg-emerald-300/10 text-emerald-100";
   }
-  return "border-primary/35 bg-primary/10 text-primary";
+  return "border-emerald-200/30 bg-emerald-200/10 text-emerald-100";
 }
 
 function getPrioridadeBadgeClass(prioridade?: string | null) {
   const normalized = prioridade?.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "") ?? "";
-  if (normalized.includes("urgente")) return "border-violet-300/35 bg-violet-300/10 text-violet-100";
-  if (normalized.includes("alta")) return "border-rose-300/35 bg-rose-300/10 text-rose-100";
+  if (normalized.includes("urgente")) return "border-rose-300/35 bg-rose-400/10 text-rose-100";
+  if (normalized.includes("alta")) return "border-amber-300/35 bg-amber-300/10 text-amber-100";
   if (normalized.includes("media")) return "border-amber-300/35 bg-amber-300/10 text-amber-100";
-  if (normalized.includes("baixa") || normalized.includes("normal")) return "border-cyan-300/35 bg-cyan-300/10 text-cyan-100";
-  return "border-muted-foreground/35 bg-muted/20 text-muted-foreground";
+  if (normalized.includes("baixa") || normalized.includes("normal")) return "border-emerald-300/35 bg-emerald-300/10 text-emerald-100";
+  return "border-zinc-500/40 bg-zinc-800/70 text-zinc-200";
 }
 
 function DetalheRepresentacao() {
@@ -99,6 +99,12 @@ function DetalheRepresentacao() {
   const subtitleParts = [item.tipo, item.processo_judicial ? `Processo: ${item.processo_judicial}` : ""].filter(Boolean);
   const statusText = withFallback(item.status);
   const prioridadeText = withFallback(item.prioridade_operacional);
+  const sectionCardClass =
+    "self-start rounded-xl border border-emerald-400/20 bg-zinc-950/90 p-4 shadow-[0_0_0_1px_rgba(16,185,129,0.08),0_8px_24px_rgba(0,0,0,0.35)] transition-colors duration-200 hover:border-emerald-300/35 hover:shadow-[0_0_0_1px_rgba(52,211,153,0.2),0_10px_24px_rgba(0,0,0,0.4)]";
+  const sectionTitleClass = "mb-3 text-[11px] font-bold uppercase tracking-[0.2em] text-emerald-300";
+  const infoRowClass = "grid gap-1 py-2.5 sm:grid-cols-[190px_1fr] sm:gap-3";
+  const summaryCardClass =
+    "rounded-lg border border-emerald-400/20 bg-zinc-950/85 px-3 py-2.5 shadow-[inset_0_0_0_1px_rgba(16,185,129,0.06)] transition-colors duration-200 hover:border-emerald-300/35 hover:bg-zinc-950";
   const cardSections: Array<{ title: string; items: Array<[string, string | null | undefined]> }> = [
     {
       title: "Identificação da Representação",
@@ -108,7 +114,6 @@ function DetalheRepresentacao() {
         ["Tipo de Representação", item.tipo],
         ["Data da Representação", item.data_representacao],
         ["Responsável pela Representação", item.responsavel],
-        ["ID interno", item.id],
       ],
     },
     {
@@ -149,30 +154,30 @@ function DetalheRepresentacao() {
 
   return (
     <AppLayout>
-      <div className="space-y-5">
-        <header className="rounded-xl border border-emerald-400/25 bg-gradient-to-br from-card via-card to-emerald-950/15 p-5 shadow-lg shadow-black/20">
-          <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+      <div className="space-y-4">
+        <header className="rounded-xl border border-emerald-400/25 bg-zinc-950/95 p-4 shadow-[0_0_0_1px_rgba(16,185,129,0.1),0_10px_30px_rgba(0,0,0,0.45)]">
+          <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
             <div className="min-w-0">
-              <Link to="/representacoes" className="mb-3 inline-flex items-center rounded-md border border-cyan-300/25 bg-cyan-300/5 px-2.5 py-1 text-[11px] text-cyan-100 transition hover:bg-cyan-300/10">
+              <Link to="/representacoes" className="mb-2 inline-flex items-center rounded-md border border-emerald-400/25 bg-emerald-400/10 px-2.5 py-1 text-[11px] text-emerald-100 transition hover:bg-emerald-400/15">
                 ← Voltar para lista
               </Link>
-              <h1 className="text-2xl font-extrabold break-words text-foreground">Representação</h1>
-              <p className="mt-1 text-sm text-muted-foreground break-words">
+              <h1 className="text-2xl font-extrabold break-words text-zinc-100">Representação</h1>
+              <p className="mt-0.5 text-sm break-words text-zinc-400">
                 {subtitleParts.length > 0 ? subtitleParts.join(" • ") : "Detalhes da representação cadastrada"}
               </p>
-              <p className="mt-2 text-sm text-emerald-200/90 break-words">{item.numero_ppe ? `PPE/Procedimento: ${item.numero_ppe}` : `Processo/PPE: ${withFallback(item.processo_judicial)}`}</p>
+              <p className="mt-1.5 text-sm break-words text-emerald-200/90">{item.numero_ppe ? `PPE/Procedimento: ${item.numero_ppe}` : `Processo/PPE: ${withFallback(item.processo_judicial)}`}</p>
             </div>
 
             <div className="flex flex-wrap items-center gap-2 md:justify-end">
               <span className={`inline-flex items-center rounded-md border px-2.5 py-1 text-[11px] font-semibold ${getStatusBadgeClass(item.status)}`}>
                 {statusText}
               </span>
-              <button onClick={() => window.print()} className="rounded-md border border-cyan-300/30 bg-cyan-300/5 px-3 py-1.5 text-xs text-cyan-100 transition hover:bg-cyan-300/10">
+              <button onClick={() => window.print()} className="rounded-md border border-emerald-400/30 bg-emerald-400/10 px-3 py-1.5 text-xs text-emerald-100 transition hover:bg-emerald-400/15">
                 Imprimir
               </button>
               <button
                 onClick={() => navigate({ to: "/representacoes/$representacaoId/editar", params: { representacaoId: item.id } })}
-                className="rounded-md border border-cyan-300/40 px-3 py-1.5 text-xs text-cyan-100 transition hover:bg-cyan-300/10"
+                className="rounded-md border border-emerald-400/35 px-3 py-1.5 text-xs text-emerald-100 transition hover:bg-emerald-400/15"
               >
                 Editar
               </button>
@@ -183,15 +188,15 @@ function DetalheRepresentacao() {
           </div>
         </header>
 
-        <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <section className="grid items-start gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {[
-            ["Tipo", withFallback(item.tipo), "text-cyan-100"],
+            ["Tipo", withFallback(item.tipo), "text-zinc-100"],
             ["Status", statusText, "text-emerald-100"],
-            ["Prioridade", prioridadeText, "text-violet-100"],
-            ["Processo/PPE", withFallback(item.processo_judicial || item.numero_ppe), "text-foreground"],
+            ["Prioridade", prioridadeText, "text-amber-100"],
+            ["Processo/PPE", withFallback(item.processo_judicial || item.numero_ppe), "text-zinc-100"],
           ].map(([label, value, valueClass]) => (
-            <article key={label} className="rounded-lg border border-cyan-300/20 bg-card/70 px-3 py-3">
-              <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">{label}</p>
+            <article key={label} className={summaryCardClass}>
+              <p className="text-[10px] uppercase tracking-[0.18em] text-zinc-500">{label}</p>
               {label === "Status" ? (
                 <span className={`mt-1 inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-semibold ${getStatusBadgeClass(item.status)}`}>{value}</span>
               ) : label === "Prioridade" ? (
@@ -205,32 +210,51 @@ function DetalheRepresentacao() {
           ))}
         </section>
 
-        <section className="grid gap-4 md:grid-cols-2">
-          {[cardSections[0], cardSections[2], cardSections[4]].map(({ title, items }) => (
-            <article key={title} className="rounded-xl border border-emerald-400/20 bg-card/90 p-4">
-              <h2 className="mb-3 text-xs font-bold uppercase tracking-[0.22em] text-cyan-200">{title}</h2>
-              <div className="divide-y divide-border/40">
-                {items.map(([label, value]) => (
-                  <div key={label} className="grid gap-1 py-2.5 sm:grid-cols-[190px_1fr] sm:gap-3">
-                    <p className="text-[11px] uppercase tracking-wide text-muted-foreground">{label}</p>
-                    <p className="text-sm text-foreground whitespace-pre-wrap break-words">{withFallback(value)}</p>
+        <section className="grid items-start gap-4 md:grid-cols-2">
+          <div className="space-y-4">
+            {[cardSections[0], cardSections[2], cardSections[4]].map(({ title, items }) => (
+              <article key={title} className={sectionCardClass}>
+                <h2 className={sectionTitleClass}>{title}</h2>
+                {title === "Fundamentação e Finalidade" ? (
+                  <div className="space-y-2.5">
+                    {items.map(([label, value]) => (
+                      <div key={label} className="rounded-lg border border-emerald-400/15 bg-zinc-900/45 px-3 py-2.5">
+                        <p className="text-[10px] uppercase tracking-[0.16em] text-zinc-500">{label}</p>
+                        <p className="mt-1 text-sm text-zinc-100 whitespace-pre-wrap break-words">{withFallback(value)}</p>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-            </article>
-          ))}
+                ) : (
+                  <div className="divide-y divide-emerald-500/10">
+                    {items.map(([label, value]) => (
+                      <div key={label} className={infoRowClass}>
+                        <p className="text-[11px] uppercase tracking-wide text-zinc-500">{label}</p>
+                        <p className="text-sm text-zinc-100 whitespace-pre-wrap break-words">{withFallback(value)}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </article>
+            ))}
+          </div>
 
           <div className="space-y-4">
             {[cardSections[1], cardSections[3]].map(({ title, items }) => (
-              <article key={title} className="rounded-xl border border-cyan-300/20 bg-card/90 p-4">
-                <h2 className="mb-3 text-xs font-bold uppercase tracking-[0.22em] text-cyan-200">{title}</h2>
-                <div className="divide-y divide-border/40">
-                  {items.map(([label, value]) => (
-                    <div key={label} className="grid gap-1 py-2.5 sm:grid-cols-[170px_1fr] sm:gap-3">
-                      <p className="text-[11px] uppercase tracking-wide text-muted-foreground">{label}</p>
-                      <p className="text-sm text-foreground whitespace-pre-wrap break-words">{withFallback(value)}</p>
-                    </div>
-                  ))}
+              <article key={title} className={sectionCardClass}>
+                <h2 className={sectionTitleClass}>{title}</h2>
+                <div className="divide-y divide-emerald-500/10">
+                {items.map(([label, value]) => (
+                  <div key={label} className="grid gap-1 py-2.5 sm:grid-cols-[170px_1fr] sm:gap-3">
+                    <p className="text-[11px] uppercase tracking-wide text-zinc-500">{label}</p>
+                    {title === "Tramitação Judicial" && label === "Status" ? (
+                      <span className={`mt-0.5 inline-flex w-fit items-center rounded-md border px-2 py-0.5 text-xs font-semibold ${getStatusBadgeClass(item.status)}`}>
+                        {withFallback(value)}
+                      </span>
+                    ) : (
+                      <p className="text-sm text-zinc-100 whitespace-pre-wrap break-words">{withFallback(value)}</p>
+                    )}
+                  </div>
+                ))}
                 </div>
               </article>
             ))}
