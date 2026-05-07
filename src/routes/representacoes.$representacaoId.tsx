@@ -10,10 +10,6 @@ function DetalheRepresentacao() {
   const navigate = useNavigate();
   const matchRoute = useMatchRoute();
   const isEditingRoute = Boolean(matchRoute({ to: "/representacoes/$representacaoId/editar", params: { representacaoId } }));
-
-  if (isEditingRoute) {
-    return <Outlet />;
-  }
   const [item, setItem] = useState<RepresentacaoRecord | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -47,6 +43,7 @@ function DetalheRepresentacao() {
     };
   }, [representacaoId]);
 
+  if (isEditingRoute) return <Outlet />;
   if (loading) return <AppLayout>Carregando representação...</AppLayout>;
   if (error) return <AppLayout>{error}</AppLayout>;
   if (!item) return <AppLayout>Representação não encontrada.</AppLayout>;
