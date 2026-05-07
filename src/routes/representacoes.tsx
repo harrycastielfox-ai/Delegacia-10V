@@ -15,7 +15,18 @@ function Representacoes() {
   const [searchTerm, setSearchTerm] = useState("");
   const [representacoes, setRepresentacoes] = useState<RepresentacaoRecord[]>([]);
   const [error, setError] = useState("");
-  useEffect(() => { (async()=>{ try { setRepresentacoes(await listRepresentacoes()); } catch { setError("Não foi possível carregar representações agora."); } })(); }, []);
+  useEffect(() => {
+    if (!isRepresentacoesIndex) return;
+
+    (async () => {
+      try {
+        setError("");
+        setRepresentacoes(await listRepresentacoes());
+      } catch {
+        setError("Não foi possível carregar representações agora.");
+      }
+    })();
+  }, [isRepresentacoesIndex]);
   const filtered = useMemo(() => { const s = normalizeText(searchTerm); if (!s) return representacoes; return representacoes.filter((r) => [r.id, r.numero_ppe, r.vitima, r.investigado, r.tipo, r.processo_judicial, r.status].map((value) => normalizeText(String(value ?? ""))).some((value) => value.includes(s))); }, [representacoes, searchTerm]);
 
   if (!isRepresentacoesIndex) return <Outlet />;
