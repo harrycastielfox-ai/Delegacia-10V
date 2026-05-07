@@ -81,3 +81,94 @@ create table if not exists public.auditoria (
   usuario text,
   created_at timestamptz default now()
 );
+
+-- Fase 1+2: perfis, cargos e status de autorização.
+do $$
+begin
+  create type public.user_role as enum ('membro', 'sipi_access', 'atlas_access', 'delegado', 'admin');
+exception
+  when duplicate_object then null;
+end
+$$;
+
+do $$
+begin
+  create type public.authorization_status as enum ('aguardando', 'autorizado', 'bloqueado');
+exception
+  when duplicate_object then null;
+end
+$$;
+
+create table if not exists public.profiles (
+  id uuid primary key references auth.users(id) on delete cascade,
+  nome text not null,
+  email text not null unique,
+  login text not null unique,
+  avatar_url text,
+  cargo public.user_role not null default 'membro',
+  status_autorizacao public.authorization_status not null default 'aguardando',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+alter table public.profiles enable row level security;
+
+-- Usuário autenticado só enxerga o próprio perfil.
+drop policy if exists "profiles_self_select" on public.profiles;
+create policy "profiles_self_select" on public.profiles
+for select
+using (auth.uid() = id);
+
+-- Sem update direto por usuário comum: evita elevação de privilégio local.
+drop policy if exists "profiles_self_update" on public.profiles;
+
+-- RPC controlada para resolver login -> email sem abrir SELECT da tabela inteira.
+create or replace function public.resolve_login_to_email(input_login text)
+returns text
+language sql
+security definer
+set search_path = public
+as $$
+  select p.email
+  from public.profiles p
+  where lower(p.login) = lower(trim(input_login))
+  limit 1;
+$$;
+
+revoke all on function public.resolve_login_to_email(text) from public;
+grant execute on function public.resolve_login_to_email(text) to anon, authenticated;
+
+create or replace function public.handle_new_user_profile()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  insert into public.profiles (id, nome, email, login, avatar_url, cargo, status_autorizacao)
+  values (
+    new.id,
+    coalesce(new.raw_user_meta_data->>'nome', split_part(new.email, '@', 1)),
+    new.email,
+    coalesce(new.raw_user_meta_data->>'login', split_part(new.email, '@', 1)),
+    new.raw_user_meta_data->>'avatar_url',
+    'membro',
+    'aguardando'
+  )
+  on conflict (id) do update
+  set
+    nome = excluded.nome,
+    email = excluded.email,
+    login = excluded.login,
+    avatar_url = excluded.avatar_url,
+    updated_at = now();
+
+  return new;
+end;
+$$;
+
+drop trigger if exists on_auth_user_created_profile on auth.users;
+create trigger on_auth_user_created_profile
+after insert on auth.users
+for each row execute procedure public.handle_new_user_profile();
+

@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { FileText, Car, Package, ArrowRight, LockKeyhole, Construction, Shield, LogOut } from "lucide-react";
-import { isLoggedIn, logout } from "@/lib/auth";
+import { logout } from "@/lib/auth";
 
 export const Route = createFileRoute("/modulos")({
   head: () => ({
@@ -61,11 +61,6 @@ function ModulosPage() {
   const navigate = useNavigate();
   const [aviso, setAviso] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!isLoggedIn()) {
-      navigate({ to: "/login" });
-    }
-  }, [navigate]);
 
   useEffect(() => {
     if (!aviso) return;

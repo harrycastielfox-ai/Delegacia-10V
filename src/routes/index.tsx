@@ -31,7 +31,6 @@ import { AppLayout } from "@/components/AppLayout";
 import { PageHeader } from "@/components/PageHeader";
 import { StatCard } from "@/components/StatCard";
 import { Panel } from "@/components/Panel";
-import { isLoggedIn } from "@/lib/auth";
 import { listInqueritos, type InqueritoRecord } from "@/lib/repositories/inqueritosRepository";
 import { listRepresentacoes, type RepresentacaoRecord } from "@/lib/repositories/representacoesRepository";
 
@@ -54,11 +53,6 @@ function Dashboard() {
   const [representacoes, setRepresentacoes] = useState<RepresentacaoRecord[]>([]);
   const [loadError, setLoadError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!isLoggedIn()) {
-      navigate({ to: "/login" });
-    }
-  }, [navigate]);
 
   useEffect(() => {
     setIsClient(true);
@@ -83,7 +77,6 @@ function Dashboard() {
     void loadDashboardData();
   }, []);
 
-  if (!isLoggedIn()) return null;
 
   const total = inqueritos.length;
   const totalRepresentacoes = representacoes.length;
