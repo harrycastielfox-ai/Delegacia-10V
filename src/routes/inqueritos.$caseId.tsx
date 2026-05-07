@@ -1,4 +1,4 @@
-import { createFileRoute, Link, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, useLocation, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { AppLayout } from "@/components/AppLayout";
 import { getInqueritoById, softDeleteInquerito, type InqueritoRecord } from "@/lib/repositories/inqueritosRepository";
@@ -108,12 +108,13 @@ function normalizeInqueritoForDetail(caso: InqueritoRecord): InqueritoDetalheUI 
 function InqueritoDetalhes() {
   const { caseId } = Route.useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const [caso, setCaso] = useState<InqueritoRecord | null>(null);
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState("");
   const [deleting, setDeleting] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
-  const [deleteSuccess, setDeleteSuccess] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -130,7 +131,7 @@ function InqueritoDetalhes() {
         setLoading(false);
       }
     })();
-  }, [caseId]);
+  }, [caseId, location.pathname]);
 
   const detalhe = useMemo(() => (caso ? normalizeInqueritoForDetail(caso) : null), [caso]);
   const pathname = useRouterState({ select: (state) => state.location.pathname });
@@ -143,13 +144,12 @@ function InqueritoDetalhes() {
   if (!caso || !detalhe) return <AppLayout><div className="space-y-4"><h1 className="text-xl font-bold">Inquérito não encontrado</h1><Link to="/inqueritos" className="px-4 py-2 border border-border rounded-lg inline-block">Voltar</Link></div></AppLayout>;
 
   const remove = async () => {
-    if (!confirm("Deseja remover este inquérito?")) return;
+    if (!caso || deleting) return;
     try {
       setDeleting(true);
       setDeleteError(null);
-      setDeleteSuccess(null);
       await softDeleteInquerito(caso.id);
-      setDeleteSuccess("Inquérito excluído com sucesso.");
+      setShowDeleteModal(false);
       navigate({ to: "/inqueritos" });
     } catch (error) {
       const message = typeof error === "object" && error !== null && "message" in error && typeof error.message === "string"
@@ -158,7 +158,11 @@ function InqueritoDetalhes() {
       const code = typeof error === "object" && error !== null && "code" in error && typeof error.code === "string" ? error.code : "";
       const details = typeof error === "object" && error !== null && "details" in error && typeof error.details === "string" ? error.details : "";
       const hint = typeof error === "object" && error !== null && "hint" in error && typeof error.hint === "string" ? error.hint : "";
-      setDeleteError(`Falha ao excluir inquérito (${message}${code ? ` | code: ${code}` : ""}${details ? ` | details: ${details}` : ""}${hint ? ` | hint: ${hint}` : ""})`);
+      if (code === "42501") {
+        setDeleteError("Sem permissão para excluir este inquérito. Verifique a policy de UPDATE/DELETE (soft delete) no Supabase.");
+      } else {
+        setDeleteError(`Falha ao excluir inquérito (${message}${code ? ` | code: ${code}` : ""}${details ? ` | details: ${details}` : ""}${hint ? ` | hint: ${hint}` : ""})`);
+      }
     } finally {
       setDeleting(false);
     }
@@ -194,7 +198,7 @@ function InqueritoDetalhes() {
         <div className="flex w-full flex-wrap items-center justify-start gap-2 sm:justify-end lg:w-auto lg:flex-nowrap">
           <button onClick={() => window.print()} className="px-3.5 py-2 text-xs rounded-md border border-border bg-card hover:bg-accent">Gerar PDF</button>
           <button onClick={() => navigate({ to: "/inqueritos/$caseId/editar", params: { caseId: caso.id } })} className="px-3.5 py-2 text-xs rounded-md bg-primary text-primary-foreground font-semibold">Editar</button>
-          <button onClick={remove} disabled={deleting} className="px-3.5 py-2 text-xs rounded-md border border-destructive/30 bg-destructive/10 text-destructive disabled:cursor-not-allowed disabled:opacity-70">{deleting ? "Excluindo..." : "Excluir"}</button>
+          <button onClick={() => { setDeleteError(null); setShowDeleteModal(true); }} disabled={deleting} className="px-3.5 py-2 text-xs rounded-md border border-destructive/30 bg-destructive/10 text-destructive disabled:cursor-not-allowed disabled:opacity-70">{deleting ? "Excluindo..." : "Excluir"}</button>
         </div>
       </div>
       <div className="mt-3 flex flex-wrap gap-2.5">
@@ -205,7 +209,6 @@ function InqueritoDetalhes() {
         ))}
         {detalhe.prazo !== FALLBACK && new Date(detalhe.prazo) < new Date() && <span className="rounded-md border border-red-500/40 bg-red-500/15 px-2.5 py-1 text-[10px] font-semibold text-red-200">Vencido</span>}
       </div>
-      {deleteSuccess && <p className="mt-3 rounded-lg border border-success/40 bg-success/10 px-3 py-1.5 text-xs text-success">{deleteSuccess}</p>}
       {deleteError && <p className="mt-3 rounded-lg border border-destructive/50 bg-destructive/10 px-3 py-1.5 text-xs text-destructive">{deleteError}</p>}
     </header>
 
@@ -222,6 +225,34 @@ function InqueritoDetalhes() {
         <InfoCard title="Observações" icon={<NotebookPen className="h-4 w-4 text-primary" />} items={[["Observações", detalhe.observacoes]]} stacked preWrapValues />
       </div>
     </section>
+    {showDeleteModal && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
+        <div className="w-full max-w-md rounded-xl border border-border bg-card p-5 shadow-2xl">
+          <h2 className="text-lg font-bold text-foreground">Excluir inquérito</h2>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Deseja remover este inquérito? Esta ação utiliza exclusão lógica e poderá ser auditada no sistema.
+          </p>
+          <div className="mt-5 flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => setShowDeleteModal(false)}
+              disabled={deleting}
+              className="rounded-md border border-border px-3 py-1.5 text-xs hover:bg-accent/40 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              onClick={remove}
+              disabled={deleting}
+              className="rounded-md border border-destructive/30 bg-destructive px-3 py-1.5 text-xs font-semibold text-destructive-foreground disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {deleting ? "Excluindo..." : "Excluir"}
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
   </div></AppLayout>;
 }
 

@@ -67,7 +67,20 @@ function Inqueritos() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  useEffect(() => { (async () => { try { setLoading(true); setRows(await listInqueritos()); setError(""); } catch { setError("Não foi possível carregar inquéritos agora."); } finally { setLoading(false); } })(); }, []);
+  useEffect(() => {
+    if (!isInqueritosIndex) return;
+    (async () => {
+      try {
+        setLoading(true);
+        setRows(await listInqueritos());
+        setError("");
+      } catch {
+        setError("Não foi possível carregar inquéritos agora.");
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [isInqueritosIndex]);
 
   const normalizedRows = useMemo(() => rows.map((r) => normalizeInqueritoForList(r)), [rows]);
   const filtered = useMemo(() => normalizedRows.filter((r) => {
