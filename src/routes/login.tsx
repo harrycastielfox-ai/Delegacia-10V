@@ -51,6 +51,39 @@ function LoginPage() {
 
   return (
     <div className="min-h-screen w-full flex items-center justify-center bg-background px-4 py-10 relative overflow-hidden">
+      <style>{`
+        .sipi-logo-sheen {
+          transform: translateX(-180%) skewX(-18deg);
+          animation: sipiLogoSheen 5.4s ease-in-out infinite;
+          will-change: transform, opacity;
+        }
+
+        @keyframes sipiLogoSheen {
+          0%, 58% {
+            transform: translateX(-180%) skewX(-18deg);
+            opacity: 0;
+          }
+          65% {
+            opacity: 0.25;
+          }
+          78% {
+            transform: translateX(210%) skewX(-18deg);
+            opacity: 0;
+          }
+          100% {
+            transform: translateX(210%) skewX(-18deg);
+            opacity: 0;
+          }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .sipi-logo-sheen {
+            animation: none;
+            opacity: 0;
+          }
+        }
+      `}</style>
+
       {/* Brilho de fundo tático */}
       <div className="pointer-events-none absolute inset-0 opacity-60">
         <div className="absolute -top-32 -left-32 h-96 w-96 rounded-full bg-primary/20 blur-3xl" />
@@ -68,8 +101,12 @@ function LoginPage() {
         <div className="bg-card border border-border rounded-2xl shadow-2xl shadow-black/40">
           {/* Cabeçalho */}
           <div className="px-8 pt-8 pb-6 text-center border-b border-border bg-gradient-to-b from-primary/5 to-transparent">
-            <div className="mx-auto h-28 w-28 rounded-xl bg-primary/15 border border-primary/30 shadow-[0_0_16px_rgba(34,197,94,0.2)] flex items-center justify-center mb-3 p-2">
+            <div className="relative mx-auto h-24 w-24 rounded-lg bg-primary/12 border border-primary/25 shadow-[0_0_12px_rgba(34,197,94,0.16)] flex items-center justify-center mb-3 p-2 overflow-hidden">
               <img src="/sipi-logo.png" alt="Logo SIPI" className="h-[84%] w-[84%] object-contain" />
+              <span
+                aria-hidden="true"
+                className="sipi-logo-sheen pointer-events-none absolute inset-y-[-20%] left-[-35%] w-[42%] bg-gradient-to-r from-transparent via-primary/35 to-transparent blur-[1px]"
+              />
             </div>
             <h1 className="text-2xl font-bold tracking-wide text-foreground">SIPI</h1>
             <p className="text-xs text-muted-foreground mt-1">Sistema de Inquéritos Policiais</p>
