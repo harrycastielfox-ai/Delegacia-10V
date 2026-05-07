@@ -123,16 +123,16 @@ function Representacoes() {
   if (!isRepresentacoesIndex) return <Outlet />;
 
   const summaryCards = [
-    { label: "TOTAL", value: stats.total, hint: "Representações", tone: "border-cyan-400/30 bg-gradient-to-br from-[#0b1110] via-[#0f1716] to-teal-950/55 text-cyan-200 shadow-[0_0_24px_rgba(20,184,166,0.14)]", hoverTone: "hover:border-cyan-200/70 hover:shadow-[0_0_42px_rgba(34,211,238,0.32),0_0_68px_rgba(20,184,166,0.2)]", valueHoverTone: "group-hover:drop-shadow-[0_0_18px_rgba(34,211,238,0.9)]" },
-    { label: "DEFERIDAS", value: stats.deferidas, hint: "Pedidos acolhidos", tone: "border-emerald-400/35 bg-gradient-to-br from-slate-950 via-slate-900 to-emerald-950/65 text-emerald-200 shadow-[0_0_24px_rgba(16,185,129,0.18)]", hoverTone: "hover:border-emerald-200/80 hover:shadow-[0_0_44px_rgba(16,185,129,0.44),0_0_70px_rgba(34,197,94,0.22)]", valueHoverTone: "group-hover:drop-shadow-[0_0_18px_rgba(16,185,129,0.9)]" },
-    { label: "CUMPRIDAS", value: stats.cumpridas, hint: "Medidas cumpridas", tone: "border-teal-400/35 bg-gradient-to-br from-slate-950 via-slate-900 to-teal-950/65 text-teal-200 shadow-[0_0_24px_rgba(20,184,166,0.18)]", hoverTone: "hover:border-teal-200/80 hover:shadow-[0_0_44px_rgba(20,184,166,0.44),0_0_70px_rgba(34,211,238,0.2)]", valueHoverTone: "group-hover:drop-shadow-[0_0_18px_rgba(20,184,166,0.9)]" },
-    { label: "INDEFERIDAS", value: stats.indeferidas, hint: "Pedidos rejeitados", tone: "border-rose-400/35 bg-gradient-to-br from-slate-950 via-slate-900 to-rose-950/65 text-rose-200 shadow-[0_0_24px_rgba(244,63,94,0.18)]", hoverTone: "hover:border-rose-200/80 hover:shadow-[0_0_44px_rgba(244,63,94,0.46),0_0_70px_rgba(236,72,153,0.24)]", valueHoverTone: "group-hover:drop-shadow-[0_0_18px_rgba(244,63,94,0.92)]" },
-    { label: "PENDENTES", value: stats.pendentes, hint: "Em acompanhamento", tone: "border-amber-400/35 bg-gradient-to-br from-slate-950 via-slate-900 to-amber-950/65 text-amber-200 shadow-[0_0_24px_rgba(245,158,11,0.18)]", hoverTone: "hover:border-amber-200/80 hover:shadow-[0_0_44px_rgba(245,158,11,0.44),0_0_70px_rgba(250,204,21,0.24)]", valueHoverTone: "group-hover:drop-shadow-[0_0_18px_rgba(245,158,11,0.92)]" },
+    { label: "TOTAL", value: stats.total, hint: "Representações", tone: "border-cyan-400/30 bg-gradient-to-br from-[#090b0b] via-[#101415] to-[#0c1112] text-cyan-200 shadow-[0_0_20px_rgba(34,211,238,0.1)]", hoverTone: "hover:border-cyan-200/65 hover:shadow-[0_0_34px_rgba(34,211,238,0.24),0_0_52px_rgba(20,184,166,0.14)]", valueHoverTone: "group-hover:drop-shadow-[0_0_14px_rgba(34,211,238,0.8)]" },
+    { label: "DEFERIDAS", value: stats.deferidas, hint: "Pedidos acolhidos", tone: "border-emerald-400/35 bg-gradient-to-br from-[#090b0b] via-[#111516] to-[#0d1211] text-emerald-200 shadow-[0_0_20px_rgba(16,185,129,0.12)]", hoverTone: "hover:border-emerald-200/75 hover:shadow-[0_0_36px_rgba(16,185,129,0.32),0_0_56px_rgba(34,197,94,0.16)]", valueHoverTone: "group-hover:drop-shadow-[0_0_14px_rgba(16,185,129,0.85)]" },
+    { label: "CUMPRIDAS", value: stats.cumpridas, hint: "Medidas cumpridas", tone: "border-teal-400/35 bg-gradient-to-br from-[#090b0b] via-[#101516] to-[#0c1212] text-teal-200 shadow-[0_0_20px_rgba(20,184,166,0.12)]", hoverTone: "hover:border-teal-200/75 hover:shadow-[0_0_36px_rgba(20,184,166,0.32),0_0_56px_rgba(34,211,238,0.14)]", valueHoverTone: "group-hover:drop-shadow-[0_0_14px_rgba(20,184,166,0.85)]" },
+    { label: "INDEFERIDAS", value: stats.indeferidas, hint: "Pedidos rejeitados", tone: "border-rose-400/35 bg-gradient-to-br from-[#090b0b] via-[#121315] to-[#130f12] text-rose-200 shadow-[0_0_20px_rgba(244,63,94,0.12)]", hoverTone: "hover:border-rose-200/75 hover:shadow-[0_0_36px_rgba(244,63,94,0.34),0_0_56px_rgba(236,72,153,0.16)]", valueHoverTone: "group-hover:drop-shadow-[0_0_14px_rgba(244,63,94,0.86)]" },
+    { label: "PENDENTES", value: stats.pendentes, hint: "Em acompanhamento", tone: "border-amber-400/35 bg-gradient-to-br from-[#090b0b] via-[#131312] to-[#11100f] text-amber-200 shadow-[0_0_20px_rgba(245,158,11,0.1)]", hoverTone: "hover:border-amber-200/70 hover:shadow-[0_0_34px_rgba(245,158,11,0.28),0_0_52px_rgba(250,204,21,0.14)]", valueHoverTone: "group-hover:drop-shadow-[0_0_14px_rgba(245,158,11,0.82)]" },
   ];
 
   return (
     <AppLayout>
-      <div className="mb-6 flex flex-col gap-3 rounded-2xl border border-emerald-400/20 bg-gradient-to-r from-[#080d0c]/95 via-[#0b1110]/90 to-[#0a0f0f]/95 px-5 py-4 md:flex-row md:items-center md:justify-between md:px-6 md:py-4">
+      <div className="mb-5 flex flex-col gap-3 rounded-2xl border border-emerald-400/20 bg-gradient-to-r from-[#070909]/95 via-[#0d1112]/92 to-[#090c0d]/95 px-5 py-3.5 md:flex-row md:items-center md:justify-between md:px-6 md:py-3.5">
         <div className="flex items-start gap-3">
           <Activity className="mt-0.5 h-6 w-6 text-emerald-300" />
           <div>
@@ -166,13 +166,13 @@ function Representacoes() {
       </section>
 
       <section className="mb-6 grid grid-cols-1 items-start gap-4 xl:grid-cols-3">
-        <div className="overflow-hidden rounded-xl border border-emerald-500/20 bg-gradient-to-b from-[#0b1110]/95 to-[#0e1514]/90 shadow-[0_0_22px_rgba(16,185,129,0.08)] transition-all duration-300 ease-out hover:border-emerald-300/45 hover:shadow-[0_0_28px_rgba(16,185,129,0.16)] xl:col-span-2">
+        <div className="overflow-hidden rounded-xl border border-emerald-500/20 bg-gradient-to-b from-[#0a0c0c]/95 to-[#101313]/92 shadow-[0_0_20px_rgba(16,185,129,0.07)] transition-all duration-300 ease-out hover:border-emerald-300/40 hover:shadow-[0_0_26px_rgba(16,185,129,0.14)] xl:col-span-2">
           <div className="border-b border-white/10 px-5 py-4">
             <h2 className="text-sm tracking-[0.18em] font-semibold text-emerald-200">POR TIPO DE REPRESENTAÇÃO</h2>
           </div>
           <div className="overflow-auto">
             <table className="w-full min-w-[700px] text-sm">
-              <thead className="bg-[#121a19]/80 text-[10px] tracking-[0.16em] text-slate-300">
+              <thead className="bg-[#15191a]/85 text-[10px] tracking-[0.16em] text-slate-300">
                 <tr>
                   <th className="px-4 py-3 text-left font-bold">TIPO</th>
                   <th className="px-4 py-3 text-right font-bold">TOTAL</th>
@@ -206,7 +206,7 @@ function Representacoes() {
           </div>
         </div>
 
-        <div className="overflow-hidden rounded-xl border border-amber-400/25 bg-gradient-to-b from-[#0b1110]/95 to-[#101615]/90 shadow-[0_0_20px_rgba(245,158,11,0.08)] transition-all duration-300 ease-out hover:border-amber-300/50 hover:shadow-[0_0_30px_rgba(245,158,11,0.18)]">
+        <div className="overflow-hidden rounded-xl border border-amber-400/25 bg-gradient-to-b from-[#0a0c0c]/95 to-[#131414]/92 shadow-[0_0_18px_rgba(245,158,11,0.07)] transition-all duration-300 ease-out hover:border-amber-300/45 hover:shadow-[0_0_24px_rgba(245,158,11,0.14)]">
           <div className="border-b border-border p-4">
             <h2 className="text-sm tracking-[0.18em] font-semibold text-amber-200">STATUS GERAL</h2>
           </div>
@@ -215,7 +215,7 @@ function Representacoes() {
             <div className="flex items-center justify-between border-b border-white/10 pb-2"><span className="text-slate-300">Cumpridas</span><strong className="text-teal-200">{stats.cumpridas}</strong></div>
             <div className="flex items-center justify-between border-b border-white/10 pb-2"><span className="text-slate-300">Pendentes</span><strong className="text-amber-200">{stats.pendentes}</strong></div>
             <div className="flex items-center justify-between"><span className="text-slate-300">Indeferidas</span><strong className="text-rose-200">{stats.indeferidas}</strong></div>
-            <div className="mt-4 rounded-lg border border-emerald-400/35 bg-gradient-to-br from-emerald-950/45 to-teal-950/40 p-3 shadow-[0_0_20px_rgba(16,185,129,0.2)]">
+            <div className="mt-4 rounded-lg border border-emerald-400/35 bg-gradient-to-br from-[#10201a]/75 to-[#101b18]/70 p-3 shadow-[0_0_18px_rgba(16,185,129,0.16)]">
               <p className="text-sm">Taxa de deferimento</p>
               <p className="text-3xl font-semibold text-emerald-300">{formatPercent(stats.taxaDeferimento)}</p>
             </div>
@@ -223,7 +223,7 @@ function Representacoes() {
         </div>
       </section>
 
-      <div className="mb-5 rounded-xl border border-white/10 bg-[#0b1110]/85 p-4">
+      <div className="mb-5 rounded-xl border border-white/10 bg-[#0a0d0d]/90 p-4">
         <div className="flex flex-col md:flex-row gap-3">
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -231,22 +231,22 @@ function Representacoes() {
               placeholder="Buscar por PPE, vítima, investigado, tipo, processo ou status..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full rounded-xl border border-slate-700 bg-[#111918]/90 py-2.5 pl-10 pr-4 text-sm text-slate-100 placeholder:text-slate-400 focus:border-emerald-400/45 focus:outline-none"
+              className="w-full rounded-xl border border-slate-700 bg-[#121617]/90 py-2.5 pl-10 pr-4 text-sm text-slate-100 placeholder:text-slate-400 focus:border-emerald-400/45 focus:outline-none"
             />
           </div>
-          <button className="inline-flex items-center gap-2 rounded-xl border border-slate-700 bg-[#111918]/85 px-4 py-2.5 text-sm text-slate-200 transition hover:border-emerald-500/35 hover:bg-[#15201d]">
+          <button className="inline-flex items-center gap-2 rounded-xl border border-slate-700 bg-[#121617]/85 px-4 py-2.5 text-sm text-slate-200 transition hover:border-emerald-500/35 hover:bg-[#181f1f]">
             <Filter className="h-4 w-4" /> Filtros
           </button>
         </div>
       </div>
 
-      <div className="overflow-hidden rounded-xl border border-white/10 bg-[#0b1110]/90 shadow-[0_0_22px_rgba(16,185,129,0.08)]">
+      <div className="overflow-hidden rounded-xl border border-white/10 bg-[#0a0d0d]/92 shadow-[0_0_20px_rgba(16,185,129,0.07)]">
         <div className="border-b border-white/10 px-4 py-3 text-xs font-semibold tracking-[0.2em] text-slate-300">
           REPRESENTAÇÕES CADASTRADAS
         </div>
         <div className="overflow-auto">
           <table className="w-full min-w-[1100px] text-sm">
-            <thead className="bg-[#121a19]/85 text-[10px] tracking-[0.16em] text-slate-300">
+            <thead className="bg-[#15191a]/88 text-[10px] tracking-[0.16em] text-slate-300">
               <tr>
                 <th className="text-left px-4 py-3 font-bold">PPE</th>
                 <th className="text-left px-4 py-3 font-bold">VÍTIMA</th>
