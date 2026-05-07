@@ -64,7 +64,7 @@ function LoginPage() {
             opacity: 0;
           }
           65% {
-            opacity: 0.25;
+            opacity: 0.33;
           }
           78% {
             transform: translateX(210%) skewX(-18deg);
@@ -105,7 +105,7 @@ function LoginPage() {
               <img src="/sipi-logo.png" alt="Logo SIPI" className="h-[88%] w-[88%] object-contain" />
               <span
                 aria-hidden="true"
-                className="sipi-logo-sheen pointer-events-none absolute inset-y-[-20%] left-[-35%] w-[42%] bg-gradient-to-r from-transparent via-primary/35 to-transparent blur-[1px]"
+                className="sipi-logo-sheen pointer-events-none absolute inset-y-[-20%] left-[-35%] w-[48%] bg-gradient-to-r from-transparent via-primary/45 to-transparent blur-[1px]"
               />
             </div>
             <h1 className="text-2xl font-bold tracking-wide text-foreground">SIPI</h1>
