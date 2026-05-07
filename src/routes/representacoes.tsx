@@ -1,8 +1,7 @@
 import { Outlet, createFileRoute, Link, useLocation, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { AppLayout } from "@/components/AppLayout";
-import { PageHeader } from "@/components/PageHeader";
-import { Search, Filter } from "lucide-react";
+import { Search, Filter, Activity } from "lucide-react";
 import { listRepresentacoes, type RepresentacaoRecord } from "@/lib/repositories/representacoesRepository";
 
 export const Route = createFileRoute("/representacoes")({ component: Representacoes });
@@ -133,15 +132,17 @@ function Representacoes() {
 
   return (
     <AppLayout>
-      <div className="mb-7 flex flex-col gap-4 rounded-2xl border border-white/10 bg-gradient-to-r from-slate-950/90 via-slate-900/75 to-slate-950/90 p-5 md:flex-row md:items-center md:justify-between md:p-6">
-        <PageHeader
-          title="Representações Judiciais"
-          subtitle="Medidas requeridas ao Poder Judiciário"
-          showActions={false}
-        />
+      <div className="mb-6 flex flex-col gap-3 rounded-2xl border border-white/10 bg-gradient-to-r from-slate-950/90 via-slate-900/75 to-slate-950/90 px-5 py-4 md:flex-row md:items-center md:justify-between md:px-6 md:py-4">
+        <div className="flex items-start gap-3">
+          <Activity className="mt-0.5 h-6 w-6 text-cyan-300" />
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight text-white lg:text-[2rem]">Representações Judiciais</h1>
+            <p className="mt-0.5 text-sm text-slate-300">Medidas requeridas ao Poder Judiciário</p>
+          </div>
+        </div>
         <Link
           to="/nova-representacao"
-          className="inline-flex items-center justify-center gap-2 rounded-lg border border-emerald-400/40 bg-emerald-500/90 px-5 py-2.5 text-sm font-semibold text-emerald-950 shadow-[0_0_20px_rgba(34,197,94,0.32)] transition hover:bg-emerald-400 md:mt-1"
+          className="inline-flex items-center justify-center gap-2 rounded-lg border border-emerald-400/40 bg-emerald-500/90 px-5 py-2.5 text-sm font-semibold text-emerald-950 shadow-[0_0_20px_rgba(34,197,94,0.32)] transition hover:bg-emerald-400"
         >
           Cadastrar Representação
         </Link>
