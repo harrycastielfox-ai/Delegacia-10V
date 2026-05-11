@@ -4,7 +4,7 @@ import { User, Lock, Eye, EyeOff, LogIn, AlertCircle } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { authenticateWithLoginOrEmail, AuthFlowError, getCurrentProfile, getSession } from "@/lib/auth";
+import { authenticateWithLoginOrEmail, AuthFlowError, getCurrentProfile, getSession, logout } from "@/lib/auth";
 import { isAuthorized } from "@/lib/authz";
 
 export const Route = createFileRoute("/login")({
@@ -59,8 +59,26 @@ function LoginPage() {
 
   useEffect(() => {
     void (async () => {
-      const session = await getSession();
-      if (session) navigate({ to: "/modulos" });
+      try {
+        const session = await getSession();
+        if (!session) return;
+        const profile = await getCurrentProfile();
+        if (!profile) return;
+
+        if (profile.status_autorizacao === "bloqueado") {
+          await logout();
+          return;
+        }
+
+        if (!isAuthorized(profile)) {
+          navigate({ to: "/aguardando-autorizacao", replace: true });
+          return;
+        }
+
+        navigate({ to: "/modulos", replace: true });
+      } catch (error) {
+        console.error("[LoginPage] Falha ao validar sessão existente", error);
+      }
     })();
   }, [navigate]);
 
