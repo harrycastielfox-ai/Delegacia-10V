@@ -66,18 +66,24 @@ export function AppSidebar({ profile }: { profile: UserProfile }) {
         })}
       </nav>
 
-      <div className="border-t border-sidebar-border p-4 flex items-center gap-3">
-        {avatarUrl ? (
-          <img src={avatarUrl} alt={`Avatar de ${profile.nome}`} className="h-9 w-9 rounded-full border border-primary/40 object-cover" />
-        ) : (
-          <div className="h-9 w-9 rounded-full bg-primary/20 border border-primary/40 flex items-center justify-center text-xs font-bold text-primary">
-            {initial}
+      <div className="border-t border-sidebar-border p-4 flex items-center gap-2">
+        <Link
+          to="/perfil"
+          className="group flex min-w-0 flex-1 items-center gap-3 rounded-lg p-1.5 transition-colors hover:bg-sidebar-accent"
+          title="Acessar meu perfil"
+        >
+          {avatarUrl ? (
+            <img src={avatarUrl} alt={`Avatar de ${profile.nome}`} className="h-9 w-9 rounded-full border border-primary/40 object-cover" />
+          ) : (
+            <div className="h-9 w-9 rounded-full bg-primary/20 border border-primary/40 flex items-center justify-center text-xs font-bold text-primary">
+              {initial}
+            </div>
+          )}
+          <div className="flex-1 min-w-0">
+            <div className="text-xs font-semibold text-sidebar-foreground truncate">{profile.nome}</div>
+            <div className="text-[10px] text-muted-foreground truncate">{profile.cargo}</div>
           </div>
-        )}
-        <div className="flex-1 min-w-0">
-          <div className="text-xs font-semibold text-sidebar-foreground truncate">{profile.nome}</div>
-          <div className="text-[10px] text-muted-foreground truncate">{profile.cargo}</div>
-        </div>
+        </Link>
         <button
           onClick={handleLogout}
           className="text-muted-foreground hover:text-destructive transition-colors"
