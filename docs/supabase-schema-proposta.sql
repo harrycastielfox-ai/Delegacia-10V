@@ -104,7 +104,6 @@ create table if not exists public.profiles (
   nome text not null,
   email text not null unique,
   login text not null unique,
-  avatar_url text,
   avatar_path text,
   cargo public.user_role not null default 'membro',
   status_autorizacao public.authorization_status not null default 'aguardando',
@@ -154,7 +153,6 @@ begin
 
   update public.profiles
   set avatar_path = input_avatar_path,
-      avatar_url = input_avatar_path,
       updated_at = now()
   where id = auth.uid();
 end;
@@ -170,14 +168,13 @@ security definer
 set search_path = public
 as $$
 begin
-  insert into public.profiles (id, nome, email, login, avatar_url, avatar_path, cargo, status_autorizacao)
+  insert into public.profiles (id, nome, email, login, avatar_path, cargo, status_autorizacao)
   values (
     new.id,
     coalesce(new.raw_user_meta_data->>'nome', split_part(new.email, '@', 1)),
     new.email,
     coalesce(new.raw_user_meta_data->>'login', split_part(new.email, '@', 1)),
-    coalesce(new.raw_user_meta_data->>'avatar_path', new.raw_user_meta_data->>'avatar_url'),
-    coalesce(new.raw_user_meta_data->>'avatar_path', new.raw_user_meta_data->>'avatar_url'),
+    null,
     'membro',
     'aguardando'
   )
@@ -186,7 +183,6 @@ begin
     nome = excluded.nome,
     email = excluded.email,
     login = excluded.login,
-    avatar_url = excluded.avatar_url,
     avatar_path = excluded.avatar_path,
     updated_at = now();
 

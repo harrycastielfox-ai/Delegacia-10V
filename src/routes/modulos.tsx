@@ -40,39 +40,45 @@ function ModulosPage() {
   const [checkingAuth, setCheckingAuth] = useState(true);
 
   useEffect(() => {
+    let cancelled = false;
+
     void (async () => {
       try {
         const session = await getSession();
         if (!session) {
-          navigate({ to: "/login", replace: true });
+          if (!cancelled) navigate({ to: "/login", replace: true });
           return;
         }
 
         const currentProfile = await getCurrentProfile();
         if (!currentProfile) {
-          navigate({ to: "/login", search: { erro: "profile_missing" } as never, replace: true });
+          if (!cancelled) navigate({ to: "/login", search: { erro: "profile_missing" } as never, replace: true });
           return;
         }
 
         if (currentProfile.status_autorizacao === "bloqueado") {
           await logout();
-          navigate({ to: "/login", search: { erro: "access_blocked" } as never, replace: true });
+          if (!cancelled) navigate({ to: "/login", search: { erro: "access_blocked" } as never, replace: true });
           return;
         }
 
         if (!isAuthorized(currentProfile)) {
-          navigate({ to: "/aguardando-autorizacao", replace: true });
+          if (!cancelled) navigate({ to: "/aguardando-autorizacao", replace: true });
           return;
         }
 
-        setProfile(currentProfile);
+        if (!cancelled) setProfile(currentProfile);
       } catch (error) {
         console.error("[ModulosPage] Falha ao validar sessão/perfil", error);
-        navigate({ to: "/login", search: { erro: "profile_load_failed" } as never, replace: true });
+        if (!cancelled) navigate({ to: "/login", search: { erro: "profile_load_failed" } as never, replace: true });
       } finally {
-        setCheckingAuth(false);
+        if (!cancelled) setCheckingAuth(false);
       }
     })();
+
+    return () => {
+      cancelled = true;
+    };
   }, [navigate]);
 
   useEffect(() => {

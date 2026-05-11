@@ -19,31 +19,27 @@ export const Route = createFileRoute("/login")({
 
 function getFriendlyLoginError(err: unknown): string {
   const anyErr = err as any;
-  const msg = String(anyErr?.message || "").toLowerCase();
-  const code = String(anyErr?.code || anyErr?.cause?.code || "").toLowerCase();
+  const msg = String(anyErr?.message || anyErr?.cause?.message || "").toLowerCase();
 
-  if (anyErr instanceof AuthFlowError && anyErr.code === "LOGIN_NOT_FOUND") {
-    return "Usuário não encontrado. Verifique o login informado.";
+  if (anyErr instanceof AuthFlowError) {
+    if (anyErr.code === "LOGIN_NOT_FOUND") return "Login inexistente. Verifique o usuário informado.";
+    if (anyErr.code === "PROFILE_NOT_FOUND") return "Autenticação concluída, mas o perfil não foi encontrado.";
+    if (anyErr.code === "PROFILE_RLS_DENIED") return "Seu perfil existe, mas a policy (RLS) bloqueou a leitura.";
+    if (anyErr.code === "PROFILE_FETCH_FAILED") return "Autenticação concluída, mas houve falha ao carregar o perfil.";
+    if (anyErr.code === "LOGIN_RESOLVE_FAILED") return "Falha ao validar login. Tente novamente em instantes.";
+    if (anyErr.code === "AUTH_INVALID_CREDENTIALS") return "Credenciais inválidas. Confira usuário/e-mail e senha.";
   }
 
   if (msg.includes("email not confirmed") || msg.includes("not confirmed")) {
     return "Seu e-mail ainda não foi confirmado. Verifique sua caixa de entrada.";
   }
 
-  if (msg.includes("too many requests") || code === "over_request_rate_limit") {
+  if (msg.includes("too many requests") || msg.includes("over_request_rate_limit")) {
     return "Muitas tentativas de login. Aguarde alguns minutos e tente novamente.";
   }
 
   if (msg.includes("invalid login credentials") || msg.includes("invalid grant") || msg.includes("invalid login")) {
     return "Credenciais inválidas. Confira usuário/e-mail e senha.";
-  }
-
-  if (msg.includes("failed to fetch") || msg.includes("network") || msg.includes("api key") || code === "401") {
-    return "Falha de conexão/configuração do Supabase. Tente novamente e verifique variáveis de ambiente.";
-  }
-
-  if (anyErr instanceof AuthFlowError && anyErr.code === "PROFILE_FETCH_FAILED") {
-    return "Login autenticado, mas não foi possível carregar o perfil. Verifique RLS/policies da tabela profiles.";
   }
 
   return "Falha no login. Verifique suas credenciais e permissões.";
@@ -106,6 +102,7 @@ function LoginPage() {
       }
 
       if (profile.status_autorizacao === "bloqueado") {
+        await logout();
         setErro("Seu acesso está bloqueado. Procure um administrador do sistema.");
         return;
       }

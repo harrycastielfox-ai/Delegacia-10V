@@ -2,7 +2,7 @@ import { AppSidebar } from "./AppSidebar";
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
-import { getCurrentProfile, getSession } from "@/lib/auth";
+import { getCurrentProfile, getSession, logout } from "@/lib/auth";
 import { isAuthorized } from "@/lib/authz";
 
 export function AppLayout({ children }: { children: ReactNode }) {
@@ -10,42 +10,41 @@ export function AppLayout({ children }: { children: ReactNode }) {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
+    let cancelled = false;
+
     void (async () => {
       const session = await getSession();
       if (!session) {
-        navigate({ to: "/login" });
+        if (!cancelled) navigate({ to: "/login", replace: true });
         return;
       }
       try {
         const profile = await getCurrentProfile();
         if (!profile) {
-          navigate({
-            to: "/login",
-            search: { erro: "profile_missing" } as never,
-          });
+          if (!cancelled) navigate({ to: "/login", search: { erro: "profile_missing" } as never, replace: true });
           return;
         }
         if (profile.status_autorizacao === "bloqueado") {
-          navigate({
-            to: "/login",
-            search: { erro: "access_blocked" } as never,
-          });
+          await logout();
+          if (!cancelled) navigate({ to: "/login", search: { erro: "access_blocked" } as never, replace: true });
           return;
         }
         if (!isAuthorized(profile)) {
-          navigate({ to: "/aguardando-autorizacao" });
+          if (!cancelled) navigate({ to: "/aguardando-autorizacao", replace: true });
           return;
         }
-        setReady(true);
+        if (!cancelled) setReady(true);
       } catch (error) {
         console.error("[AppLayout] Falha ao carregar profile", error);
-        navigate({
-          to: "/login",
-          search: { erro: "profile_load_failed" } as never,
-        });
-        return;
+        if (!cancelled) {
+          navigate({ to: "/login", search: { erro: "profile_load_failed" } as never, replace: true });
+        }
       }
     })();
+
+    return () => {
+      cancelled = true;
+    };
   }, [navigate]);
 
   if (!ready) return null;
