@@ -49,7 +49,9 @@ function CreateAccountPage() {
     setSuccess(null);
     setLoading(true);
     try {
-      const result = await signUpUser({ nome, email, login, password: senha, avatarFile });
+      const cleanLogin = login.trim().toLowerCase();
+      setLogin(cleanLogin);
+      const result = await signUpUser({ nome, email, login: cleanLogin, password: senha, avatarFile });
       setSuccess(result.avatarUploadWarning
         ? "Conta criada com sucesso e aguarda autorização. A foto não foi enviada agora; você poderá adicionar depois."
         : "Conta criada com sucesso. Aguarde autorização de um administrador para acessar o SIPI.");
@@ -57,9 +59,11 @@ function CreateAccountPage() {
     } catch (err: any) {
       console.error("[CreateAccountPage] Erro ao criar conta", err);
       if (err?.message === "LOGIN_ALREADY_EXISTS") setError("Este login já está em uso.");
+      else if (err?.message === "EMAIL_ALREADY_EXISTS") setError("Este e-mail já está em uso.");
+      else if (err?.message === "LOGIN_REQUIRED") setError("Informe um login válido.");
       else if (err?.message === "AVATAR_INVALID_TYPE") setError("A foto precisa ser um arquivo de imagem válido.");
       else if (err?.message === "AVATAR_TOO_LARGE") setError(`A foto deve ter no máximo ${MAX_AVATAR_MB}MB.`);
-      else if ((err?.message || "").toLowerCase().includes("already registered")) setError("Este e-mail já está cadastrado.");
+      else if ((err?.message || "").toLowerCase().includes("already registered")) setError("Este e-mail já está em uso.");
       else if ((err?.message || "").toLowerCase().includes("database error saving new user")) setError("Não foi possível concluir o cadastro. Verifique se login/e-mail já existem ou se o trigger de perfil está configurado.");
       else setError("Não foi possível criar a conta. Tente novamente em instantes.");
     } finally {
@@ -72,7 +76,7 @@ function CreateAccountPage() {
       <h1 className="text-xl font-bold">Criar conta</h1>
       <Field label="Nome completo" value={nome} onChange={setNome} />
       <Field label="E-mail" value={email} onChange={setEmail} type="email" />
-      <Field label="Login" value={login} onChange={setLogin} />
+      <Field label="Login" value={login} onChange={setLogin} onBlur={() => setLogin((prev) => prev.trim().toLowerCase())} />
       <Field label="Senha" value={senha} onChange={setSenha} type="password" />
 
       <div className="space-y-2">
@@ -103,6 +107,6 @@ function CreateAccountPage() {
   </div>;
 }
 
-function Field({label, value, onChange, type = "text", required = true}: {label:string;value:string;onChange:(value:string)=>void;type?:string;required?:boolean;}) {
-  return <div className="space-y-1"><Label>{label}</Label><Input value={value} onChange={(e)=>onChange(e.target.value)} type={type} required={required} /></div>;
+function Field({label, value, onChange, onBlur, type = "text", required = true}: {label:string;value:string;onChange:(value:string)=>void;onBlur?:()=>void;type?:string;required?:boolean;}) {
+  return <div className="space-y-1"><Label>{label}</Label><Input value={value} onChange={(e)=>onChange(e.target.value)} onBlur={onBlur} type={type} required={required} /></div>;
 }
