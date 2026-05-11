@@ -97,14 +97,18 @@ async function uploadProfileAvatar(userId: string, avatarFile: File): Promise<st
   if (avatarFile.size > MAX_AVATAR_BYTES) throw new Error("AVATAR_TOO_LARGE");
 
   const ext = avatarFile.name.split(".").pop()?.toLowerCase() || "jpg";
-  const path = `${userId}/${Date.now()}.${ext}`;
+  const path = `${userId}/avatar.${ext}`;
   const { error } = await supabase.storage.from(AVATAR_BUCKET).upload(path, avatarFile, { upsert: true });
-  if (error) throw error;
+  if (error) {
+    throw new AuthFlowError("AVATAR_UPLOAD_FAILED", "Falha no upload do avatar.", error);
+  }
 
   const { error: avatarUpdateError } = await supabase.rpc("update_own_avatar", {
     input_avatar_path: path,
   });
-  if (avatarUpdateError) throw avatarUpdateError;
+  if (avatarUpdateError) {
+    throw new AuthFlowError("AVATAR_RPC_UPDATE_FAILED", "Falha ao atualizar avatar_path no perfil.", avatarUpdateError);
+  }
 
   return path;
 }
@@ -148,22 +152,42 @@ export async function signUpUser(payload: {
   }
 
   let avatarUploadWarning = false;
+  let avatarUploadWarningReason: "NO_ACTIVE_SESSION" | "UPLOAD_OR_RPC_ERROR" | null = null;
   if (avatarFile && data.user?.id) {
     try {
       const session = data.session ?? (await getSession());
       if (session?.user?.id === data.user.id) {
-        await uploadProfileAvatar(data.user.id, avatarFile);
+        const avatarPath = await uploadProfileAvatar(data.user.id, avatarFile);
+        console.info("[signUpUser] avatar_path salvo com sucesso", {
+          userId: data.user.id,
+          avatarPath,
+        });
       } else {
         avatarUploadWarning = true;
+        avatarUploadWarningReason = "NO_ACTIVE_SESSION";
+        console.warn("[signUpUser] Sessão ausente após signUp; avatar não enviado neste momento", {
+          userId: data.user.id,
+          hasSession: Boolean(session),
+          sessionUserId: session?.user?.id ?? null,
+        });
       }
     } catch (avatarError) {
       avatarUploadWarning = true;
-      console.error("[signUpUser] Falha no upload opcional do avatar", avatarError);
+      avatarUploadWarningReason = "UPLOAD_OR_RPC_ERROR";
+      const authErrorCode = (avatarError as { code?: string } | undefined)?.code;
+      if (authErrorCode === "AVATAR_RPC_UPDATE_FAILED") {
+        console.error("[signUpUser] Erro na RPC update_own_avatar", avatarError);
+      } else if (authErrorCode === "AVATAR_UPLOAD_FAILED") {
+        console.error("[signUpUser] Erro de upload de avatar", avatarError);
+      } else {
+        console.error("[signUpUser] Erro de upload de avatar", avatarError);
+        console.error("[signUpUser] Erro na RPC update_own_avatar", avatarError);
+      }
     }
   }
 
   await supabase.auth.signOut();
-  return { ...data, avatarUploadWarning };
+  return { ...data, avatarUploadWarning, avatarUploadWarningReason };
 }
 
 export function getProfileAvatarPublicUrl(avatarPath: string | null | undefined): string | null {
