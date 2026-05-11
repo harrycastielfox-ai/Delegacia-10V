@@ -3,11 +3,12 @@ import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { getCurrentProfile, getSession, logout } from "@/lib/auth";
-import { isAuthorized } from "@/lib/authz";
+import { isAuthorized, type UserProfile } from "@/lib/authz";
 
 export function AppLayout({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
   const [ready, setReady] = useState(false);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -33,7 +34,10 @@ export function AppLayout({ children }: { children: ReactNode }) {
           if (!cancelled) navigate({ to: "/aguardando-autorizacao", replace: true });
           return;
         }
-        if (!cancelled) setReady(true);
+        if (!cancelled) {
+          setProfile(profile);
+          setReady(true);
+        }
       } catch (error) {
         console.error("[AppLayout] Falha ao carregar profile", error);
         if (!cancelled) {
@@ -47,11 +51,11 @@ export function AppLayout({ children }: { children: ReactNode }) {
     };
   }, [navigate]);
 
-  if (!ready) return null;
+  if (!ready || !profile) return null;
 
   return (
     <div className="min-h-screen flex w-full bg-background text-foreground">
-      <AppSidebar />
+      <AppSidebar profile={profile} />
       <main className="flex-1 min-w-0 p-6 lg:p-8 overflow-x-hidden">{children}</main>
     </div>
   );

@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { FileText, Car, Package, ArrowRight, LockKeyhole, Construction, Shield, LogOut } from "lucide-react";
-import { getCurrentProfile, getSession, logout } from "@/lib/auth";
+import { getCurrentProfile, getProfileAvatarPublicUrl, getSession, logout } from "@/lib/auth";
 import { isAuthorized, type UserProfile } from "@/lib/authz";
 
 export const Route = createFileRoute("/modulos")({
@@ -89,6 +89,8 @@ function ModulosPage() {
 
   if (checkingAuth) return null;
   if (!profile) return null;
+  const avatarUrl = getProfileAvatarPublicUrl(profile.avatar_path);
+  const profileInitial = (profile.nome?.trim().charAt(0) || "?").toUpperCase();
 
   return (
     <div className="min-h-screen w-full bg-background text-foreground px-4 py-6 sm:px-6 lg:px-8">
@@ -109,6 +111,13 @@ function ModulosPage() {
             </div>
           </div>
           <div className="flex items-center gap-3">
+            {avatarUrl ? (
+              <img src={avatarUrl} alt={`Avatar de ${profile.nome}`} className="h-9 w-9 rounded-full border border-border object-cover" />
+            ) : (
+              <div className="h-9 w-9 rounded-full bg-primary/20 border border-primary/40 flex items-center justify-center text-xs font-bold text-primary">
+                {profileInitial}
+              </div>
+            )}
             <div className="text-right">
               <div className="text-xs font-semibold">{profile.nome}</div>
               <div className="text-[10px] text-muted-foreground">{profile.cargo}</div>

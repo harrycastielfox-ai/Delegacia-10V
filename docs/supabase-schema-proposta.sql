@@ -111,6 +111,9 @@ create table if not exists public.profiles (
   updated_at timestamptz not null default now()
 );
 
+create unique index if not exists profiles_login_lower_unique
+  on public.profiles (lower(login));
+
 alter table public.profiles enable row level security;
 
 -- Usuário autenticado só enxerga o próprio perfil.
@@ -238,4 +241,3 @@ using (
   bucket_id = 'profile-avatars'
   and auth.uid()::text = (storage.foldername(name))[1]
 );
-

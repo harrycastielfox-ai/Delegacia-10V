@@ -1,6 +1,7 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { LayoutDashboard, FileText, FilePlus2, Bell, ShieldCheck, LogOut, Gavel } from "lucide-react";
-import { logout } from "@/lib/auth";
+import { getProfileAvatarPublicUrl, logout } from "@/lib/auth";
+import type { UserProfile } from "@/lib/authz";
 
 const items = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
@@ -11,9 +12,11 @@ const items = [
   { title: "Auditoria", url: "/auditoria", icon: ShieldCheck },
 ] as const;
 
-export function AppSidebar() {
+export function AppSidebar({ profile }: { profile: UserProfile }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const navigate = useNavigate();
+  const avatarUrl = getProfileAvatarPublicUrl(profile.avatar_path);
+  const initial = (profile.nome?.trim().charAt(0) || "?").toUpperCase();
 
   function handleLogout() {
     logout();
@@ -64,12 +67,16 @@ export function AppSidebar() {
       </nav>
 
       <div className="border-t border-sidebar-border p-4 flex items-center gap-3">
-        <div className="h-9 w-9 rounded-full bg-primary/20 border border-primary/40 flex items-center justify-center text-xs font-bold text-primary">
-          DA
-        </div>
+        {avatarUrl ? (
+          <img src={avatarUrl} alt={`Avatar de ${profile.nome}`} className="h-9 w-9 rounded-full border border-primary/40 object-cover" />
+        ) : (
+          <div className="h-9 w-9 rounded-full bg-primary/20 border border-primary/40 flex items-center justify-center text-xs font-bold text-primary">
+            {initial}
+          </div>
+        )}
         <div className="flex-1 min-w-0">
-          <div className="text-xs font-semibold text-sidebar-foreground truncate">DELEGADO ALVES</div>
-          <div className="text-[10px] text-muted-foreground truncate">d.alves@policia.gov.br</div>
+          <div className="text-xs font-semibold text-sidebar-foreground truncate">{profile.nome}</div>
+          <div className="text-[10px] text-muted-foreground truncate">{profile.cargo}</div>
         </div>
         <button
           onClick={handleLogout}

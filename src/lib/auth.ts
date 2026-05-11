@@ -28,6 +28,11 @@ function normalizeLogin(value: string): string {
   return normalizeIdentifier(value).toLowerCase();
 }
 
+function isAuthDuplicateEmailError(error: unknown): boolean {
+  const message = String((error as { message?: string } | undefined)?.message || "").toLowerCase();
+  return message.includes("already registered") || message.includes("already exists");
+}
+
 function isRlsError(error: unknown): boolean {
   const message = String((error as { message?: string } | undefined)?.message || "").toLowerCase();
   return message.includes("row-level security") || message.includes("permission denied");
@@ -115,10 +120,15 @@ export async function signUpUser(payload: {
   const cleanEmail = normalizeEmail(email);
   const cleanLogin = normalizeLogin(login);
 
+  if (!cleanLogin) throw new Error("LOGIN_REQUIRED");
+
   const { data: existingLogin, error: loginCheckError } = await supabase.rpc("resolve_login_to_email", {
     input_login: cleanLogin,
   });
-  if (loginCheckError) console.error("[signUpUser] Falha ao verificar login", loginCheckError);
+  if (loginCheckError) {
+    console.error("[signUpUser] Falha ao verificar login", loginCheckError);
+    throw loginCheckError;
+  }
   if (existingLogin) throw new Error("LOGIN_ALREADY_EXISTS");
 
   const { data, error } = await supabase.auth.signUp({
@@ -131,6 +141,9 @@ export async function signUpUser(payload: {
 
   if (error) {
     console.error("[signUpUser] Erro do Supabase Auth", error);
+    if (isAuthDuplicateEmailError(error)) {
+      throw new Error("EMAIL_ALREADY_EXISTS");
+    }
     throw error;
   }
 
@@ -151,4 +164,10 @@ export async function signUpUser(payload: {
 
   await supabase.auth.signOut();
   return { ...data, avatarUploadWarning };
+}
+
+export function getProfileAvatarPublicUrl(avatarPath: string | null | undefined): string | null {
+  if (!avatarPath) return null;
+  const { data } = supabase.storage.from(AVATAR_BUCKET).getPublicUrl(avatarPath);
+  return data.publicUrl;
 }
