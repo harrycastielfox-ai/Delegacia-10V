@@ -52,9 +52,14 @@ function CreateAccountPage() {
       const cleanLogin = login.trim().toLowerCase();
       setLogin(cleanLogin);
       const result = await signUpUser({ nome, email, login: cleanLogin, password: senha, avatarFile });
-      setSuccess(result.avatarUploadWarning
-        ? "Conta criada com sucesso e aguarda autorização. A foto não foi enviada agora; você poderá adicionar depois."
-        : "Conta criada com sucesso. Aguarde autorização de um administrador para acessar o SIPI.");
+      if (result.avatarUploadWarning) {
+        const warningMessage = result.avatarUploadWarningReason === "NO_ACTIVE_SESSION"
+          ? "Conta criada com sucesso e aguarda autorização. A foto não foi salva agora porque não houve sessão ativa após o cadastro (ex.: confirmação de e-mail ativa). Você poderá adicionar a foto depois no perfil."
+          : "Conta criada com sucesso e aguarda autorização. Não foi possível salvar a foto de perfil neste momento; você poderá adicionar a foto depois no perfil.";
+        setSuccess(warningMessage);
+      } else {
+        setSuccess("Conta criada com sucesso. Aguarde autorização de um administrador para acessar o SIPI.");
+      }
       setNome(""); setEmail(""); setLogin(""); setSenha(""); setAvatarFile(null); setAvatarPreview(null);
     } catch (err: any) {
       console.error("[CreateAccountPage] Erro ao criar conta", err);
