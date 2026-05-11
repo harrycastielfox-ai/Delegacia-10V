@@ -51,6 +51,21 @@ export function AppLayout({ children }: { children: ReactNode }) {
     };
   }, [navigate]);
 
+  useEffect(() => {
+    const onProfileAvatarUpdated = (event: Event) => {
+      const customEvent = event as CustomEvent<{ avatarPath?: string }>;
+      const avatarPath = customEvent.detail?.avatarPath;
+      if (!avatarPath) return;
+
+      setProfile((current) => (current ? { ...current, avatar_path: avatarPath } : current));
+    };
+
+    window.addEventListener("profile-avatar-updated", onProfileAvatarUpdated as EventListener);
+    return () => {
+      window.removeEventListener("profile-avatar-updated", onProfileAvatarUpdated as EventListener);
+    };
+  }, []);
+
   if (!ready || !profile) return null;
 
   return (

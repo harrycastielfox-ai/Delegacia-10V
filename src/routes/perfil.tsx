@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { Link, createFileRoute } from "@tanstack/react-router";
 import { useMemo, useRef, useState, type ChangeEvent } from "react";
 import { AppLayout } from "@/components/AppLayout";
 import { getCurrentProfile, getProfileAvatarPublicUrl, updateOwnAvatar } from "@/lib/auth";
@@ -11,9 +11,14 @@ export const Route = createFileRoute("/perfil")({
     ],
   }),
   loader: async () => {
-    const profile = await getCurrentProfile();
-    if (!profile) {
-      throw new Error("Perfil do usuário autenticado não encontrado.");
+    let profile = null;
+    try {
+      profile = await getCurrentProfile();
+    } catch (error) {
+      const code = (error as { code?: string } | undefined)?.code;
+      if (code !== "PROFILE_NOT_FOUND") {
+        throw error;
+      }
     }
     return { profile };
   },
@@ -24,6 +29,28 @@ const MAX_AVATAR_BYTES = 2 * 1024 * 1024;
 
 function PerfilPage() {
   const { profile } = Route.useLoaderData();
+
+  if (!profile) {
+    return (
+      <AppLayout>
+        <div className="mx-auto w-full max-w-2xl space-y-4 rounded-xl border border-primary/25 bg-card/70 p-6">
+          <h1 className="text-xl font-bold tracking-wide text-foreground">Meu Perfil</h1>
+          <p className="text-sm text-muted-foreground">
+            Não localizamos o perfil da sessão atual. Sua conta pode ter sido criada recentemente.
+          </p>
+          <p className="text-sm text-muted-foreground">
+            Tente sair e entrar novamente. Se o problema continuar, contate um administrador.
+          </p>
+          <div>
+            <Link to="/" className="text-sm font-medium text-primary underline">
+              Voltar ao painel
+            </Link>
+          </div>
+        </div>
+      </AppLayout>
+    );
+  }
+
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const [avatarPath, setAvatarPath] = useState(profile.avatar_path);
@@ -92,6 +119,7 @@ function PerfilPage() {
     try {
       const newAvatarPath = await updateOwnAvatar(profile.id, selectedFile);
       setAvatarPath(newAvatarPath);
+      window.dispatchEvent(new CustomEvent("profile-avatar-updated", { detail: { avatarPath: newAvatarPath } }));
       resetPendingAvatar();
       setFeedback({ type: "success", message: "Foto de perfil atualizada com sucesso." });
     } catch (error) {
