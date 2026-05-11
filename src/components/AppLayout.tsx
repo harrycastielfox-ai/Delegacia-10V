@@ -16,12 +16,35 @@ export function AppLayout({ children }: { children: ReactNode }) {
         navigate({ to: "/login" });
         return;
       }
-      const profile = await getCurrentProfile();
-      if (!isAuthorized(profile)) {
-        navigate({ to: "/aguardando-autorizacao" });
+      try {
+        const profile = await getCurrentProfile();
+        if (!profile) {
+          navigate({
+            to: "/login",
+            search: { erro: "profile_missing" } as never,
+          });
+          return;
+        }
+        if (profile.status_autorizacao === "bloqueado") {
+          navigate({
+            to: "/login",
+            search: { erro: "access_blocked" } as never,
+          });
+          return;
+        }
+        if (!isAuthorized(profile)) {
+          navigate({ to: "/aguardando-autorizacao" });
+          return;
+        }
+        setReady(true);
+      } catch (error) {
+        console.error("[AppLayout] Falha ao carregar profile", error);
+        navigate({
+          to: "/login",
+          search: { erro: "profile_load_failed" } as never,
+        });
         return;
       }
-      setReady(true);
     })();
   }, [navigate]);
 

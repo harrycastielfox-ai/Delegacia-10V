@@ -5,6 +5,17 @@ const PROFILE_SELECT = "id,nome,email,login,avatar_url,avatar_path,cargo,status_
 const AVATAR_BUCKET = "profile-avatars";
 const MAX_AVATAR_BYTES = 2 * 1024 * 1024;
 
+export class AuthFlowError extends Error {
+  code: string;
+  cause?: unknown;
+  constructor(code: string, message: string, cause?: unknown) {
+    super(message);
+    this.name = "AuthFlowError";
+    this.code = code;
+    this.cause = cause;
+  }
+}
+
 export async function getSession() {
   const { data, error } = await supabase.auth.getSession();
   if (error) throw error;
@@ -19,7 +30,7 @@ export async function getCurrentProfile(): Promise<UserProfile | null> {
   const session = await getSession();
   if (!session?.user) return null;
   const { data, error } = await supabase.from("profiles").select(PROFILE_SELECT).eq("id", session.user.id).single();
-  if (error) throw error;
+  if (error) throw new AuthFlowError("PROFILE_FETCH_FAILED", "Falha ao carregar perfil.", error);
   return data as UserProfile;
 }
 
@@ -28,21 +39,27 @@ function isEmail(value: string): boolean {
 }
 
 export async function resolveEmailFromLoginOrEmail(loginOrEmail: string): Promise<string> {
-  if (isEmail(loginOrEmail)) return loginOrEmail.toLowerCase().trim();
+  const input = loginOrEmail.trim();
+  if (isEmail(input)) return input.toLowerCase();
 
   const { data, error } = await supabase.rpc("resolve_login_to_email", {
-    input_login: loginOrEmail.trim(),
+    input_login: input.toLowerCase(),
   });
 
-  if (error) throw error;
-  if (!data) throw new Error("LOGIN_NOT_FOUND");
+  if (error) throw new AuthFlowError("LOGIN_RESOLVE_FAILED", "Falha ao resolver login para e-mail.", error);
+  if (!data) throw new AuthFlowError("LOGIN_NOT_FOUND", "Login não encontrado.");
   return String(data);
 }
 
-export async function signInWithLoginOrEmail(loginOrEmail: string, password: string) {
+export async function authenticateWithLoginOrEmail(loginOrEmail: string, password: string) {
   const email = await resolveEmailFromLoginOrEmail(loginOrEmail);
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
-  if (error) throw error;
+  const { error } = await supabase.auth.signInWithPassword({ email: email.trim().toLowerCase(), password });
+  if (error) throw new AuthFlowError("AUTH_SIGNIN_FAILED", "Falha ao autenticar no Supabase Auth.", error);
+  return { email };
+}
+
+export async function signInWithLoginOrEmail(loginOrEmail: string, password: string) {
+  await authenticateWithLoginOrEmail(loginOrEmail, password);
   return getCurrentProfile();
 }
 
