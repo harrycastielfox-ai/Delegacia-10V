@@ -92,7 +92,7 @@ export async function signInWithLoginOrEmail(loginOrEmail: string, password: str
   return getCurrentProfile();
 }
 
-async function uploadProfileAvatar(userId: string, avatarFile: File): Promise<string> {
+export async function updateOwnAvatar(userId: string, avatarFile: File): Promise<string> {
   if (!avatarFile.type.startsWith("image/")) throw new Error("AVATAR_INVALID_TYPE");
   if (avatarFile.size > MAX_AVATAR_BYTES) throw new Error("AVATAR_TOO_LARGE");
 
@@ -157,7 +157,7 @@ export async function signUpUser(payload: {
     try {
       const session = data.session ?? (await getSession());
       if (session?.user?.id === data.user.id) {
-        const avatarPath = await uploadProfileAvatar(data.user.id, avatarFile);
+        const avatarPath = await updateOwnAvatar(data.user.id, avatarFile);
         console.info("[signUpUser] avatar_path salvo com sucesso", {
           userId: data.user.id,
           avatarPath,
