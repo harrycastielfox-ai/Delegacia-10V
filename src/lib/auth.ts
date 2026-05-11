@@ -1,7 +1,7 @@
 import { supabase } from "@/lib/supabaseClient";
 import type { UserProfile } from "@/lib/authz";
 
-const PROFILE_SELECT = "id,nome,email,login,avatar_url,avatar_path,cargo,status_autorizacao,created_at,updated_at";
+const PROFILE_SELECT = "id,nome,email,login,avatar_path,cargo,status_autorizacao,created_at,updated_at";
 const AVATAR_BUCKET = "profile-avatars";
 const MAX_AVATAR_BYTES = 2 * 1024 * 1024;
 
@@ -14,6 +14,23 @@ export class AuthFlowError extends Error {
     this.code = code;
     this.cause = cause;
   }
+}
+
+function normalizeIdentifier(value: string): string {
+  return value.trim();
+}
+
+function normalizeEmail(value: string): string {
+  return normalizeIdentifier(value).toLowerCase();
+}
+
+function normalizeLogin(value: string): string {
+  return normalizeIdentifier(value).toLowerCase();
+}
+
+function isRlsError(error: unknown): boolean {
+  const message = String((error as { message?: string } | undefined)?.message || "").toLowerCase();
+  return message.includes("row-level security") || message.includes("permission denied");
 }
 
 export async function getSession() {
@@ -29,32 +46,39 @@ export async function logout(): Promise<void> {
 export async function getCurrentProfile(): Promise<UserProfile | null> {
   const session = await getSession();
   if (!session?.user) return null;
-  const { data, error } = await supabase.from("profiles").select(PROFILE_SELECT).eq("id", session.user.id).single();
-  if (error) throw new AuthFlowError("PROFILE_FETCH_FAILED", "Falha ao carregar perfil.", error);
+
+  const { data, error } = await supabase.from("profiles").select(PROFILE_SELECT).eq("id", session.user.id).maybeSingle();
+  if (error) {
+    if (isRlsError(error)) {
+      throw new AuthFlowError("PROFILE_RLS_DENIED", "RLS/policy bloqueou a leitura do perfil.", error);
+    }
+    throw new AuthFlowError("PROFILE_FETCH_FAILED", "Falha ao carregar perfil.", error);
+  }
+
+  if (!data) {
+    throw new AuthFlowError("PROFILE_NOT_FOUND", "Perfil não encontrado para o usuário autenticado.");
+  }
+
   return data as UserProfile;
 }
 
-function isEmail(value: string): boolean {
-  return value.includes("@");
-}
-
 export async function resolveEmailFromLoginOrEmail(loginOrEmail: string): Promise<string> {
-  const input = loginOrEmail.trim();
-  if (isEmail(input)) return input.toLowerCase();
+  const input = normalizeIdentifier(loginOrEmail);
+  if (input.includes("@")) return normalizeEmail(input);
 
   const { data, error } = await supabase.rpc("resolve_login_to_email", {
-    input_login: input.toLowerCase(),
+    input_login: normalizeLogin(input),
   });
 
   if (error) throw new AuthFlowError("LOGIN_RESOLVE_FAILED", "Falha ao resolver login para e-mail.", error);
   if (!data) throw new AuthFlowError("LOGIN_NOT_FOUND", "Login não encontrado.");
-  return String(data);
+  return normalizeEmail(String(data));
 }
 
 export async function authenticateWithLoginOrEmail(loginOrEmail: string, password: string) {
   const email = await resolveEmailFromLoginOrEmail(loginOrEmail);
-  const { error } = await supabase.auth.signInWithPassword({ email: email.trim().toLowerCase(), password });
-  if (error) throw new AuthFlowError("AUTH_SIGNIN_FAILED", "Falha ao autenticar no Supabase Auth.", error);
+  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  if (error) throw new AuthFlowError("AUTH_INVALID_CREDENTIALS", "Credenciais inválidas.", error);
   return { email };
 }
 
@@ -88,8 +112,8 @@ export async function signUpUser(payload: {
   avatarFile?: File | null;
 }) {
   const { nome, email, login, password, avatarFile } = payload;
-  const cleanEmail = email.trim().toLowerCase();
-  const cleanLogin = login.trim();
+  const cleanEmail = normalizeEmail(email);
+  const cleanLogin = normalizeLogin(login);
 
   const { data: existingLogin, error: loginCheckError } = await supabase.rpc("resolve_login_to_email", {
     input_login: cleanLogin,
@@ -118,7 +142,6 @@ export async function signUpUser(payload: {
         await uploadProfileAvatar(data.user.id, avatarFile);
       } else {
         avatarUploadWarning = true;
-        console.warn("[signUpUser] Cadastro criado sem sessão ativa (confirmação de e-mail habilitada). Upload será feito depois.");
       }
     } catch (avatarError) {
       avatarUploadWarning = true;

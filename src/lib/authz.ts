@@ -9,7 +9,7 @@ export interface UserProfile {
   nome: string;
   email: string;
   login: string;
-  avatar_url: string | null;
+  avatar_path: string | null;
   cargo: UserRole;
   status_autorizacao: AuthorizationStatus;
   created_at: string;
