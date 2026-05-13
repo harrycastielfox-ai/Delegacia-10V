@@ -29,31 +29,11 @@ const MAX_AVATAR_BYTES = 2 * 1024 * 1024;
 
 function PerfilPage() {
   const { profile } = Route.useLoaderData();
-
-  if (!profile) {
-    return (
-      <AppLayout>
-        <div className="mx-auto w-full max-w-2xl space-y-4 rounded-xl border border-primary/25 bg-card/70 p-6">
-          <h1 className="text-xl font-bold tracking-wide text-foreground">Meu Perfil</h1>
-          <p className="text-sm text-muted-foreground">
-            Não localizamos o perfil da sessão atual. Sua conta pode ter sido criada recentemente.
-          </p>
-          <p className="text-sm text-muted-foreground">
-            Tente sair e entrar novamente. Se o problema continuar, contate um administrador.
-          </p>
-          <div>
-            <Link to="/" className="text-sm font-medium text-primary underline">
-              Voltar ao painel
-            </Link>
-          </div>
-        </div>
-      </AppLayout>
-    );
-  }
+  const profileMissing = !profile;
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  const [avatarPath, setAvatarPath] = useState(profile.avatar_path);
+  const [avatarPath, setAvatarPath] = useState(profile?.avatar_path ?? null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isSavingAvatar, setIsSavingAvatar] = useState(false);
@@ -64,9 +44,9 @@ function PerfilPage() {
     return getProfileAvatarPublicUrl(avatarPath);
   }, [avatarPath, previewUrl]);
 
-  const initial = (profile.nome?.trim().charAt(0) || "?").toUpperCase();
+  const initial = (profile?.nome?.trim().charAt(0) || "?").toUpperCase();
 
-  const createdAt = profile.created_at
+  const createdAt = profile?.created_at
     ? new Date(profile.created_at).toLocaleString("pt-BR", {
         dateStyle: "long",
         timeStyle: "short",
@@ -117,6 +97,7 @@ function PerfilPage() {
     setFeedback(null);
 
     try {
+      if (!profile) throw new Error("PROFILE_NOT_FOUND");
       const newAvatarPath = await updateOwnAvatar(profile.id, selectedFile);
       setAvatarPath(newAvatarPath);
       window.dispatchEvent(new CustomEvent("profile-avatar-updated", { detail: { avatarPath: newAvatarPath } }));
@@ -124,7 +105,7 @@ function PerfilPage() {
       setFeedback({ type: "success", message: "Foto de perfil atualizada com sucesso." });
     } catch (error) {
       console.error("[perfil] Erro ao atualizar foto de perfil", {
-        userId: profile.id,
+        userId: profile?.id ?? "unknown",
         fileName: selectedFile.name,
         fileType: selectedFile.type,
         fileSize: selectedFile.size,
@@ -138,6 +119,29 @@ function PerfilPage() {
       setIsSavingAvatar(false);
     }
   };
+
+
+
+  if (profileMissing) {
+    return (
+      <AppLayout>
+        <div className="mx-auto w-full max-w-2xl space-y-4 rounded-xl border border-primary/25 bg-card/70 p-6">
+          <h1 className="text-xl font-bold tracking-wide text-foreground">Meu Perfil</h1>
+          <p className="text-sm text-muted-foreground">
+            Não localizamos o perfil da sessão atual. Sua conta pode ter sido criada recentemente.
+          </p>
+          <p className="text-sm text-muted-foreground">
+            Tente sair e entrar novamente. Se o problema continuar, contate um administrador.
+          </p>
+          <div>
+            <Link to="/" className="text-sm font-medium text-primary underline">
+              Voltar ao painel
+            </Link>
+          </div>
+        </div>
+      </AppLayout>
+    );
+  }
 
   return (
     <AppLayout>
