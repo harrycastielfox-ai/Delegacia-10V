@@ -54,11 +54,26 @@ function NovoCaso() {
 
 
   useEffect(() => {
+    let isMounted = true;
+
     void (async () => {
-      const currentProfile = await getCurrentProfile();
-      setProfile(currentProfile);
-      setCheckingAccess(false);
+      try {
+        const currentProfile = await getCurrentProfile();
+        if (isMounted) {
+          setProfile(currentProfile);
+        }
+      } catch (error) {
+        console.error("Falha ao verificar permissões para /novo-caso", error);
+      } finally {
+        if (isMounted) {
+          setCheckingAccess(false);
+        }
+      }
     })();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const handleHouveArmaDeFogoChange = (value: string) => {
