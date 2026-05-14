@@ -3,6 +3,8 @@ import { useEffect, useMemo, useState } from "react";
 import { AppLayout } from "@/components/AppLayout";
 import { Search, Filter, Plus } from "lucide-react";
 import { listInqueritos, type InqueritoRecord } from "@/lib/repositories/inqueritosRepository";
+import { getCurrentProfile } from "@/lib/auth";
+import { canCreateCases, canOnlyViewPublicCases, type UserProfile } from "@/lib/authz";
 
 export const Route = createFileRoute("/inqueritos")({ component: Inqueritos });
 const priorTone: Record<string, string> = { ALTA: "bg-destructive/15 text-destructive border-destructive/30", "MÉDIA": "bg-warning/15 text-warning border-warning/30", BAIXA: "bg-info/15 text-info border-info/30" };
@@ -66,12 +68,15 @@ function Inqueritos() {
   const [rows, setRows] = useState<InqueritoRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [profile, setProfile] = useState<UserProfile | null>(null);
 
   useEffect(() => {
     if (!isInqueritosIndex) return;
     (async () => {
       try {
         setLoading(true);
+        const currentProfile = await getCurrentProfile();
+        setProfile(currentProfile);
         setRows(await listInqueritos());
         setError("");
       } catch {
@@ -82,7 +87,17 @@ function Inqueritos() {
     })();
   }, [isInqueritosIndex]);
 
-  const normalizedRows = useMemo(() => rows.map((r) => normalizeInqueritoForList(r)), [rows]);
+  const visibleRows = useMemo(() => {
+    if (!canOnlyViewPublicCases(profile)) return rows;
+    return rows.filter((item) => {
+      const raw = item as unknown as Record<string, unknown>;
+      const visibility = String(raw.visibilidade ?? raw.visibility ?? raw.publico_privado ?? "publico").toLowerCase();
+      const isPrivate = visibility.includes("priv") || visibility.includes("sig");
+      return !isPrivate;
+    });
+  }, [profile, rows]);
+
+  const normalizedRows = useMemo(() => visibleRows.map((r) => normalizeInqueritoForList(r)), [visibleRows]);
   const filtered = useMemo(() => normalizedRows.filter((r) => {
     const nst = normalizeText(searchTerm);
     if (!nst) return true;
@@ -94,7 +109,7 @@ function Inqueritos() {
   if (!isInqueritosIndex) return <Outlet />;
 
   return <AppLayout><div className="space-y-6">
-<header className="flex flex-col gap-4 rounded-2xl border border-border/70 bg-card/60 p-5 shadow-[0_0_0_1px_rgba(255,255,255,0.015)] lg:flex-row lg:items-center lg:justify-between lg:p-6"><div className="space-y-1.5"><h1 className="text-3xl font-black tracking-tight">Inquéritos</h1><p className="text-sm text-muted-foreground">{filtered.length} de {rows.length} caso(s) encontrado(s)</p></div><button className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition hover:brightness-110" onClick={() => navigate({ to: "/novo-caso" })}><Plus className="h-4 w-4" /> Novo Caso</button></header>
+<header className="flex flex-col gap-4 rounded-2xl border border-border/70 bg-card/60 p-5 shadow-[0_0_0_1px_rgba(255,255,255,0.015)] lg:flex-row lg:items-center lg:justify-between lg:p-6"><div className="space-y-1.5"><h1 className="text-3xl font-black tracking-tight">Inquéritos</h1><p className="text-sm text-muted-foreground">{filtered.length} de {visibleRows.length} caso(s) encontrado(s)</p></div>{canCreateCases(profile) ? <button className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition hover:brightness-110" onClick={() => navigate({ to: "/novo-caso" })}><Plus className="h-4 w-4" /> Novo Caso</button> : null}</header>
 <section className="rounded-2xl border border-border/80 bg-card/70 p-4 md:p-5"><div className="flex flex-col gap-3 md:flex-row"><div className="relative flex-1"><Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" /><input placeholder="Buscar por PPE, vítima ou suspeito..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="h-12 w-full rounded-xl border border-border/90 bg-background/70 pl-10 pr-4 text-sm outline-none transition placeholder:text-muted-foreground/80 focus:border-primary/50" /></div><button className="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-border bg-background/70 px-4 text-sm font-medium transition hover:bg-accent"><Filter className="h-4 w-4" />Filtros</button></div></section>
 {error && <p className="text-xs text-destructive">{error}</p>}
 <div className="overflow-x-auto rounded-2xl border border-border/80 bg-card/90 shadow-[0_10px_40px_rgba(0,0,0,0.22)]"><table className="w-full min-w-[1100px] table-fixed text-sm"><thead className="bg-muted/25 text-[11px] tracking-[0.14em] text-muted-foreground"><tr><th className="w-[12%] px-4 py-4 text-left font-bold align-middle">PPE</th><th className="w-[23%] px-4 py-4 text-left font-bold align-middle">TIPIFICAÇÃO</th><th className="w-[21%] px-4 py-4 text-left font-bold align-middle">VÍTIMA</th><th className="w-[9%] px-4 py-4 text-center font-bold align-middle">PRIORIDADE</th><th className="w-[11%] px-4 py-4 text-center font-bold align-middle">GRAVIDADE</th><th className="w-[10%] px-4 py-4 text-center font-bold align-middle">SITUAÇÃO</th><th className="w-[7%] px-4 py-4 text-left font-bold align-middle">EQUIPE</th><th className="w-[9%] px-4 py-4 text-center font-bold align-middle">PRAZO</th><th className="w-[8%] px-4 py-4 text-center font-bold align-middle">AÇÃO</th></tr></thead><tbody>

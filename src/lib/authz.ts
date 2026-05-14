@@ -28,17 +28,64 @@ export function isDelegado(profile: Pick<UserProfile, "cargo"> | null): boolean 
   return profile?.cargo === "delegado";
 }
 
+export function isAtlasAccess(profile: Pick<UserProfile, "cargo"> | null): boolean {
+  return profile?.cargo === "atlas_access";
+}
+
 export function canManageUsers(profile: Pick<UserProfile, "cargo"> | null): boolean {
-  return isAdmin(profile) || isDelegado(profile);
+  return isAdmin(profile) || isDelegado(profile) || isAtlasAccess(profile);
 }
 
-export function canSeePrivateRecords(profile: Pick<UserProfile, "cargo"> | null): boolean {
-  return isAdmin(profile) || isDelegado(profile);
+export function canViewPrivateCases(profile: Pick<UserProfile, "cargo"> | null): boolean {
+  return isAdmin(profile) || isDelegado(profile) || isAtlasAccess(profile);
 }
 
-export function canCreateRecords(profile: Pick<UserProfile, "status_autorizacao"> | null): boolean {
-  return isAuthorized(profile as Pick<UserProfile, "status_autorizacao">);
+export function canOnlyViewPublicCases(profile: Pick<UserProfile, "cargo"> | null): boolean {
+  return !canViewPrivateCases(profile);
 }
 
-export const canEditRecords = canCreateRecords;
-export const canDeleteRecords = canCreateRecords;
+export function canCreateCases(profile: Pick<UserProfile, "cargo" | "status_autorizacao"> | null): boolean {
+  if (!isAuthorized(profile)) return false;
+  return profile.cargo !== "membro";
+}
+
+export function canEditCases(profile: Pick<UserProfile, "cargo" | "status_autorizacao"> | null): boolean {
+  return canCreateCases(profile);
+}
+
+export function canDeleteCases(profile: Pick<UserProfile, "cargo" | "status_autorizacao"> | null): boolean {
+  return canCreateCases(profile);
+}
+
+export function canManageCases(profile: Pick<UserProfile, "cargo" | "status_autorizacao"> | null): boolean {
+  return canCreateCases(profile) || canEditCases(profile) || canDeleteCases(profile);
+}
+
+export const canSeePrivateRecords = canViewPrivateCases;
+export const canCreateRecords = canCreateCases;
+export const canEditRecords = canEditCases;
+export const canDeleteRecords = canDeleteCases;
+
+
+const ATLAS_BLOCKED_ROLES: UserRole[] = ["admin", "delegado", "atlas_access"];
+const ATLAS_ALLOWED_TARGET_ROLES: UserRole[] = ["membro", "sipi_access"];
+
+export function canAtlasEditTargetRole(targetRole: UserRole): boolean {
+  return !ATLAS_BLOCKED_ROLES.includes(targetRole);
+}
+
+export function canAtlasAssignRole(nextRole: UserRole): boolean {
+  return ATLAS_ALLOWED_TARGET_ROLES.includes(nextRole);
+}
+
+export function canEditUserAccess(
+  requester: Pick<UserProfile, "cargo"> | null,
+  target: Pick<UserProfile, "cargo"> | null,
+  nextRole?: UserRole,
+): boolean {
+  if (!requester || !target) return false;
+  if (requester.cargo === "admin" || requester.cargo === "delegado") return true;
+  if (requester.cargo !== "atlas_access") return false;
+  if (!canAtlasEditTargetRole(target.cargo)) return false;
+  return nextRole ? canAtlasAssignRole(nextRole) : true;
+}

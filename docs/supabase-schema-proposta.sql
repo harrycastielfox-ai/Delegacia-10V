@@ -173,7 +173,7 @@ begin
     raise exception 'PROFILE_NOT_FOUND';
   end if;
 
-  if requester_role not in ('admin', 'delegado') then
+  if requester_role not in ('admin', 'delegado', 'atlas_access') then
     raise exception 'INSUFFICIENT_PRIVILEGE';
   end if;
 
@@ -208,6 +208,7 @@ set search_path = public
 as $$
 declare
   requester_role public.user_role;
+  target_current_role public.user_role;
 begin
   if auth.uid() is null then
     raise exception 'NOT_AUTHENTICATED';
@@ -221,7 +222,29 @@ begin
     raise exception 'PROFILE_NOT_FOUND';
   end if;
 
-  if requester_role not in ('admin', 'delegado') then
+  if requester_role in ('admin', 'delegado') then
+    null;
+  elsif requester_role = 'atlas_access' then
+    if auth.uid() = target_user_id then
+      raise exception 'SELF_ELEVATION_DENIED';
+    end if;
+
+    select p.cargo into target_current_role
+    from public.profiles p
+    where p.id = target_user_id;
+
+    if target_current_role is null then
+      raise exception 'TARGET_PROFILE_NOT_FOUND';
+    end if;
+
+    if target_current_role in ('admin', 'delegado', 'atlas_access') then
+      raise exception 'ACCESS_DENIED_TARGET_ROLE';
+    end if;
+
+    if new_role not in ('membro', 'sipi_access') then
+      raise exception 'ACCESS_DENIED_ROLE_ASSIGNMENT';
+    end if;
+  else
     raise exception 'ACCESS_DENIED';
   end if;
 
