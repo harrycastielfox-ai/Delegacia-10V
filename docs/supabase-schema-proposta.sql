@@ -196,6 +196,51 @@ revoke all on function public.list_profiles_for_admin() from public;
 grant execute on function public.list_profiles_for_admin() to authenticated;
 
 
+create or replace function public.admin_update_user_access(
+  target_user_id uuid,
+  new_role public.user_role,
+  new_status public.authorization_status
+)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  requester_role public.user_role;
+begin
+  if auth.uid() is null then
+    raise exception 'NOT_AUTHENTICATED';
+  end if;
+
+  select p.cargo into requester_role
+  from public.profiles p
+  where p.id = auth.uid();
+
+  if requester_role is null then
+    raise exception 'PROFILE_NOT_FOUND';
+  end if;
+
+  if requester_role not in ('admin', 'delegado') then
+    raise exception 'ACCESS_DENIED';
+  end if;
+
+  update public.profiles p
+  set
+    cargo = new_role,
+    status_autorizacao = new_status,
+    updated_at = now()
+  where p.id = target_user_id;
+
+  if not found then
+    raise exception 'TARGET_PROFILE_NOT_FOUND';
+  end if;
+end;
+$$;
+
+revoke all on function public.admin_update_user_access(uuid, public.user_role, public.authorization_status) from public;
+grant execute on function public.admin_update_user_access(uuid, public.user_role, public.authorization_status) to authenticated;
+
 
 create or replace function public.update_own_avatar(input_avatar_path text)
 returns void
