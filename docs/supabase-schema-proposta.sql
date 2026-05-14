@@ -142,6 +142,60 @@ revoke all on function public.resolve_login_to_email(text) from public;
 grant execute on function public.resolve_login_to_email(text) to anon, authenticated;
 
 
+-- RPC controlada para listagem de perfis por Admin/Delegado sem abrir SELECT geral.
+create or replace function public.list_profiles_for_admin()
+returns table (
+  id uuid,
+  nome text,
+  email text,
+  login text,
+  avatar_path text,
+  cargo public.user_role,
+  status_autorizacao public.authorization_status,
+  created_at timestamptz
+)
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  requester_role public.user_role;
+begin
+  if auth.uid() is null then
+    raise exception 'NOT_AUTHENTICATED';
+  end if;
+
+  select p.cargo into requester_role
+  from public.profiles p
+  where p.id = auth.uid();
+
+  if requester_role is null then
+    raise exception 'PROFILE_NOT_FOUND';
+  end if;
+
+  if requester_role not in ('admin', 'delegado') then
+    raise exception 'INSUFFICIENT_PRIVILEGE';
+  end if;
+
+  return query
+  select
+    p.id,
+    p.nome,
+    p.email,
+    p.login,
+    p.avatar_path,
+    p.cargo,
+    p.status_autorizacao,
+    p.created_at
+  from public.profiles p
+  order by p.created_at desc;
+end;
+$$;
+
+revoke all on function public.list_profiles_for_admin() from public;
+grant execute on function public.list_profiles_for_admin() to authenticated;
+
+
 
 create or replace function public.update_own_avatar(input_avatar_path text)
 returns void
