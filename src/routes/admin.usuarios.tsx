@@ -65,14 +65,16 @@ function AdminUsuariosPage() {
       setLoadingUsers(true);
       setError(null);
       try {
-        const { data, error: listError } = await supabase
-          .from("profiles")
-          .select("id,nome,email,login,avatar_path,cargo,status_autorizacao,created_at,updated_at")
-          .order("created_at", { ascending: false });
+        const { data, error: listError } = await supabase.rpc("list_profiles_for_admin");
 
         if (listError) throw listError;
 
-        if (!cancelled) setUsuarios((data ?? []) as UserProfile[]);
+        const normalizedUsers = (data ?? []).map((user) => ({
+          ...user,
+          updated_at: user.created_at,
+        })) as UserProfile[];
+
+        if (!cancelled) setUsuarios(normalizedUsers);
       } catch (fetchError) {
         console.error("[AdminUsuariosPage] Erro ao listar usuários", fetchError);
         if (!cancelled) setError("Não foi possível carregar os usuários no momento.");
