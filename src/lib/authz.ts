@@ -29,7 +29,7 @@ export function isDelegado(profile: Pick<UserProfile, "cargo"> | null): boolean 
 }
 
 export function canManageUsers(profile: Pick<UserProfile, "cargo"> | null): boolean {
-  return isAdmin(profile);
+  return isAdmin(profile) || isDelegado(profile);
 }
 
 export function canSeePrivateRecords(profile: Pick<UserProfile, "cargo"> | null): boolean {
