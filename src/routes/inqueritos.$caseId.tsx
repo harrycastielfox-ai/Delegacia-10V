@@ -2,6 +2,8 @@ import { createFileRoute, Link, Outlet, useLocation, useNavigate, useRouterState
 import { useEffect, useMemo, useState } from "react";
 import { AppLayout } from "@/components/AppLayout";
 import { getInqueritoById, softDeleteInquerito, type InqueritoRecord } from "@/lib/repositories/inqueritosRepository";
+import { getCurrentProfile } from "@/lib/auth";
+import { canDeleteCases, canEditCases, canOnlyViewPublicCases, type UserProfile } from "@/lib/authz";
 import { BookOpen, FileSearch, Scale, UserRound, ShieldCheck, NotebookPen, CalendarClock } from "lucide-react";
 
 export const Route = createFileRoute("/inqueritos/$caseId")({ component: InqueritoDetalhes });
@@ -115,12 +117,24 @@ function InqueritoDetalhes() {
   const [deleting, setDeleting] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [restricted, setRestricted] = useState(false);
 
   useEffect(() => {
     (async () => {
       try {
         setErro("");
-        const inquerito = await getInqueritoById(caseId);
+        const [currentProfile, inquerito] = await Promise.all([getCurrentProfile(), getInqueritoById(caseId)]);
+        setProfile(currentProfile);
+        const raw = inquerito as unknown as Record<string, unknown>;
+        const visibility = String(raw.visibilidade ?? raw.visibility ?? raw.publico_privado ?? "publico").toLowerCase();
+        const isPrivate = visibility.includes("priv") || visibility.includes("sig");
+        if (isPrivate && canOnlyViewPublicCases(currentProfile)) {
+          setRestricted(true);
+          setCaso(null);
+          return;
+        }
+        setRestricted(false);
         setCaso(inquerito);
       } catch (error) {
         const message = typeof error === "object" && error !== null && "message" in error && typeof error.message === "string"
@@ -141,10 +155,11 @@ function InqueritoDetalhes() {
 
   if (loading) return <AppLayout><div className="text-sm text-muted-foreground">Carregando…</div></AppLayout>;
   if (erro) return <AppLayout><div className="space-y-4"><p className="rounded-lg border border-destructive/50 bg-destructive/10 px-4 py-2 text-sm text-destructive">{erro}</p><Link to="/inqueritos" className="px-4 py-2 border border-border rounded-lg inline-block">Voltar</Link></div></AppLayout>;
+  if (restricted) return <AppLayout><div className="space-y-4"><h1 className="text-xl font-bold">Acesso restrito</h1><p className="text-sm text-muted-foreground">Você não tem permissão para visualizar este inquérito.</p><Link to="/inqueritos" className="px-4 py-2 border border-border rounded-lg inline-block">Voltar</Link></div></AppLayout>;
   if (!caso || !detalhe) return <AppLayout><div className="space-y-4"><h1 className="text-xl font-bold">Inquérito não encontrado</h1><Link to="/inqueritos" className="px-4 py-2 border border-border rounded-lg inline-block">Voltar</Link></div></AppLayout>;
 
   const remove = async () => {
-    if (!caso || deleting) return;
+    if (!caso || deleting || !canDeleteCases(profile)) return;
     try {
       setDeleting(true);
       setDeleteError(null);
@@ -197,8 +212,8 @@ function InqueritoDetalhes() {
         </div>
         <div className="flex w-full flex-wrap items-center justify-start gap-2 sm:justify-end lg:w-auto lg:flex-nowrap">
           <button onClick={() => window.print()} className="px-3.5 py-2 text-xs rounded-md border border-border bg-card hover:bg-accent">Gerar PDF</button>
-          <button onClick={() => navigate({ to: "/inqueritos/$caseId/editar", params: { caseId: caso.id } })} className="px-3.5 py-2 text-xs rounded-md bg-primary text-primary-foreground font-semibold">Editar</button>
-          <button onClick={() => { setDeleteError(null); setShowDeleteModal(true); }} disabled={deleting} className="px-3.5 py-2 text-xs rounded-md border border-destructive/30 bg-destructive/10 text-destructive disabled:cursor-not-allowed disabled:opacity-70">{deleting ? "Excluindo..." : "Excluir"}</button>
+          {canEditCases(profile) ? <button onClick={() => navigate({ to: "/inqueritos/$caseId/editar", params: { caseId: caso.id } })} className="px-3.5 py-2 text-xs rounded-md bg-primary text-primary-foreground font-semibold">Editar</button> : null}
+          {canDeleteCases(profile) ? <button onClick={() => { setDeleteError(null); setShowDeleteModal(true); }} disabled={deleting} className="px-3.5 py-2 text-xs rounded-md border border-destructive/30 bg-destructive/10 text-destructive disabled:cursor-not-allowed disabled:opacity-70">{deleting ? "Excluindo..." : "Excluir"}</button> : null}
         </div>
       </div>
       <div className="mt-3 flex flex-wrap gap-2.5">
@@ -225,7 +240,7 @@ function InqueritoDetalhes() {
         <InfoCard title="Observações" icon={<NotebookPen className="h-4 w-4 text-primary" />} items={[["Observações", detalhe.observacoes]]} stacked preWrapValues />
       </div>
     </section>
-    {showDeleteModal && (
+    {showDeleteModal && canDeleteCases(profile) && (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
         <div className="w-full max-w-md rounded-xl border border-border bg-card p-5 shadow-2xl">
           <h2 className="text-lg font-bold text-foreground">Excluir inquérito</h2>

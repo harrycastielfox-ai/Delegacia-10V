@@ -1,7 +1,7 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { LayoutDashboard, FileText, FilePlus2, Bell, ShieldCheck, LogOut, Gavel, Users } from "lucide-react";
 import { getProfileAvatarPublicUrl, logout } from "@/lib/auth";
-import { canManageUsers, type UserProfile } from "@/lib/authz";
+import { canCreateCases, canManageUsers, type UserProfile } from "@/lib/authz";
 
 const baseItems = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
@@ -15,9 +15,10 @@ const baseItems = [
 export function AppSidebar({ profile }: { profile: UserProfile }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const navigate = useNavigate();
+  const visibleBaseItems = baseItems.filter((item) => item.url !== "/novo-caso" || canCreateCases(profile));
   const items = canManageUsers(profile)
-    ? [...baseItems, { title: "Admin Usuários", url: "/admin/usuarios", icon: Users }]
-    : baseItems;
+    ? [...visibleBaseItems, { title: "Admin Usuários", url: "/admin/usuarios", icon: Users }]
+    : visibleBaseItems;
   const avatarUrl = getProfileAvatarPublicUrl(profile.avatar_path);
   const initial = (profile.nome?.trim().charAt(0) || "?").toUpperCase();
 

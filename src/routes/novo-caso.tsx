@@ -1,8 +1,10 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { type FormEvent, useState } from "react";
+import { type FormEvent, useEffect, useState } from "react";
 import { AppLayout } from "@/components/AppLayout";
 import { PageHeader } from "@/components/PageHeader";
 import { createInquerito } from "@/lib/repositories/inqueritosRepository";
+import { getCurrentProfile } from "@/lib/auth";
+import { canCreateCases, type UserProfile } from "@/lib/authz";
 
 export const Route = createFileRoute("/novo-caso")({
   head: () => ({ meta: [{ title: "Novo Caso — SIPI" }] }),
@@ -47,6 +49,17 @@ function NovoCaso() {
   const [relatorioEnviado, setRelatorioEnviado] = useState("");
   const [dataEnvioRelatorio, setDataEnvioRelatorio] = useState("");
   const [representacoesLegais, setRepresentacoesLegais] = useState("");
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [checkingAccess, setCheckingAccess] = useState(true);
+
+
+  useEffect(() => {
+    void (async () => {
+      const currentProfile = await getCurrentProfile();
+      setProfile(currentProfile);
+      setCheckingAccess(false);
+    })();
+  }, []);
 
   const handleHouveArmaDeFogoChange = (value: string) => {
     setHouveArmaDeFogo(value);
@@ -58,7 +71,7 @@ function NovoCaso() {
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     console.log("submit novo caso iniciado");
-    if (loading) return;
+    if (loading || !canCreateCases(profile)) return;
     setErro("");
     setFeedback("");
     setLoading(true);
@@ -122,6 +135,10 @@ function NovoCaso() {
       setLoading(false);
     }
   };
+
+  if (checkingAccess) return <AppLayout><p className="text-sm text-muted-foreground">Verificando permissões...</p></AppLayout>;
+
+  if (!canCreateCases(profile)) return <AppLayout><div className="space-y-3"><h1 className="text-xl font-bold">Acesso restrito</h1><p className="text-sm text-muted-foreground">Seu perfil não possui permissão para criar inquéritos.</p></div></AppLayout>;
 
   return (
     <AppLayout>
@@ -245,6 +262,10 @@ function NovoCaso() {
 }
 
 function SectionCard({ title, children }: { title: string; children: React.ReactNode }) {
+  if (checkingAccess) return <AppLayout><p className="text-sm text-muted-foreground">Verificando permissões...</p></AppLayout>;
+
+  if (!canCreateCases(profile)) return <AppLayout><div className="space-y-3"><h1 className="text-xl font-bold">Acesso restrito</h1><p className="text-sm text-muted-foreground">Seu perfil não possui permissão para criar inquéritos.</p></div></AppLayout>;
+
   return (
     <section className="rounded-xl border border-border/60 bg-background/70 p-5 lg:p-7">
       <h2 className="text-sm font-bold tracking-[0.2em] text-primary uppercase mb-5">{title}</h2>
@@ -254,6 +275,10 @@ function SectionCard({ title, children }: { title: string; children: React.React
 }
 
 function Field({ label, ...props }: { label: string } & React.InputHTMLAttributes<HTMLInputElement>) {
+  if (checkingAccess) return <AppLayout><p className="text-sm text-muted-foreground">Verificando permissões...</p></AppLayout>;
+
+  if (!canCreateCases(profile)) return <AppLayout><div className="space-y-3"><h1 className="text-xl font-bold">Acesso restrito</h1><p className="text-sm text-muted-foreground">Seu perfil não possui permissão para criar inquéritos.</p></div></AppLayout>;
+
   return (
     <div>
       <label className="block text-xs font-bold tracking-wider text-muted-foreground mb-2">{label.toUpperCase()}</label>
@@ -263,6 +288,10 @@ function Field({ label, ...props }: { label: string } & React.InputHTMLAttribute
 }
 
 function TextArea({ label, rows = 4, ...props }: { label: string; rows?: number } & React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
+  if (checkingAccess) return <AppLayout><p className="text-sm text-muted-foreground">Verificando permissões...</p></AppLayout>;
+
+  if (!canCreateCases(profile)) return <AppLayout><div className="space-y-3"><h1 className="text-xl font-bold">Acesso restrito</h1><p className="text-sm text-muted-foreground">Seu perfil não possui permissão para criar inquéritos.</p></div></AppLayout>;
+
   return (
     <div className="md:col-span-2 lg:col-span-3">
       <label className="block text-xs font-bold tracking-wider text-muted-foreground mb-2">{label.toUpperCase()}</label>
@@ -286,6 +315,10 @@ function Select({
   value?: string;
   onChange?: (value: string) => void;
 }) {
+  if (checkingAccess) return <AppLayout><p className="text-sm text-muted-foreground">Verificando permissões...</p></AppLayout>;
+
+  if (!canCreateCases(profile)) return <AppLayout><div className="space-y-3"><h1 className="text-xl font-bold">Acesso restrito</h1><p className="text-sm text-muted-foreground">Seu perfil não possui permissão para criar inquéritos.</p></div></AppLayout>;
+
   return (
     <div>
       <label className="block text-xs font-bold tracking-wider text-muted-foreground mb-2">{label.toUpperCase()}</label>

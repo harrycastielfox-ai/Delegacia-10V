@@ -2,6 +2,8 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { type FormEvent, type InputHTMLAttributes, type ReactNode, type TextareaHTMLAttributes, useEffect, useState } from "react";
 import { AppLayout } from "@/components/AppLayout";
 import { getInqueritoById, updateInquerito } from "@/lib/repositories/inqueritosRepository";
+import { getCurrentProfile } from "@/lib/auth";
+import { canEditCases, canOnlyViewPublicCases, type UserProfile } from "@/lib/authz";
 
 export const Route = createFileRoute("/inqueritos/$caseId/editar")({ component: EditarInquerito });
 
@@ -33,6 +35,8 @@ function EditarInquerito() {
   const [erro, setErro] = useState("");
   const [feedback, setFeedback] = useState("");
   const [notFound, setNotFound] = useState(false);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [restricted, setRestricted] = useState(false);
 
   const [numeroPpe, setNumeroPpe] = useState("");
   const [numeroFisico, setNumeroFisico] = useState("");
@@ -70,7 +74,13 @@ function EditarInquerito() {
       setErro("");
       setNotFound(false);
       try {
-        const inquerito = await getInqueritoById(caseId);
+        const [currentProfile, inquerito] = await Promise.all([getCurrentProfile(), getInqueritoById(caseId)]);
+        setProfile(currentProfile);
+        if (!canEditCases(currentProfile)) { setRestricted(true); return; }
+        const raw = inquerito as unknown as Record<string, unknown>;
+        const visibility = String(raw.visibilidade ?? raw.visibility ?? raw.publico_privado ?? "publico").toLowerCase();
+        const isPrivate = visibility.includes("priv") || visibility.includes("sig");
+        if (isPrivate && canOnlyViewPublicCases(currentProfile)) { setRestricted(true); return; }
         if (!ativo) return;
         if (!inquerito) {
           setNotFound(true);
@@ -120,7 +130,7 @@ function EditarInquerito() {
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (saving) return;
+    if (saving || !canEditCases(profile)) return;
     setErro("");
     setFeedback("");
     setSaving(true);
@@ -169,6 +179,10 @@ function EditarInquerito() {
   };
 
   if (loading) return <AppLayout><div className="rounded-lg border border-border bg-card px-4 py-3 text-sm text-muted-foreground">Carregando dados do inquérito...</div></AppLayout>;
+
+  if (restricted) {
+    return <AppLayout><div className="max-w-3xl space-y-3"><Link to="/inqueritos" className="text-xs border border-border rounded-md px-3 py-1.5 inline-block">← Voltar para inquéritos</Link><p className="rounded-lg border border-warning/50 bg-warning/10 px-4 py-3 text-sm text-warning">Acesso restrito</p></div></AppLayout>;
+  }
 
   if (notFound) {
     return (
