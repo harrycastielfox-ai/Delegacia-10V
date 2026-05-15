@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { Outlet, createFileRoute, Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft, AlertTriangle, ShieldAlert, Users, UserCheck, UserMinus, UserCog, Clock3 } from "lucide-react";
 import { getCurrentProfile, getProfileAvatarPublicUrl, getSession } from "@/lib/auth";
@@ -27,6 +27,8 @@ const STATUS_OPTIONS: Array<{ value: AuthorizationStatus; label: string }> = [
 
 function AdminUsuariosPage() {
   const navigate = useNavigate();
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
+  const showingUserDetail = pathname.startsWith("/admin/usuarios/");
   const [checkingAccess, setCheckingAccess] = useState(true);
   const [hasAccess, setHasAccess] = useState(false);
   const [loadingUsers, setLoadingUsers] = useState(true);
@@ -156,6 +158,8 @@ function AdminUsuariosPage() {
   const autorizados = useMemo(() => usuarios.filter((user) => user.status_autorizacao === "autorizado").length, [usuarios]);
   const bloqueados = useMemo(() => usuarios.filter((user) => user.status_autorizacao === "bloqueado").length, [usuarios]);
   const administradores = useMemo(() => usuarios.filter((user) => user.cargo === "admin").length, [usuarios]);
+
+  if (showingUserDetail) return <Outlet />;
 
   if (checkingAccess) return <PageState title="Verificando permissões..." />;
   if (!hasAccess) {
