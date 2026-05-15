@@ -13,6 +13,8 @@ import { Route as RepresentacoesRouteImport } from './routes/representacoes'
 import { Route as NovoCasoRouteImport } from './routes/novo-caso'
 import { Route as ModulosRouteImport } from './routes/modulos'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as AdminUsuariosRouteImport } from './routes/admin.usuarios'
+import { Route as AdminUsuariosUserIdRouteImport } from './routes/admin.usuarios.$userId'
 import { Route as RepresentacoesRepresentacaoIdEditarRouteImport } from './routes/representacoes.$representacaoId.editar'
 import { Route as RepresentacoesRepresentacaoIdRouteImport } from './routes/representacoes.$representacaoId'
 import { Route as NovaRepresentacaoRouteImport } from './routes/nova-representacao'
@@ -55,6 +57,16 @@ const LoginRoute = LoginRouteImport.update({
   path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminUsuariosRoute = AdminUsuariosRouteImport.update({
+  id: '/admin/usuarios',
+  path: '/admin/usuarios',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminUsuariosUserIdRoute = AdminUsuariosUserIdRouteImport.update({
+  id: '/$userId',
+  path: '/$userId',
+  getParentRoute: () => AdminUsuariosRoute,
+} as any)
 const NovaRepresentacaoRoute = NovaRepresentacaoRouteImport.update({
   id: '/nova-representacao',
   path: '/nova-representacao',
@@ -92,6 +104,8 @@ const IndexRoute = IndexRouteImport.update({
 } as any)
 
 export interface FileRoutesByFullPath {
+  '/admin/usuarios': typeof AdminUsuariosRoute
+  '/admin/usuarios/$userId': typeof AdminUsuariosUserIdRoute
   '/': typeof IndexRoute
   '/alertas': typeof AlertasRoute
   '/auditoria': typeof AuditoriaRoute
@@ -107,6 +121,8 @@ export interface FileRoutesByFullPath {
   '/representacoes/$representacaoId/editar': typeof RepresentacoesRepresentacaoIdEditarRoute
 }
 export interface FileRoutesByTo {
+  '/admin/usuarios': typeof AdminUsuariosRoute
+  '/admin/usuarios/$userId': typeof AdminUsuariosUserIdRoute
   '/': typeof IndexRoute
   '/alertas': typeof AlertasRoute
   '/auditoria': typeof AuditoriaRoute
@@ -122,6 +138,8 @@ export interface FileRoutesByTo {
   '/representacoes/$representacaoId/editar': typeof RepresentacoesRepresentacaoIdEditarRoute
 }
 export interface FileRoutesById {
+  '/admin/usuarios': typeof AdminUsuariosRoute
+  '/admin/usuarios/$userId': typeof AdminUsuariosUserIdRoute
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/alertas': typeof AlertasRoute
@@ -142,6 +160,12 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/alertas'
+    | '/admin/usuarios'
+    | '/admin/usuarios/$userId'
+    | '/admin/usuarios'
+    | '/admin/usuarios/$userId'
+    | '/admin/usuarios'
+    | '/admin/usuarios/$userId'
     | '/auditoria'
     | '/inqueritos'
     | '/inqueritos/$caseId'
@@ -157,6 +181,10 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/alertas'
+    | '/admin/usuarios'
+    | '/admin/usuarios/$userId'
+    | '/admin/usuarios'
+    | '/admin/usuarios/$userId'
     | '/auditoria'
     | '/inqueritos'
     | '/inqueritos/$caseId'
@@ -172,6 +200,10 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/alertas'
+    | '/admin/usuarios'
+    | '/admin/usuarios/$userId'
+    | '/admin/usuarios'
+    | '/admin/usuarios/$userId'
     | '/auditoria'
     | '/inqueritos'
     | '/inqueritos/$caseId'
@@ -188,6 +220,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AlertasRoute: typeof AlertasRoute
+  AdminUsuariosRoute: typeof AdminUsuariosRouteWithChildren
   AuditoriaRoute: typeof AuditoriaRoute
   InqueritosRoute: typeof InqueritosRoute
   LoginRoute: typeof LoginRoute
@@ -248,6 +281,21 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
+
+    '/admin/usuarios': {
+      id: '/admin/usuarios'
+      path: '/admin/usuarios'
+      fullPath: '/admin/usuarios'
+      preLoaderRoute: typeof AdminUsuariosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/usuarios/$userId': {
+      id: '/admin/usuarios/$userId'
+      path: '/$userId'
+      fullPath: '/admin/usuarios/$userId'
+      preLoaderRoute: typeof AdminUsuariosUserIdRouteImport
+      parentRoute: typeof AdminUsuariosRoute
+    }
     '/inqueritos': {
       id: '/inqueritos'
       path: '/inqueritos'
@@ -294,6 +342,14 @@ declare module '@tanstack/react-router' {
   }
 }
 
+
+const AdminUsuariosRouteChildren = {
+  AdminUsuariosUserIdRoute: AdminUsuariosUserIdRoute,
+}
+
+const AdminUsuariosRouteWithChildren =
+  AdminUsuariosRoute._addFileChildren(AdminUsuariosRouteChildren)
+
 const RepresentacoesRepresentacaoIdRouteChildren = {
   RepresentacoesRepresentacaoIdEditarRoute: RepresentacoesRepresentacaoIdEditarRoute,
 }
@@ -329,6 +385,7 @@ const InqueritosRouteWithChildren = InqueritosRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AlertasRoute: AlertasRoute,
+  AdminUsuariosRoute: AdminUsuariosRouteWithChildren,
   AuditoriaRoute: AuditoriaRoute,
   InqueritosRoute: InqueritosRouteWithChildren,
   LoginRoute: LoginRoute,
