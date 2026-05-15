@@ -67,6 +67,11 @@ export function canViewRepresentacoes(profile: Pick<UserProfile, "cargo" | "stat
   return profile.cargo !== "membro";
 }
 
+export function canViewAuditoria(profile: Pick<UserProfile, "cargo" | "status_autorizacao"> | null): boolean {
+  if (!isAuthorized(profile)) return false;
+  return profile.cargo !== "membro";
+}
+
 export function canCreateRepresentacoes(profile: Pick<UserProfile, "cargo" | "status_autorizacao"> | null): boolean {
   return canViewRepresentacoes(profile);
 }
