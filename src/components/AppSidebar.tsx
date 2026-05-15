@@ -1,5 +1,5 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { LayoutDashboard, FileText, FilePlus2, Bell, ShieldCheck, LogOut, Gavel, Users } from "lucide-react";
+import { LayoutDashboard, FileText, FilePlus2, Bell, LogOut, Gavel, Users } from "lucide-react";
 import { getProfileAvatarPublicUrl, logout } from "@/lib/auth";
 import { canCreateCases, canManageUsers, canViewRepresentacoes, type UserProfile } from "@/lib/authz";
 
@@ -9,7 +9,6 @@ const baseItems = [
   { title: "Representações", url: "/representacoes", icon: Gavel },
   { title: "Novo Caso", url: "/novo-caso", icon: FilePlus2 },
   { title: "Alertas", url: "/alertas", icon: Bell, badge: 5 },
-  { title: "Auditoria", url: "/auditoria", icon: ShieldCheck },
 ] as const;
 
 export function AppSidebar({ profile }: { profile: UserProfile }) {
