@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   FileText,
   Clock,
@@ -251,7 +251,6 @@ function Dashboard() {
                 {Math.round(taxaConclusao)}%
               </div>
             </div>
-          </div>
         </Panel></div>
       </div>
 
@@ -294,7 +293,7 @@ function Dashboard() {
             <Legend color="var(--success)" label="Elucidados" />
             <Legend color="var(--foreground)" label="Taxa de elucidação (%)" line />
           </div>
-          <div className="h-[220px] min-h-[220px]">
+          <SafeChartContainer fallback="Nenhum dado disponível.">
             {isClient && CVLI_ANUAL.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <ComposedChart data={CVLI_ANUAL} margin={{ top: 20, right: 20, bottom: 0, left: -10 }}>
@@ -380,7 +379,7 @@ function Dashboard() {
       {/* CVLI mensal + Bairros */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-5 mb-6">
         <div className={panelFxClass}><Panel title="CVLI — REGISTROS MENSAIS (2023–2026)" accent="info">
-          <div className="h-[220px] min-h-[220px]">
+          <SafeChartContainer fallback="Nenhum dado disponível.">
             {isClient && CVLI_MENSAL.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={CVLI_MENSAL} margin={{ top: 10, right: 10, bottom: 0, left: -20 }}>
@@ -404,7 +403,7 @@ function Dashboard() {
             ) : (
               <div className="h-full flex items-center justify-center text-sm text-muted-foreground">Nenhum dado disponível.</div>
             )}
-          </div>
+          </SafeChartContainer>
         </Panel></div>
 
         <div className={panelFxClass}><Panel title="ANÁLISE POR LOCALIDADE" accent="warning">
@@ -444,7 +443,7 @@ function Dashboard() {
       {/* Gravidade + Equipe */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
         <div className={panelFxClass}><Panel title="ANÁLISE POR GRAVIDADE" accent="destructive">
-          <div className="h-[220px] min-h-[220px]">
+          <SafeChartContainer fallback="Nenhum dado disponível.">
             {isClient && POR_GRAVIDADE.some((item) => item.value > 0) ? (
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={POR_GRAVIDADE} layout="vertical" margin={{ top: 5, right: 20, bottom: 0, left: 10 }}>
@@ -465,7 +464,7 @@ function Dashboard() {
             ) : (
               <div className="h-full flex items-center justify-center text-sm text-muted-foreground">Nenhum dado disponível.</div>
             )}
-          </div>
+          </SafeChartContainer>
         </Panel></div>
 
         <div className={panelFxClass}><Panel
@@ -496,6 +495,32 @@ function Dashboard() {
         </Panel></div>
       </div>
     </AppLayout>
+  );
+}
+
+function SafeChartContainer({ children, fallback }: { children: ReactNode; fallback: string }) {
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const [hasSize, setHasSize] = useState(false);
+
+  useEffect(() => {
+    const element = containerRef.current;
+    if (!element) return;
+
+    const updateSize = () => {
+      const nextHasSize = element.clientWidth > 0 && element.clientHeight > 0;
+      setHasSize((current) => (current === nextHasSize ? current : nextHasSize));
+    };
+
+    updateSize();
+    const observer = new ResizeObserver(updateSize);
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <div ref={containerRef} className="h-[220px] min-h-[220px] w-full min-w-0">
+      {hasSize ? children : <div className="h-full flex items-center justify-center text-sm text-muted-foreground">{fallback}</div>}
+    </div>
   );
 }
 
