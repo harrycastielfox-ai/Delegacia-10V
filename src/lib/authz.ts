@@ -61,6 +61,24 @@ export function canManageCases(profile: Pick<UserProfile, "cargo" | "status_auto
   return canCreateCases(profile) || canEditCases(profile) || canDeleteCases(profile);
 }
 
+
+export function canViewRepresentacoes(profile: Pick<UserProfile, "cargo" | "status_autorizacao"> | null): boolean {
+  if (!isAuthorized(profile)) return false;
+  return profile.cargo !== "membro";
+}
+
+export function canCreateRepresentacoes(profile: Pick<UserProfile, "cargo" | "status_autorizacao"> | null): boolean {
+  return canViewRepresentacoes(profile);
+}
+
+export function canEditRepresentacoes(profile: Pick<UserProfile, "cargo" | "status_autorizacao"> | null): boolean {
+  return canViewRepresentacoes(profile);
+}
+
+export function canDeleteRepresentacoes(profile: Pick<UserProfile, "cargo" | "status_autorizacao"> | null): boolean {
+  return canViewRepresentacoes(profile);
+}
+
 export const canSeePrivateRecords = canViewPrivateCases;
 export const canCreateRecords = canCreateCases;
 export const canEditRecords = canEditCases;
