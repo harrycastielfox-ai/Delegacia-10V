@@ -251,6 +251,7 @@ function Dashboard() {
                 {Math.round(taxaConclusao)}%
               </div>
             </div>
+          </div>
         </Panel></div>
       </div>
 
@@ -330,7 +331,7 @@ function Dashboard() {
             ) : (
               <div className="h-full flex items-center justify-center text-sm text-muted-foreground">Nenhum dado disponível.</div>
             )}
-          </div>
+          </SafeChartContainer>
         </Panel></div>
 
         <div className="bg-card border border-border rounded-xl overflow-hidden transition-all duration-300 hover:border-success/55 hover:shadow-[0_0_0_1px_rgba(34,197,94,0.25),0_14px_28px_-22px_rgba(34,197,94,0.75)]">
