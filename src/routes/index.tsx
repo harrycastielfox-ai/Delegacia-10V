@@ -257,8 +257,8 @@ function Dashboard() {
 
       {/* Donut row */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-6">
-        <div className={panelFxClass}><DonutPanel title="POR STATUS DE DILIGÊNCIA" data={POR_STATUS} total={POR_STATUS.reduce((a, b) => a + b.value, 0)} /></div>
-        <div className={panelFxClass}><DonutPanel title="POR PRIORIDADE" data={POR_PRIORIDADE} total={POR_PRIORIDADE.reduce((a, b) => a + b.value, 0)} /></div>
+        <div className={panelFxClass}><DonutPanel isClient={isClient} title="POR STATUS DE DILIGÊNCIA" data={POR_STATUS} total={POR_STATUS.reduce((a, b) => a + b.value, 0)} /></div>
+        <div className={panelFxClass}><DonutPanel isClient={isClient} title="POR PRIORIDADE" data={POR_PRIORIDADE} total={POR_PRIORIDADE.reduce((a, b) => a + b.value, 0)} /></div>
         <div className={panelFxClass}><Panel
           title="PROCEDIMENTOS POR TIPO"
           accent="success"
@@ -397,7 +397,7 @@ function Dashboard() {
                 />
                 <Bar dataKey="r2023" fill="var(--muted-foreground)" name="2023" />
                 <Bar dataKey="r2024" fill="var(--info)" name="2024" />
-                <Bar dataKey="r20{0}" fill="var(--warning)" name="20{0}" />
+                <Bar dataKey="r2025" fill="var(--warning)" name="2025" />
                 <Bar dataKey="r2026" fill="var(--destructive)" name="2026" />
                 </BarChart>
               </ResponsiveContainer>
@@ -527,10 +527,12 @@ function Legend({ color, label, line }: { color: string; label: string; line?: b
 }
 
 function DonutPanel({
+  isClient,
   title,
   data,
   total,
 }: {
+  isClient: boolean;
   title: string;
   data: { name: string; value: number; color: string }[];
   total: number;
@@ -545,7 +547,7 @@ function DonutPanel({
     >
       <div className="flex items-center gap-4">
         <div className="relative h-36 w-36 shrink-0">
-          {hasData ? (
+          {isClient && hasData ? (
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie

@@ -66,7 +66,13 @@ export function AppLayout({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  if (!ready || !profile) return null;
+  if (!ready || !profile) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background text-muted-foreground">
+        <p className="text-sm">Carregando sessão...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex w-full bg-background text-foreground">

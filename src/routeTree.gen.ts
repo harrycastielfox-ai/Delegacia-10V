@@ -9,6 +9,11 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as PerfilRouteImport } from './routes/perfil'
+import { Route as CriarContaRouteImport } from './routes/criar-conta'
+import { Route as AguardandoAutorizacaoRouteImport } from './routes/aguardando-autorizacao'
+import { Route as AdminUsuariosUserIdRouteImport } from './routes/admin.usuarios.$userId'
+import { Route as AdminUsuariosRouteImport } from './routes/admin.usuarios'
 import { Route as RepresentacoesRouteImport } from './routes/representacoes'
 import { Route as NovoCasoRouteImport } from './routes/novo-caso'
 import { Route as ModulosRouteImport } from './routes/modulos'
@@ -27,6 +32,31 @@ const RepresentacoesRoute = RepresentacoesRouteImport.update({
   id: '/representacoes',
   path: '/representacoes',
   getParentRoute: () => rootRouteImport,
+} as any)
+const PerfilRoute = PerfilRouteImport.update({
+  id: '/perfil',
+  path: '/perfil',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CriarContaRoute = CriarContaRouteImport.update({
+  id: '/criar-conta',
+  path: '/criar-conta',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AguardandoAutorizacaoRoute = AguardandoAutorizacaoRouteImport.update({
+  id: '/aguardando-autorizacao',
+  path: '/aguardando-autorizacao',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminUsuariosRoute = AdminUsuariosRouteImport.update({
+  id: '/admin/usuarios',
+  path: '/admin/usuarios',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminUsuariosUserIdRoute = AdminUsuariosUserIdRouteImport.update({
+  id: '/$userId',
+  path: '/$userId',
+  getParentRoute: () => AdminUsuariosRoute,
 } as any)
 const RepresentacoesRepresentacaoIdRoute =
   RepresentacoesRepresentacaoIdRouteImport.update({
@@ -92,6 +122,10 @@ const IndexRoute = IndexRouteImport.update({
 } as any)
 
 export interface FileRoutesByFullPath {
+  '/admin/usuarios': typeof AdminUsuariosRoute
+  '/admin/usuarios/$userId': typeof AdminUsuariosUserIdRoute
+  '/aguardando-autorizacao': typeof AguardandoAutorizacaoRoute
+  '/criar-conta': typeof CriarContaRoute
   '/': typeof IndexRoute
   '/alertas': typeof AlertasRoute
   '/auditoria': typeof AuditoriaRoute
@@ -101,12 +135,17 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/modulos': typeof ModulosRoute
   '/novo-caso': typeof NovoCasoRoute
+  '/perfil': typeof PerfilRoute
   '/nova-representacao': typeof NovaRepresentacaoRoute
   '/representacoes': typeof RepresentacoesRoute
   '/representacoes/$representacaoId': typeof RepresentacoesRepresentacaoIdRoute
   '/representacoes/$representacaoId/editar': typeof RepresentacoesRepresentacaoIdEditarRoute
 }
 export interface FileRoutesByTo {
+  '/admin/usuarios': typeof AdminUsuariosRoute
+  '/admin/usuarios/$userId': typeof AdminUsuariosUserIdRoute
+  '/aguardando-autorizacao': typeof AguardandoAutorizacaoRoute
+  '/criar-conta': typeof CriarContaRoute
   '/': typeof IndexRoute
   '/alertas': typeof AlertasRoute
   '/auditoria': typeof AuditoriaRoute
@@ -116,6 +155,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/modulos': typeof ModulosRoute
   '/novo-caso': typeof NovoCasoRoute
+  '/perfil': typeof PerfilRoute
   '/nova-representacao': typeof NovaRepresentacaoRoute
   '/representacoes': typeof RepresentacoesRoute
   '/representacoes/$representacaoId': typeof RepresentacoesRepresentacaoIdRoute
@@ -124,6 +164,9 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/admin/usuarios': typeof AdminUsuariosRoute
+  '/admin/usuarios/$userId': typeof AdminUsuariosUserIdRoute
+  '/aguardando-autorizacao': typeof AguardandoAutorizacaoRoute
   '/alertas': typeof AlertasRoute
   '/auditoria': typeof AuditoriaRoute
   '/inqueritos': typeof InqueritosRoute
@@ -132,6 +175,8 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/modulos': typeof ModulosRoute
   '/novo-caso': typeof NovoCasoRoute
+  '/criar-conta': typeof CriarContaRoute
+  '/perfil': typeof PerfilRoute
   '/nova-representacao': typeof NovaRepresentacaoRoute
   '/representacoes': typeof RepresentacoesRoute
   '/representacoes/$representacaoId': typeof RepresentacoesRepresentacaoIdRoute
@@ -141,7 +186,11 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/admin/usuarios'
+    | '/admin/usuarios/$userId'
+    | '/aguardando-autorizacao'
     | '/alertas'
+    | '/criar-conta'
     | '/auditoria'
     | '/inqueritos'
     | '/inqueritos/$caseId'
@@ -149,6 +198,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/modulos'
     | '/novo-caso'
+    | '/perfil'
     | '/nova-representacao'
     | '/representacoes'
     | '/representacoes/$representacaoId'
@@ -156,7 +206,11 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/admin/usuarios'
+    | '/admin/usuarios/$userId'
+    | '/aguardando-autorizacao'
     | '/alertas'
+    | '/criar-conta'
     | '/auditoria'
     | '/inqueritos'
     | '/inqueritos/$caseId'
@@ -164,6 +218,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/modulos'
     | '/novo-caso'
+    | '/perfil'
     | '/nova-representacao'
     | '/representacoes'
     | '/representacoes/$representacaoId'
@@ -171,7 +226,11 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/admin/usuarios'
+    | '/admin/usuarios/$userId'
+    | '/aguardando-autorizacao'
     | '/alertas'
+    | '/criar-conta'
     | '/auditoria'
     | '/inqueritos'
     | '/inqueritos/$caseId'
@@ -179,6 +238,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/modulos'
     | '/novo-caso'
+    | '/perfil'
     | '/nova-representacao'
     | '/representacoes'
     | '/representacoes/$representacaoId'
@@ -187,6 +247,10 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AguardandoAutorizacaoRoute: typeof AguardandoAutorizacaoRoute
+  CriarContaRoute: typeof CriarContaRoute
+  PerfilRoute: typeof PerfilRoute
+  AdminUsuariosRoute: typeof AdminUsuariosRouteWithChildren
   AlertasRoute: typeof AlertasRoute
   AuditoriaRoute: typeof AuditoriaRoute
   InqueritosRoute: typeof InqueritosRoute
@@ -205,6 +269,41 @@ declare module '@tanstack/react-router' {
       fullPath: '/representacoes'
       preLoaderRoute: typeof RepresentacoesRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/perfil': {
+      id: '/perfil'
+      path: '/perfil'
+      fullPath: '/perfil'
+      preLoaderRoute: typeof PerfilRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/criar-conta': {
+      id: '/criar-conta'
+      path: '/criar-conta'
+      fullPath: '/criar-conta'
+      preLoaderRoute: typeof CriarContaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/aguardando-autorizacao': {
+      id: '/aguardando-autorizacao'
+      path: '/aguardando-autorizacao'
+      fullPath: '/aguardando-autorizacao'
+      preLoaderRoute: typeof AguardandoAutorizacaoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/usuarios': {
+      id: '/admin/usuarios'
+      path: '/admin/usuarios'
+      fullPath: '/admin/usuarios'
+      preLoaderRoute: typeof AdminUsuariosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/usuarios/$userId': {
+      id: '/admin/usuarios/$userId'
+      path: '/$userId'
+      fullPath: '/admin/usuarios/$userId'
+      preLoaderRoute: typeof AdminUsuariosUserIdRouteImport
+      parentRoute: typeof AdminUsuariosRoute
     }
     '/novo-caso': {
       id: '/novo-caso'
@@ -297,6 +396,11 @@ declare module '@tanstack/react-router' {
 const RepresentacoesRepresentacaoIdRouteChildren = {
   RepresentacoesRepresentacaoIdEditarRoute: RepresentacoesRepresentacaoIdEditarRoute,
 }
+const AdminUsuariosRouteChildren = {
+  AdminUsuariosUserIdRoute: AdminUsuariosUserIdRoute,
+}
+const AdminUsuariosRouteWithChildren =
+  AdminUsuariosRoute._addFileChildren(AdminUsuariosRouteChildren)
 
 const RepresentacoesRepresentacaoIdRouteWithChildren =
   RepresentacoesRepresentacaoIdRoute._addFileChildren(
@@ -328,12 +432,16 @@ const InqueritosRouteWithChildren = InqueritosRoute._addFileChildren(
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AguardandoAutorizacaoRoute: AguardandoAutorizacaoRoute,
+  AdminUsuariosRoute: AdminUsuariosRouteWithChildren,
   AlertasRoute: AlertasRoute,
+  CriarContaRoute: CriarContaRoute,
   AuditoriaRoute: AuditoriaRoute,
   InqueritosRoute: InqueritosRouteWithChildren,
   LoginRoute: LoginRoute,
   ModulosRoute: ModulosRoute,
   NovoCasoRoute: NovoCasoRoute,
+  PerfilRoute: PerfilRoute,
   NovaRepresentacaoRoute: NovaRepresentacaoRoute,
   RepresentacoesRoute: RepresentacoesRouteWithChildren,
 }

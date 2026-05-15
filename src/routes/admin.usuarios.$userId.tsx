@@ -82,7 +82,7 @@ function AdminUserProfilePage() {
             <div className="rounded-lg border border-warning/40 bg-warning/10 p-2"><ShieldAlert className="h-5 w-5 text-warning" /></div>
             <h1 className="text-2xl font-bold">Acesso restrito</h1>
           </div>
-          <p className="text-sm text-muted-foreground">Esta área é permitida somente para perfis autorizados na administração de usuários.</p>
+          <p className="text-sm text-muted-foreground">Esta área é permitida somente para perfis com permissão de administração de usuários (gestão completa para Admin/Delegado e limitada para Atlas Access).</p>
           <Link to="/modulos" className="mt-6 inline-flex items-center rounded-md border border-primary/30 bg-primary/10 px-4 py-2 text-sm font-semibold text-primary hover:bg-primary/20">Voltar para módulos</Link>
         </section>
       </PageShell>

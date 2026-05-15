@@ -36,6 +36,18 @@ function AdminUsuariosPage() {
   const [formState, setFormState] = useState<Record<string, EditableUserState>>({});
   const [loadingByUser, setLoadingByUser] = useState<Record<string, string | null>>({});
   const [feedbackByUser, setFeedbackByUser] = useState<Record<string, { kind: "success" | "error"; message: string }>>({});
+  const getSupabaseErrorMessage = (issue: unknown, fallback: string) => {
+    const code = typeof issue === "object" && issue !== null && "code" in issue ? String((issue as { code?: string }).code ?? "") : "";
+    const message = typeof issue === "object" && issue !== null && "message" in issue ? String((issue as { message?: string }).message ?? "") : "";
+    const normalized = message.toLowerCase();
+    if (code === "PGRST202" || normalized.includes("rpc") || normalized.includes("function")) {
+      return `${fallback}. RPC ausente ou indisponível no Supabase.`;
+    }
+    if (code === "42501" || normalized.includes("permission")) {
+      return `${fallback}. Sem permissão na policy/RPC.`;
+    }
+    return fallback;
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -96,7 +108,7 @@ function AdminUsuariosPage() {
         });
       } catch (fetchError) {
         console.error("[AdminUsuariosPage] Erro ao listar usuários", fetchError);
-        if (!cancelled) setError("Não foi possível carregar os usuários no momento.");
+        if (!cancelled) setError(getSupabaseErrorMessage(fetchError, "Não foi possível carregar os usuários no momento"));
       } finally {
         if (!cancelled) setLoadingUsers(false);
       }
@@ -127,7 +139,10 @@ function AdminUsuariosPage() {
       new_status: status,
     });
     if (updateError) {
-      setFeedbackByUser((current) => ({ ...current, [user.id]: { kind: "error", message: "Não foi possível salvar a alteração. Tente novamente." } }));
+      setFeedbackByUser((current) => ({
+        ...current,
+        [user.id]: { kind: "error", message: getSupabaseErrorMessage(updateError, "Não foi possível salvar a alteração. Tente novamente") },
+      }));
       setLoadingByUser((current) => ({ ...current, [user.id]: null }));
       return;
     }
@@ -144,7 +159,7 @@ function AdminUsuariosPage() {
 
   if (checkingAccess) return <PageState title="Verificando permissões..." />;
   if (!hasAccess) {
-    return <section className="min-h-screen bg-background px-4 py-8 text-foreground sm:px-6 lg:px-8"><div className="mx-auto max-w-3xl rounded-2xl border border-border bg-card/80 p-8 shadow-2xl"><div className="mb-4 flex items-center gap-3"><div className="rounded-lg border border-warning/40 bg-warning/10 p-2"><ShieldAlert className="h-5 w-5 text-warning" /></div><h1 className="text-2xl font-bold">Acesso restrito</h1></div><p className="text-sm text-muted-foreground">Esta área administrativa é permitida apenas para usuários com perfil de Admin ou Delegado.</p><Link to="/modulos" className="mt-6 inline-flex items-center rounded-md border border-primary/30 bg-primary/10 px-4 py-2 text-sm font-semibold text-primary hover:bg-primary/20">Voltar para módulos</Link></div></section>;
+    return <section className="min-h-screen bg-background px-4 py-8 text-foreground sm:px-6 lg:px-8"><div className="mx-auto max-w-3xl rounded-2xl border border-border bg-card/80 p-8 shadow-2xl"><div className="mb-4 flex items-center gap-3"><div className="rounded-lg border border-warning/40 bg-warning/10 p-2"><ShieldAlert className="h-5 w-5 text-warning" /></div><h1 className="text-2xl font-bold">Acesso restrito</h1></div><p className="text-sm text-muted-foreground">Esta área exige perfil administrativo. Admin e Delegado possuem gestão completa; Atlas Access possui gestão limitada conforme as regras de acesso.</p><Link to="/modulos" className="mt-6 inline-flex items-center rounded-md border border-primary/30 bg-primary/10 px-4 py-2 text-sm font-semibold text-primary hover:bg-primary/20">Voltar para módulos</Link></div></section>;
   }
 
   return (
