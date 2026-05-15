@@ -3,6 +3,8 @@ import { type FormEvent, type InputHTMLAttributes, type ReactNode, type Textarea
 import { AppLayout } from "@/components/AppLayout";
 import { PageHeader } from "@/components/PageHeader";
 import { getRepresentacaoById, updateRepresentacao } from "@/lib/repositories/representacoesRepository";
+import { getCurrentProfile } from "@/lib/auth";
+import { canEditRepresentacoes, type UserProfile } from "@/lib/authz";
 
 export const Route = createFileRoute("/representacoes/$representacaoId/editar")({
   head: () => ({ meta: [{ title: "Editar Representação — SIPI" }] }),
@@ -22,6 +24,8 @@ function EditarRepresentacao() {
   const [loadingSubmit, setLoadingSubmit] = useState(false);
   const [erro, setErro] = useState("");
   const [naoEncontrada, setNaoEncontrada] = useState(false);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [restricted, setRestricted] = useState(false);
 
   const [ppe, setPpe] = useState("");
   const [processo, setProcesso] = useState("");
@@ -61,6 +65,14 @@ function EditarRepresentacao() {
       setNaoEncontrada(false);
 
       try {
+        const currentProfile = await getCurrentProfile();
+        setProfile(currentProfile);
+        if (!canEditRepresentacoes(currentProfile)) {
+          setRestricted(true);
+          return;
+        }
+        setRestricted(false);
+
         const data = await getRepresentacaoById(representacaoId);
         if (!active) return;
 
@@ -116,7 +128,7 @@ function EditarRepresentacao() {
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (loadingSubmit || naoEncontrada) return;
+    if (loadingSubmit || naoEncontrada || !canEditRepresentacoes(profile)) return;
 
     setLoadingSubmit(true);
     setErro("");
@@ -164,6 +176,7 @@ function EditarRepresentacao() {
   }
 
   if (loadingInitial) return <AppLayout>Carregando representação...</AppLayout>;
+  if (restricted) return <AppLayout><div className="space-y-4"><h1 className="text-xl font-bold">Acesso restrito</h1><p className="text-sm text-muted-foreground">Seu perfil não possui permissão para acessar Representações.</p><Link to="/modulos" className="px-4 py-2 border border-border rounded-lg inline-block">Voltar</Link></div></AppLayout>;
   if (naoEncontrada) return <AppLayout>Representação não encontrada.</AppLayout>;
 
   return (

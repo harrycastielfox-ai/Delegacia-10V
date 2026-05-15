@@ -3,6 +3,8 @@ import { useEffect, useMemo, useState } from "react";
 import { AppLayout } from "@/components/AppLayout";
 import { Search, Filter, Activity } from "lucide-react";
 import { listRepresentacoes, type RepresentacaoRecord } from "@/lib/repositories/representacoesRepository";
+import { getCurrentProfile } from "@/lib/auth";
+import { canViewRepresentacoes } from "@/lib/authz";
 
 export const Route = createFileRoute("/representacoes")({ component: Representacoes });
 
@@ -40,12 +42,19 @@ function Representacoes() {
   const [representacoes, setRepresentacoes] = useState<RepresentacaoRecord[]>([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [restricted, setRestricted] = useState(false);
 
   useEffect(() => {
     if (!isRepresentacoesIndex) return;
 
     (async () => {
       try {
+        const currentProfile = await getCurrentProfile();
+        if (!canViewRepresentacoes(currentProfile)) {
+          setRestricted(true);
+          return;
+        }
+        setRestricted(false);
         setLoading(true);
         setError("");
         setRepresentacoes(await listRepresentacoes());
@@ -121,6 +130,7 @@ function Representacoes() {
   }, [representacoes]);
 
   if (!isRepresentacoesIndex) return <Outlet />;
+  if (restricted) return <AppLayout><div className="space-y-4"><h1 className="text-xl font-bold">Acesso restrito</h1><p className="text-sm text-muted-foreground">Seu perfil não possui permissão para acessar Representações.</p><Link to="/modulos" className="px-4 py-2 border border-border rounded-lg inline-block">Voltar</Link></div></AppLayout>;
 
   const summaryCards = [
     { label: "TOTAL", value: stats.total, hint: "Representações" },

@@ -1,7 +1,7 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { LayoutDashboard, FileText, FilePlus2, Bell, ShieldCheck, LogOut, Gavel, Users } from "lucide-react";
 import { getProfileAvatarPublicUrl, logout } from "@/lib/auth";
-import { canCreateCases, canManageUsers, type UserProfile } from "@/lib/authz";
+import { canCreateCases, canManageUsers, canViewRepresentacoes, type UserProfile } from "@/lib/authz";
 
 const baseItems = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
@@ -15,7 +15,11 @@ const baseItems = [
 export function AppSidebar({ profile }: { profile: UserProfile }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const navigate = useNavigate();
-  const visibleBaseItems = baseItems.filter((item) => item.url !== "/novo-caso" || canCreateCases(profile));
+  const visibleBaseItems = baseItems.filter((item) => {
+    if (item.url === "/novo-caso") return canCreateCases(profile);
+    if (item.url === "/representacoes") return canViewRepresentacoes(profile);
+    return true;
+  });
   const items = canManageUsers(profile)
     ? [...visibleBaseItems, { title: "Admin Usuários", url: "/admin/usuarios", icon: Users }]
     : visibleBaseItems;

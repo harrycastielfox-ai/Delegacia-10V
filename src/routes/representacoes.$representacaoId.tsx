@@ -2,6 +2,8 @@ import { Outlet, createFileRoute, Link, useLocation, useMatchRoute, useNavigate 
 import { useEffect, useState } from "react";
 import { AppLayout } from "@/components/AppLayout";
 import { getRepresentacaoById, softDeleteRepresentacao, type RepresentacaoRecord } from "@/lib/repositories/representacoesRepository";
+import { getCurrentProfile } from "@/lib/auth";
+import { canViewRepresentacoes } from "@/lib/authz";
 
 export const Route = createFileRoute("/representacoes/$representacaoId")({ component: DetalheRepresentacao });
 
@@ -46,6 +48,7 @@ function DetalheRepresentacao() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [error, setError] = useState("");
+  const [restricted, setRestricted] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -53,6 +56,14 @@ function DetalheRepresentacao() {
     (async () => {
       setLoading(true);
       setError("");
+
+      const currentProfile = await getCurrentProfile();
+      if (!canViewRepresentacoes(currentProfile)) {
+        if (active) setRestricted(true);
+        if (active) setLoading(false);
+        return;
+      }
+      if (active) setRestricted(false);
 
       try {
         const data = await getRepresentacaoById(representacaoId);
@@ -77,6 +88,7 @@ function DetalheRepresentacao() {
   }, [representacaoId, location.pathname]);
 
   if (isEditingRoute) return <Outlet />;
+  if (restricted) return <AppLayout><div className="space-y-4"><h1 className="text-xl font-bold">Acesso restrito</h1><p className="text-sm text-muted-foreground">Seu perfil não possui permissão para acessar Representações.</p><Link to="/modulos" className="px-4 py-2 border border-border rounded-lg inline-block">Voltar</Link></div></AppLayout>;
   if (loading) return <AppLayout>Carregando representação...</AppLayout>;
   if (error) return <AppLayout>{error}</AppLayout>;
   if (!item) return <AppLayout>Representação não encontrada.</AppLayout>;
