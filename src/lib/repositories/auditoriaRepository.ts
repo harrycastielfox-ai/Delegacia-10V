@@ -26,20 +26,12 @@ type LogAuditoriaPayload = {
   metadata?: AuditoriaMetadata;
 };
 
-type ListAuditoriaOptions = {
-  limit?: number;
-};
+type ListAuditoriaOptions = { limit?: number };
 
-export type RpcErrorDetails = {
-  message: string;
-  details?: string;
-  hint?: string;
-  code?: string;
-};
+export type RpcErrorDetails = { message: string; details?: string; hint?: string; code?: string };
 
 function getRpcError(error: unknown, fallback: string): RpcErrorDetails {
   if (!error || typeof error !== "object") return { message: fallback };
-
   const maybe = error as { message?: unknown; details?: unknown; hint?: unknown; code?: unknown };
   return {
     message: typeof maybe.message === "string" ? maybe.message : fallback,
@@ -55,9 +47,12 @@ function isUuid(value: string): boolean {
 
 function sanitizeMetadata(metadata?: AuditoriaMetadata): AuditoriaMetadata {
   if (!metadata) return {};
-  return Object.fromEntries(
-    Object.entries(metadata).filter(([, value]) => value !== undefined).slice(0, 12),
-  );
+  return Object.fromEntries(Object.entries(metadata).filter(([, value]) => value !== undefined).slice(0, 20));
+}
+
+function clamp(value: number | undefined, min: number, max: number, fallback: number): number {
+  const target = Number.isFinite(value) ? Number(value) : fallback;
+  return Math.max(min, Math.min(max, Math.trunc(target)));
 }
 
 export async function logAuditoria(payload: LogAuditoriaPayload): Promise<{ eventId: string | null; error: string | null }> {
@@ -70,29 +65,17 @@ export async function logAuditoria(payload: LogAuditoriaPayload): Promise<{ even
       p_descricao: payload.descricao,
       p_metadata: sanitizeMetadata(payload.metadata),
     });
-    if (error) {
-      return { eventId: null, error: error.message };
-    }
+    if (error) return { eventId: null, error: error.message };
     return { eventId: data ? String(data) : null, error: null };
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Erro inesperado ao registrar auditoria";
-    return { eventId: null, error: message };
+    return { eventId: null, error: error instanceof Error ? error.message : "Erro inesperado ao registrar auditoria" };
   }
 }
 
-export async function listAuditoriaByUser(userId: string, options?: ListAuditoriaOptions): Promise<{ data: AuditoriaEvent[]; error: RpcErrorDetails | null }> {
+export async function listAuditoria(options?: ListAuditoriaOptions): Promise<{ data: AuditoriaEvent[]; error: RpcErrorDetails | null }> {
   try {
-    if (!isUuid(userId)) {
-      return { data: [], error: { message: "INVALID_USER_ID_FORMAT", code: "CLIENT_VALIDATION" } };
-    }
-
-    const { data, error } = await supabase.rpc("list_auditoria_by_user", {
-      p_user_id: userId.trim(),
-      p_limit: options?.limit ?? 20,
-    });
-    if (error) {
-      return { data: [], error: getRpcError(error, "Erro inesperado ao listar auditoria") };
-    }
+    const { data, error } = await supabase.rpc("list_auditoria", { p_limit: clamp(options?.limit, 1, 200, 100) });
+    if (error) return { data: [], error: getRpcError(error, "Erro inesperado ao listar auditoria") };
     return { data: (data ?? []) as AuditoriaEvent[], error: null };
   } catch (error) {
     return { data: [], error: getRpcError(error, "Erro inesperado ao listar auditoria") };
@@ -101,19 +84,14 @@ export async function listAuditoriaByUser(userId: string, options?: ListAuditori
 
 export async function listAuditoriaForAdminUser(userId: string, options?: ListAuditoriaOptions): Promise<{ data: AuditoriaEvent[]; error: RpcErrorDetails | null }> {
   try {
-    if (!isUuid(userId)) {
-      return { data: [], error: { message: "INVALID_USER_ID_FORMAT", code: "CLIENT_VALIDATION" } };
-    }
-
+    if (!isUuid(userId)) return { data: [], error: { message: "INVALID_USER_ID_FORMAT", code: "CLIENT_VALIDATION" } };
     const { data, error } = await supabase.rpc("list_auditoria_for_admin_user", {
       p_user_id: userId.trim(),
-      p_limit: options?.limit ?? 20,
+      p_limit: clamp(options?.limit, 1, 100, 50),
     });
-    if (error) {
-      return { data: [], error: getRpcError(error, "Erro inesperado ao listar auditoria") };
-    }
+    if (error) return { data: [], error: getRpcError(error, "Erro inesperado ao listar auditoria individual") };
     return { data: (data ?? []) as AuditoriaEvent[], error: null };
   } catch (error) {
-    return { data: [], error: getRpcError(error, "Erro inesperado ao listar auditoria") };
+    return { data: [], error: getRpcError(error, "Erro inesperado ao listar auditoria individual") };
   }
 }

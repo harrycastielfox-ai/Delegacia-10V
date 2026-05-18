@@ -4,68 +4,81 @@ import { AppLayout } from "@/components/AppLayout";
 import { PageHeader } from "@/components/PageHeader";
 import { getCurrentProfile } from "@/lib/auth";
 import { canViewAuditoria } from "@/lib/authz";
+import { listAuditoria, type AuditoriaEvent } from "@/lib/repositories/auditoriaRepository";
 
 export const Route = createFileRoute("/auditoria")({
   head: () => ({ meta: [{ title: "Auditoria — SIPI" }] }),
   component: Auditoria,
 });
 
-const logs = [
-  { ts: "24/04/2026 09:05", user: "Del. Alves", action: "Criou inquérito", target: "IPL 2026.0001345-2" },
-  { ts: "24/04/2026 08:47", user: "Esc. Souza", action: "Atualizou status", target: "IPL 2024.0001234-5" },
-  { ts: "24/04/2026 08:30", user: "Del. Alves", action: "Anexou documento", target: "IPL 2024.0000987-1" },
-  { ts: "23/04/2026 18:12", user: "Inv. Lima", action: "Encerrou inquérito", target: "IPL 2024.0000765-3" },
-  { ts: "23/04/2026 16:45", user: "Esc. Souza", action: "Editou descrição", target: "IPL 2024.0001230-2" },
-  { ts: "23/04/2026 14:20", user: "Del. Alves", action: "Reatribuiu equipe", target: "IPL 2024.0001229-9" },
-];
-
 function Auditoria() {
   const [restricted, setRestricted] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [events, setEvents] = useState<AuditoriaEvent[]>([]);
 
   useEffect(() => {
-    (async () => {
+    let cancelled = false;
+    void (async () => {
       const currentProfile = await getCurrentProfile();
-      setRestricted(!canViewAuditoria(currentProfile));
+      const blocked = !canViewAuditoria(currentProfile);
+      if (cancelled) return;
+      setRestricted(blocked);
+      if (blocked) {
+        setLoading(false);
+        return;
+      }
+
+      const result = await listAuditoria({ limit: 100 });
+      if (cancelled) return;
+      if (result.error) {
+        const msg = result.error.message.toLowerCase();
+        setError(msg.includes("insufficient_privilege") || msg.includes("permission")
+          ? "Você não tem permissão para visualizar os eventos de auditoria."
+          : "Não foi possível carregar a auditoria no momento.");
+      } else {
+        setEvents(result.data);
+      }
+      setLoading(false);
     })();
+    return () => { cancelled = true; };
   }, []);
 
-  if (restricted) {
-    return (
-      <AppLayout>
-        <div className="space-y-4">
-          <h1 className="text-xl font-bold">Acesso restrito</h1>
-          <p className="text-sm text-muted-foreground">Seu perfil não possui permissão para acessar Auditoria.</p>
-          <Link to="/modulos" className="px-4 py-2 border border-border rounded-lg inline-block">Voltar</Link>
-        </div>
-      </AppLayout>
-    );
-  }
+  if (restricted) return <AppLayout><div className="space-y-4"><h1 className="text-xl font-bold">Acesso restrito</h1><p className="text-sm text-muted-foreground">Seu perfil não possui permissão para acessar Auditoria.</p><Link to="/modulos" className="px-4 py-2 border border-border rounded-lg inline-block">Voltar</Link></div></AppLayout>;
 
   return (
     <AppLayout>
       <PageHeader title="Auditoria" subtitle="Registro completo de ações no sistema" showActions={false} />
-
       <div className="bg-card border border-border rounded-xl overflow-hidden">
-        <table className="w-full text-sm">
-          <thead className="bg-muted/40 text-[10px] tracking-[0.15em] text-muted-foreground">
-            <tr>
-              <th className="text-left px-4 py-3 font-bold">DATA / HORA</th>
-              <th className="text-left px-4 py-3 font-bold">USUÁRIO</th>
-              <th className="text-left px-4 py-3 font-bold">AÇÃO</th>
-              <th className="text-left px-4 py-3 font-bold">ALVO</th>
-            </tr>
-          </thead>
-          <tbody>
-            {logs.map((l, i) => (
-              <tr key={i} className="border-t border-border hover:bg-muted/20">
-                <td className="px-4 py-3 text-muted-foreground tabular-nums">{l.ts}</td>
-                <td className="px-4 py-3 font-semibold">{l.user}</td>
-                <td className="px-4 py-3">{l.action}</td>
-                <td className="px-4 py-3 font-mono text-xs text-primary">{l.target}</td>
+        {loading ? <p className="p-4 text-sm text-muted-foreground">Carregando eventos...</p> : null}
+        {!loading && error ? <p className="p-4 text-sm text-warning">{error}</p> : null}
+        {!loading && !error && events.length === 0 ? <p className="p-4 text-sm text-muted-foreground">Nenhum evento de auditoria registrado até o momento.</p> : null}
+        {!loading && !error && events.length > 0 ? (
+          <table className="w-full text-sm">
+            <thead className="bg-muted/40 text-[10px] tracking-[0.15em] text-muted-foreground">
+              <tr>
+                <th className="text-left px-4 py-3 font-bold">DATA / HORA</th>
+                <th className="text-left px-4 py-3 font-bold">EXECUTOR</th>
+                <th className="text-left px-4 py-3 font-bold">AÇÃO</th>
+                <th className="text-left px-4 py-3 font-bold">MÓDULO</th>
+                <th className="text-left px-4 py-3 font-bold">ENTIDADE / ALVO</th>
+                <th className="text-left px-4 py-3 font-bold">DESCRIÇÃO</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {events.map((event) => (
+                <tr key={event.id} className="border-t border-border hover:bg-muted/20">
+                  <td className="px-4 py-3 text-muted-foreground tabular-nums">{new Date(event.created_at).toLocaleString("pt-BR")}</td>
+                  <td className="px-4 py-3 font-semibold">{event.executor_nome || event.executor_login || event.executor_email || event.executor_user_id}</td>
+                  <td className="px-4 py-3">{event.acao}</td>
+                  <td className="px-4 py-3">{event.modulo}</td>
+                  <td className="px-4 py-3 font-mono text-xs text-primary">{event.entidade}{event.entidade_id ? `/${event.entidade_id}` : ""}</td>
+                  <td className="px-4 py-3">{event.descricao}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        ) : null}
       </div>
     </AppLayout>
   );
