@@ -28,7 +28,8 @@ const STATUS_OPTIONS: Array<{ value: AuthorizationStatus; label: string }> = [
 function AdminUsuariosPage() {
   const navigate = useNavigate();
   const router = useRouter();
-  const showingUserDetail = router.state.matches.some((match) => match.routeId === "/admin/usuarios/$userId");
+  const currentPath = router.state.location.pathname;
+  const showingUserDetail = currentPath !== "/admin/usuarios" && currentPath.startsWith("/admin/usuarios/");
   const [checkingAccess, setCheckingAccess] = useState(true);
   const [hasAccess, setHasAccess] = useState(false);
   const [loadingUsers, setLoadingUsers] = useState(true);
