@@ -84,6 +84,19 @@ function AdminUserProfilePage() {
     };
   }, [hasAccess, userId]);
 
+  const statusMessage = useMemo(() => {
+    if (requestState === "not_found") return "Perfil não encontrado para o identificador informado.";
+    if (requestState === "forbidden") return "Você não tem permissão para visualizar este perfil nesta operação administrativa.";
+    if (requestState === "rpc_unavailable") return "Não foi possível consultar o perfil agora: RPC administrativa indisponível no Supabase.";
+    if (requestState === "error") return "Falha ao carregar o perfil administrativo no momento. Tente novamente.";
+    return null;
+  }, [requestState]);
+
+  const avatarUrl = getProfileAvatarPublicUrl(targetUser?.avatar_path ?? null);
+  const initial = (targetUser?.nome?.trim().charAt(0) || "?").toUpperCase();
+  const createdAt = formatDate(targetUser?.created_at);
+  const updatedAt = formatDate(targetUser?.updated_at);
+
   if (checkingAccess) {
     return <PageShell><StateBox text="Verificando permissões..." /></PageShell>;
   }
@@ -102,19 +115,6 @@ function AdminUserProfilePage() {
       </PageShell>
     );
   }
-
-  const avatarUrl = getProfileAvatarPublicUrl(targetUser?.avatar_path ?? null);
-  const initial = (targetUser?.nome?.trim().charAt(0) || "?").toUpperCase();
-  const createdAt = formatDate(targetUser?.created_at);
-  const updatedAt = formatDate(targetUser?.updated_at);
-
-  const statusMessage = useMemo(() => {
-    if (requestState === "not_found") return "Perfil não encontrado para o identificador informado.";
-    if (requestState === "forbidden") return "Você não tem permissão para visualizar este perfil nesta operação administrativa.";
-    if (requestState === "rpc_unavailable") return "Não foi possível consultar o perfil agora: RPC administrativa indisponível no Supabase.";
-    if (requestState === "error") return "Falha ao carregar o perfil administrativo no momento. Tente novamente.";
-    return null;
-  }, [requestState]);
 
   return (
     <PageShell>
