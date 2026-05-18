@@ -216,17 +216,35 @@ function AdminUserProfilePage() {
             {!auditoriaLoading && !auditoriaError && auditoriaEvents.length === 0 ? <p className="mt-2 text-sm text-muted-foreground">Nenhum evento de auditoria registrado para este usuário.</p> : null}
             {!auditoriaLoading && !auditoriaError && auditoriaEvents.length > 0 ? (
               <div className="mt-3 space-y-2">
-                {auditoriaEvents.map((event) => (
-                  <article key={event.id} className="rounded-xl border border-primary/20 bg-background/60 p-4 transition-colors hover:border-primary/35 hover:bg-background/80">
-                    <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-                      <p className="rounded-md border border-primary/20 bg-primary/10 px-2 py-1 text-xs tabular-nums text-muted-foreground">{formatDate(event.created_at)}</p>
-                      <p className="text-xs uppercase tracking-[0.14em] text-primary/85">{event.modulo}</p>
+                {auditoriaEvents.map((event) => {
+                  const eventHref = getAuditEventHref(event);
+                  const cardBaseClassName = "rounded-xl border border-zinc-800/80 bg-[#080c0f] p-4 transition-colors";
+                  const cardContent = (
+                    <>
+                      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                      <p className="rounded-md border border-zinc-800 bg-zinc-950/70 px-2 py-1 text-xs tabular-nums text-muted-foreground">{formatDate(event.created_at)}</p>
+                      <p className="text-xs uppercase tracking-[0.14em] text-primary/70">{event.modulo}</p>
                     </div>
                     <p className="text-sm font-semibold break-words">{formatFriendlyAction(event.acao)}</p>
-                    {event.entidade ? <p className="mt-1 text-xs font-mono break-words text-primary">{event.entidade}{event.entidade_id ? `/${event.entidade_id}` : ""}</p> : null}
+                    {event.entidade ? <p className="mt-1 text-xs font-mono break-words text-primary/80">{event.entidade}{event.entidade_id ? `/${event.entidade_id}` : ""}</p> : null}
                     <p className="mt-3 text-sm break-words text-muted-foreground">{event.descricao || "Sem descrição"}</p>
-                  </article>
-                ))}
+                    </>
+                  );
+
+                  if (!eventHref) return <article key={event.id} className={cardBaseClassName}>{cardContent}</article>;
+
+                  return (
+                    <Link
+                      key={event.id}
+                      to={eventHref}
+                      className={`${cardBaseClassName} block cursor-pointer hover:border-primary/30 hover:bg-[#0b1014]`}
+                      title="Abrir item relacionado"
+                      aria-label="Abrir item relacionado"
+                    >
+                      {cardContent}
+                    </Link>
+                  );
+                })}
               </div>
             ) : null}
           </section>
@@ -256,4 +274,32 @@ function formatDate(value?: string) {
 function formatFriendlyAction(action?: string) {
   if (!action) return "Ação não informada";
   return action.replaceAll("_", " ").toLowerCase();
+}
+
+function getAuditEventHref(event: AuditoriaEvent) {
+  const entityId = event.entidade_id ? String(event.entidade_id).trim() : "";
+  if (!entityId) return null;
+
+  const normalize = (value?: string | null) =>
+    (value || "")
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/\s+/g, "_");
+
+  const modulo = normalize(event.modulo);
+  const entidade = normalize(event.entidade);
+  const target = `${modulo}|${entidade}`;
+
+  if (["|inqueritos", "|inquerito", "inqueritos|", "inquerito|", "inqueritos|inqueritos", "inqueritos|inquerito"].includes(target)) {
+    return `/inqueritos/${entityId}`;
+  }
+  if (["|representacoes", "|representacao", "representacoes|", "representacao|", "representacoes|representacoes", "representacoes|representacao"].includes(target)) {
+    return `/representacoes/${entityId}`;
+  }
+  if (["|profiles", "|admin_usuarios", "admin_usuarios|", "usuarios|profiles", "administracao|profiles"].includes(target)) {
+    return `/admin/usuarios/${entityId}`;
+  }
+
+  return null;
 }

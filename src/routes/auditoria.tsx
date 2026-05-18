@@ -71,6 +71,7 @@ function Auditoria() {
         {!loading && !error && events.length > 0 ? (
           <div className="space-y-3">
             {events.map((event) => {
+              const eventHref = getAuditEventHref(event);
               const executorName = event.executor_nome || event.executor_login || event.executor_email || event.executor_user_id;
               const executorEmail = event.executor_email || "—";
               const executorRole = "executor_cargo" in event && typeof event.executor_cargo === "string" ? event.executor_cargo : null;
@@ -89,43 +90,59 @@ function Auditoria() {
                 .join("")
                 .toUpperCase();
 
-              return (
-                <article key={event.id} className="rounded-xl border border-primary/20 bg-background/60 p-4 transition-colors hover:border-primary/40 hover:bg-background/80">
+              const cardBaseClassName = "rounded-xl border border-zinc-800/80 bg-[#080c0f] p-4 transition-colors";
+
+              const cardContent = (
+                <>
                   <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                     <div className="flex min-w-0 items-start gap-3">
-                      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-primary/35 bg-primary/15 text-sm font-semibold text-primary">
+                      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-primary/20 bg-primary/10 text-sm font-semibold text-primary/90">
                         {avatarInitials || "?"}
                       </div>
                       <div className="min-w-0 space-y-1">
                         <p className="truncate text-sm font-semibold text-foreground">{executorName}</p>
                         <p className="truncate text-xs text-muted-foreground">{executorEmail}</p>
-                        {executorRole ? <p className="text-[11px] uppercase tracking-[0.16em] text-primary/80">{executorRole}</p> : null}
+                        {executorRole ? <p className="text-[11px] uppercase tracking-[0.16em] text-primary/70">{executorRole}</p> : null}
                       </div>
                     </div>
-                    <p className="shrink-0 rounded-md border border-primary/20 bg-primary/10 px-2.5 py-1 text-xs tabular-nums text-muted-foreground">
+                    <p className="shrink-0 rounded-md border border-zinc-800 bg-zinc-950/70 px-2.5 py-1 text-xs tabular-nums text-muted-foreground">
                       {new Date(event.created_at).toLocaleString("pt-BR")}
                     </p>
                   </div>
 
                   <div className="mt-4 grid gap-3 text-sm sm:grid-cols-2 xl:grid-cols-4">
-                    <div className="rounded-lg border border-border bg-card/50 p-3">
+                    <div className="rounded-lg border border-zinc-800 bg-zinc-950/60 p-3">
                       <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">Ação</p>
                       <p className="mt-1 break-words font-medium">{friendlyAction}</p>
                     </div>
-                    <div className="rounded-lg border border-border bg-card/50 p-3">
+                    <div className="rounded-lg border border-zinc-800 bg-zinc-950/60 p-3">
                       <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">Módulo</p>
                       <p className="mt-1 break-words">{event.modulo}</p>
                     </div>
-                    <div className="rounded-lg border border-border bg-card/50 p-3">
+                    <div className="rounded-lg border border-zinc-800 bg-zinc-950/60 p-3">
                       <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">Entidade / alvo</p>
-                      <p className="mt-1 break-words font-mono text-xs text-primary">{event.entidade}{event.entidade_id ? `/${event.entidade_id}` : ""}</p>
+                      <p className="mt-1 break-words font-mono text-xs text-primary/80">{event.entidade}{event.entidade_id ? `/${event.entidade_id}` : ""}</p>
                     </div>
-                    <div className="rounded-lg border border-border bg-card/50 p-3 sm:col-span-2 xl:col-span-1">
+                    <div className="rounded-lg border border-zinc-800 bg-zinc-950/60 p-3 sm:col-span-2 xl:col-span-1">
                       <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">Descrição</p>
                       <p className="mt-1 break-words text-muted-foreground">{event.descricao || "Sem descrição"}</p>
                     </div>
                   </div>
-                </article>
+                </>
+              );
+
+              if (!eventHref) return <article key={event.id} className={cardBaseClassName}>{cardContent}</article>;
+
+              return (
+                <Link
+                  key={event.id}
+                  to={eventHref}
+                  className={`${cardBaseClassName} block cursor-pointer hover:border-primary/30 hover:bg-[#0b1014]`}
+                  title="Abrir item relacionado"
+                  aria-label="Abrir item relacionado"
+                >
+                  {cardContent}
+                </Link>
               );
             })}
           </div>
@@ -133,4 +150,32 @@ function Auditoria() {
       </div>
     </AppLayout>
   );
+}
+
+function getAuditEventHref(event: AuditoriaEvent) {
+  const entityId = event.entidade_id ? String(event.entidade_id).trim() : "";
+  if (!entityId) return null;
+
+  const normalize = (value?: string | null) =>
+    (value || "")
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/\s+/g, "_");
+
+  const modulo = normalize(event.modulo);
+  const entidade = normalize(event.entidade);
+  const target = `${modulo}|${entidade}`;
+
+  if (["|inqueritos", "|inquerito", "inqueritos|", "inquerito|", "inqueritos|inqueritos", "inqueritos|inquerito"].includes(target)) {
+    return `/inqueritos/${entityId}`;
+  }
+  if (["|representacoes", "|representacao", "representacoes|", "representacao|", "representacoes|representacoes", "representacoes|representacao"].includes(target)) {
+    return `/representacoes/${entityId}`;
+  }
+  if (["|profiles", "|admin_usuarios", "admin_usuarios|", "usuarios|profiles", "administracao|profiles"].includes(target)) {
+    return `/admin/usuarios/${entityId}`;
+  }
+
+  return null;
 }
