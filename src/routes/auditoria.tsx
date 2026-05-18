@@ -64,35 +64,71 @@ function Auditoria() {
   return (
     <AppLayout>
       <PageHeader title="Auditoria" subtitle="Registro completo de ações no sistema" showActions={false} />
-      <div className="bg-card border border-border rounded-xl overflow-hidden">
+      <div className="rounded-2xl border border-primary/20 bg-card/80 p-4 sm:p-5">
         {loading ? <p className="p-4 text-sm text-muted-foreground">Carregando eventos...</p> : null}
         {!loading && error ? <p className="p-4 text-sm text-warning">{error}</p> : null}
         {!loading && !error && events.length === 0 ? <p className="p-4 text-sm text-muted-foreground">Nenhum evento de auditoria registrado até o momento.</p> : null}
         {!loading && !error && events.length > 0 ? (
-          <table className="w-full text-sm">
-            <thead className="bg-muted/40 text-[10px] tracking-[0.15em] text-muted-foreground">
-              <tr>
-                <th className="text-left px-4 py-3 font-bold">DATA / HORA</th>
-                <th className="text-left px-4 py-3 font-bold">EXECUTOR</th>
-                <th className="text-left px-4 py-3 font-bold">AÇÃO</th>
-                <th className="text-left px-4 py-3 font-bold">MÓDULO</th>
-                <th className="text-left px-4 py-3 font-bold">ENTIDADE / ALVO</th>
-                <th className="text-left px-4 py-3 font-bold">DESCRIÇÃO</th>
-              </tr>
-            </thead>
-            <tbody>
-              {events.map((event) => (
-                <tr key={event.id} className="border-t border-border hover:bg-muted/20">
-                  <td className="px-4 py-3 text-muted-foreground tabular-nums">{new Date(event.created_at).toLocaleString("pt-BR")}</td>
-                  <td className="px-4 py-3 font-semibold">{event.executor_nome || event.executor_login || event.executor_email || event.executor_user_id}</td>
-                  <td className="px-4 py-3">{event.acao}</td>
-                  <td className="px-4 py-3">{event.modulo}</td>
-                  <td className="px-4 py-3 font-mono text-xs text-primary">{event.entidade}{event.entidade_id ? `/${event.entidade_id}` : ""}</td>
-                  <td className="px-4 py-3">{event.descricao}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <div className="space-y-3">
+            {events.map((event) => {
+              const executorName = event.executor_nome || event.executor_login || event.executor_email || event.executor_user_id;
+              const executorEmail = event.executor_email || "—";
+              const executorRole = "executor_cargo" in event && typeof event.executor_cargo === "string" ? event.executor_cargo : null;
+              const friendlyAction =
+                "acao_formatada" in event && typeof event.acao_formatada === "string"
+                  ? event.acao_formatada
+                  : String(event.acao || "")
+                      .replaceAll("_", " ")
+                      .toLowerCase();
+              const avatarSeed = (event.executor_nome || event.executor_login || event.executor_email || "?").trim();
+              const avatarInitials = avatarSeed
+                .split(/\s+/)
+                .filter(Boolean)
+                .slice(0, 2)
+                .map((chunk) => chunk.charAt(0))
+                .join("")
+                .toUpperCase();
+
+              return (
+                <article key={event.id} className="rounded-xl border border-primary/20 bg-background/60 p-4 transition-colors hover:border-primary/40 hover:bg-background/80">
+                  <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                    <div className="flex min-w-0 items-start gap-3">
+                      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-primary/35 bg-primary/15 text-sm font-semibold text-primary">
+                        {avatarInitials || "?"}
+                      </div>
+                      <div className="min-w-0 space-y-1">
+                        <p className="truncate text-sm font-semibold text-foreground">{executorName}</p>
+                        <p className="truncate text-xs text-muted-foreground">{executorEmail}</p>
+                        {executorRole ? <p className="text-[11px] uppercase tracking-[0.16em] text-primary/80">{executorRole}</p> : null}
+                      </div>
+                    </div>
+                    <p className="shrink-0 rounded-md border border-primary/20 bg-primary/10 px-2.5 py-1 text-xs tabular-nums text-muted-foreground">
+                      {new Date(event.created_at).toLocaleString("pt-BR")}
+                    </p>
+                  </div>
+
+                  <div className="mt-4 grid gap-3 text-sm sm:grid-cols-2 xl:grid-cols-4">
+                    <div className="rounded-lg border border-border bg-card/50 p-3">
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">Ação</p>
+                      <p className="mt-1 break-words font-medium">{friendlyAction}</p>
+                    </div>
+                    <div className="rounded-lg border border-border bg-card/50 p-3">
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">Módulo</p>
+                      <p className="mt-1 break-words">{event.modulo}</p>
+                    </div>
+                    <div className="rounded-lg border border-border bg-card/50 p-3">
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">Entidade / alvo</p>
+                      <p className="mt-1 break-words font-mono text-xs text-primary">{event.entidade}{event.entidade_id ? `/${event.entidade_id}` : ""}</p>
+                    </div>
+                    <div className="rounded-lg border border-border bg-card/50 p-3 sm:col-span-2 xl:col-span-1">
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">Descrição</p>
+                      <p className="mt-1 break-words text-muted-foreground">{event.descricao || "Sem descrição"}</p>
+                    </div>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
         ) : null}
       </div>
     </AppLayout>

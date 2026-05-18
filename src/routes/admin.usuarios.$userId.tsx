@@ -215,29 +215,18 @@ function AdminUserProfilePage() {
             {!auditoriaLoading && auditoriaError ? <p className="mt-2 text-sm text-warning">{auditoriaError}</p> : null}
             {!auditoriaLoading && !auditoriaError && auditoriaEvents.length === 0 ? <p className="mt-2 text-sm text-muted-foreground">Nenhum evento de auditoria registrado para este usuário.</p> : null}
             {!auditoriaLoading && !auditoriaError && auditoriaEvents.length > 0 ? (
-              <div className="mt-3 overflow-x-auto">
-                <table className="w-full min-w-[760px] border-separate border-spacing-y-2 text-sm">
-                  <thead>
-                    <tr className="text-left text-xs uppercase tracking-wider text-muted-foreground">
-                      <th className="px-2 py-1">Data/Hora</th>
-                      <th className="px-2 py-1">Ação</th>
-                      <th className="px-2 py-1">Módulo</th>
-                      <th className="px-2 py-1">Entidade</th>
-                      <th className="px-2 py-1">Descrição</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {auditoriaEvents.map((event) => (
-                      <tr key={event.id} className="rounded-lg border border-primary/20 bg-background/60">
-                        <td className="px-2 py-2">{formatDate(event.created_at)}</td>
-                        <td className="px-2 py-2">{event.acao}</td>
-                        <td className="px-2 py-2">{event.modulo}</td>
-                        <td className="px-2 py-2">{event.entidade}</td>
-                        <td className="px-2 py-2">{event.descricao}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              <div className="mt-3 space-y-2">
+                {auditoriaEvents.map((event) => (
+                  <article key={event.id} className="rounded-xl border border-primary/20 bg-background/60 p-4 transition-colors hover:border-primary/35 hover:bg-background/80">
+                    <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                      <p className="rounded-md border border-primary/20 bg-primary/10 px-2 py-1 text-xs tabular-nums text-muted-foreground">{formatDate(event.created_at)}</p>
+                      <p className="text-xs uppercase tracking-[0.14em] text-primary/85">{event.modulo}</p>
+                    </div>
+                    <p className="text-sm font-semibold break-words">{formatFriendlyAction(event.acao)}</p>
+                    {event.entidade ? <p className="mt-1 text-xs font-mono break-words text-primary">{event.entidade}{event.entidade_id ? `/${event.entidade_id}` : ""}</p> : null}
+                    <p className="mt-3 text-sm break-words text-muted-foreground">{event.descricao || "Sem descrição"}</p>
+                  </article>
+                ))}
               </div>
             ) : null}
           </section>
@@ -262,4 +251,9 @@ function InfoCard({ label, value }: { label: string; value: string }) {
 function formatDate(value?: string) {
   if (!value) return "Não informado";
   return new Date(value).toLocaleString("pt-BR", { dateStyle: "long", timeStyle: "short" });
+}
+
+function formatFriendlyAction(action?: string) {
+  if (!action) return "Ação não informada";
+  return action.replaceAll("_", " ").toLowerCase();
 }
