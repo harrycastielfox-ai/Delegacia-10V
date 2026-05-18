@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { ArrowLeft, ShieldAlert } from "lucide-react";
 import { getCurrentProfile, getProfileAvatarPublicUrl, getSession } from "@/lib/auth";
 import { canManageUsers, type UserProfile } from "@/lib/authz";
@@ -16,7 +16,7 @@ function AdminUserProfilePage() {
   const [hasAccess, setHasAccess] = useState(false);
   const [loadingUser, setLoadingUser] = useState(false);
   const [targetUser, setTargetUser] = useState<UserProfile | null>(null);
-  const [notFound, setNotFound] = useState(false);
+  const [requestState, setRequestState] = useState<"idle" | "not_found" | "forbidden" | "rpc_unavailable" | "error">("idle");
 
   useEffect(() => {
     let cancelled = false;
@@ -50,18 +50,32 @@ function AdminUserProfilePage() {
     let cancelled = false;
     void (async () => {
       setLoadingUser(true);
-      setNotFound(false);
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("id, nome, email, login, avatar_path, cargo, status_autorizacao, created_at, updated_at")
-        .eq("id", userId)
-        .maybeSingle();
+      setRequestState("idle");
+      const { data, error } = await supabase.rpc("list_profiles_for_admin");
       if (cancelled) return;
-      if (error || !data) {
-        setNotFound(true);
+
+      if (error) {
+        const code = String(error.code ?? "");
+        const normalized = String(error.message ?? "").toLowerCase();
+        if (code === "42501" || normalized.includes("permission")) {
+          setRequestState("forbidden");
+        } else if (code === "PGRST202" || normalized.includes("function") || normalized.includes("rpc")) {
+          setRequestState("rpc_unavailable");
+        } else {
+          setRequestState("error");
+        }
+        setTargetUser(null);
+        setLoadingUser(false);
+        return;
+      }
+
+      const users = (data ?? []) as UserProfile[];
+      const found = users.find((profile) => String(profile.id) === String(userId)) ?? null;
+      if (!found) {
+        setRequestState("not_found");
         setTargetUser(null);
       } else {
-        setTargetUser(data as UserProfile);
+        setTargetUser(found);
       }
       setLoadingUser(false);
     })();
@@ -94,6 +108,14 @@ function AdminUserProfilePage() {
   const createdAt = formatDate(targetUser?.created_at);
   const updatedAt = formatDate(targetUser?.updated_at);
 
+  const statusMessage = useMemo(() => {
+    if (requestState === "not_found") return "Perfil não encontrado para o identificador informado.";
+    if (requestState === "forbidden") return "Você não tem permissão para visualizar este perfil nesta operação administrativa.";
+    if (requestState === "rpc_unavailable") return "Não foi possível consultar o perfil agora: RPC administrativa indisponível no Supabase.";
+    if (requestState === "error") return "Falha ao carregar o perfil administrativo no momento. Tente novamente.";
+    return null;
+  }, [requestState]);
+
   return (
     <PageShell>
       <section className="rounded-2xl border border-primary/30 bg-card/80 p-6 shadow-[0_0_30px_rgba(34,197,94,0.09)]">
@@ -103,7 +125,7 @@ function AdminUserProfilePage() {
       </section>
 
       {loadingUser ? <StateBox text="Carregando perfil do usuário..." /> : null}
-      {!loadingUser && notFound ? <StateBox text="Perfil não encontrado para o identificador informado." /> : null}
+      {!loadingUser && statusMessage ? <StateBox text={statusMessage} /> : null}
 
       {!loadingUser && targetUser ? (
         <>
