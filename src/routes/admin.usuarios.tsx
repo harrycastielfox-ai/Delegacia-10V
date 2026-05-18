@@ -1,4 +1,4 @@
-import { Outlet, createFileRoute, Link, useNavigate, useRouter } from "@tanstack/react-router";
+import { Outlet, createFileRoute, Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft, AlertTriangle, ShieldAlert, Users, UserCheck, UserMinus, UserCog, Clock3 } from "lucide-react";
 import { getCurrentProfile, getProfileAvatarPublicUrl, getSession } from "@/lib/auth";
@@ -27,8 +27,7 @@ const STATUS_OPTIONS: Array<{ value: AuthorizationStatus; label: string }> = [
 
 function AdminUsuariosPage() {
   const navigate = useNavigate();
-  const router = useRouter();
-  const currentPath = router.state.location.pathname;
+  const currentPath = useRouterState({ select: (state) => state.location.pathname });
   const showingUserDetail = currentPath !== "/admin/usuarios" && currentPath.startsWith("/admin/usuarios/");
   const [checkingAccess, setCheckingAccess] = useState(true);
   const [hasAccess, setHasAccess] = useState(false);
