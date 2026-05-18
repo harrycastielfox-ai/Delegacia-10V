@@ -156,18 +156,17 @@ function AdminUsuariosPage() {
       const auditResult = await logAuditoria({
         acao: "admin_update",
         modulo: "admin_usuarios",
-        entidade: "profile",
+        entidade: "profiles",
         entidade_id: user.id,
-        descricao: `Alterou acesso do usuário ${user.nome}`,
+        descricao: `Atualizou acesso do usuário alvo: ${user.nome} (${user.email} / ${user.login})`,
         metadata: {
           target_user_id: user.id,
           target_nome: user.nome,
-          target_login: user.login,
           target_email: user.email,
-          cargo_anterior: user.cargo,
-          cargo_novo: role,
-          status_anterior: user.status_autorizacao,
-          status_novo: status,
+          old_cargo: user.cargo,
+          new_cargo: role,
+          old_status: user.status_autorizacao,
+          new_status: status,
         },
       });
       if (auditResult.error) console.warn("[auditoria]", auditResult.error);
