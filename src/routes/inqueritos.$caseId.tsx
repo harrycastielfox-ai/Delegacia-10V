@@ -2,6 +2,7 @@ import { createFileRoute, Link, Outlet, useLocation, useNavigate, useRouterState
 import { useEffect, useMemo, useState } from "react";
 import { AppLayout } from "@/components/AppLayout";
 import { getInqueritoById, softDeleteInquerito, type InqueritoRecord } from "@/lib/repositories/inqueritosRepository";
+import { logAuditoria } from "@/lib/repositories/auditoriaRepository";
 import { getCurrentProfile } from "@/lib/auth";
 import { canDeleteCases, canEditCases, canOnlyViewPublicCases, type UserProfile } from "@/lib/authz";
 import { BookOpen, FileSearch, Scale, UserRound, ShieldCheck, NotebookPen, CalendarClock } from "lucide-react";
@@ -164,6 +165,23 @@ function InqueritoDetalhes() {
       setDeleting(true);
       setDeleteError(null);
       await softDeleteInquerito(caso.id);
+      try {
+        const auditResult = await logAuditoria({
+          acao: "delete",
+          modulo: "inqueritos",
+          entidade: "inquerito",
+          entidade_id: caseId,
+          descricao: "Excluiu inquérito",
+          metadata: {
+            ppe: detalhe.numeroPpe,
+            tipo: detalhe.tipo,
+            situacao: detalhe.situacao,
+          },
+        });
+        if (auditResult.error) console.warn("[auditoria]", auditResult.error);
+      } catch (auditError) {
+        console.warn("[auditoria]", auditError);
+      }
       setShowDeleteModal(false);
       navigate({ to: "/inqueritos" });
     } catch (error) {

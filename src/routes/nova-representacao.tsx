@@ -1,6 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { FormEvent, useMemo, useState } from "react";
 import { createRepresentacao } from "@/lib/repositories/representacoesRepository";
+import { logAuditoria } from "@/lib/repositories/auditoriaRepository";
 import { AppLayout } from "@/components/AppLayout";
 import { PageHeader } from "@/components/PageHeader";
 
@@ -61,7 +62,7 @@ function NovaRepresentacao() {
     const tipoFinal = tipoRepresentacao === "Outra" ? tipoOutra : tipoRepresentacao;
 
     try {
-      await createRepresentacao({
+      const created = await createRepresentacao({
         numero_ppe: ppe.trim() || null,
         processo_judicial: processo.trim() || null,
         tipo: tipoFinal.trim() || null,
@@ -86,6 +87,24 @@ function NovaRepresentacao() {
         pedido_sigiloso: pedidoSigiloso || null,
         observacoes_internas: observacoesInternas.trim() || null,
       });
+      try {
+        const auditResult = await logAuditoria({
+          acao: "create",
+          modulo: "representacoes",
+          entidade: "representacao",
+          entidade_id: created.id,
+          descricao: "Criou representação",
+          metadata: {
+            tipo: tipoFinal.trim() || "",
+            status: status || "",
+            ppe: ppe.trim() || "",
+            numero_processo: processo.trim() || "",
+          },
+        });
+        if (auditResult.error) console.warn("[auditoria]", auditResult.error);
+      } catch (auditError) {
+        console.warn("[auditoria]", auditError);
+      }
       setFeedback("Representação salva com sucesso.");
       navigate({ to: "/representacoes" });
     } catch (error) {

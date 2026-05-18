@@ -3,6 +3,7 @@ import { type FormEvent, type InputHTMLAttributes, type ReactNode, type Textarea
 import { AppLayout } from "@/components/AppLayout";
 import { PageHeader } from "@/components/PageHeader";
 import { getRepresentacaoById, updateRepresentacao } from "@/lib/repositories/representacoesRepository";
+import { logAuditoria } from "@/lib/repositories/auditoriaRepository";
 import { getCurrentProfile } from "@/lib/auth";
 import { canEditRepresentacoes, type UserProfile } from "@/lib/authz";
 
@@ -161,6 +162,25 @@ function EditarRepresentacao() {
         pedido_sigiloso: pedidoSigiloso || null,
         observacoes_internas: observacoesInternas.trim() || null,
       });
+      try {
+        const auditResult = await logAuditoria({
+          acao: "update",
+          modulo: "representacoes",
+          entidade: "representacao",
+          entidade_id: representacaoId,
+          descricao: "Editou representação",
+          metadata: {
+            tipo: tipoFinal.trim() || "",
+            status: status || "",
+            ppe: ppe.trim() || "",
+            numero_processo: processo.trim() || "",
+            campos_possivelmente_atualizados: ["tipo", "status", "numero_ppe", "processo_judicial", "data_representacao"],
+          },
+        });
+        if (auditResult.error) console.warn("[auditoria]", auditResult.error);
+      } catch (auditError) {
+        console.warn("[auditoria]", auditError);
+      }
 
       await navigate({ to: "/representacoes/$representacaoId", params: { representacaoId } });
     } catch (error) {

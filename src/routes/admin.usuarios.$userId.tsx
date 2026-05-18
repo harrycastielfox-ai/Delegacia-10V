@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { ArrowLeft, ShieldAlert } from "lucide-react";
 import { getCurrentProfile, getProfileAvatarPublicUrl, getSession } from "@/lib/auth";
 import { canManageUsers, type UserProfile } from "@/lib/authz";
+import { listAuditoriaByUser, type AuditoriaEvent } from "@/lib/repositories/auditoriaRepository";
 import { supabase } from "@/lib/supabaseClient";
 
 export const Route = createFileRoute("/admin/usuarios/$userId")({
@@ -17,6 +18,9 @@ function AdminUserProfilePage() {
   const [loadingUser, setLoadingUser] = useState(false);
   const [targetUser, setTargetUser] = useState<UserProfile | null>(null);
   const [requestState, setRequestState] = useState<"idle" | "not_found" | "forbidden" | "rpc_unavailable" | "error">("idle");
+  const [auditoriaLoading, setAuditoriaLoading] = useState(false);
+  const [auditoriaError, setAuditoriaError] = useState<string | null>(null);
+  const [auditoriaEvents, setAuditoriaEvents] = useState<AuditoriaEvent[]>([]);
 
   useEffect(() => {
     let cancelled = false;
@@ -78,6 +82,32 @@ function AdminUserProfilePage() {
         setTargetUser(found);
       }
       setLoadingUser(false);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [hasAccess, userId]);
+
+  useEffect(() => {
+    if (!hasAccess) return;
+    let cancelled = false;
+    void (async () => {
+      setAuditoriaLoading(true);
+      setAuditoriaError(null);
+      const result = await listAuditoriaByUser(userId, { limit: 20 });
+      if (cancelled) return;
+      if (result.error) {
+        const normalized = result.error.toLowerCase();
+        if (normalized.includes("insufficient_privilege") || normalized.includes("permission")) {
+          setAuditoriaError("Sem permissão para visualizar os eventos de auditoria deste usuário.");
+        } else {
+          setAuditoriaError("Não foi possível carregar a auditoria individual no momento.");
+        }
+        setAuditoriaEvents([]);
+      } else {
+        setAuditoriaEvents(result.data);
+      }
+      setAuditoriaLoading(false);
     })();
     return () => {
       cancelled = true;
@@ -149,7 +179,35 @@ function AdminUserProfilePage() {
 
           <section className="rounded-2xl border border-border bg-card/80 p-6">
             <h2 className="text-lg font-semibold">Auditoria individual</h2>
-            <p className="mt-2 text-sm text-muted-foreground">A auditoria individual será exibida aqui quando os eventos do sistema começarem a ser registrados.</p>
+            {auditoriaLoading ? <p className="mt-2 text-sm text-muted-foreground">Carregando eventos de auditoria...</p> : null}
+            {!auditoriaLoading && auditoriaError ? <p className="mt-2 text-sm text-warning">{auditoriaError}</p> : null}
+            {!auditoriaLoading && !auditoriaError && auditoriaEvents.length === 0 ? <p className="mt-2 text-sm text-muted-foreground">Nenhum evento de auditoria registrado para este usuário.</p> : null}
+            {!auditoriaLoading && !auditoriaError && auditoriaEvents.length > 0 ? (
+              <div className="mt-3 overflow-x-auto">
+                <table className="w-full min-w-[760px] border-separate border-spacing-y-2 text-sm">
+                  <thead>
+                    <tr className="text-left text-xs uppercase tracking-wider text-muted-foreground">
+                      <th className="px-2 py-1">Data/Hora</th>
+                      <th className="px-2 py-1">Ação</th>
+                      <th className="px-2 py-1">Módulo</th>
+                      <th className="px-2 py-1">Entidade</th>
+                      <th className="px-2 py-1">Descrição</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {auditoriaEvents.map((event) => (
+                      <tr key={event.id} className="rounded-lg border border-primary/20 bg-background/60">
+                        <td className="px-2 py-2">{formatDate(event.created_at)}</td>
+                        <td className="px-2 py-2">{event.acao}</td>
+                        <td className="px-2 py-2">{event.modulo}</td>
+                        <td className="px-2 py-2">{event.entidade}</td>
+                        <td className="px-2 py-2">{event.descricao}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : null}
           </section>
         </>
       ) : null}
