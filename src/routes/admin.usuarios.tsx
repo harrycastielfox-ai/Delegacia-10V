@@ -158,8 +158,10 @@ function AdminUsuariosPage() {
         modulo: "admin_usuarios",
         entidade: "profile",
         entidade_id: user.id,
-        descricao: "Alterou acesso de usuário",
+        descricao: `Alterou acesso do usuário ${user.nome}`,
         metadata: {
+          target_user_id: user.id,
+          target_nome: user.nome,
           target_login: user.login,
           target_email: user.email,
           cargo_anterior: user.cargo,

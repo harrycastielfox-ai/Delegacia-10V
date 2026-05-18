@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { ArrowLeft, ShieldAlert } from "lucide-react";
 import { getCurrentProfile, getProfileAvatarPublicUrl, getSession } from "@/lib/auth";
 import { canManageUsers, type UserProfile } from "@/lib/authz";
-import { listAuditoriaByUser, type AuditoriaEvent } from "@/lib/repositories/auditoriaRepository";
+import { listAuditoriaForAdminUser, type AuditoriaEvent } from "@/lib/repositories/auditoriaRepository";
 import { supabase } from "@/lib/supabaseClient";
 
 export const Route = createFileRoute("/admin/usuarios/$userId")({
@@ -94,10 +94,18 @@ function AdminUserProfilePage() {
     void (async () => {
       setAuditoriaLoading(true);
       setAuditoriaError(null);
-      const result = await listAuditoriaByUser(userId, { limit: 20 });
+      const result = await listAuditoriaForAdminUser(userId, { limit: 20 });
       if (cancelled) return;
       if (result.error) {
-        const normalized = result.error.toLowerCase();
+        console.warn("[auditoria][individual] Falha ao listar eventos", {
+          message: result.error.message,
+          details: result.error.details,
+          hint: result.error.hint,
+          code: result.error.code,
+          userId,
+        });
+
+        const normalized = result.error.message.toLowerCase();
         if (normalized.includes("insufficient_privilege") || normalized.includes("permission")) {
           setAuditoriaError("Sem permissão para visualizar os eventos de auditoria deste usuário.");
         } else {
