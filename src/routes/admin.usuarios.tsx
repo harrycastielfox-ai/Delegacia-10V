@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft, AlertTriangle, ShieldAlert, Users, UserCheck, UserMinus, UserCog, Clock3 } from "lucide-react";
 import { getCurrentProfile, getProfileAvatarPublicUrl, getSession } from "@/lib/auth";
 import { canAtlasAssignRole, canEditUserAccess, canManageUsers, type AuthorizationStatus, type UserProfile, type UserRole } from "@/lib/authz";
+import { logAuditoria } from "@/lib/repositories/auditoriaRepository";
 import { supabase } from "@/lib/supabaseClient";
 
 export const Route = createFileRoute("/admin/usuarios")({
@@ -151,6 +152,26 @@ function AdminUsuariosPage() {
     setUsuarios((current) => current.map((entry) => (entry.id === user.id ? { ...entry, cargo: role, status_autorizacao: status, updated_at: new Date().toISOString() } : entry)));
     setFormState((current) => ({ ...current, [user.id]: { cargo: role, status } }));
     setFeedbackByUser((current) => ({ ...current, [user.id]: { kind: "success", message: "Alterações salvas com sucesso." } }));
+    try {
+      const auditResult = await logAuditoria({
+        acao: "admin_update",
+        modulo: "admin_usuarios",
+        entidade: "profile",
+        entidade_id: user.id,
+        descricao: "Alterou acesso de usuário",
+        metadata: {
+          target_login: user.login,
+          target_email: user.email,
+          cargo_anterior: user.cargo,
+          cargo_novo: role,
+          status_anterior: user.status_autorizacao,
+          status_novo: status,
+        },
+      });
+      if (auditResult.error) console.warn("[auditoria]", auditResult.error);
+    } catch (auditError) {
+      console.warn("[auditoria]", auditError);
+    }
     setLoadingByUser((current) => ({ ...current, [user.id]: null }));
   };
 

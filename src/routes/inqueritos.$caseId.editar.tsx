@@ -2,6 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { type FormEvent, type InputHTMLAttributes, type ReactNode, type TextareaHTMLAttributes, useEffect, useState } from "react";
 import { AppLayout } from "@/components/AppLayout";
 import { getInqueritoById, updateInquerito } from "@/lib/repositories/inqueritosRepository";
+import { logAuditoria } from "@/lib/repositories/auditoriaRepository";
 import { getCurrentProfile } from "@/lib/auth";
 import { canEditCases, canOnlyViewPublicCases, type UserProfile } from "@/lib/authz";
 
@@ -166,6 +167,24 @@ function EditarInquerito() {
         medida_protetiva: medidaProtetiva.trim() || null,
         numero_processo_medida: numeroProcessoMedida.trim() || null,
       });
+      try {
+        const auditResult = await logAuditoria({
+          acao: "update",
+          modulo: "inqueritos",
+          entidade: "inquerito",
+          entidade_id: caseId,
+          descricao: "Editou inquérito",
+          metadata: {
+            ppe: numeroPpe.trim() || "",
+            campos_possivelmente_atualizados: [
+              "numero_ppe", "numero_fisico", "numero_bo", "tipificacao", "gravidade", "tipo", "prioridade", "situacao", "status_diligencias",
+            ],
+          },
+        });
+        if (auditResult.error) console.warn("[auditoria]", auditResult.error);
+      } catch (auditError) {
+        console.warn("[auditoria]", auditError);
+      }
 
       setFeedback("Inquérito atualizado com sucesso");
       setTimeout(() => {

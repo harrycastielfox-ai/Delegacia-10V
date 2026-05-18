@@ -3,6 +3,7 @@ import { type FormEvent, useEffect, useState } from "react";
 import { AppLayout } from "@/components/AppLayout";
 import { PageHeader } from "@/components/PageHeader";
 import { createInquerito } from "@/lib/repositories/inqueritosRepository";
+import { logAuditoria } from "@/lib/repositories/auditoriaRepository";
 import { getCurrentProfile } from "@/lib/auth";
 import { canCreateCases, type UserProfile } from "@/lib/authz";
 
@@ -128,6 +129,25 @@ function NovoCaso() {
     console.log("payload enviado", payload);
     try {
       const created = await createInquerito(payload);
+      try {
+        const auditResult = await logAuditoria({
+          acao: "create",
+          modulo: "inqueritos",
+          entidade: "inquerito",
+          entidade_id: created.id,
+          descricao: "Criou inquérito",
+          metadata: {
+            ppe: payload.numero_ppe ?? "",
+            tipo: payload.tipo ?? "",
+            prioridade: payload.prioridade ?? "",
+            situacao: payload.situacao ?? "",
+            status_diligencias: payload.status_diligencias ?? "",
+          },
+        });
+        if (auditResult.error) console.warn("[auditoria]", auditResult.error);
+      } catch (auditError) {
+        console.warn("[auditoria]", auditError);
+      }
       console.log("resposta/erro do Supabase", created);
       setFeedback("Inquérito salvo com sucesso.");
       navigate({ to: "/inqueritos/$caseId", params: { caseId: created.id } });
