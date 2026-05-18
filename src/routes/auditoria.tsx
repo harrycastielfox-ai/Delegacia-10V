@@ -33,9 +33,24 @@ function Auditoria() {
       if (cancelled) return;
       if (result.error) {
         const msg = result.error.message.toLowerCase();
-        setError(msg.includes("insufficient_privilege") || msg.includes("permission")
-          ? "Você não tem permissão para visualizar os eventos de auditoria."
-          : "Não foi possível carregar a auditoria no momento.");
+        const code = (result.error.code ?? "").toLowerCase();
+        const isPermissionError = msg.includes("insufficient_privilege") || msg.includes("permission") || code === "42501";
+        const isRpcMissing = code === "pgrst202" || msg.includes("function") || msg.includes("rpc");
+        if (import.meta.env.DEV) {
+          console.warn("[auditoria][visual] Falha ao listar auditoria", {
+            message: result.error.message,
+            details: result.error.details,
+            hint: result.error.hint,
+            code: result.error.code,
+          });
+        }
+        setError(
+          isPermissionError
+            ? "Você não possui permissão para visualizar os eventos de auditoria."
+            : isRpcMissing
+              ? "Função RPC não encontrada no Supabase."
+              : "Falha ao carregar auditoria.",
+        );
       } else {
         setEvents(result.data);
       }

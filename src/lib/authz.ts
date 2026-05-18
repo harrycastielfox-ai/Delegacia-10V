@@ -33,7 +33,7 @@ export function isAtlasAccess(profile: Pick<UserProfile, "cargo"> | null): boole
 }
 
 export function canManageUsers(profile: Pick<UserProfile, "cargo"> | null): boolean {
-  return isAdmin(profile) || isDelegado(profile) || isAtlasAccess(profile);
+  return isAdmin(profile) || isDelegado(profile);
 }
 
 export function canViewPrivateCases(profile: Pick<UserProfile, "cargo"> | null): boolean {
@@ -69,7 +69,7 @@ export function canViewRepresentacoes(profile: Pick<UserProfile, "cargo" | "stat
 
 export function canViewAuditoria(profile: Pick<UserProfile, "cargo" | "status_autorizacao"> | null): boolean {
   if (!isAuthorized(profile)) return false;
-  return profile.cargo !== "membro";
+  return profile.cargo === "admin" || profile.cargo === "delegado";
 }
 
 export function canCreateRepresentacoes(profile: Pick<UserProfile, "cargo" | "status_autorizacao"> | null): boolean {

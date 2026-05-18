@@ -61,6 +61,15 @@ function AdminUserProfilePage() {
       if (error) {
         const code = String(error.code ?? "");
         const normalized = String(error.message ?? "").toLowerCase();
+        if (import.meta.env.DEV) {
+          console.error("[admin][usuarios][$userId] Falha na RPC list_profiles_for_admin", {
+            code: error.code,
+            message: error.message,
+            details: error.details,
+            hint: error.hint,
+            userId,
+          });
+        }
         if (code === "42501" || normalized.includes("permission")) {
           setRequestState("forbidden");
         } else if (code === "PGRST202" || normalized.includes("function") || normalized.includes("rpc")) {
@@ -74,6 +83,14 @@ function AdminUserProfilePage() {
       }
 
       const users = (data ?? []) as UserProfile[];
+      if (!Array.isArray(data)) {
+        if (import.meta.env.DEV) {
+          console.warn("[admin][usuarios][$userId] list_profiles_for_admin retornou payload não-lista", {
+            payloadType: typeof data,
+            userId,
+          });
+        }
+      }
       const found = users.find((profile) => String(profile.id) === String(userId)) ?? null;
       if (!found) {
         setRequestState("not_found");
@@ -97,17 +114,24 @@ function AdminUserProfilePage() {
       const result = await listAuditoriaForAdminUser(userId, { limit: 20 });
       if (cancelled) return;
       if (result.error) {
-        console.warn("[auditoria][individual] Falha ao listar eventos", {
-          message: result.error.message,
-          details: result.error.details,
-          hint: result.error.hint,
-          code: result.error.code,
-          userId,
-        });
+        if (import.meta.env.DEV) {
+          console.warn("[auditoria][individual] Falha ao listar eventos", {
+            message: result.error.message,
+            details: result.error.details,
+            hint: result.error.hint,
+            code: result.error.code,
+            userId,
+          });
+        }
 
         const normalized = result.error.message.toLowerCase();
-        if (normalized.includes("insufficient_privilege") || normalized.includes("permission")) {
+        const code = (result.error.code ?? "").toLowerCase();
+        if (normalized.includes("insufficient_privilege") || normalized.includes("permission") || code === "42501") {
           setAuditoriaError("Sem permissão para visualizar os eventos de auditoria deste usuário.");
+        } else if (code === "pgrst202" || normalized.includes("function") || normalized.includes("rpc")) {
+          setAuditoriaError("Função RPC não encontrada no Supabase para auditoria individual.");
+        } else if (normalized.includes("invalid_user_id_format") || code === "client_validation") {
+          setAuditoriaError("Identificador de usuário inválido para consulta de auditoria individual.");
         } else {
           setAuditoriaError("Não foi possível carregar a auditoria individual no momento.");
         }
