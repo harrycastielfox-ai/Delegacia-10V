@@ -127,6 +127,11 @@ function InqueritoDetalhes() {
         setErro("");
         const [currentProfile, inquerito] = await Promise.all([getCurrentProfile(), getInqueritoById(caseId)]);
         setProfile(currentProfile);
+        if (!inquerito) {
+          setRestricted(false);
+          setCaso(null);
+          return;
+        }
         const raw = inquerito as unknown as Record<string, unknown>;
         const visibility = String(raw.visibilidade ?? raw.visibility ?? raw.publico_privado ?? "publico").toLowerCase();
         const isPrivate = visibility.includes("priv") || visibility.includes("sig");
@@ -157,7 +162,7 @@ function InqueritoDetalhes() {
   if (loading) return <AppLayout><div className="text-sm text-muted-foreground">Carregando…</div></AppLayout>;
   if (erro) return <AppLayout><div className="space-y-4"><p className="rounded-lg border border-destructive/50 bg-destructive/10 px-4 py-2 text-sm text-destructive">{erro}</p><Link to="/inqueritos" className="px-4 py-2 border border-border rounded-lg inline-block">Voltar</Link></div></AppLayout>;
   if (restricted) return <AppLayout><div className="space-y-4"><h1 className="text-xl font-bold">Acesso restrito</h1><p className="text-sm text-muted-foreground">Você não tem permissão para visualizar este inquérito.</p><Link to="/inqueritos" className="px-4 py-2 border border-border rounded-lg inline-block">Voltar</Link></div></AppLayout>;
-  if (!caso || !detalhe) return <AppLayout><div className="space-y-4"><h1 className="text-xl font-bold">Inquérito não encontrado</h1><Link to="/inqueritos" className="px-4 py-2 border border-border rounded-lg inline-block">Voltar</Link></div></AppLayout>;
+  if (!caso || !detalhe) return <AppLayout><div className="space-y-4"><h1 className="text-xl font-bold">Inquérito não encontrado ou removido</h1><p className="text-sm text-muted-foreground">Este inquérito não está mais disponível para visualização.</p><Link to="/inqueritos" className="px-4 py-2 border border-border rounded-lg inline-block">Voltar</Link></div></AppLayout>;
 
   const remove = async () => {
     if (!caso || deleting || !canDeleteCases(profile)) return;
