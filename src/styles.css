@@ -47,7 +47,7 @@
   --radius: 0.75rem;
 
   /* Dark police-grade palette */
-  --background: oklch(0.16 0.01 240);
+  --background: #030303;
   --foreground: oklch(0.97 0.01 240);
 
   --card: oklch(0.19 0.012 240);
