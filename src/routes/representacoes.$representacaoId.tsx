@@ -91,7 +91,7 @@ function DetalheRepresentacao() {
   if (restricted) return <AppLayout><div className="space-y-4"><h1 className="text-xl font-bold">Acesso restrito</h1><p className="text-sm text-muted-foreground">Seu perfil não possui permissão para acessar Representações.</p><Link to="/modulos" className="px-4 py-2 border border-border rounded-lg inline-block">Voltar</Link></div></AppLayout>;
   if (loading) return <AppLayout>Carregando representação...</AppLayout>;
   if (error) return <AppLayout>{error}</AppLayout>;
-  if (!item) return <AppLayout>Representação não encontrada.</AppLayout>;
+  if (!item) return <AppLayout><div className="space-y-4"><h1 className="text-xl font-bold">Representação não encontrada ou removida</h1><p className="text-sm text-muted-foreground">Esta representação não está mais disponível para visualização.</p><Link to="/representacoes" className="px-4 py-2 border border-border rounded-lg inline-block">Voltar</Link></div></AppLayout>;
 
   const remove = async () => {
     if (!item || isDeleting) return;

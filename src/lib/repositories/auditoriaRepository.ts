@@ -8,6 +8,8 @@ export type AuditoriaEvent = {
   executor_nome: string | null;
   executor_email: string | null;
   executor_login: string | null;
+  executor_avatar_path?: string | null;
+  executor_avatar_url?: string | null;
   acao: string;
   modulo: string;
   entidade: string;

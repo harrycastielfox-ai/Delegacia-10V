@@ -218,6 +218,7 @@ function AdminUserProfilePage() {
               <div className="mt-3 space-y-2">
                 {auditoriaEvents.map((event) => {
                   const eventHref = getAuditEventHref(event);
+                  const isDeleteEvent = isDeleteAction(event.acao);
                   const cardBaseClassName = "rounded-xl border border-zinc-800/80 bg-[#080c0f] p-4 transition-colors";
                   const cardContent = (
                     <>
@@ -231,7 +232,7 @@ function AdminUserProfilePage() {
                     </>
                   );
 
-                  if (!eventHref) return <article key={event.id} className={cardBaseClassName}>{cardContent}</article>;
+                  if (!eventHref || isDeleteEvent) return <article key={event.id} className={cardBaseClassName}>{cardContent}</article>;
 
                   return (
                     <Link
@@ -302,4 +303,9 @@ function getAuditEventHref(event: AuditoriaEvent) {
   }
 
   return null;
+}
+
+function isDeleteAction(action?: string | null) {
+  const normalized = String(action || "").trim().toLowerCase();
+  return normalized === "delete" || normalized.endsWith("_delete") || normalized.includes("exclu");
 }

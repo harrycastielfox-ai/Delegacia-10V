@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { AppLayout } from "@/components/AppLayout";
 import { PageHeader } from "@/components/PageHeader";
-import { getCurrentProfile } from "@/lib/auth";
+import { getCurrentProfile, getProfileAvatarPublicUrl } from "@/lib/auth";
 import { canViewAuditoria } from "@/lib/authz";
 import { listAuditoria, type AuditoriaEvent } from "@/lib/repositories/auditoriaRepository";
 
@@ -72,8 +72,10 @@ function Auditoria() {
           <div className="space-y-3">
             {events.map((event) => {
               const eventHref = getAuditEventHref(event);
+              const isDeleteEvent = isDeleteAction(event.acao);
               const executorName = event.executor_nome || event.executor_login || event.executor_email || event.executor_user_id;
               const executorEmail = event.executor_email || "—";
+              const executorAvatarUrl = getExecutorAvatarUrl(event);
               const executorRole = "executor_cargo" in event && typeof event.executor_cargo === "string" ? event.executor_cargo : null;
               const friendlyAction =
                 "acao_formatada" in event && typeof event.acao_formatada === "string"
@@ -96,9 +98,13 @@ function Auditoria() {
                 <>
                   <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                     <div className="flex min-w-0 items-start gap-3">
-                      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-primary/20 bg-primary/10 text-sm font-semibold text-primary/90">
-                        {avatarInitials || "?"}
-                      </div>
+                      {executorAvatarUrl ? (
+                        <img src={executorAvatarUrl} alt={`Avatar de ${executorName}`} className="h-11 w-11 shrink-0 rounded-full border border-primary/20 object-cover" />
+                      ) : (
+                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-primary/20 bg-primary/10 text-sm font-semibold text-primary/90">
+                          {avatarInitials || "?"}
+                        </div>
+                      )}
                       <div className="min-w-0 space-y-1">
                         <p className="truncate text-sm font-semibold text-foreground">{executorName}</p>
                         <p className="truncate text-xs text-muted-foreground">{executorEmail}</p>
@@ -131,7 +137,7 @@ function Auditoria() {
                 </>
               );
 
-              if (!eventHref) return <article key={event.id} className={cardBaseClassName}>{cardContent}</article>;
+              if (!eventHref || isDeleteEvent) return <article key={event.id} className={cardBaseClassName}>{cardContent}</article>;
 
               return (
                 <Link
@@ -150,6 +156,17 @@ function Auditoria() {
       </div>
     </AppLayout>
   );
+}
+
+function isDeleteAction(action?: string | null) {
+  const normalized = String(action || "").trim().toLowerCase();
+  return normalized === "delete" || normalized.endsWith("_delete") || normalized.includes("exclu");
+}
+
+function getExecutorAvatarUrl(event: AuditoriaEvent): string | null {
+  if (event.executor_avatar_url && String(event.executor_avatar_url).trim()) return String(event.executor_avatar_url).trim();
+  if (event.executor_avatar_path && String(event.executor_avatar_path).trim()) return getProfileAvatarPublicUrl(String(event.executor_avatar_path).trim());
+  return null;
 }
 
 function getAuditEventHref(event: AuditoriaEvent) {
