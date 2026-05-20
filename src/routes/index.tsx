@@ -153,11 +153,11 @@ function Dashboard() {
       <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-7 gap-4 mb-6">
         <div className={kpiFxClass}><StatCard label="TOTAL" value={total} hint="Procedimentos cadastrados" icon={FileText} tone="success" onClick={() => navigate({ to: "/inqueritos" })} /></div>
         <div className={kpiFxClass}><StatCard label="EM ANDAMENTO" value={emAndamento} hint={`${total === 0 ? 0 : Math.round((emAndamento / total) * 100)}% do total`} icon={Clock} tone="info" onClick={() => goTo("/inqueritos", { situacao: "em-andamento" })} /></div>
-        <div className={kpiFxClass}><StatCard label="CONCLUÍDOS" value={finalizados} hint={`${taxaConclusao}% taxa atual`} icon={CheckCircle2} tone="primary" onClick={() => navigate({ to: "/inqueritos", search: { situacao: "concluido" } })} /></div>
+        <div className={kpiFxClass}><StatCard label="CONCLUÍDOS" value={finalizados} hint={`${taxaConclusao}% taxa atual`} icon={CheckCircle2} tone="primary" onClick={() => navigate({ to: "/inqueritos", search: { situacao: "concluidos" } })} /></div>
         <div className={kpiFxClass}><StatCard label="PRIOR. ALTA" value={prioridadeAlta} hint="Requer atenção" icon={TrendingUp} tone="warning" onClick={() => navigate({ to: "/inqueritos", search: { prioridade: "alta" } })} /></div>
         <div className={kpiFxClass}><StatCard label="PRAZO CRÍTICO" value={prazoCritico} hint="< 3 dias" icon={AlertTriangle} tone="destructive" onClick={() => goTo("/inqueritos", { prazo: "critico" })} /></div>
         <div className={kpiFxClass}><StatCard label="RÉU PRESO" value={reuPreso} hint="Casos com prisão" icon={Shield} tone="purple" onClick={() => goTo("/inqueritos", { reuPreso: "true" })} /></div>
-        <div className={kpiFxClass}><StatCard label="MED. PROTETIVAS" value={medidasProtetivas} hint="Ativas" icon={Gavel} tone="warning" onClick={() => goTo("/representacoes", { tipo: "medida-protetiva" })} /></div>
+        <div className={kpiFxClass}><StatCard label="MED. PROTETIVAS" value={medidasProtetivas} hint="Ativas" icon={Gavel} tone="warning" onClick={() => goTo("/inqueritos", { medidaProtetiva: "true" })} /></div>
       </div>
 
       {/* Mid row */}
@@ -232,7 +232,7 @@ function Dashboard() {
             {[
               { label: "Representações", value: totalRepresentacoes, to: "/representacoes" as const, search: undefined, title: "Abrir lista de representações" },
               { label: "Em andamento", value: emAndamento, to: "/inqueritos" as const, search: { situacao: "em-andamento" }, title: "Abrir inquéritos em andamento" },
-              { label: "Concluídos", value: finalizados, to: "/inqueritos" as const, search: { situacao: "concluido" }, title: "Abrir inquéritos concluídos" },
+              { label: "Concluídos", value: finalizados, to: "/inqueritos" as const, search: { situacao: "concluidos" }, title: "Abrir inquéritos concluídos" },
               { label: "Alertas/Prazos", value: prazoCritico, to: "/inqueritos" as const, search: { prazo: "critico" }, title: "Abrir inquéritos com prazo crítico" },
             ].map((p) => (
               <li
