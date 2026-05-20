@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { AlertCircle, AlertTriangle, Bell, ChevronRight, Search } from "lucide-react";
+import { AlertCircle, AlertTriangle, Bell, ChevronRight, Clock3, FileSearch, FolderKanban, Gavel, Hourglass, Search } from "lucide-react";
 import { AppLayout } from "@/components/AppLayout";
 import { PageHeader } from "@/components/PageHeader";
 import { listInqueritos, type InqueritoRecord } from "@/lib/repositories/inqueritosRepository";
@@ -54,6 +54,21 @@ const parseAnyDateUtc = (value?: string | null) => {
 
 const diffDaysFromNow = (utcTimestamp: number) => Math.ceil((utcTimestamp - Date.now()) / (1000 * 60 * 60 * 24));
 const diffDaysSinceNow = (utcTimestamp: number) => Math.floor((Date.now() - utcTimestamp) / (1000 * 60 * 60 * 24));
+
+const formatRelativePrazo = (value?: string | null) => {
+  const ts = parseAnyDateUtc(value);
+  if (ts === null) return "Sem prazo";
+  const days = diffDaysFromNow(ts);
+  if (days < 0) return `Vencido há ${Math.abs(days)} dia(s)`;
+  if (days === 0) return "Vence hoje";
+  if (days === 1) return "Vence amanhã";
+  return `Vence em ${days} dia(s)`;
+};
+
+const formatOperationalIdentifier = (value?: string | null) => {
+  if (!normalizeText(value)) return "Identificação pendente";
+  return String(value).trim();
+};
 
 function Alertas() {
   const navigate = Route.useNavigate();
@@ -142,7 +157,7 @@ function Alertas() {
       const dataRepTs = parseAnyDateUtc(item.data_representacao);
       const diasPendente = dataRepTs !== null ? diffDaysSinceNow(dataRepTs) : undefined;
       const semDecisao = parseAnyDateUtc(item.data_decisao_judicial) === null;
-      const idCaso = displayText(item.numero_ppe || item.codigo_interno || item.processo_judicial, "Sem identificador");
+      const idCaso = formatOperationalIdentifier(item.numero_ppe || item.codigo_interno || item.processo_judicial);
       const tipo = displayText(item.tipo);
       const vitima = displayText(item.vitima);
 
@@ -248,6 +263,9 @@ function Alertas() {
           <section className="space-y-2">
             {visibleAlerts.map((item) => {
               const Icon = icons[item.severity];
+              const OrigemIcon = item.origem === "Inquérito" ? FolderKanban : Gavel;
+              const prazoRelativo = formatRelativePrazo(item.prazoLabel);
+              const prazoCritico = prazoRelativo.startsWith("Vencido") || prazoRelativo === "Vence hoje";
               const to = item.entityType === "inquerito" ? "/inqueritos/$caseId" : "/representacoes/$representacaoId";
               const params = item.entityType === "inquerito" ? { caseId: item.entityId } : { representacaoId: item.entityId };
 
@@ -263,29 +281,31 @@ function Alertas() {
                       navigate({ to, params });
                     }
                   }}
-                  className="grid cursor-pointer grid-cols-1 gap-2 rounded-lg border border-border bg-card px-3 py-2 transition hover:bg-accent/20 focus-visible:outline-none focus-visible:ring-2 md:grid-cols-[auto_minmax(0,2fr)_minmax(0,3fr)_auto_auto] md:items-center"
+                  className="group grid cursor-pointer grid-cols-1 gap-2 rounded-lg border border-border/80 bg-card px-3 py-2.5 transition duration-150 hover:border-border hover:bg-accent/35 focus-visible:outline-none focus-visible:ring-2 md:grid-cols-[auto_minmax(0,2fr)_minmax(0,3fr)_auto_auto] md:items-center"
                   title={`Abrir ${item.origem} ${item.identificacao}`}
                   aria-label={`Abrir ${item.origem} ${item.identificacao}`}
                 >
                   <div className="flex items-center gap-2">
                     <Icon className="h-4 w-4" style={{ color: tone[item.severity] }} />
-                    <span className="rounded-md border px-2 py-0.5 text-[11px] font-medium" style={{ borderColor: `color-mix(in oklab, ${tone[item.severity]} 35%, var(--border))`, color: tone[item.severity] }}>
+                    <span className="rounded-md border px-2 py-0.5 text-[11px] font-semibold" style={{ background: `color-mix(in oklab, ${tone[item.severity]} 12%, transparent)`, borderColor: `color-mix(in oklab, ${tone[item.severity]} ${item.severity === "critico" ? 64 : item.severity === "atencao" ? 48 : 30}%, var(--border))`, color: tone[item.severity] }}>
                       {labels[item.severity]}
                     </span>
                   </div>
 
                   <div className="min-w-0">
                     <p className="truncate text-sm font-medium">{item.identificacao} • {item.tipo}</p>
-                    <p className="truncate text-xs text-muted-foreground">{item.nomePrincipal} • {item.origem}</p>
+                    <p className="truncate text-xs text-muted-foreground">{item.nomePrincipal}</p>
                   </div>
 
                   <div className="min-w-0">
-                    <p className="truncate text-sm">{item.motivo}</p>
-                    <p className="truncate text-xs text-muted-foreground">Status: {item.status} • Prazo: {item.prazoLabel}</p>
+                    <p className="flex items-center gap-1 truncate text-sm"><FileSearch className="h-3.5 w-3.5 text-muted-foreground" />{item.motivo}</p>
+                    <p className="flex items-center gap-1 truncate text-xs text-muted-foreground"><Hourglass className="h-3.5 w-3.5" />Status: {item.status} • <span className={prazoCritico ? "inline-flex items-center gap-1 text-destructive" : "inline-flex items-center gap-1"}>{prazoCritico ? <AlertCircle className="h-3 w-3" /> : <Clock3 className="h-3 w-3" />}{prazoRelativo}</span></p>
                   </div>
 
-                  <span className="inline-flex rounded-md border border-border px-2 py-1 text-xs text-muted-foreground">{item.origem}</span>
-                  <span className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs font-medium">Ver <ChevronRight className="h-3.5 w-3.5" /></span>
+                  <span className="inline-flex items-center gap-1 rounded-full border border-border/90 px-2 py-0.5 text-[11px] text-muted-foreground">
+                    <OrigemIcon className="h-3 w-3" /> {item.origem}
+                  </span>
+                  <span className="inline-flex items-center gap-1 rounded-full border border-border/80 px-2 py-0.5 text-[11px] font-medium text-muted-foreground transition group-hover:border-foreground/20 group-hover:text-foreground">Ver <ChevronRight className="h-3 w-3" /></span>
                 </article>
               );
             })}
