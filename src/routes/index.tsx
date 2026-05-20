@@ -152,11 +152,11 @@ function Dashboard() {
       {/* KPI cards */}
       <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-7 gap-4 mb-6">
         <div className={kpiFxClass}><StatCard label="TOTAL" value={total} hint="Procedimentos cadastrados" icon={FileText} tone="success" onClick={() => navigate({ to: "/inqueritos" })} /></div>
-        <div className={kpiFxClass}><StatCard label="EM ANDAMENTO" value={emAndamento} hint={`${total === 0 ? 0 : Math.round((emAndamento / total) * 100)}% do total`} icon={Clock} tone="info" onClick={() => goTo("/inqueritos", { status: "em-andamento" })} /></div>
-        <div className={kpiFxClass}><StatCard label="CONCLUÍDOS" value={finalizados} hint={`${taxaConclusao}% taxa atual`} icon={CheckCircle2} tone="primary" onClick={() => navigate({ to: "/inqueritos", search: { status: "concluido" } })} /></div>
+        <div className={kpiFxClass}><StatCard label="EM ANDAMENTO" value={emAndamento} hint={`${total === 0 ? 0 : Math.round((emAndamento / total) * 100)}% do total`} icon={Clock} tone="info" onClick={() => goTo("/inqueritos", { situacao: "em-andamento" })} /></div>
+        <div className={kpiFxClass}><StatCard label="CONCLUÍDOS" value={finalizados} hint={`${taxaConclusao}% taxa atual`} icon={CheckCircle2} tone="primary" onClick={() => navigate({ to: "/inqueritos", search: { situacao: "concluido" } })} /></div>
         <div className={kpiFxClass}><StatCard label="PRIOR. ALTA" value={prioridadeAlta} hint="Requer atenção" icon={TrendingUp} tone="warning" onClick={() => navigate({ to: "/inqueritos", search: { prioridade: "alta" } })} /></div>
         <div className={kpiFxClass}><StatCard label="PRAZO CRÍTICO" value={prazoCritico} hint="< 3 dias" icon={AlertTriangle} tone="destructive" onClick={() => goTo("/inqueritos", { prazo: "critico" })} /></div>
-        <div className={kpiFxClass}><StatCard label="RÉU PRESO" value={reuPreso} hint="Casos com prisão" icon={Shield} tone="purple" /></div>
+        <div className={kpiFxClass}><StatCard label="RÉU PRESO" value={reuPreso} hint="Casos com prisão" icon={Shield} tone="purple" onClick={() => goTo("/inqueritos", { reuPreso: "true" })} /></div>
         <div className={kpiFxClass}><StatCard label="MED. PROTETIVAS" value={medidasProtetivas} hint="Ativas" icon={Gavel} tone="warning" onClick={() => goTo("/representacoes", { tipo: "medida-protetiva" })} /></div>
       </div>
 
@@ -231,8 +231,8 @@ function Dashboard() {
           <ul className="space-y-3">
             {[
               { label: "Representações", value: totalRepresentacoes, to: "/representacoes" as const, search: undefined, title: "Abrir lista de representações" },
-              { label: "Em andamento", value: emAndamento, to: "/inqueritos" as const, search: { status: "em-andamento" }, title: "Abrir inquéritos em andamento" },
-              { label: "Concluídos", value: finalizados, to: "/inqueritos" as const, search: { status: "concluido" }, title: "Abrir inquéritos concluídos" },
+              { label: "Em andamento", value: emAndamento, to: "/inqueritos" as const, search: { situacao: "em-andamento" }, title: "Abrir inquéritos em andamento" },
+              { label: "Concluídos", value: finalizados, to: "/inqueritos" as const, search: { situacao: "concluido" }, title: "Abrir inquéritos concluídos" },
               { label: "Alertas/Prazos", value: prazoCritico, to: "/inqueritos" as const, search: { prazo: "critico" }, title: "Abrir inquéritos com prazo crítico" },
             ].map((p) => (
               <li
@@ -256,8 +256,8 @@ function Dashboard() {
         <div className={panelFxClass}><Panel title="META DE CONCLUSÃO" accent="success">
           <ul className="space-y-3 text-sm">
             <Row label="Procedimentos cadastrados" value={String(total)} color="var(--info)" onClick={() => goTo("/inqueritos")} title="Abrir todos os inquéritos" />
-            <Row label="Relatórios enviados" value={String(finalizados)} color="var(--success)" onClick={() => goTo("/inqueritos", { status: "relatado" })} title="Abrir inquéritos relatados" />
-            <Row label="Em andamento" value={String(emAndamento)} color="var(--warning)" onClick={() => goTo("/inqueritos", { status: "em-andamento" })} title="Abrir inquéritos em andamento" />
+            <Row label="Relatórios enviados" value={String(finalizados)} color="var(--success)" onClick={() => goTo("/inqueritos", { situacao: "relatado" })} title="Abrir inquéritos relatados" />
+            <Row label="Em andamento" value={String(emAndamento)} color="var(--warning)" onClick={() => goTo("/inqueritos", { situacao: "em-andamento" })} title="Abrir inquéritos em andamento" />
             <Row label="Relatados não enviados" value={String(relatadosNaoEnviados)} color="var(--purple)" />
           </ul>
           <div className="mt-4 p-3 rounded-lg bg-success/5 border border-success/20 flex items-center gap-3">

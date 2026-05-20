@@ -12,7 +12,7 @@ const statusTone: Record<string, string> = { "Em Andamento": "bg-info/15 text-in
 const FALLBACK = "—";
 const EMPTY_FILTER = "__vazio__";
 
-type InqueritoListRow = { id: string; numeroPpe: string; tipificacao: string; vitima: string; prioridade: string; gravidade: string; situacao: string; statusDiligencias: string; equipe: string; prazo: string; investigado: string; fullText: string; };
+type InqueritoListRow = { id: string; numeroPpe: string; tipificacao: string; vitima: string; prioridade: string; gravidade: string; situacao: string; statusDiligencias: string; equipe: string; prazo: string; investigado: string; reuPreso: string; custodia: string; fullText: string; };
 
 function pick(record: Record<string, unknown>, ...keys: string[]) { for (const key of keys) { const value = record[key]; if (value !== null && value !== undefined && String(value).trim() !== "") return String(value); } return FALLBACK; }
 function normalizeText(value?: string) { return (value ?? "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim(); }
@@ -21,18 +21,27 @@ function parseAnyDate(value?: string) { if (!value || value === FALLBACK) return
 function isPrazoVencido(prazo: string) { const ts=parseAnyDate(prazo); return ts!==null && ts < Date.now(); }
 function isPrazoCritico(prazo: string) { const ts=parseAnyDate(prazo); if (ts===null) return false; const diffDays=Math.ceil((ts-Date.now())/(1000*60*60*24)); return diffDays >=0 && diffDays<=7; }
 function isEmpty(value: string) { return !value || value===FALLBACK; }
+function isConcluidoAlias(value: string) { const n = normalizeText(value).replace(/-/g, " "); return ["concluido", "concluidos", "concluida", "concluidas", "finalizado", "finalizada", "encerrado", "relatado"].includes(n); }
+function isAndamentoAlias(value: string) { const n = normalizeText(value).replace(/-/g, " "); return ["em andamento", "andamento", "aberto", "aguardando", "pendente"].includes(n); }
+function matchesSituacaoAlias(situacao: string, filter: string) {
+  const s = normalizeText(situacao);
+  if (isConcluidoAlias(filter)) return s.includes("conclu") || s.includes("finaliz") || s.includes("encerr") || s.includes("relat");
+  if (isAndamentoAlias(filter)) return s.includes("andamento") || s.includes("abert") || s.includes("aguard") || s.includes("pend");
+  return s === normalizeText(filter);
+}
+function isTrueLike(value: string) { return ["1", "true", "sim", "yes"].includes(normalizeText(value)); }
 
 function normalizeInqueritoForList(caso: InqueritoRecord): InqueritoListRow {
   const raw = caso as unknown as Record<string, unknown>;
   const fields = Object.values(raw).map((v) => normalizeText(v == null ? "" : String(v)));
-  return { id: caso.id, numeroPpe: pick(raw, "numero_ppe", "numeroPpe", "ppe"), tipificacao: pick(raw, "tipificacao", "classificacao", "tipo_penal"), vitima: pick(raw, "vitima", "vítima"), prioridade: pick(raw, "prioridade"), gravidade: pick(raw, "gravidade"), situacao: pick(raw, "situacao", "situação", "status"), statusDiligencias: pick(raw, "status_diligencias", "statusDiligencias"), equipe: pick(raw, "equipe"), prazo: pick(raw, "prazo", "data_prazo"), investigado: pick(raw, "investigado", "suspeito", "autor_investigado", "autorInvestigado"), fullText: fields.join(" ") };
+  return { id: caso.id, numeroPpe: pick(raw, "numero_ppe", "numeroPpe", "ppe"), tipificacao: pick(raw, "tipificacao", "classificacao", "tipo_penal"), vitima: pick(raw, "vitima", "vítima"), prioridade: pick(raw, "prioridade"), gravidade: pick(raw, "gravidade"), situacao: pick(raw, "situacao", "situação", "status"), statusDiligencias: pick(raw, "status_diligencias", "statusDiligencias"), equipe: pick(raw, "equipe"), prazo: pick(raw, "prazo", "data_prazo"), investigado: pick(raw, "investigado", "suspeito", "autor_investigado", "autorInvestigado"), reuPreso: pick(raw, "reu_preso", "reuPreso"), custodia: pick(raw, "custodia", "situacao_custodia"), fullText: fields.join(" ") };
 }
 
 function Inqueritos() {
   const navigate = useNavigate(); const location = useLocation(); const isInqueritosIndex = location.pathname === "/inqueritos";
   const [searchTerm, setSearchTerm] = useState(""); const [rows, setRows] = useState<InqueritoRecord[]>([]); const [loading, setLoading] = useState(true); const [error, setError] = useState(""); const [profile, setProfile] = useState<UserProfile | null>(null);
   const [showFilters, setShowFilters] = useState(false);
-  const [situacaoFilter, setSituacaoFilter] = useState("todos"); const [prioridadeFilter, setPrioridadeFilter] = useState("todos"); const [gravidadeFilter, setGravidadeFilter] = useState("todos"); const [equipeFilter, setEquipeFilter] = useState("todos"); const [tipoFilter, setTipoFilter] = useState("todos"); const [prazoFilter, setPrazoFilter] = useState("todos"); const [dataInicial, setDataInicial] = useState(""); const [dataFinal, setDataFinal] = useState("");
+  const [situacaoFilter, setSituacaoFilter] = useState("todos"); const [prioridadeFilter, setPrioridadeFilter] = useState("todos"); const [gravidadeFilter, setGravidadeFilter] = useState("todos"); const [equipeFilter, setEquipeFilter] = useState("todos"); const [tipoFilter, setTipoFilter] = useState("todos"); const [prazoFilter, setPrazoFilter] = useState("todos"); const [dataInicial, setDataInicial] = useState(""); const [dataFinal, setDataFinal] = useState(""); const [reuPresoFilter, setReuPresoFilter] = useState(false);
 
   useEffect(() => { if (!isInqueritosIndex) return; (async () => { try { setLoading(true); const currentProfile = await getCurrentProfile(); setProfile(currentProfile); setRows(await listInqueritos()); setError(""); } catch { setError("Não foi possível carregar inquéritos agora."); } finally { setLoading(false); } })(); }, [isInqueritosIndex]);
   useEffect(() => {
@@ -41,6 +50,7 @@ function Inqueritos() {
     const assign=(key:string,setter:(v:string)=>void,allowed?:Set<string>)=>{ const v=params.get(key); if(!v) return; const n=normalizeText(v); if(!n) return; if(allowed && !allowed.has(n)) return; setter(v); };
     assign("prioridade", setPrioridadeFilter); assign("situacao", setSituacaoFilter); assign("status", setSituacaoFilter); assign("gravidade", setGravidadeFilter); assign("equipe", setEquipeFilter); assign("tipo", setTipoFilter);
     const prazo = normalizeText(params.get("prazo") ?? ""); if (["critico","vencido","sem-prazo","todos"].includes(prazo)) setPrazoFilter(prazo === "sem-prazo" ? EMPTY_FILTER : prazo);
+    if (isTrueLike(params.get("reuPreso") ?? "") || isTrueLike(params.get("custodia") ?? "")) setReuPresoFilter(true);
     const di = params.get("dataInicial"); const df = params.get("dataFinal"); if (di && /^\d{4}-\d{2}-\d{2}$/u.test(di)) setDataInicial(di); if (df && /^\d{4}-\d{2}-\d{2}$/u.test(df)) setDataFinal(df);
   }, [isInqueritosIndex, location.pathname]);
 
@@ -58,15 +68,20 @@ function Inqueritos() {
     const isFallbackSearch = ["nao informado", "nao informados", "vazio", "sem informacao", "sem valor"].includes(query);
     if (query && !(r.fullText.includes(query) || (isFallbackSearch && [r.numeroPpe,r.tipificacao,r.vitima,r.investigado,r.prioridade,r.gravidade,r.situacao,r.statusDiligencias,r.equipe,r.prazo].some(isEmpty)))) return false;
     const situacao = r.situacao !== FALLBACK ? r.situacao : r.statusDiligencias;
-    if (normalizeText(situacaoFilter) !== "todos" && !(situacaoFilter===EMPTY_FILTER ? isEmpty(situacao) : normalizeText(situacao)===normalizeText(situacaoFilter))) return false;
+    if (normalizeText(situacaoFilter) !== "todos" && !(situacaoFilter===EMPTY_FILTER ? isEmpty(situacao) : matchesSituacaoAlias(situacao, situacaoFilter))) return false;
     if (normalizeText(prioridadeFilter) !== "todos" && !(prioridadeFilter===EMPTY_FILTER ? isEmpty(r.prioridade) : normalizeText(r.prioridade)===normalizeText(prioridadeFilter))) return false;
     if (normalizeText(gravidadeFilter) !== "todos" && !(gravidadeFilter===EMPTY_FILTER ? isEmpty(r.gravidade) : normalizeText(r.gravidade)===normalizeText(gravidadeFilter))) return false;
     if (normalizeText(equipeFilter) !== "todos" && !(equipeFilter===EMPTY_FILTER ? isEmpty(r.equipe) : normalizeText(r.equipe)===normalizeText(equipeFilter))) return false;
     if (normalizeText(tipoFilter) !== "todos" && !(tipoFilter===EMPTY_FILTER ? isEmpty(r.tipificacao) : normalizeText(r.tipificacao)===normalizeText(tipoFilter))) return false;
     if (normalizeText(prazoFilter) !== "todos") { if (prazoFilter === EMPTY_FILTER && !isEmpty(r.prazo)) return false; if (prazoFilter === "vencido" && !isPrazoVencido(r.prazo)) return false; if (prazoFilter === "critico" && !isPrazoCritico(r.prazo)) return false; }
+    if (reuPresoFilter) {
+      const preso = normalizeText(r.reuPreso);
+      const custodia = normalizeText(r.custodia);
+      if (!["sim", "true", "1", "preso", "custodiado"].includes(preso) && !custodia.includes("pres")) return false;
+    }
     const hasDateFilter = Boolean(dataInicial || dataFinal); if (hasDateFilter) { const ts=parseAnyDate(r.prazo); if(ts===null) return false; const start=parseDateToUtc(dataInicial,false); const end=parseDateToUtc(dataFinal,true); if(start!==null && ts<start) return false; if(end!==null && ts>end) return false; }
     return true;
-  }), [normalizedRows, searchTerm, situacaoFilter, prioridadeFilter, gravidadeFilter, equipeFilter, tipoFilter, prazoFilter, dataInicial, dataFinal]);
+  }), [normalizedRows, searchTerm, situacaoFilter, prioridadeFilter, gravidadeFilter, equipeFilter, tipoFilter, prazoFilter, dataInicial, dataFinal, reuPresoFilter]);
 
   const hasActiveFilters = Boolean(searchTerm.trim() || [situacaoFilter, prioridadeFilter, gravidadeFilter, equipeFilter, tipoFilter, prazoFilter].some((f) => normalizeText(f) !== "todos") || dataInicial || dataFinal);
   if (!isInqueritosIndex) return <Outlet />;
