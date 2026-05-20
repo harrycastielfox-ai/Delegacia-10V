@@ -39,6 +39,11 @@ function Representacoes() {
   const isRepresentacoesIndex = location.pathname === "/representacoes";
 
   const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("todos");
+  const [tipoFilter, setTipoFilter] = useState("todos");
+  const [dataInicial, setDataInicial] = useState("");
+  const [dataFinal, setDataFinal] = useState("");
+  const [showFilters, setShowFilters] = useState(false);
   const [representacoes, setRepresentacoes] = useState<RepresentacaoRecord[]>([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -68,14 +73,87 @@ function Representacoes() {
 
   const filtered = useMemo(() => {
     const s = normalizeText(searchTerm);
-    if (!s) return representacoes;
+    const isFallbackSearch =
+      ["nao informado", "nao informados", "vazio", "sem informacao", "sem valor"].includes(s);
+    const statusFilterN = normalizeText(statusFilter);
+    const tipoFilterN = normalizeText(tipoFilter);
 
-    return representacoes.filter((r) =>
-      [r.numero_ppe, r.vitima, r.investigado, r.tipo, r.processo_judicial, r.status]
-        .map((value) => normalizeText(String(value ?? "")))
-        .some((value) => value.includes(s)),
-    );
-  }, [representacoes, searchTerm]);
+    const normalizeDateInput = (value: string, asEndOfDay: boolean) => {
+      if (!value) return null;
+      const [year, month, day] = value.split("-").map(Number);
+      if (!year || !month || !day) return null;
+      if (asEndOfDay) return Date.UTC(year, month - 1, day, 23, 59, 59, 999);
+      return Date.UTC(year, month - 1, day, 0, 0, 0, 0);
+    };
+
+    const parseRecordDate = (value?: string | null) => {
+      if (!value) return null;
+      const valueN = value.trim();
+      if (!valueN) return null;
+
+      const br = /^(\d{2})\/(\d{2})\/(\d{4})$/u.exec(valueN);
+      if (br) return Date.UTC(Number(br[3]), Number(br[2]) - 1, Number(br[1]), 12, 0, 0, 0);
+
+      const iso = /^(\d{4})-(\d{2})-(\d{2})/u.exec(valueN);
+      if (iso) return Date.UTC(Number(iso[1]), Number(iso[2]) - 1, Number(iso[3]), 12, 0, 0, 0);
+
+      const parsed = new Date(valueN);
+      if (!Number.isNaN(parsed.getTime())) {
+        return Date.UTC(parsed.getUTCFullYear(), parsed.getUTCMonth(), parsed.getUTCDate(), 12, 0, 0, 0);
+      }
+
+      return null;
+    };
+
+    const startDate = normalizeDateInput(dataInicial, false);
+    const endDate = normalizeDateInput(dataFinal, true);
+    const hasDateRange = Boolean(startDate || endDate);
+
+    return representacoes.filter((r) => {
+      const tableFields = [
+        { raw: r.numero_ppe, fallback: "—" },
+        { raw: r.vitima, fallback: "—" },
+        { raw: r.investigado, fallback: "—" },
+        { raw: r.tipo, fallback: "Não informado" },
+        { raw: r.processo_judicial, fallback: "—" },
+        { raw: r.status, fallback: "—" },
+      ];
+
+      const matchesSearch =
+        !s ||
+        tableFields.some(({ raw, fallback }) => {
+          const rawN = normalizeText(String(raw ?? ""));
+          const fallbackN = normalizeText(fallback);
+          if (rawN.includes(s) || fallbackN.includes(s)) return true;
+          if (isFallbackSearch && (!rawN || fallbackN === "—" || fallbackN === "nao informado")) return true;
+          return false;
+        });
+
+      if (!matchesSearch) return false;
+
+      if (statusFilterN !== "todos" && normalizeText(r.status) !== statusFilterN) return false;
+      if (tipoFilterN !== "todos" && normalizeText(r.tipo) !== tipoFilterN) return false;
+
+      if (!hasDateRange) return true;
+      const recordDate = parseRecordDate(r.data_representacao);
+      if (recordDate === null) return false;
+      if (startDate !== null && recordDate < startDate) return false;
+      if (endDate !== null && recordDate > endDate) return false;
+      return true;
+    });
+  }, [representacoes, searchTerm, statusFilter, tipoFilter, dataInicial, dataFinal]);
+
+  const statusOptions = useMemo(() => {
+    const values = Array.from(new Set(representacoes.map((r) => (r.status || "").trim()).filter(Boolean)));
+    return values.sort((a, b) => a.localeCompare(b, "pt-BR"));
+  }, [representacoes]);
+
+  const tipoOptions = useMemo(() => {
+    const values = Array.from(new Set(representacoes.map((r) => (r.tipo || "").trim()).filter(Boolean)));
+    return values.sort((a, b) => a.localeCompare(b, "pt-BR"));
+  }, [representacoes]);
+
+  const hasActiveFilters = Boolean(searchTerm.trim() || statusFilter !== "todos" || tipoFilter !== "todos" || dataInicial || dataFinal);
 
   const stats = useMemo(() => {
     const isCumprida = (status?: string) => normalizeText(status).includes("cumprid");
@@ -246,10 +324,63 @@ function Representacoes() {
               className="h-12 w-full rounded-xl border border-border/90 bg-background/70 py-2.5 pl-10 pr-4 text-sm outline-none transition placeholder:text-muted-foreground/80 focus:border-primary/50"
             />
           </div>
-          <button className="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-border bg-background/70 px-4 text-sm font-medium transition hover:bg-accent">
-            <Filter className="h-4 w-4" /> Filtros
+          <button
+            onClick={() => setShowFilters((prev) => !prev)}
+            className="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-border bg-background/70 px-4 text-sm font-medium transition hover:bg-accent"
+          >
+            <Filter className="h-4 w-4" />
+            <span>{showFilters ? "Ocultar filtros" : "Filtros"}</span>
           </button>
         </div>
+        {showFilters && (
+          <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-4">
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="h-11 rounded-xl border border-border/90 bg-background/70 px-3 text-sm outline-none transition focus:border-primary/50"
+            >
+              <option value="todos">Status: todos</option>
+              {statusOptions.map((status) => <option key={status} value={status}>{status}</option>)}
+            </select>
+            <select
+              value={tipoFilter}
+              onChange={(e) => setTipoFilter(e.target.value)}
+              className="h-11 rounded-xl border border-border/90 bg-background/70 px-3 text-sm outline-none transition focus:border-primary/50"
+            >
+              <option value="todos">Tipo: todos</option>
+              {tipoOptions.map((tipo) => <option key={tipo} value={tipo}>{tipo}</option>)}
+            </select>
+            <input
+              type="date"
+              value={dataInicial}
+              onChange={(e) => setDataInicial(e.target.value)}
+              className="h-11 rounded-xl border border-border/90 bg-background/70 px-3 text-sm outline-none transition focus:border-primary/50"
+            />
+            <input
+              type="date"
+              value={dataFinal}
+              onChange={(e) => setDataFinal(e.target.value)}
+              className="h-11 rounded-xl border border-border/90 bg-background/70 px-3 text-sm outline-none transition focus:border-primary/50"
+            />
+            {hasActiveFilters && (
+              <button
+                onClick={() => {
+                  setSearchTerm("");
+                  setStatusFilter("todos");
+                  setTipoFilter("todos");
+                  setDataInicial("");
+                  setDataFinal("");
+                }}
+                className="inline-flex h-11 items-center justify-center rounded-xl border border-border bg-background/70 px-3 text-sm font-medium transition hover:bg-accent md:col-span-4"
+              >
+                Limpar filtros
+              </button>
+            )}
+          </div>
+        )}
+        <p className="mt-3 text-xs text-muted-foreground">
+          {filtered.length} de {representacoes.length} representações
+        </p>
       </div>
 
       <div className="overflow-hidden rounded-2xl border border-border/80 bg-card/90 shadow-[0_10px_40px_rgba(0,0,0,0.22)]">
