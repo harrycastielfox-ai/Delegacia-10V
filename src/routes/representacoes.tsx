@@ -16,6 +16,9 @@ const normalizeText = (v?: string) =>
     .trim();
 
 const formatPercent = (value: number) => `${value.toFixed(1)}%`;
+const STATUS_FILTER_CUMPRIDAS = "__status_cumpridas__";
+const STATUS_FILTER_PENDENTES = "__status_pendentes__";
+const TIPO_FILTER_NAO_INFORMADO = "__tipo_nao_informado__";
 
 const getStatusBadgeClass = (status?: string) => {
   const statusN = normalizeText(status);
@@ -48,6 +51,24 @@ function Representacoes() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [restricted, setRestricted] = useState(false);
+
+  const isCumpridaStatus = (status?: string) => normalizeText(status).includes("cumprid");
+  const isIndeferidaStatus = (status?: string) => normalizeText(status).includes("indefer");
+  const isDeferidaStatus = (status?: string) => {
+    const statusN = normalizeText(status);
+    return statusN.includes("defer") && !statusN.includes("indefer");
+  };
+  const isPendenteStatus = (status?: string) => {
+    const statusN = normalizeText(status);
+    return (
+      !statusN ||
+      statusN.includes("pend") ||
+      statusN.includes("analis") ||
+      statusN.includes("elabor") ||
+      statusN.includes("aguard") ||
+      statusN.includes("enviad")
+    );
+  };
 
   useEffect(() => {
     if (!isRepresentacoesIndex) return;
@@ -131,8 +152,15 @@ function Representacoes() {
 
       if (!matchesSearch) return false;
 
-      if (statusFilterN !== "todos" && normalizeText(r.status) !== statusFilterN) return false;
-      if (tipoFilterN !== "todos" && normalizeText(r.tipo) !== tipoFilterN) return false;
+      if (statusFilter === STATUS_FILTER_CUMPRIDAS && !isCumpridaStatus(r.status)) return false;
+      if (statusFilter === STATUS_FILTER_PENDENTES && !isPendenteStatus(r.status)) return false;
+      if (statusFilterN !== "todos" && ![STATUS_FILTER_CUMPRIDAS, STATUS_FILTER_PENDENTES].includes(statusFilter) && normalizeText(r.status) !== statusFilterN) return false;
+
+      if (tipoFilter === TIPO_FILTER_NAO_INFORMADO) {
+        if (normalizeText(r.tipo)) return false;
+      } else if (tipoFilterN !== "todos" && normalizeText(r.tipo) !== tipoFilterN) {
+        return false;
+      }
 
       if (!hasDateRange) return true;
       const recordDate = parseRecordDate(r.data_representacao);
@@ -156,28 +184,11 @@ function Representacoes() {
   const hasActiveFilters = Boolean(searchTerm.trim() || statusFilter !== "todos" || tipoFilter !== "todos" || dataInicial || dataFinal);
 
   const stats = useMemo(() => {
-    const isCumprida = (status?: string) => normalizeText(status).includes("cumprid");
-    const isIndeferida = (status?: string) => normalizeText(status).includes("indefer");
-    const isDeferida = (status?: string) => {
-      const statusN = normalizeText(status);
-      return statusN.includes("defer") && !statusN.includes("indefer");
-    };
-    const isPendente = (status?: string) => {
-      const statusN = normalizeText(status);
-      return (
-        !statusN ||
-        statusN.includes("pend") ||
-        statusN.includes("analis") ||
-        statusN.includes("elabor") ||
-        statusN.includes("aguard")
-      );
-    };
-
     const total = representacoes.length;
-    const cumpridas = representacoes.filter((r) => isCumprida(r.status)).length;
-    const indeferidas = representacoes.filter((r) => isIndeferida(r.status)).length;
-    const deferidas = representacoes.filter((r) => isDeferida(r.status)).length;
-    const pendentes = representacoes.filter((r) => isPendente(r.status)).length;
+    const cumpridas = representacoes.filter((r) => isCumpridaStatus(r.status)).length;
+    const indeferidas = representacoes.filter((r) => isIndeferidaStatus(r.status)).length;
+    const deferidas = representacoes.filter((r) => isDeferidaStatus(r.status)).length;
+    const pendentes = representacoes.filter((r) => isPendenteStatus(r.status)).length;
 
     const grouped = representacoes.reduce<
       Record<string, { tipo: string; total: number; deferidas: number; cumpridas: number }>
@@ -188,8 +199,8 @@ function Representacoes() {
       }
 
       acc[tipo].total += 1;
-      if (isDeferida(r.status)) acc[tipo].deferidas += 1;
-      if (isCumprida(r.status)) acc[tipo].cumpridas += 1;
+      if (isDeferidaStatus(r.status)) acc[tipo].deferidas += 1;
+      if (isCumpridaStatus(r.status)) acc[tipo].cumpridas += 1;
       return acc;
     }, {});
 
@@ -218,6 +229,34 @@ function Representacoes() {
     { label: "PENDENTES", value: stats.pendentes, hint: "Em acompanhamento", tone: "var(--warning)" },
   ];
 
+  const resetAllFilters = () => {
+    setSearchTerm("");
+    setStatusFilter("todos");
+    setTipoFilter("todos");
+    setDataInicial("");
+    setDataFinal("");
+  };
+
+  const handleStatusShortcut = (target: "todos" | "deferida" | "indeferida" | "cumpridas" | "pendentes") => {
+    setTipoFilter("todos");
+    if (target === "todos") {
+      resetAllFilters();
+      return;
+    }
+    if (target === "deferida") return setStatusFilter("Deferida");
+    if (target === "indeferida") return setStatusFilter("Indeferida");
+    if (target === "cumpridas") return setStatusFilter(STATUS_FILTER_CUMPRIDAS);
+    if (target === "pendentes") return setStatusFilter(STATUS_FILTER_PENDENTES);
+  };
+
+  const isStatusShortcutActive = (target: "todos" | "deferida" | "indeferida" | "cumpridas" | "pendentes") => {
+    if (target === "todos") return statusFilter === "todos" && tipoFilter === "todos" && !searchTerm.trim() && !dataInicial && !dataFinal;
+    if (target === "deferida") return normalizeText(statusFilter) === "deferida";
+    if (target === "indeferida") return normalizeText(statusFilter) === "indeferida";
+    if (target === "cumpridas") return statusFilter === STATUS_FILTER_CUMPRIDAS;
+    return statusFilter === STATUS_FILTER_PENDENTES;
+  };
+
   return (
     <AppLayout>
       <div className="space-y-6">
@@ -241,9 +280,19 @@ function Representacoes() {
 
       <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
         {summaryCards.map((card) => (
-          <div
+          <button
+            type="button"
             key={card.label}
-            className="stat-card stat-card-border rounded-xl p-4 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_0_0_1px_rgba(34,197,94,0.25),0_14px_30px_-22px_rgba(34,197,94,0.85)]"
+            onClick={() => {
+              if (card.label === "TOTAL") return handleStatusShortcut("todos");
+              if (card.label === "DEFERIDAS") return handleStatusShortcut("deferida");
+              if (card.label === "CUMPRIDAS") return handleStatusShortcut("cumpridas");
+              if (card.label === "INDEFERIDAS") return handleStatusShortcut("indeferida");
+              return handleStatusShortcut("pendentes");
+            }}
+            title={`Filtrar por ${card.label.toLowerCase()}`}
+            aria-label={`Filtrar por ${card.label.toLowerCase()}`}
+            className={`stat-card stat-card-border rounded-xl p-4 text-left transition-all duration-300 hover:-translate-y-0.5 hover:bg-muted/20 ${isStatusShortcutActive(card.label === "TOTAL" ? "todos" : card.label === "DEFERIDAS" ? "deferida" : card.label === "CUMPRIDAS" ? "cumpridas" : card.label === "INDEFERIDAS" ? "indeferida" : "pendentes") ? "ring-1 ring-primary/40" : ""} cursor-pointer`}
             style={{ ["--stat-color" as never]: card.tone }}
           >
             <p className="text-[10px] font-bold tracking-[0.15em]" style={{ color: card.tone }}>{card.label}</p>
@@ -251,7 +300,7 @@ function Representacoes() {
               {card.value}
             </p>
             <p className="mt-2 text-xs text-muted-foreground">{card.hint}</p>
-          </div>
+          </button>
         ))}
       </section>
 
@@ -275,7 +324,16 @@ function Representacoes() {
                 {stats.porTipo.map((item) => {
                   const sucesso = item.total > 0 ? (item.deferidas / item.total) * 100 : 0;
                   return (
-                    <tr key={item.tipo} className="border-t border-border transition-colors duration-200 hover:bg-success/10">
+                    <tr
+                      key={item.tipo}
+                      onClick={() => {
+                        setStatusFilter("todos");
+                        setTipoFilter(item.tipo === "Não informado" ? TIPO_FILTER_NAO_INFORMADO : item.tipo);
+                      }}
+                      title={`Filtrar por ${item.tipo}`}
+                      aria-label={`Filtrar por ${item.tipo}`}
+                      className={`border-t border-border transition-colors duration-200 hover:bg-success/10 cursor-pointer ${tipoFilter === (item.tipo === "Não informado" ? TIPO_FILTER_NAO_INFORMADO : item.tipo) ? "bg-success/10" : ""}`}
+                    >
                       <td className="px-4 py-3">{item.tipo}</td>
                       <td className="px-4 py-3 text-right">{item.total}</td>
                       <td className="px-4 py-3 text-right text-success">{item.deferidas}</td>
@@ -301,14 +359,14 @@ function Representacoes() {
             <h2 className="text-xs font-bold tracking-[0.15em] text-warning">STATUS GERAL</h2>
           </div>
           <div className="space-y-2 p-5 text-sm">
-            <div className="flex items-center justify-between border-b border-border pb-2"><span className="text-muted-foreground">Total de pedidos</span><strong>{stats.total}</strong></div>
-            <div className="flex items-center justify-between border-b border-border pb-2"><span className="text-muted-foreground">Cumpridas</span><strong className="text-primary">{stats.cumpridas}</strong></div>
-            <div className="flex items-center justify-between border-b border-border pb-2"><span className="text-muted-foreground">Pendentes</span><strong className="text-warning">{stats.pendentes}</strong></div>
-            <div className="flex items-center justify-between"><span className="text-muted-foreground">Indeferidas</span><strong className="text-destructive">{stats.indeferidas}</strong></div>
-            <div className="mt-4 rounded-lg border border-success/20 bg-success/5 p-3">
+            <button type="button" onClick={() => handleStatusShortcut("todos")} title="Mostrar todas as representações" aria-label="Mostrar todas as representações" className={`flex w-full items-center justify-between border-b border-border pb-2 text-left hover:bg-muted/20 cursor-pointer ${isStatusShortcutActive("todos") ? "rounded px-1 ring-1 ring-primary/40" : ""}`}><span className="text-muted-foreground">Total de pedidos</span><strong>{stats.total}</strong></button>
+            <button type="button" onClick={() => handleStatusShortcut("cumpridas")} title="Filtrar por cumpridas" aria-label="Filtrar por cumpridas" className={`flex w-full items-center justify-between border-b border-border pb-2 text-left hover:bg-muted/20 cursor-pointer ${isStatusShortcutActive("cumpridas") ? "rounded px-1 ring-1 ring-primary/40" : ""}`}><span className="text-muted-foreground">Cumpridas</span><strong className="text-primary">{stats.cumpridas}</strong></button>
+            <button type="button" onClick={() => handleStatusShortcut("pendentes")} title="Filtrar por pendentes" aria-label="Filtrar por pendentes" className={`flex w-full items-center justify-between border-b border-border pb-2 text-left hover:bg-muted/20 cursor-pointer ${isStatusShortcutActive("pendentes") ? "rounded px-1 ring-1 ring-primary/40" : ""}`}><span className="text-muted-foreground">Pendentes</span><strong className="text-warning">{stats.pendentes}</strong></button>
+            <button type="button" onClick={() => handleStatusShortcut("indeferida")} title="Filtrar por indeferidas" aria-label="Filtrar por indeferidas" className={`flex w-full items-center justify-between text-left hover:bg-muted/20 cursor-pointer ${isStatusShortcutActive("indeferida") ? "rounded px-1 ring-1 ring-primary/40" : ""}`}><span className="text-muted-foreground">Indeferidas</span><strong className="text-destructive">{stats.indeferidas}</strong></button>
+            <button type="button" onClick={() => handleStatusShortcut("deferida")} title="Filtrar por deferidas" aria-label="Filtrar por deferidas" className={`mt-4 w-full rounded-lg border border-success/20 bg-success/5 p-3 text-left hover:bg-success/10 cursor-pointer ${isStatusShortcutActive("deferida") ? "ring-1 ring-success/40" : ""}`}>
               <p className="text-sm text-muted-foreground">Taxa de deferimento</p>
               <p className="text-3xl font-semibold text-success">{formatPercent(stats.taxaDeferimento)}</p>
-            </div>
+            </button>
           </div>
         </div>
       </section>
@@ -340,6 +398,8 @@ function Representacoes() {
               className="h-11 rounded-xl border border-border/90 bg-background/70 px-3 text-sm outline-none transition focus:border-primary/50"
             >
               <option value="todos">Status: todos</option>
+              <option value={STATUS_FILTER_CUMPRIDAS}>Status: cumpridas</option>
+              <option value={STATUS_FILTER_PENDENTES}>Status: pendentes</option>
               {statusOptions.map((status) => <option key={status} value={status}>{status}</option>)}
             </select>
             <select
@@ -348,6 +408,7 @@ function Representacoes() {
               className="h-11 rounded-xl border border-border/90 bg-background/70 px-3 text-sm outline-none transition focus:border-primary/50"
             >
               <option value="todos">Tipo: todos</option>
+              <option value={TIPO_FILTER_NAO_INFORMADO}>Tipo: não informado</option>
               {tipoOptions.map((tipo) => <option key={tipo} value={tipo}>{tipo}</option>)}
             </select>
             <input
@@ -365,11 +426,7 @@ function Representacoes() {
             {hasActiveFilters && (
               <button
                 onClick={() => {
-                  setSearchTerm("");
-                  setStatusFilter("todos");
-                  setTipoFilter("todos");
-                  setDataInicial("");
-                  setDataFinal("");
+                  resetAllFilters();
                 }}
                 className="inline-flex h-11 items-center justify-center rounded-xl border border-border bg-background/70 px-3 text-sm font-medium transition hover:bg-accent md:col-span-4"
               >
