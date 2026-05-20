@@ -139,6 +139,10 @@ function Dashboard() {
     "rounded-xl transition-all duration-300 border border-border/70 hover:border-success/55 hover:shadow-[0_0_0_1px_rgba(34,197,94,0.25),0_14px_28px_-22px_rgba(34,197,94,0.75)]";
   const kpiFxClass =
     "rounded-xl transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_0_0_1px_rgba(34,197,94,0.25),0_14px_30px_-22px_rgba(34,197,94,0.85)]";
+  const interactiveItemClass =
+    "rounded-md px-1.5 py-1 transition-colors duration-200 hover:bg-success/10 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-success/50";
+
+  const goTo = (to: "/inqueritos" | "/representacoes", search?: Record<string, string>) => navigate({ to, search });
 
   return (
     <AppLayout>
@@ -148,12 +152,12 @@ function Dashboard() {
       {/* KPI cards */}
       <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-7 gap-4 mb-6">
         <div className={kpiFxClass}><StatCard label="TOTAL" value={total} hint="Procedimentos cadastrados" icon={FileText} tone="success" onClick={() => navigate({ to: "/inqueritos" })} /></div>
-        <div className={kpiFxClass}><StatCard label="EM ANDAMENTO" value={emAndamento} hint={`${total === 0 ? 0 : Math.round((emAndamento / total) * 100)}% do total`} icon={Clock} tone="info" onClick={() => navigate({ to: "/inqueritos", search: { status: "andamento" } })} /></div>
+        <div className={kpiFxClass}><StatCard label="EM ANDAMENTO" value={emAndamento} hint={`${total === 0 ? 0 : Math.round((emAndamento / total) * 100)}% do total`} icon={Clock} tone="info" onClick={() => goTo("/inqueritos", { status: "em-andamento" })} /></div>
         <div className={kpiFxClass}><StatCard label="CONCLUÍDOS" value={finalizados} hint={`${taxaConclusao}% taxa atual`} icon={CheckCircle2} tone="primary" onClick={() => navigate({ to: "/inqueritos", search: { status: "concluido" } })} /></div>
         <div className={kpiFxClass}><StatCard label="PRIOR. ALTA" value={prioridadeAlta} hint="Requer atenção" icon={TrendingUp} tone="warning" onClick={() => navigate({ to: "/inqueritos", search: { prioridade: "alta" } })} /></div>
-        <div className={kpiFxClass}><StatCard label="PRAZO CRÍTICO" value={prazoCritico} hint="< 3 dias" icon={AlertTriangle} tone="destructive" onClick={() => navigate({ to: "/inqueritos", search: { prazo: "critico" } })} /></div>
+        <div className={kpiFxClass}><StatCard label="PRAZO CRÍTICO" value={prazoCritico} hint="< 3 dias" icon={AlertTriangle} tone="destructive" onClick={() => goTo("/inqueritos", { prazo: "critico" })} /></div>
         <div className={kpiFxClass}><StatCard label="RÉU PRESO" value={reuPreso} hint="Casos com prisão" icon={Shield} tone="purple" /></div>
-        <div className={kpiFxClass}><StatCard label="MED. PROTETIVAS" value={medidasProtetivas} hint="Ativas" icon={Gavel} tone="warning" /></div>
+        <div className={kpiFxClass}><StatCard label="MED. PROTETIVAS" value={medidasProtetivas} hint="Ativas" icon={Gavel} tone="warning" onClick={() => goTo("/representacoes", { tipo: "medida-protetiva" })} /></div>
       </div>
 
       {/* Mid row */}
@@ -164,7 +168,15 @@ function Dashboard() {
           icon={<AlertOctagon className="h-4 w-4 text-destructive" />}
         >
           <ul className="space-y-3">
-            <li className="flex items-center gap-3 rounded-md px-1.5 py-1 transition-colors duration-200 hover:bg-success/10">
+            <li
+              className={`flex items-center gap-3 ${interactiveItemClass}`}
+              role="button"
+              tabIndex={0}
+              title="Abrir inquéritos com prazo crítico"
+              aria-label="Abrir inquéritos com prazo crítico"
+              onClick={() => goTo("/inqueritos", { prazo: "critico" })}
+              onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && goTo("/inqueritos", { prazo: "critico" })}
+            >
               <span className="h-2 w-2 rounded-full bg-destructive shrink-0" />
               <div className="flex-1">
                 <div className="text-sm font-semibold">Inquéritos em prazo crítico</div>
@@ -174,7 +186,15 @@ function Dashboard() {
                 {prazoCritico}
               </span>
             </li>
-            <li className="flex items-center gap-3 rounded-md px-1.5 py-1 transition-colors duration-200 hover:bg-success/10">
+            <li
+              className={`flex items-center gap-3 ${interactiveItemClass}`}
+              role="button"
+              tabIndex={0}
+              title="Abrir inquéritos com prioridade alta"
+              aria-label="Abrir inquéritos com prioridade alta"
+              onClick={() => goTo("/inqueritos", { prioridade: "alta" })}
+              onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && goTo("/inqueritos", { prioridade: "alta" })}
+            >
               <span className="h-2 w-2 rounded-full bg-warning shrink-0" />
               <div className="flex-1">
                 <div className="text-sm font-semibold">Casos prioridade ALTA</div>
@@ -209,8 +229,22 @@ function Dashboard() {
 
         <div className={panelFxClass}><Panel title="PENDÊNCIAS POR CATEGORIA" accent="warning" icon={<Bell className="h-4 w-4 text-warning" />}>
           <ul className="space-y-3">
-            {[{ label: "Representações", value: totalRepresentacoes }, { label: "Em andamento", value: emAndamento }, { label: "Concluídos", value: finalizados }, { label: "Alertas/Prazos", value: prazoCritico }].map((p) => (
-              <li key={p.label} className="flex items-start gap-3 rounded-md px-1.5 py-1 transition-colors duration-200 hover:bg-success/10">
+            {[
+              { label: "Representações", value: totalRepresentacoes, to: "/representacoes" as const, search: undefined, title: "Abrir lista de representações" },
+              { label: "Em andamento", value: emAndamento, to: "/inqueritos" as const, search: { status: "em-andamento" }, title: "Abrir inquéritos em andamento" },
+              { label: "Concluídos", value: finalizados, to: "/inqueritos" as const, search: { status: "concluido" }, title: "Abrir inquéritos concluídos" },
+              { label: "Alertas/Prazos", value: prazoCritico, to: "/inqueritos" as const, search: { prazo: "critico" }, title: "Abrir inquéritos com prazo crítico" },
+            ].map((p) => (
+              <li
+                key={p.label}
+                className={`flex items-start gap-3 ${interactiveItemClass}`}
+                role="button"
+                tabIndex={0}
+                title={p.title}
+                aria-label={p.title}
+                onClick={() => goTo(p.to, p.search)}
+                onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && goTo(p.to, p.search)}
+              >
                 <span className="h-2 w-2 rounded-full bg-warning mt-1.5 shrink-0" />
                 <div className="flex-1 text-sm">{p.label}</div>
                 <div className="text-sm font-bold tabular-nums text-warning">{p.value}</div>
@@ -221,9 +255,9 @@ function Dashboard() {
 
         <div className={panelFxClass}><Panel title="META DE CONCLUSÃO" accent="success">
           <ul className="space-y-3 text-sm">
-            <Row label="Procedimentos cadastrados" value={String(total)} color="var(--info)" />
-            <Row label="Relatórios enviados" value={String(finalizados)} color="var(--success)" />
-            <Row label="Em andamento" value={String(emAndamento)} color="var(--warning)" />
+            <Row label="Procedimentos cadastrados" value={String(total)} color="var(--info)" onClick={() => goTo("/inqueritos")} title="Abrir todos os inquéritos" />
+            <Row label="Relatórios enviados" value={String(finalizados)} color="var(--success)" onClick={() => goTo("/inqueritos", { status: "relatado" })} title="Abrir inquéritos relatados" />
+            <Row label="Em andamento" value={String(emAndamento)} color="var(--warning)" onClick={() => goTo("/inqueritos", { status: "em-andamento" })} title="Abrir inquéritos em andamento" />
             <Row label="Relatados não enviados" value={String(relatadosNaoEnviados)} color="var(--purple)" />
           </ul>
           <div className="mt-4 p-3 rounded-lg bg-success/5 border border-success/20 flex items-center gap-3">
@@ -257,8 +291,8 @@ function Dashboard() {
 
       {/* Donut row */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-6">
-        <div className={panelFxClass}><DonutPanel isClient={isClient} title="POR STATUS DE DILIGÊNCIA" data={POR_STATUS} total={POR_STATUS.reduce((a, b) => a + b.value, 0)} /></div>
-        <div className={panelFxClass}><DonutPanel isClient={isClient} title="POR PRIORIDADE" data={POR_PRIORIDADE} total={POR_PRIORIDADE.reduce((a, b) => a + b.value, 0)} /></div>
+        <div className={panelFxClass}><DonutPanel isClient={isClient} title="POR STATUS DE DILIGÊNCIA" data={POR_STATUS} total={POR_STATUS.reduce((a, b) => a + b.value, 0)} getItemAction={(name) => (name === "Em andamento" ? { title: "Abrir inquéritos em andamento", onClick: () => goTo("/inqueritos", { status: "em-andamento" }) } : name === "Concluídos" ? { title: "Abrir inquéritos concluídos", onClick: () => goTo("/inqueritos", { status: "concluido" }) } : undefined)} /></div>
+        <div className={panelFxClass}><DonutPanel isClient={isClient} title="POR PRIORIDADE" data={POR_PRIORIDADE} total={POR_PRIORIDADE.reduce((a, b) => a + b.value, 0)} getItemAction={(name) => (name === "Alta" ? { title: "Abrir inquéritos com prioridade alta", onClick: () => goTo("/inqueritos", { prioridade: "alta" }) } : undefined)} /></div>
         <div className={panelFxClass}><Panel
           title="PROCEDIMENTOS POR TIPO"
           accent="success"
@@ -266,7 +300,16 @@ function Dashboard() {
         >
           <ul className="space-y-3.5">
             {PROCEDIMENTOS.map((t) => (
-              <li key={t.sigla} className="flex items-center gap-3">
+              <li
+                key={t.sigla}
+                className={`flex items-center gap-3 ${interactiveItemClass}`}
+                role="button"
+                tabIndex={0}
+                title={`Abrir inquéritos do tipo ${t.sigla}`}
+                aria-label={`Abrir inquéritos do tipo ${t.sigla}`}
+                onClick={() => goTo("/inqueritos", { tipo: t.sigla.toLowerCase() })}
+                onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && goTo("/inqueritos", { tipo: t.sigla.toLowerCase() })}
+              >
                 <span className="text-xs text-muted-foreground w-12 font-bold">{t.sigla}</span>
                 <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
                   <div
@@ -525,9 +568,18 @@ function SafeChartContainer({ children, fallback }: { children: ReactNode; fallb
   );
 }
 
-function Row({ label, value, color }: { label: string; value: string; color: string }) {
+function Row({ label, value, color, onClick, title }: { label: string; value: string; color: string; onClick?: () => void; title?: string }) {
+  const clickable = Boolean(onClick);
   return (
-    <li className="flex items-center justify-between">
+    <li
+      className={`flex items-center justify-between rounded-md px-1.5 py-1 ${clickable ? "cursor-pointer transition-colors duration-200 hover:bg-success/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-success/50" : ""}`}
+      role={clickable ? "button" : undefined}
+      tabIndex={clickable ? 0 : undefined}
+      title={title}
+      aria-label={title}
+      onClick={onClick}
+      onKeyDown={clickable ? (e) => (e.key === "Enter" || e.key === " ") && onClick?.() : undefined}
+    >
       <span className="flex items-center gap-2 text-foreground/90">
         <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: color }} />
         {label}
@@ -557,11 +609,13 @@ function DonutPanel({
   title,
   data,
   total,
+  getItemAction,
 }: {
   isClient: boolean;
   title: string;
   data: { name: string; value: number; color: string }[];
   total: number;
+  getItemAction?: (name: string) => { title: string; onClick: () => void } | undefined;
 }) {
   const hasData = data.some((item) => item.value > 0);
 
@@ -601,8 +655,18 @@ function DonutPanel({
         <ul className="flex-1 space-y-2 text-sm">
           {data.map((d) => {
             const pct = total === 0 ? 0 : Math.round((d.value / total) * 100);
+            const action = getItemAction?.(d.name);
             return (
-              <li key={d.name} className="flex items-center gap-2">
+              <li
+                key={d.name}
+                className={`flex items-center gap-2 rounded-md px-1.5 py-1 ${action ? "cursor-pointer transition-colors duration-200 hover:bg-success/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-success/50" : ""}`}
+                role={action ? "button" : undefined}
+                tabIndex={action ? 0 : undefined}
+                title={action?.title}
+                aria-label={action?.title}
+                onClick={action?.onClick}
+                onKeyDown={action ? (e) => (e.key === "Enter" || e.key === " ") && action.onClick() : undefined}
+              >
                 <span className="h-2.5 w-2.5 rounded-sm shrink-0" style={{ backgroundColor: d.color }} />
                 <span className="flex-1 text-foreground/90 text-xs truncate">{d.name}</span>
                 <span className="tabular-nums text-muted-foreground text-xs">
