@@ -56,6 +56,9 @@ function NovaRepresentacao() {
   const [status, setStatus] = useState("");
   const [dataEnvioJudiciario, setDataEnvioJudiciario] = useState("");
   const [dataDecisaoJudicial, setDataDecisaoJudicial] = useState("");
+  const [varaJuizo, setVaraJuizo] = useState("");
+  const [prazoConcedidoDias, setPrazoConcedidoDias] = useState("");
+  const [dataVencimento, setDataVencimento] = useState("");
   const [observacoesDecisao, setObservacoesDecisao] = useState("");
   const [dataCumprimento, setDataCumprimento] = useState("");
   const [equipeCumprimento, setEquipeCumprimento] = useState("");
@@ -64,6 +67,8 @@ function NovaRepresentacao() {
   const [prioridadeOperacional, setPrioridadeOperacional] = useState("");
   const [pedidoSigiloso, setPedidoSigiloso] = useState("");
   const [observacoesInternas, setObservacoesInternas] = useState("");
+  const [equipeResponsavel, setEquipeResponsavel] = useState("");
+  const [acompanhamentoEspecial, setAcompanhamentoEspecial] = useState("");
 
   const exibeCampoOutra = tipoRepresentacao === "Outra";
   const exibeDataDecisao = useMemo(() => statusComDecisao.has(status), [status]);
@@ -96,12 +101,17 @@ function NovaRepresentacao() {
         status: status || null,
         data_envio_judiciario: dataEnvioJudiciario || null,
         data_decisao_judicial: exibeDataDecisao ? dataDecisaoJudicial || null : null,
+        vara_juizo: varaJuizo.trim() || null,
+        prazo_concedido_dias: prazoConcedidoDias.trim() ? Number(prazoConcedidoDias) : null,
+        data_vencimento: dataVencimento || null,
         observacoes_decisao: observacoesDecisao.trim() || null,
         data_cumprimento: exibeBlocoCumprimento ? dataCumprimento || null : null,
         equipe_cumprimento: exibeBlocoCumprimento ? equipeCumprimento.trim() || null : null,
         resultado_cumprimento: exibeBlocoCumprimento ? resultadoCumprimento.trim() || null : null,
         observacoes_cumprimento: exibeBlocoCumprimento ? observacoesCumprimento.trim() || null : null,
         prioridade_operacional: prioridadeOperacional || null,
+        equipe_responsavel: equipeResponsavel.trim() || null,
+        acompanhamento_especial: acompanhamentoEspecial ? acompanhamentoEspecial === "Sim" : null,
         pedido_sigiloso: pedidoSigiloso || null,
         observacoes_internas: observacoesInternas.trim() || null,
       });
@@ -163,6 +173,9 @@ function NovaRepresentacao() {
           <Select label="Status da Representação" options={statusRepresentacao} value={status} onChange={setStatus} />
           <InfoBox>{getStatusHint(status)}</InfoBox>
           <Field label="Data de envio ao Judiciário" type="date" value={dataEnvioJudiciario} onChange={(e) => setDataEnvioJudiciario(e.target.value)} />
+          <Field label="Vara / Juízo" placeholder="Ex.: 2ª Vara Criminal" value={varaJuizo} onChange={(e) => setVaraJuizo(e.target.value)} />
+          <Field label="Prazo concedido (dias)" type="number" min={0} value={prazoConcedidoDias} onChange={(e) => setPrazoConcedidoDias(e.target.value)} />
+          <Field label="Data de vencimento" type="date" value={dataVencimento} onChange={(e) => setDataVencimento(e.target.value)} />
           {exibeDataDecisao && <Field label="Data da decisão judicial" type="date" value={dataDecisaoJudicial} onChange={(e) => setDataDecisaoJudicial(e.target.value)} />}
           <TextArea label="Observações da decisão" placeholder="Observações sobre decisão, condicionantes e determinações judiciais..." value={observacoesDecisao} onChange={(e) => setObservacoesDecisao(e.target.value)} />
         </SectionCard>
@@ -179,7 +192,8 @@ function NovaRepresentacao() {
         <SectionCard title="Controle Interno" subtitle="Priorização e acompanhamento interno da unidade.">
           <Select label="Prioridade operacional" options={["Normal", "Atenção", "Urgente"]} value={prioridadeOperacional} onChange={setPrioridadeOperacional} />
           <Select label="Pedido sigiloso?" options={["Sim", "Não"]} value={pedidoSigiloso} onChange={setPedidoSigiloso} />
-          <Field label="Equipe responsável pelo cumprimento" placeholder="Ex.: Equipe Alpha" value={equipeCumprimento} onChange={(e) => setEquipeCumprimento(e.target.value)} />
+          <Field label="Equipe responsável" placeholder="Ex.: Equipe Alpha" value={equipeResponsavel} onChange={(e) => setEquipeResponsavel(e.target.value)} />
+          <Select label="Acompanhamento especial?" options={["Sim", "Não"]} value={acompanhamentoEspecial} onChange={setAcompanhamentoEspecial} />
           <TextArea label="Observações internas" placeholder="Anotações internas da unidade sobre o acompanhamento da representação..." value={observacoesInternas} onChange={(e) => setObservacoesInternas(e.target.value)} />
         </SectionCard>
 

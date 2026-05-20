@@ -39,6 +39,7 @@ const displayText = (v?: string | null, fallback = "Não informado") => (normali
 const isConcluidoAlias = (v?: string | null) =>
   ["concluido", "concluida", "finalizado", "finalizada", "encerrado", "relatado"].some((w) => normalizeText(v).includes(w));
 const isPendenteRepresentacao = (v?: string | null) => ["pend", "analis", "aguard", "enviad"].some((w) => normalizeText(v).includes(w)) || !normalizeText(v);
+const isFinalizadaRepresentacao = (v?: string | null) => ["cumprida", "finalizada", "encerrada", "revogada", "prejudicada"].some((w) => normalizeText(v).includes(w));
 
 const parseAnyDateUtc = (value?: string | null) => {
   const raw = String(value ?? "").trim();
@@ -154,18 +155,37 @@ function Alertas() {
     representacoes.forEach((item) => {
       const status = displayText(item.status);
       const pendente = isPendenteRepresentacao(item.status);
+      const finalizada = isFinalizadaRepresentacao(item.status);
       const dataRepTs = parseAnyDateUtc(item.data_representacao);
+      const dataVencimentoTs = parseAnyDateUtc(item.data_vencimento);
+      const diasVencimento = dataVencimentoTs !== null ? diffDaysFromNow(dataVencimentoTs) : undefined;
       const diasPendente = dataRepTs !== null ? diffDaysSinceNow(dataRepTs) : undefined;
       const semDecisao = parseAnyDateUtc(item.data_decisao_judicial) === null;
       const idCaso = formatOperationalIdentifier(item.numero_ppe || item.codigo_interno || item.processo_judicial);
       const tipo = displayText(item.tipo);
       const vitima = displayText(item.vitima);
+      const prioridadeEspecial = item.acompanhamento_especial ? 50 : 0;
+
+      if (!finalizada && typeof diasVencimento === "number" && diasVencimento < 0) {
+        items.push({
+          id: `rep-${item.id}-vencida`, severity: "critico", origem: "Representação", entityType: "representacao", entityId: item.id,
+          tipo, identificacao: idCaso, nomePrincipal: vitima, motivo: `Representação vencida há ${Math.abs(diasVencimento)} dia(s).`, status,
+          prazoLabel: displayText(item.data_vencimento, "Sem data"), ordem: 1, urgencia: Math.abs(diasVencimento) + prioridadeEspecial, busca: normalizeText(`${idCaso} ${vitima} ${tipo} representacao vencida ${status}`),
+        });
+      }
+      if (!finalizada && typeof diasVencimento === "number" && diasVencimento >= 0 && diasVencimento <= 7) {
+        items.push({
+          id: `rep-${item.id}-vencimento-proximo`, severity: "atencao", origem: "Representação", entityType: "representacao", entityId: item.id,
+          tipo, identificacao: idCaso, nomePrincipal: vitima, motivo: `Representação com vencimento em ${diasVencimento} dia(s).`, status,
+          prazoLabel: displayText(item.data_vencimento, "Sem data"), ordem: 2, urgencia: (100 - diasVencimento) + prioridadeEspecial, busca: normalizeText(`${idCaso} ${vitima} ${tipo} vencimento proximo ${status}`),
+        });
+      }
 
       if (pendente && semDecisao) {
         items.push({
           id: `rep-${item.id}-sem-decisao`, severity: "critico", origem: "Representação", entityType: "representacao", entityId: item.id,
           tipo, identificacao: idCaso, nomePrincipal: vitima, motivo: "Sem decisão judicial registrada.", status,
-          prazoLabel: displayText(item.data_representacao, "Sem data"), ordem: 1, urgencia: typeof diasPendente === "number" ? diasPendente : 30, busca: normalizeText(`${idCaso} ${vitima} ${tipo} sem decisao judicial ${status}`),
+          prazoLabel: displayText(item.data_representacao, "Sem data"), ordem: 1, urgencia: (typeof diasPendente === "number" ? diasPendente : 30) + prioridadeEspecial, busca: normalizeText(`${idCaso} ${vitima} ${tipo} sem decisao judicial ${status}`),
         });
       }
 
@@ -173,7 +193,7 @@ function Alertas() {
         items.push({
           id: `rep-${item.id}-pendente`, severity: "atencao", origem: "Representação", entityType: "representacao", entityId: item.id,
           tipo, identificacao: idCaso, nomePrincipal: vitima, motivo: `Representação pendente há ${Math.max(0, diasPendente)} dia(s).`, status,
-          prazoLabel: displayText(item.data_representacao, "Sem data"), ordem: 3, urgencia: Math.max(1, diasPendente), busca: normalizeText(`${idCaso} ${vitima} ${tipo} pendente ${status}`),
+          prazoLabel: displayText(item.data_representacao, "Sem data"), ordem: 3, urgencia: Math.max(1, diasPendente) + prioridadeEspecial, busca: normalizeText(`${idCaso} ${vitima} ${tipo} pendente ${status}`),
         });
       }
 
