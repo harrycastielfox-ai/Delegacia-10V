@@ -31,7 +31,7 @@ export const Route = createFileRoute("/alertas")({
 });
 
 const tone = { critico: "var(--destructive)", atencao: "var(--warning)", informativo: "var(--info)" } as const;
-const labels = { critico: "Crítico", atencao: "Atenção", informativo: "Informativo" } as const;
+const labels = { critico: "Crítico", atencao: "Atenção", informativo: "Dados Incompletos" } as const;
 const icons = { critico: AlertCircle, atencao: AlertTriangle, informativo: Bell } as const;
 
 const normalizeText = (v?: string | null) => (v ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
@@ -92,7 +92,8 @@ function Alertas() {
       const investigado = displayText((item as { investigado?: string | null }).investigado);
       const principal = vitima !== "Não informado" ? vitima : investigado !== "Não informado" ? investigado : "Sem pessoa principal";
       const status = displayText(item.situacao || item.status_diligencias);
-      const ativo = !isConcluidoAlias(status);
+      const concluido = isConcluidoAlias(item.situacao) || isConcluidoAlias(item.status_diligencias);
+      const ativo = !concluido;
 
       if (ativo && typeof dueDays === "number" && dueDays < 0) {
         items.push({
@@ -120,8 +121,8 @@ function Alertas() {
 
       if (!normalizeText(item.tipificacao) && !normalizeText(item.tipo)) {
         items.push({
-          id: `inq-${item.id}-sem-tipificacao`, severity: "informativo", origem: "Inquérito", entityType: "inquerito", entityId: item.id,
-          tipo: "Não informado", identificacao: `PPE ${ppe}`, nomePrincipal: principal, motivo: "Informações incompletas: sem tipificação.", status,
+          id: `inq-${item.id}-sem-tipificacao`, severity: concluido ? "atencao" : "informativo", origem: "Inquérito", entityType: "inquerito", entityId: item.id,
+          tipo: "Não informado", identificacao: `PPE ${ppe}`, nomePrincipal: principal, motivo: "Informações incompletas", status,
           prazoLabel: displayText(item.prazo), ordem: 4, urgencia: 20, busca: normalizeText(`${ppe} ${principal} sem tipificacao ${status}`),
         });
       }
@@ -148,7 +149,7 @@ function Alertas() {
       if (pendente && semDecisao) {
         items.push({
           id: `rep-${item.id}-sem-decisao`, severity: "critico", origem: "Representação", entityType: "representacao", entityId: item.id,
-          tipo, identificacao: `ID ${idCaso}`, nomePrincipal: vitima, motivo: "Sem decisão judicial registrada.", status,
+          tipo, identificacao: idCaso, nomePrincipal: vitima, motivo: "Sem decisão judicial registrada.", status,
           prazoLabel: displayText(item.data_representacao, "Sem data"), ordem: 1, urgencia: typeof diasPendente === "number" ? diasPendente : 30, busca: normalizeText(`${idCaso} ${vitima} ${tipo} sem decisao judicial ${status}`),
         });
       }
@@ -156,7 +157,7 @@ function Alertas() {
       if (pendente && typeof diasPendente === "number") {
         items.push({
           id: `rep-${item.id}-pendente`, severity: "atencao", origem: "Representação", entityType: "representacao", entityId: item.id,
-          tipo, identificacao: `ID ${idCaso}`, nomePrincipal: vitima, motivo: `Representação pendente há ${Math.max(0, diasPendente)} dia(s).`, status,
+          tipo, identificacao: idCaso, nomePrincipal: vitima, motivo: `Representação pendente há ${Math.max(0, diasPendente)} dia(s).`, status,
           prazoLabel: displayText(item.data_representacao, "Sem data"), ordem: 3, urgencia: Math.max(1, diasPendente), busca: normalizeText(`${idCaso} ${vitima} ${tipo} pendente ${status}`),
         });
       }
@@ -164,7 +165,7 @@ function Alertas() {
       if (!normalizeText(item.vitima) || !normalizeText(item.tipo) || !normalizeText(item.processo_judicial)) {
         items.push({
           id: `rep-${item.id}-incompleta`, severity: "informativo", origem: "Representação", entityType: "representacao", entityId: item.id,
-          tipo, identificacao: `ID ${idCaso}`, nomePrincipal: vitima, motivo: "Informações incompletas na representação.", status,
+          tipo, identificacao: idCaso, nomePrincipal: vitima, motivo: "Informações incompletas", status,
           prazoLabel: displayText(item.data_representacao, "Sem data"), ordem: 4, urgencia: 25, busca: normalizeText(`${idCaso} ${vitima} ${tipo} informacoes incompletas ${status}`),
         });
       }
