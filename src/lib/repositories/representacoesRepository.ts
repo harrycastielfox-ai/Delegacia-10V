@@ -19,12 +19,17 @@ export type RepresentacaoRecord = {
   status: string | null;
   data_envio_judiciario: string | null;
   data_decisao_judicial: string | null;
+  vara_juizo: string | null;
+  prazo_concedido_dias: number | null;
+  data_vencimento: string | null;
   observacoes_decisao: string | null;
   data_cumprimento: string | null;
   equipe_cumprimento: string | null;
   resultado_cumprimento: string | null;
   observacoes_cumprimento: string | null;
   prioridade_operacional: string | null;
+  equipe_responsavel: string | null;
+  acompanhamento_especial: boolean | null;
   pedido_sigiloso: string | null;
   observacoes_internas: string | null;
   created_at: string | null;

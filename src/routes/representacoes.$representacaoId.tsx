@@ -167,6 +167,9 @@ function DetalheRepresentacao() {
       items: [
         ["Status", item.status],
         ["Data de envio ao Judiciário", item.data_envio_judiciario],
+        ["Vara / Juízo", item.vara_juizo],
+        ["Prazo concedido (dias)", item.prazo_concedido_dias?.toString()],
+        ["Data de vencimento", item.data_vencimento],
         ["Data da decisão judicial", item.data_decisao_judicial],
         ["Data de cumprimento", item.data_cumprimento],
         ["Resultado do cumprimento", item.resultado_cumprimento],
@@ -178,7 +181,8 @@ function DetalheRepresentacao() {
       items: [
         ["Prioridade operacional", item.prioridade_operacional],
         ["Pedido sigiloso", item.pedido_sigiloso],
-        ["Equipe responsável", item.equipe_cumprimento],
+        ["Equipe responsável", item.equipe_responsavel],
+        ["Acompanhamento especial", item.acompanhamento_especial == null ? null : item.acompanhamento_especial ? "Sim" : "Não"],
         ["Observações internas", item.observacoes_internas],
       ],
     },
