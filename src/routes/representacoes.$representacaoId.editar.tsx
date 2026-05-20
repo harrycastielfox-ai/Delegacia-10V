@@ -16,6 +16,23 @@ const tiposRepresentacao = ["Prisão Temporária", "Prisão Preventiva", "Busca 
 const statusRepresentacao = ["Em elaboração", "Enviada ao Judiciário", "Aguardando análise judicial", "Deferida", "Indeferida", "Cumprida", "Cumprida parcialmente", "Revogada / Prejudicada"] as const;
 const statusComDecisao = new Set(["Deferida", "Indeferida", "Cumprida", "Cumprida parcialmente", "Revogada / Prejudicada"]);
 const statusComCumprimento = new Set(["Cumprida", "Cumprida parcialmente"]);
+const normalizeText = (value?: string) =>
+  (value ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+const getStatusHint = (status?: string) => {
+  const n = normalizeText(status);
+  if (!n) return "Selecione o status para orientar a tramitação judicial.";
+  if (n.includes("indefer")) return "Status com decisão judicial de indeferimento.";
+  if (n.includes("cumprida parcialmente")) return "Medida parcialmente cumprida; registre resultado e observações.";
+  if (n.includes("cumprid")) return "Medida cumprida; registre resultado e equipe.";
+  if (n.includes("defer")) return "Status com decisão judicial favorável.";
+  if (n.includes("aguard") || n.includes("analis")) return "Representação aguardando manifestação judicial.";
+  if (n.includes("enviad")) return "Representação já enviada ao Judiciário.";
+  return "Status em acompanhamento interno.";
+};
 
 function EditarRepresentacao() {
   const { representacaoId } = Route.useParams();
@@ -203,37 +220,38 @@ function EditarRepresentacao() {
     <AppLayout>
       <PageHeader title="Editar Representação" subtitle="Atualize os dados da medida judicial vinculada" showActions={false} />
       <form className="space-y-5 max-w-6xl pb-6" onSubmit={handleSubmit}>
-        <SectionCard title="Identificação da Representação">
-          <Field label="Nº PPE / Procedimento relacionado" value={ppe} onChange={(e) => setPpe(e.target.value)} />
-          <Field label="Nº Processo Judicial" value={processo} onChange={(e) => setProcesso(e.target.value)} />
+        <SectionCard title="Identificação Judicial" subtitle="Vinculação processual e dados principais da representação.">
+          <Field label="PPE vinculado / Procedimento relacionado" value={ppe} onChange={(e) => setPpe(e.target.value)} />
+          <Field label="Processo judicial" value={processo} onChange={(e) => setProcesso(e.target.value)} />
           <Select label="Tipo de Representação" options={tiposRepresentacao} value={tipoRepresentacao} onChange={setTipoRepresentacao} />
           <Field label="Data da Representação" type="date" value={dataRepresentacao} onChange={(e) => setDataRepresentacao(e.target.value)} />
           <Field label="Responsável pela Representação" value={responsavel} onChange={(e) => setResponsavel(e.target.value)} />
           {exibeCampoOutra && <Field label="Especificar representação" value={tipoOutra} onChange={(e) => setTipoOutra(e.target.value)} />}
         </SectionCard>
 
-        <SectionCard title="Pessoas Envolvidas">
+        <SectionCard title="Pessoas Envolvidas" subtitle="Partes relacionadas à medida representada.">
           <Field label="Vítima" value={vitima} onChange={(e) => setVitima(e.target.value)} />
           <Field label="Investigado / Representado" value={investigado} onChange={(e) => setInvestigado(e.target.value)} />
           <Select label="Autor preso?" options={["Sim", "Não", "Não informado"]} value={autorPreso} onChange={setAutorPreso} />
         </SectionCard>
 
-        <SectionCard title="Fundamentação e Finalidade">
+        <SectionCard title="Fundamentação e Finalidade" subtitle="Contexto técnico-jurídico e finalidade da medida.">
           <TextArea label="Resumo dos fatos" value={resumoFatos} onChange={(e) => setResumoFatos(e.target.value)} />
           <TextArea label="Fundamentação da medida" value={fundamentacao} onChange={(e) => setFundamentacao(e.target.value)} />
           <TextArea label="Objetivo da representação" value={objetivo} onChange={(e) => setObjetivo(e.target.value)} />
           <TextArea label="Diligências relacionadas" value={diligenciasRelacionadas} onChange={(e) => setDiligenciasRelacionadas(e.target.value)} />
         </SectionCard>
 
-        <SectionCard title="Tramitação Judicial">
+        <SectionCard title="Tramitação Judicial" subtitle="Acompanhamento da fase judicial, decisão e cumprimento.">
           <Select label="Status da Representação" options={statusRepresentacao} value={status} onChange={setStatus} />
+          <InfoBox>{getStatusHint(status)}</InfoBox>
           <Field label="Data de envio ao Judiciário" type="date" value={dataEnvioJudiciario} onChange={(e) => setDataEnvioJudiciario(e.target.value)} />
           {exibeDataDecisao && <Field label="Data da decisão judicial" type="date" value={dataDecisaoJudicial} onChange={(e) => setDataDecisaoJudicial(e.target.value)} />}
           <TextArea label="Observações da decisão" value={observacoesDecisao} onChange={(e) => setObservacoesDecisao(e.target.value)} />
         </SectionCard>
 
         {exibeBlocoCumprimento && (
-          <SectionCard title="Cumprimento da Medida">
+          <SectionCard title="Cumprimento da Medida" subtitle="Registro operacional da execução da decisão.">
             <Field label="Data do cumprimento" type="date" value={dataCumprimento} onChange={(e) => setDataCumprimento(e.target.value)} />
             <Field label="Equipe responsável pelo cumprimento" value={equipeCumprimento} onChange={(e) => setEquipeCumprimento(e.target.value)} />
             <TextArea label="Resultado do cumprimento" value={resultadoCumprimento} onChange={(e) => setResultadoCumprimento(e.target.value)} />
@@ -241,9 +259,10 @@ function EditarRepresentacao() {
           </SectionCard>
         )}
 
-        <SectionCard title="Controle Interno">
+        <SectionCard title="Controle Interno" subtitle="Priorização e acompanhamento interno da unidade.">
           <Select label="Prioridade operacional" options={["Normal", "Atenção", "Urgente"]} value={prioridadeOperacional} onChange={setPrioridadeOperacional} />
           <Select label="Pedido sigiloso?" options={["Sim", "Não"]} value={pedidoSigiloso} onChange={setPedidoSigiloso} />
+          <Field label="Equipe responsável pelo cumprimento" value={equipeCumprimento} onChange={(e) => setEquipeCumprimento(e.target.value)} />
           <TextArea label="Observações internas" value={observacoesInternas} onChange={(e) => setObservacoesInternas(e.target.value)} />
         </SectionCard>
 
@@ -262,8 +281,8 @@ function EditarRepresentacao() {
   );
 }
 
-function SectionCard({ title, children }: { title: string; children: ReactNode }) {
-  return <section className="rounded-xl border border-border/60 bg-background/70 p-5 lg:p-7"><h2 className="text-sm font-bold tracking-[0.2em] text-primary uppercase mb-5">{title}</h2><div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">{children}</div></section>;
+function SectionCard({ title, subtitle, children }: { title: string; subtitle?: string; children: ReactNode }) {
+  return <section className="rounded-xl border border-border/60 bg-background/70 p-5 lg:p-7"><h2 className="text-sm font-bold tracking-[0.2em] text-primary uppercase">{title}</h2>{subtitle && <p className="mt-1 mb-5 text-xs text-muted-foreground">{subtitle}</p>}<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">{children}</div></section>;
 }
 function Field({ label, ...props }: { label: string } & InputHTMLAttributes<HTMLInputElement>) {
   return <div><label className="block text-xs font-bold tracking-wider text-muted-foreground mb-2">{label.toUpperCase()}</label><input {...props} className="w-full bg-card border border-border rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-primary" /></div>;
@@ -273,4 +292,7 @@ function TextArea({ label, rows = 4, ...props }: { label: string; rows?: number 
 }
 function Select({ label, options, value, onChange }: { label: string; options: readonly string[]; value?: string; onChange?: (value: string) => void }) {
   return <div><label className="block text-xs font-bold tracking-wider text-muted-foreground mb-2">{label.toUpperCase()}</label><select value={value ?? ""} onChange={(e) => onChange?.(e.target.value)} className="w-full bg-card border border-border rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-primary"><option value="">Selecione…</option>{options.map((option) => <option key={option}>{option}</option>)}</select></div>;
+}
+function InfoBox({ children }: { children: ReactNode }) {
+  return <div className="md:col-span-2 lg:col-span-3 rounded-lg border border-primary/20 bg-primary/5 px-3 py-2 text-xs text-muted-foreground">{children}</div>;
 }

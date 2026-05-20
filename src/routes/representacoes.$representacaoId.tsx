@@ -10,9 +10,33 @@ export const Route = createFileRoute("/representacoes/$representacaoId")({ compo
 function withFallback(value?: string | null) {
   return value?.trim() ? value : "—";
 }
+function normalizeText(value?: string | null) {
+  return (value ?? "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+}
+function getStatusAlias(status?: string | null) {
+  const n = normalizeText(status);
+  if (!n) return "Sem status definido";
+  if (n.includes("indefer")) return "Indeferida";
+  if (n.includes("cumprida parcialmente")) return "Cumprida parcialmente";
+  if (n.includes("cumprid")) return "Cumprida";
+  if (n.includes("deferida parcial")) return "Deferida parcialmente";
+  if (n.includes("defer")) return "Deferida";
+  if (n.includes("aguard")) return "Aguardando decisão judicial";
+  if (n.includes("enviad")) return "Enviada ao Judiciário";
+  if (n.includes("analis")) return "Em análise";
+  if (n.includes("elabor")) return "Em elaboração";
+  return status ?? "Sem status definido";
+}
+function getSituacaoOperacional(status?: string | null) {
+  const n = normalizeText(status);
+  if (n.includes("indefer")) return "Situação: indeferida";
+  if (n.includes("cumprid")) return "Situação: cumprida";
+  if (n.includes("defer")) return "Situação: deferida";
+  return "Situação: pendente";
+}
 
 function getStatusBadgeClass(status?: string | null) {
-  const normalized = status?.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "") ?? "";
+  const normalized = normalizeText(status);
   if (normalized.includes("deferida") || normalized.includes("cumprida")) {
     return "border-emerald-400/35 bg-emerald-400/10 text-emerald-200";
   }
@@ -110,6 +134,8 @@ function DetalheRepresentacao() {
 
   const subtitleParts = [item.tipo, item.processo_judicial ? `Processo: ${item.processo_judicial}` : ""].filter(Boolean);
   const statusText = withFallback(item.status);
+  const statusAlias = getStatusAlias(item.status);
+  const situacaoOperacional = getSituacaoOperacional(item.status);
   const prioridadeText = withFallback(item.prioridade_operacional);
   const sectionCardClass =
     "self-start rounded-xl border border-emerald-400/25 bg-zinc-950/95 p-4 shadow-[0_0_0_1px_rgba(16,185,129,0.1),0_10px_26px_rgba(0,0,0,0.42)] transition-colors duration-200 hover:border-emerald-300/35";
@@ -119,10 +145,10 @@ function DetalheRepresentacao() {
     "self-start rounded-lg border border-emerald-400/25 bg-zinc-950/90 px-3 py-2.5 shadow-[inset_0_0_0_1px_rgba(16,185,129,0.07)] transition-colors duration-200 hover:border-emerald-300/35";
   const cardSections: Array<{ title: string; items: Array<[string, string | null | undefined]> }> = [
     {
-      title: "Identificação da Representação",
+      title: "Identificação Judicial",
       items: [
-        ["Nº PPE / Procedimento relacionado", item.numero_ppe],
-        ["Nº Processo Judicial", item.processo_judicial],
+        ["PPE vinculado / Procedimento relacionado", item.numero_ppe],
+        ["Processo judicial", item.processo_judicial],
         ["Tipo de Representação", item.tipo],
         ["Data da Representação", item.data_representacao],
         ["Responsável pela Representação", item.responsavel],
@@ -141,7 +167,9 @@ function DetalheRepresentacao() {
       items: [
         ["Status", item.status],
         ["Data de envio ao Judiciário", item.data_envio_judiciario],
-        ["Data da decisão", item.data_decisao_judicial],
+        ["Data da decisão judicial", item.data_decisao_judicial],
+        ["Data de cumprimento", item.data_cumprimento],
+        ["Resultado do cumprimento", item.resultado_cumprimento],
         ["Observações da decisão", item.observacoes_decisao],
       ],
     },
@@ -150,6 +178,7 @@ function DetalheRepresentacao() {
       items: [
         ["Prioridade operacional", item.prioridade_operacional],
         ["Pedido sigiloso", item.pedido_sigiloso],
+        ["Equipe responsável", item.equipe_cumprimento],
         ["Observações internas", item.observacoes_internas],
       ],
     },
@@ -179,7 +208,10 @@ function DetalheRepresentacao() {
 
             <div className="flex flex-wrap items-center gap-2 md:justify-end">
               <span className={`inline-flex items-center rounded-md border px-2.5 py-1 text-[11px] font-semibold ${getStatusBadgeClass(item.status)}`}>
-                {statusText}
+                {statusAlias}
+              </span>
+              <span className="inline-flex items-center rounded-md border border-zinc-700 bg-zinc-900 px-2.5 py-1 text-[11px] font-medium text-zinc-200">
+                {situacaoOperacional}
               </span>
               <button onClick={() => window.print()} className="rounded-md border border-emerald-400/30 bg-emerald-400/10 px-3 py-1.5 text-xs text-emerald-100 transition hover:bg-emerald-400/15">
                 Imprimir
@@ -200,7 +232,7 @@ function DetalheRepresentacao() {
         <section className="grid items-start gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {[
             ["Tipo", withFallback(item.tipo), "text-zinc-100"],
-            ["Status", statusText, "text-emerald-100"],
+            ["Status judicial", statusAlias, "text-emerald-100"],
             ["Prioridade", prioridadeText, "text-amber-100"],
             ["Processo/PPE", withFallback(item.processo_judicial || item.numero_ppe), "text-zinc-100"],
           ].map(([label, value, valueClass]) => (
