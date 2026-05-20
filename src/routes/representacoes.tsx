@@ -354,13 +354,13 @@ function Representacoes() {
               type="date"
               value={dataInicial}
               onChange={(e) => setDataInicial(e.target.value)}
-              className="h-11 rounded-xl border border-border/90 bg-background/70 px-3 text-sm outline-none transition focus:border-primary/50"
+              className="representacoes-date-input h-11 rounded-xl border border-border/90 bg-background/70 px-3 text-sm outline-none transition focus:border-primary/50"
             />
             <input
               type="date"
               value={dataFinal}
               onChange={(e) => setDataFinal(e.target.value)}
-              className="h-11 rounded-xl border border-border/90 bg-background/70 px-3 text-sm outline-none transition focus:border-primary/50"
+              className="representacoes-date-input h-11 rounded-xl border border-border/90 bg-background/70 px-3 text-sm outline-none transition focus:border-primary/50"
             />
             {hasActiveFilters && (
               <button
@@ -378,6 +378,19 @@ function Representacoes() {
             )}
           </div>
         )}
+        <style>{`
+          .representacoes-date-input::-webkit-calendar-picker-indicator {
+            opacity: 0.9;
+            cursor: pointer;
+            filter: brightness(0) saturate(100%) invert(72%) sepia(79%) saturate(746%) hue-rotate(74deg) brightness(105%) contrast(102%);
+            transition: filter 0.2s ease, opacity 0.2s ease;
+          }
+
+          .representacoes-date-input:hover::-webkit-calendar-picker-indicator {
+            opacity: 1;
+            filter: brightness(0) saturate(100%) invert(78%) sepia(88%) saturate(835%) hue-rotate(72deg) brightness(112%) contrast(105%);
+          }
+        `}</style>
         <p className="mt-3 text-xs text-muted-foreground">
           {filtered.length} de {representacoes.length} representações
         </p>
