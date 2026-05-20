@@ -92,6 +92,19 @@ function Representacoes() {
     })();
   }, [isRepresentacoesIndex]);
 
+  useEffect(() => {
+    if (!isRepresentacoesIndex) return;
+    const params = new URLSearchParams(window.location.search);
+    const status = params.get("status");
+    const tipo = params.get("tipo");
+    const di = params.get("dataInicial");
+    const df = params.get("dataFinal");
+    if (status) setStatusFilter(status);
+    if (tipo) setTipoFilter(tipo);
+    if (di && /^\d{4}-\d{2}-\d{2}$/u.test(di)) setDataInicial(di);
+    if (df && /^\d{4}-\d{2}-\d{2}$/u.test(df)) setDataFinal(df);
+  }, [isRepresentacoesIndex, location.pathname]);
+
   const filtered = useMemo(() => {
     const s = normalizeText(searchTerm);
     const isFallbackSearch =
