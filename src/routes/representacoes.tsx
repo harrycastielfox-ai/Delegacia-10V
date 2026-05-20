@@ -142,10 +142,10 @@ function Representacoes() {
 
   return (
     <AppLayout>
-      <div className="rounded-2xl bg-black px-3 py-4 md:px-4 md:py-5">
-      <div className="mb-5 flex flex-col gap-3 rounded-2xl border border-white/10 bg-gradient-to-r from-[#050606]/98 via-[#0a0d0d]/96 to-[#070909]/98 px-5 py-3.5 md:flex-row md:items-center md:justify-between md:px-6 md:py-3.5">
+      <div className="rounded-2xl bg-[#050707] px-3 py-4 md:px-4 md:py-5">
+      <div className="mb-5 flex flex-col gap-3 rounded-2xl border border-white/12 bg-gradient-to-r from-[#070a0a]/98 via-[#0c1111]/96 to-[#090d0d]/98 px-5 py-3.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_12px_28px_rgba(0,0,0,0.35)] md:flex-row md:items-center md:justify-between md:px-6 md:py-3.5">
         <div className="flex items-start gap-3">
-          <Activity className="mt-0.5 h-6 w-6 text-emerald-300/80" />
+          <Activity className="mt-0.5 h-6 w-6 text-emerald-200/85" />
           <div>
             <h1 className="text-2xl font-bold tracking-tight text-white lg:text-[2rem]">Representações Judiciais</h1>
             <p className="mt-0.5 text-sm text-slate-300">Medidas requeridas ao Poder Judiciário</p>
@@ -153,7 +153,7 @@ function Representacoes() {
         </div>
         <Link
           to="/nova-representacao"
-          className="inline-flex items-center justify-center gap-2 rounded-lg border border-emerald-500/35 bg-emerald-500/22 px-5 py-2.5 text-sm font-semibold text-emerald-100 transition-colors hover:border-emerald-400/45 hover:bg-emerald-500/30"
+          className="inline-flex items-center justify-center gap-2 rounded-lg border border-emerald-400/40 bg-gradient-to-b from-emerald-400/28 via-emerald-500/24 to-emerald-600/18 px-5 py-2.5 text-sm font-semibold text-emerald-50 shadow-[inset_0_1px_0_rgba(255,255,255,0.16),0_6px_16px_rgba(5,18,12,0.45)] transition-all duration-200 hover:-translate-y-0.5 hover:border-emerald-300/50 hover:from-emerald-300/30 hover:via-emerald-500/26 hover:to-emerald-600/22 hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.2),0_10px_22px_rgba(8,24,18,0.5)]"
         >
           Cadastrar Representação
         </Link>
@@ -165,10 +165,10 @@ function Representacoes() {
         {summaryCards.map((card) => (
           <div
             key={card.label}
-            className="group rounded-xl border border-white/10 bg-gradient-to-br from-[#080a0a]/95 via-[#0c1010]/95 to-[#090c0c]/95 p-4 transition-all duration-300 ease-out hover:-translate-y-0.5 hover:border-emerald-500/25 hover:shadow-[0_6px_20px_rgba(0,0,0,0.35)]"
+            className="group rounded-xl border border-white/12 bg-gradient-to-br from-[#0a0d0d]/96 via-[#0f1414]/95 to-[#0c1010]/96 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_10px_24px_rgba(0,0,0,0.34)] transition-all duration-300 ease-out hover:-translate-y-0.5 hover:border-emerald-400/24 hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_14px_28px_rgba(0,0,0,0.4)]"
           >
-            <p className="text-[10px] font-bold tracking-[0.22em] text-emerald-100/70">{card.label}</p>
-            <p className="mt-2 text-3xl font-bold leading-none tracking-tight text-white">
+            <p className="text-[10px] font-bold tracking-[0.22em] text-emerald-100/80">{card.label}</p>
+            <p className="mt-2 text-3xl font-bold leading-none tracking-tight text-white drop-shadow-[0_1px_4px_rgba(0,0,0,0.35)]">
               {card.value}
             </p>
             <p className="mt-2 text-xs text-slate-300/90">{card.hint}</p>
@@ -177,13 +177,13 @@ function Representacoes() {
       </section>
 
       <section className="mb-6 grid grid-cols-1 items-start gap-4 xl:grid-cols-3">
-        <div className="overflow-hidden rounded-xl border border-white/10 bg-gradient-to-b from-[#090b0b]/96 to-[#0e1111]/94 shadow-[0_8px_24px_rgba(0,0,0,0.35)] transition-all duration-300 ease-out hover:border-emerald-500/20 xl:col-span-2">
+        <div className="overflow-hidden rounded-xl border border-white/12 bg-gradient-to-b from-[#0a0d0d]/96 to-[#111616]/95 shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_12px_28px_rgba(0,0,0,0.38)] transition-all duration-300 ease-out hover:border-emerald-400/18 xl:col-span-2">
           <div className="border-b border-white/10 px-5 py-4">
             <h2 className="text-sm tracking-[0.18em] font-semibold text-emerald-100/85">POR TIPO DE REPRESENTAÇÃO</h2>
           </div>
           <div className="overflow-auto">
             <table className="w-full min-w-[700px] text-sm">
-              <thead className="bg-[#121615]/90 text-[10px] tracking-[0.16em] text-slate-300">
+              <thead className="bg-[#151b1a]/92 text-[10px] tracking-[0.16em] text-slate-200">
                 <tr>
                   <th className="px-4 py-3 text-left font-bold">TIPO</th>
                   <th className="px-4 py-3 text-right font-bold">TOTAL</th>
@@ -196,7 +196,7 @@ function Representacoes() {
                 {stats.porTipo.map((item) => {
                   const sucesso = item.total > 0 ? (item.deferidas / item.total) * 100 : 0;
                   return (
-                    <tr key={item.tipo} className="border-t border-white/10 transition-colors hover:bg-white/5">
+                    <tr key={item.tipo} className="border-t border-white/10 transition-colors hover:bg-white/[0.04]">
                       <td className="px-4 py-3">{item.tipo}</td>
                       <td className="px-4 py-3 text-right">{item.total}</td>
                       <td className="px-4 py-3 text-right text-emerald-300">{item.deferidas}</td>
@@ -217,7 +217,7 @@ function Representacoes() {
           </div>
         </div>
 
-        <div className="overflow-hidden rounded-xl border border-white/10 bg-gradient-to-b from-[#090b0b]/96 to-[#111313]/94 shadow-[0_8px_24px_rgba(0,0,0,0.35)] transition-all duration-300 ease-out hover:border-emerald-500/20">
+        <div className="overflow-hidden rounded-xl border border-white/12 bg-gradient-to-b from-[#0b0e0e]/96 to-[#121717]/94 shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_12px_28px_rgba(0,0,0,0.38)] transition-all duration-300 ease-out hover:border-emerald-400/18">
           <div className="border-b border-border p-4">
             <h2 className="text-sm tracking-[0.18em] font-semibold text-emerald-100/85">STATUS GERAL</h2>
           </div>
@@ -226,15 +226,15 @@ function Representacoes() {
             <div className="flex items-center justify-between border-b border-white/10 pb-2"><span className="text-slate-300">Cumpridas</span><strong className="text-teal-200">{stats.cumpridas}</strong></div>
             <div className="flex items-center justify-between border-b border-white/10 pb-2"><span className="text-slate-300">Pendentes</span><strong className="text-amber-200">{stats.pendentes}</strong></div>
             <div className="flex items-center justify-between"><span className="text-slate-300">Indeferidas</span><strong className="text-rose-200">{stats.indeferidas}</strong></div>
-            <div className="mt-4 rounded-lg border border-emerald-500/20 bg-gradient-to-br from-[#101615]/80 to-[#0f1413]/78 p-3">
-              <p className="text-sm">Taxa de deferimento</p>
-              <p className="text-3xl font-semibold text-emerald-300">{formatPercent(stats.taxaDeferimento)}</p>
+            <div className="mt-4 rounded-lg border border-emerald-400/24 bg-gradient-to-br from-[#121918]/84 to-[#111716]/82 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.05),0_8px_20px_rgba(0,0,0,0.28)]">
+              <p className="text-sm text-slate-200">Taxa de deferimento</p>
+              <p className="text-3xl font-semibold text-emerald-200 drop-shadow-[0_1px_6px_rgba(16,40,30,0.35)]">{formatPercent(stats.taxaDeferimento)}</p>
             </div>
           </div>
         </div>
       </section>
 
-      <div className="mb-5 rounded-xl border border-white/10 bg-[#0a0d0d]/92 p-4">
+      <div className="mb-5 rounded-xl border border-white/12 bg-gradient-to-b from-[#0b0f0f]/94 to-[#0d1111]/92 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_10px_22px_rgba(0,0,0,0.3)]">
         <div className="flex flex-col md:flex-row gap-3">
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -242,22 +242,22 @@ function Representacoes() {
               placeholder="Buscar por PPE, vítima, investigado, tipo, processo ou status..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full rounded-xl border border-slate-700/90 bg-[#121617]/90 py-2.5 pl-10 pr-4 text-sm text-slate-100 placeholder:text-slate-400 focus:border-emerald-400/45 focus:outline-none"
+              className="w-full rounded-xl border border-slate-700/85 bg-[#151b1b]/92 py-2.5 pl-10 pr-4 text-sm text-slate-100 placeholder:text-slate-400 focus:border-emerald-300/45 focus:outline-none"
             />
           </div>
-          <button className="inline-flex items-center gap-2 rounded-xl border border-slate-700 bg-[#121617]/85 px-4 py-2.5 text-sm text-slate-200 transition hover:border-emerald-500/35 hover:bg-[#181f1f]">
+          <button className="inline-flex items-center gap-2 rounded-xl border border-slate-700/90 bg-[#151c1c]/88 px-4 py-2.5 text-sm text-slate-200 transition hover:border-emerald-400/30 hover:bg-[#1a2222]">
             <Filter className="h-4 w-4" /> Filtros
           </button>
         </div>
       </div>
 
-      <div className="overflow-hidden rounded-xl border border-white/10 bg-[#0a0d0d]/94 shadow-[0_8px_24px_rgba(0,0,0,0.35)]">
+      <div className="overflow-hidden rounded-xl border border-white/12 bg-gradient-to-b from-[#0c1010]/94 to-[#0e1313]/94 shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_12px_28px_rgba(0,0,0,0.38)]">
         <div className="border-b border-white/10 px-4 py-3 text-xs font-semibold tracking-[0.2em] text-slate-300">
           REPRESENTAÇÕES CADASTRADAS
         </div>
         <div className="overflow-auto">
           <table className="w-full min-w-[1100px] text-sm">
-            <thead className="bg-[#121615]/90 text-[10px] tracking-[0.16em] text-slate-300">
+            <thead className="bg-[#151b1a]/92 text-[10px] tracking-[0.16em] text-slate-200">
               <tr>
                 <th className="text-left px-4 py-3 font-bold">PPE</th>
                 <th className="text-left px-4 py-3 font-bold">VÍTIMA</th>
@@ -271,7 +271,7 @@ function Representacoes() {
             </thead>
             <tbody>
               {filtered.map((r) => (
-                <tr key={r.id} className="border-t border-white/10 transition-colors duration-200 hover:bg-white/5">
+                <tr key={r.id} className="border-t border-white/10 transition-colors duration-200 hover:bg-white/[0.04]">
                   <td className="px-4 py-3 font-semibold">{r.numero_ppe || "—"}</td>
                   <td className="max-w-[220px] truncate px-4 py-3 text-xs text-slate-200">{r.vitima || "—"}</td>
                   <td className="max-w-[220px] truncate px-4 py-3 text-xs text-slate-200">{r.investigado || "—"}</td>
