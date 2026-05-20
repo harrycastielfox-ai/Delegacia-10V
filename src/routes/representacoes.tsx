@@ -102,9 +102,11 @@ function Representacoes() {
     const params = new URLSearchParams(window.location.search);
     const status = params.get("status");
     const tipo = params.get("tipo");
+    const busca = params.get("busca");
     const di = params.get("dataInicial");
     const df = params.get("dataFinal");
     if (status) setStatusFilter(status);
+    if (busca) setSearchTerm(busca);
     if (tipo) setTipoFilter(isMedidaProtetivaAlias(tipo) ? TIPO_FILTER_MEDIDA_PROTETIVA : tipo);
     if (di && /^\d{4}-\d{2}-\d{2}$/u.test(di)) setDataInicial(di);
     if (df && /^\d{4}-\d{2}-\d{2}$/u.test(df)) setDataFinal(df);

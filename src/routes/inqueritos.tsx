@@ -51,6 +51,7 @@ function Inqueritos() {
     const assign=(key:string,setter:(v:string)=>void,allowed?:Set<string>)=>{ const v=params.get(key); if(!v) return; const n=normalizeText(v); if(!n) return; if(allowed && !allowed.has(n)) return; setter(v); };
     assign("prioridade", setPrioridadeFilter); assign("situacao", setSituacaoFilter); assign("status", setSituacaoFilter); assign("gravidade", setGravidadeFilter); assign("equipe", setEquipeFilter); assign("tipo", setTipoFilter);
     const prazo = normalizeText(params.get("prazo") ?? ""); if (["critico","vencido","sem-prazo","todos"].includes(prazo)) setPrazoFilter(prazo === "sem-prazo" ? EMPTY_FILTER : prazo);
+    const busca = params.get("busca"); if (busca) setSearchTerm(busca);
     if (isTrueLike(params.get("reuPreso") ?? "") || isTrueLike(params.get("custodia") ?? "")) setReuPresoFilter(true);
     if (isTrueLike(params.get("medidaProtetiva") ?? "")) setMedidaProtetivaFilter(true);
     const di = params.get("dataInicial"); const df = params.get("dataFinal"); if (di && /^\d{4}-\d{2}-\d{2}$/u.test(di)) setDataInicial(di); if (df && /^\d{4}-\d{2}-\d{2}$/u.test(df)) setDataFinal(df);
