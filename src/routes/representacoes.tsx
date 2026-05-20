@@ -19,6 +19,11 @@ const formatPercent = (value: number) => `${value.toFixed(1)}%`;
 const STATUS_FILTER_CUMPRIDAS = "__status_cumpridas__";
 const STATUS_FILTER_PENDENTES = "__status_pendentes__";
 const TIPO_FILTER_NAO_INFORMADO = "__tipo_nao_informado__";
+const TIPO_FILTER_MEDIDA_PROTETIVA = "__tipo_medida_protetiva__";
+const isMedidaProtetivaAlias = (value: string) => {
+  const n = normalizeText(value).replace(/-/g, " ");
+  return ["medida protetiva", "medidas protetivas", "protetiva", "medidas protetivas de urgencia"].includes(n);
+};
 
 const getStatusBadgeClass = (status?: string) => {
   const statusN = normalizeText(status);
@@ -100,7 +105,7 @@ function Representacoes() {
     const di = params.get("dataInicial");
     const df = params.get("dataFinal");
     if (status) setStatusFilter(status);
-    if (tipo) setTipoFilter(tipo);
+    if (tipo) setTipoFilter(isMedidaProtetivaAlias(tipo) ? TIPO_FILTER_MEDIDA_PROTETIVA : tipo);
     if (di && /^\d{4}-\d{2}-\d{2}$/u.test(di)) setDataInicial(di);
     if (df && /^\d{4}-\d{2}-\d{2}$/u.test(df)) setDataFinal(df);
   }, [isRepresentacoesIndex, location.pathname]);
@@ -171,6 +176,8 @@ function Representacoes() {
 
       if (tipoFilter === TIPO_FILTER_NAO_INFORMADO) {
         if (normalizeText(r.tipo)) return false;
+      } else if (tipoFilter === TIPO_FILTER_MEDIDA_PROTETIVA) {
+        if (!normalizeText(r.tipo).includes("protetiv")) return false;
       } else if (tipoFilterN !== "todos" && normalizeText(r.tipo) !== tipoFilterN) {
         return false;
       }
