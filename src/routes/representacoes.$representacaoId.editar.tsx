@@ -201,11 +201,26 @@ function EditarRepresentacao() {
 
       await navigate({ to: "/representacoes/$representacaoId", params: { representacaoId } });
     } catch (error) {
-      const err = error as { code?: string };
+      const err = error as { code?: string; message?: string; details?: string; hint?: string; status?: number };
       if (err?.code === "42501" || err?.code === "PGRST301") {
         setErro("Sem permissão para atualizar esta representação. Verifique as policies de UPDATE da tabela public.representacoes.");
+      } else if (err?.code === "REPRESENTACAO_UPDATE_EMPTY") {
+        setErro("Não foi possível salvar porque o registro não foi retornado após a atualização. Verifique permissões de UPDATE/SELECT desta representação.");
       } else {
         setErro("Não foi possível salvar as alterações agora.");
+      }
+
+      if (import.meta.env.DEV) {
+        console.debug("[representacoes:editar] submit error", {
+          id: representacaoId,
+          error: {
+            message: err?.message,
+            code: err?.code,
+            details: err?.details,
+            hint: err?.hint,
+            status: err?.status,
+          },
+        });
       }
     } finally {
       setLoadingSubmit(false);

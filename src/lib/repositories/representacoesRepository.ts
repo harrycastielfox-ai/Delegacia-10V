@@ -53,8 +53,34 @@ export async function createRepresentacao(payload: RepresentacaoPayload) {
 }
 
 export async function updateRepresentacao(id: string, payload: RepresentacaoPayload) {
-  const { data, error } = await supabase.from("representacoes").update(payload).eq("id", id).is("deleted_at", null).select("*").single();
+  const { data, error } = await supabase.from("representacoes").update(payload).eq("id", id).is("deleted_at", null).select("*").maybeSingle();
+
+  if (import.meta.env.DEV) {
+    console.debug("[representacoes:update] request", {
+      id,
+      payloadKeys: Object.keys(payload),
+      error: error
+        ? {
+            message: error.message,
+            code: error.code,
+            details: error.details,
+            hint: error.hint,
+            status: error.status,
+          }
+        : null,
+      rowReturned: Boolean(data),
+    });
+  }
+
   if (error) throw error;
+  if (!data) {
+    throw {
+      code: "REPRESENTACAO_UPDATE_EMPTY",
+      message: "Nenhuma linha retornada no update de representação.",
+      details: "Verifique RLS de UPDATE/SELECT e filtros id/deleted_at.",
+      status: 406,
+    };
+  }
   return data as RepresentacaoRecord;
 }
 
