@@ -157,7 +157,7 @@ function DetalheRepresentacao() {
   const prioridadeText = withFallback(item.prioridade_operacional);
   const sectionCardClass =
     "self-start rounded-xl border border-border/70 bg-card/60 p-4 shadow-[0_8px_24px_rgba(0,0,0,0.35)] transition-colors duration-200 hover:border-border";
-  const sectionTitleClass = "mb-3 text-[11px] font-bold uppercase tracking-[0.16em] text-zinc-300";
+  const sectionTitleClass = "mb-3 text-[11px] font-bold uppercase tracking-[0.16em] text-zinc-100 drop-shadow-[0_0_6px_rgba(255,255,255,0.18)]";
   const infoRowClass = "grid gap-1 py-2.5 sm:grid-cols-[190px_1fr] sm:gap-3";
   const summaryCardClass =
     "self-start rounded-lg border border-border/70 bg-muted/10 px-3 py-2.5 transition-colors duration-200 hover:border-border";
