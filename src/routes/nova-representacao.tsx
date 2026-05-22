@@ -11,10 +11,12 @@ export const Route = createFileRoute("/nova-representacao")({
 });
 
 const tiposRepresentacao = ["Prisão Temporária", "Prisão Preventiva", "Busca e Apreensão", "Busca e Apreensão Domiciliar", "Quebra de Sigilo / Interceptação", "Interceptação Telefônica", "Medida Protetiva", "Outra"] as const;
-const statusRepresentacao = ["Em elaboração", "Enviada ao Judiciário", "Aguardando análise judicial", "Deferida", "Indeferida", "Cumprida", "Cumprida parcialmente", "Revogada / Prejudicada"] as const;
+const statusRepresentacao = ["Em elaboração", "Em análise", "Enviada ao Judiciário", "Aguardando decisão", "Deferida", "Deferida parcialmente", "Cumprida", "Cumprida parcialmente", "Indeferida", "Arquivada"] as const;
 
-const statusComDecisao = new Set(["Deferida", "Indeferida", "Cumprida", "Cumprida parcialmente", "Revogada / Prejudicada"]);
+const statusComDataEnvioEVara = new Set(["Enviada ao Judiciário", "Aguardando decisão"]);
+const statusComDecisaoEPrazo = new Set(["Deferida", "Deferida parcialmente"]);
 const statusComCumprimento = new Set(["Cumprida", "Cumprida parcialmente"]);
+const statusComDecisaoEObservacoes = new Set(["Indeferida", "Arquivada"]);
 const normalizeText = (value?: string) =>
   (value ?? "")
     .normalize("NFD")
@@ -71,8 +73,10 @@ function NovaRepresentacao() {
   const [acompanhamentoEspecial, setAcompanhamentoEspecial] = useState("");
 
   const exibeCampoOutra = tipoRepresentacao === "Outra";
-  const exibeDataDecisao = useMemo(() => statusComDecisao.has(status), [status]);
+  const exibeDataEnvioEVara = useMemo(() => statusComDataEnvioEVara.has(status), [status]);
+  const exibeDecisaoEPrazo = useMemo(() => statusComDecisaoEPrazo.has(status), [status]);
   const exibeBlocoCumprimento = useMemo(() => statusComCumprimento.has(status), [status]);
+  const exibeDecisaoEObservacoes = useMemo(() => statusComDecisaoEObservacoes.has(status), [status]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -100,15 +104,15 @@ function NovaRepresentacao() {
         diligencias_relacionadas: diligenciasRelacionadas.trim() || null,
         status: status || null,
         data_envio_judiciario: dataEnvioJudiciario || null,
-        data_decisao_judicial: exibeDataDecisao ? dataDecisaoJudicial || null : null,
+        data_decisao_judicial: dataDecisaoJudicial || null,
         vara_juizo: varaJuizo.trim() || null,
         prazo_concedido_dias: prazoConcedidoDias.trim() ? Number(prazoConcedidoDias) : null,
         data_vencimento: dataVencimento || null,
         observacoes_decisao: observacoesDecisao.trim() || null,
-        data_cumprimento: exibeBlocoCumprimento ? dataCumprimento || null : null,
-        equipe_cumprimento: exibeBlocoCumprimento ? equipeCumprimento.trim() || null : null,
-        resultado_cumprimento: exibeBlocoCumprimento ? resultadoCumprimento.trim() || null : null,
-        observacoes_cumprimento: exibeBlocoCumprimento ? observacoesCumprimento.trim() || null : null,
+        data_cumprimento: dataCumprimento || null,
+        equipe_cumprimento: equipeCumprimento.trim() || null,
+        resultado_cumprimento: resultadoCumprimento.trim() || null,
+        observacoes_cumprimento: observacoesCumprimento.trim() || null,
         prioridade_operacional: prioridadeOperacional || null,
         equipe_responsavel: equipeResponsavel.trim() || null,
         acompanhamento_especial: acompanhamentoEspecial ? acompanhamentoEspecial === "Sim" : null,
@@ -172,12 +176,13 @@ function NovaRepresentacao() {
         <SectionCard title="Tramitação Judicial" subtitle="Acompanhamento da fase judicial, decisão e cumprimento.">
           <Select label="Status da Representação" options={statusRepresentacao} value={status} onChange={setStatus} />
           <InfoBox>{getStatusHint(status)}</InfoBox>
-          <Field label="Data de envio ao Judiciário" type="date" value={dataEnvioJudiciario} onChange={(e) => setDataEnvioJudiciario(e.target.value)} />
-          <Field label="Vara / Juízo" placeholder="Ex.: 2ª Vara Criminal" value={varaJuizo} onChange={(e) => setVaraJuizo(e.target.value)} />
-          <Field label="Prazo concedido (dias)" type="number" min={0} value={prazoConcedidoDias} onChange={(e) => setPrazoConcedidoDias(e.target.value)} />
-          <Field label="Data de vencimento" type="date" value={dataVencimento} onChange={(e) => setDataVencimento(e.target.value)} />
-          {exibeDataDecisao && <Field label="Data da decisão judicial" type="date" value={dataDecisaoJudicial} onChange={(e) => setDataDecisaoJudicial(e.target.value)} />}
-          <TextArea label="Observações da decisão" placeholder="Observações sobre decisão, condicionantes e determinações judiciais..." value={observacoesDecisao} onChange={(e) => setObservacoesDecisao(e.target.value)} />
+          {exibeDataEnvioEVara && <Field label="Data de envio ao Judiciário" type="date" value={dataEnvioJudiciario} onChange={(e) => setDataEnvioJudiciario(e.target.value)} />}
+          {exibeDataEnvioEVara && <Field label="Vara / Juízo" placeholder="Ex.: 2ª Vara Criminal" value={varaJuizo} onChange={(e) => setVaraJuizo(e.target.value)} />}
+          {exibeDecisaoEPrazo && <Field label="Data da decisão judicial" type="date" value={dataDecisaoJudicial} onChange={(e) => setDataDecisaoJudicial(e.target.value)} />}
+          {exibeDecisaoEPrazo && <Field label="Prazo concedido (dias)" type="number" min={0} value={prazoConcedidoDias} onChange={(e) => setPrazoConcedidoDias(e.target.value)} />}
+          {exibeDecisaoEPrazo && <Field label="Data de vencimento" type="date" value={dataVencimento} onChange={(e) => setDataVencimento(e.target.value)} />}
+          {exibeDecisaoEObservacoes && <Field label="Data da decisão judicial" type="date" value={dataDecisaoJudicial} onChange={(e) => setDataDecisaoJudicial(e.target.value)} />}
+          {exibeDecisaoEObservacoes && <TextArea label="Observações da decisão" placeholder="Observações sobre decisão, condicionantes e determinações judiciais..." value={observacoesDecisao} onChange={(e) => setObservacoesDecisao(e.target.value)} />}
         </SectionCard>
 
         {exibeBlocoCumprimento && (
