@@ -220,7 +220,7 @@ function DetalheRepresentacao() {
   if (restricted) return <AppLayout><div className="space-y-4"><h1 className="text-xl font-bold">Acesso restrito</h1><p className="text-sm text-muted-foreground">Seu perfil não possui permissão para acessar Representações.</p><Link to="/modulos" className="px-4 py-2 border border-border rounded-lg inline-block">Voltar</Link></div></AppLayout>;
   if (loading) return <AppLayout>Carregando representação...</AppLayout>;
   if (error) return <AppLayout>{error}</AppLayout>;
-  if (sigiloRestricted) return <AppLayout><div className="space-y-4"><h1 className="text-xl font-bold">🔒 Representação sigilosa</h1><p className="text-sm text-muted-foreground">Representação sigilosa. Acesso restrito a Delegado, Admin ou Atlas.</p><Link to="/representacoes" className="px-4 py-2 border border-border rounded-lg inline-block">Voltar para lista</Link></div></AppLayout>;
+  if (sigiloRestricted) return <AppLayout><div className="space-y-4"><h1 className="text-xl font-bold">Representação sigilosa</h1><p className="text-sm text-muted-foreground">Representação sigilosa. Acesso restrito a Delegado, Admin ou Atlas.</p><Link to="/representacoes" className="px-4 py-2 border border-border rounded-lg inline-block">Voltar para lista</Link></div></AppLayout>;
   if (!item) return <AppLayout><div className="space-y-4"><h1 className="text-xl font-bold">Representação não encontrada ou removida</h1><p className="text-sm text-muted-foreground">Esta representação não está mais disponível para visualização.</p><Link to="/representacoes" className="px-4 py-2 border border-border rounded-lg inline-block">Voltar</Link></div></AppLayout>;
 
   const remove = async () => {
@@ -307,10 +307,7 @@ function DetalheRepresentacao() {
         <header className="rounded-xl border border-border/70 bg-card/60 p-4 shadow-[0_10px_30px_rgba(0,0,0,0.4)]">
           <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
             <div className="min-w-0">
-              <Link to="/representacoes" className="mb-2 inline-flex items-center rounded-md border border-border bg-muted/20 px-2.5 py-1 text-[11px] text-zinc-200 transition hover:bg-muted/35">
-                ← Voltar para lista
-              </Link>
-              <h1 className="text-2xl font-bold break-words text-zinc-100">{isRepresentacaoSigilosa(item) ? "🔒 Representação sigilosa" : "Representação"}</h1>
+              <h1 className="text-2xl font-bold break-words text-zinc-100">{isRepresentacaoSigilosa(item) ? "Representação sigilosa" : "Representação"}</h1>
               <p className="mt-0.5 text-sm break-words text-zinc-400">
                 {subtitleParts.length > 0 ? subtitleParts.join(" • ") : "Detalhes da representação cadastrada"}
               </p>
