@@ -302,7 +302,7 @@ function DetalheRepresentacao() {
                 </div>
               </div>
             </article>
-            <div className="grid items-start gap-4 md:grid-cols-2">
+            <div className="grid grid-cols-1 items-start gap-4">
               {fundamentacaoCards.map(([title, value]) => (
                 <article key={title} className={sectionCardClass}>
                   <h2 className={sectionTitleClass}>{title}</h2>
