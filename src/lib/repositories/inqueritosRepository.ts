@@ -37,6 +37,7 @@ export type InqueritoRecord = {
   delegado_responsavel: string | null;
   motivacao: string | null;
   observacoes: string | null;
+  visibilidade: string | null;
   created_at: string | null;
   updated_at: string | null;
   deleted_at: string | null;

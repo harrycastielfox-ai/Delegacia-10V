@@ -129,6 +129,12 @@ function EditarInquerito() {
         setMedidaProtetiva(inquerito.medida_protetiva ?? "");
         setNumeroProcessoMedida(inquerito.numero_processo_medida ?? "");
         setRepresentacoesLegais(inquerito.representacoes_legais ?? "");
+        const savedVisibilidade = (inquerito.visibilidade ?? "").trim();
+        setVisibilidade(savedVisibilidade);
+        console.debug("[DEV][Inqueritos][Editar] visibilidade carregada", {
+          inqueritoId: caseId,
+          visibilidade: savedVisibilidade || null,
+        });
       } catch (error) {
         if (!ativo) return;
         setErro(getErrorMessage(error, "Erro ao carregar"));
@@ -150,7 +156,7 @@ function EditarInquerito() {
     setSaving(true);
 
     try {
-      await updateInquerito(caseId, {
+      const payload = {
         numero_ppe: numeroPpe.trim() || null,
         numero_fisico: numeroFisico.trim() || null,
         numero_bo: numeroBo.trim() || null,
@@ -184,7 +190,15 @@ function EditarInquerito() {
         medida_protetiva: medidaProtetiva.trim() || null,
         numero_processo_medida: numeroProcessoMedida.trim() || null,
         representacoes_legais: representacoesLegais.trim() || null,
+        visibilidade: visibilidade.trim() || null,
+      };
+
+      console.debug("[DEV][Inqueritos][Editar] visibilidade enviada no update", {
+        inqueritoId: caseId,
+        visibilidade: payload.visibilidade,
       });
+
+      await updateInquerito(caseId, payload);
       try {
         const auditResult = await logAuditoria({
           acao: "update",
