@@ -63,6 +63,15 @@ function getRepresentacaoState(r: RepresentacaoRecord) {
   return { isCumprida, isSpecial, isSigilosa, pendingJudicial, incomplete, daysToDue, isOverdue, isDueSoon, priority };
 }
 
+function buildPrazoLabel(state: ReturnType<typeof getRepresentacaoState>) {
+  if (state.isCumprida) return "🟢 Cumprida";
+  if (state.isOverdue) return `🔴 Vencida há ${Math.abs(state.daysToDue ?? 0)} dia(s)`;
+  if (state.daysToDue === 0) return "🟡 Vence hoje";
+  if (state.daysToDue === 1) return "🟡 Vence amanhã";
+  if (state.isDueSoon) return `🟡 Vence em ${state.daysToDue} dia(s)`;
+  return "🟢 Sem criticidade de prazo";
+}
+
 function Representacoes() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -168,9 +177,37 @@ function Representacoes() {
     <div className="space-y-2">
       {filtered.map((r) => {
         const state = getRepresentacaoState(r);
-        const prazo = state.isOverdue ? `🔴 Vencida há ${Math.abs(state.daysToDue ?? 0)} dia(s)` : state.isDueSoon ? `🟡 Vence em ${state.daysToDue} dia(s)` : "Prazo: sem criticidade";
-        return <div key={r.id} role="button" tabIndex={0} title={`Abrir representação ${r.numero_ppe || r.id}`} aria-label={`Abrir representação ${r.numero_ppe || r.id}`} onClick={() => navigate({ to: "/representacoes/$representacaoId", params: { representacaoId: r.id } })} onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && navigate({ to: "/representacoes/$representacaoId", params: { representacaoId: r.id } })} className="cursor-pointer rounded-xl border border-border/70 bg-card/80 p-4 transition hover:border-primary/40 hover:bg-muted/20">
-          <div className="flex items-start justify-between gap-3"><div><p className="font-semibold">⚠ PPE {r.numero_ppe || "—"} • {r.tipo || "Não informado"}</p><div className="mt-2 grid gap-1 text-xs text-muted-foreground"><p>Vítima: {r.vitima || "—"}</p><p>Investigado: {r.investigado || "—"}</p><p>Vara: {r.vara_juizo || "Não informado"}</p><p>Judicial: {r.status || "—"}</p><p>Operacional: {buildOperationalStatus(r)}</p><p className={state.isOverdue ? "text-destructive" : state.isDueSoon ? "text-warning" : "text-muted-foreground"}>{prazo}</p></div></div><div className="flex flex-col items-end gap-2"><div className="flex flex-wrap justify-end gap-1">{state.isSigilosa && <span className="rounded border border-purple-400/30 bg-purple-500/10 px-2 py-0.5 text-[10px]">SIGILOSA</span>}{state.isOverdue && <span className="rounded border border-destructive/40 bg-destructive/10 px-2 py-0.5 text-[10px]">URGENTE</span>}{state.isSpecial && <span className="rounded border border-info/40 bg-info/10 px-2 py-0.5 text-[10px]">ACOMP. ESPECIAL</span>}</div><button className="rounded-md border border-info/35 px-3 py-1 text-xs text-info">Abrir</button></div></div>
+        const prazo = buildPrazoLabel(state);
+        const tone = state.isOverdue
+          ? "border-l-destructive"
+          : state.isDueSoon || state.pendingJudicial
+            ? "border-l-warning"
+            : state.incomplete
+              ? "border-l-info"
+              : state.isCumprida
+                ? "border-l-emerald-400"
+                : "border-l-border";
+
+        return <div key={r.id} role="button" tabIndex={0} title={`Abrir representação ${r.numero_ppe || r.id}`} aria-label={`Abrir representação ${r.numero_ppe || r.id}`} onClick={() => navigate({ to: "/representacoes/$representacaoId", params: { representacaoId: r.id } })} onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && navigate({ to: "/representacoes/$representacaoId", params: { representacaoId: r.id } })} className={`cursor-pointer rounded-xl border border-border/70 border-l-4 bg-card/80 px-3 py-2.5 transition hover:border-primary/40 hover:bg-muted/20 ${tone}`}>
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0 space-y-1">
+              <p className="truncate text-sm font-semibold">PPE {r.numero_ppe || "—"} • {r.tipo || "Não informado"}</p>
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                <span>⚖ {buildOperationalStatus(r)}</span>
+                <span>👤 {r.investigado || r.vitima || "—"}</span>
+                <span>🏛 {r.vara_juizo || "Não informado"}</span>
+                <span className={state.isOverdue ? "text-destructive" : state.isDueSoon ? "text-warning" : state.isCumprida ? "text-emerald-300" : "text-muted-foreground"}>🕒 {prazo.replace(/^[🟢🔴🟡]\s/u, "")}</span>
+              </div>
+              <div className="flex flex-wrap gap-1 pt-0.5">
+                {state.pendingJudicial && <span className="rounded border border-warning/40 bg-warning/10 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-warning">PENDENTE</span>}
+                {state.incomplete && <span className="rounded border border-info/40 bg-info/10 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-info">INCOMPLETA</span>}
+                {state.isSigilosa && <span className="rounded border border-purple-400/35 bg-purple-500/10 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide">SIGILOSA</span>}
+                {state.isOverdue && <span className="rounded border border-destructive/40 bg-destructive/10 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-destructive">URGENTE</span>}
+                {state.isSpecial && <span className="rounded border border-info/40 bg-info/10 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-info">ACOMP. ESPECIAL</span>}
+              </div>
+            </div>
+            <button className="shrink-0 rounded-full border border-border/80 px-2 py-0.5 text-xs text-muted-foreground" aria-label={`Abrir detalhe da representação ${r.numero_ppe || r.id}`} title={`Abrir detalhe da representação ${r.numero_ppe || r.id}`}>›</button>
+          </div>
         </div>;
       })}
       {!loading && filtered.length === 0 && <div className="rounded-xl border border-border bg-card/70 p-6 text-center text-sm text-muted-foreground">Nenhum resultado para a busca informada.</div>}
