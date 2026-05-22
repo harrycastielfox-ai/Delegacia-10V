@@ -198,7 +198,7 @@ function Representacoes() {
             <div className="min-w-0 space-y-1">
               <p className="truncate text-sm font-semibold">
                 PPE {r.numero_ppe || "—"} • {r.tipo || "Não informado"}
-                {isSigilosa && <Lock className="ml-1 inline h-3.5 w-3.5 align-[-1px] text-amber-300/80" aria-hidden="true" />}
+                {isSigilosa && <Lock className="ml-1 inline h-3.5 w-3.5 align-[-1px] text-red-400/80" aria-hidden="true" />}
               </p>
               <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
                 <span>⚖ {buildOperationalStatus(r)}</span>
