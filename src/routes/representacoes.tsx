@@ -1,7 +1,7 @@
 import { Outlet, createFileRoute, Link, useLocation, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { AppLayout } from "@/components/AppLayout";
-import { Search, Filter } from "lucide-react";
+import { Search, Filter, Lock } from "lucide-react";
 import { listRepresentacoes, type RepresentacaoRecord } from "@/lib/repositories/representacoesRepository";
 import { getCurrentProfile } from "@/lib/auth";
 import { canViewRepresentacoes } from "@/lib/authz";
@@ -196,7 +196,10 @@ function Representacoes() {
         return <div key={r.id} role="button" tabIndex={canOpenThisRecord ? 0 : -1} title={canOpenThisRecord ? `Abrir representação ${r.numero_ppe || r.id}` : blockedSigilosaTitle} aria-label={canOpenThisRecord ? `Abrir representação ${r.numero_ppe || r.id}` : blockedSigilosaTitle} onClick={() => canOpenThisRecord ? navigate({ to: "/representacoes/$representacaoId", params: { representacaoId: r.id } }) : alert(blockedSigilosaTitle)} onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && (canOpenThisRecord ? navigate({ to: "/representacoes/$representacaoId", params: { representacaoId: r.id } }) : alert(blockedSigilosaTitle))} className={`rounded-xl border border-border/70 border-l-[3px] bg-card/80 px-3 py-2.5 transition-colors duration-150 ${canOpenThisRecord ? "cursor-pointer hover:border-border hover:bg-accent/25" : "cursor-not-allowed opacity-90"} ${tone}`}>
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0 space-y-1">
-              <p className="truncate text-sm font-semibold">PPE {r.numero_ppe || "—"} • {r.tipo || "Não informado"}</p>
+              <p className="truncate text-sm font-semibold">
+                PPE {r.numero_ppe || "—"} • {r.tipo || "Não informado"}
+                {isSigilosa && <Lock className="ml-1 inline h-3.5 w-3.5 align-[-1px] text-amber-300/80" aria-hidden="true" />}
+              </p>
               <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
                 <span>⚖ {buildOperationalStatus(r)}</span>
                 <span>👤 {r.investigado || r.vitima || "—"}</span>
@@ -206,7 +209,7 @@ function Representacoes() {
               <div className="flex flex-wrap gap-1 pt-0.5">
                 {state.pendingJudicial && <span className="rounded border border-warning/40 bg-warning/10 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-warning">PENDENTE</span>}
                 {state.incomplete && <span className="rounded border border-info/40 bg-info/10 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-info">INCOMPLETA</span>}
-                {isSigilosa && <span className="rounded border border-purple-400/35 bg-purple-500/10 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide">🔒 SIGILOSA</span>}
+                {isSigilosa && <span className="rounded border border-purple-400/35 bg-purple-500/10 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide">SIGILOSA</span>}
                 {state.isOverdue && <span className="rounded border border-destructive/40 bg-destructive/10 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-destructive">URGENTE</span>}
                 {state.isSpecial && <span className="rounded border border-info/40 bg-info/10 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-info">ACOMP. ESPECIAL</span>}
               </div>
