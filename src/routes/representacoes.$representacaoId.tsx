@@ -229,12 +229,6 @@ function DetalheRepresentacao() {
             </div>
 
             <div className="flex flex-wrap items-center gap-2 xl:justify-end">
-              <span className={`inline-flex items-center rounded-md border px-2.5 py-1 text-[11px] font-semibold ${getStatusBadgeClass(item.status)}`}>
-                {statusAlias}
-              </span>
-              <span className="inline-flex items-center rounded-md border border-zinc-700 bg-zinc-900 px-2.5 py-1 text-[11px] font-medium text-zinc-200">
-                {situacaoOperacional}
-              </span>
               <button onClick={() => window.print()} className="rounded-md border border-border bg-muted/20 px-3 py-1.5 text-xs text-zinc-100 transition hover:bg-muted/35">
                 Imprimir
               </button>
