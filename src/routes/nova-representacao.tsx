@@ -160,19 +160,6 @@ function NovaRepresentacao() {
           {exibeCampoOutra && <Field label="Especificar representação" placeholder="Descreva o tipo de representação" value={tipoOutra} onChange={(e) => setTipoOutra(e.target.value)} />}
         </SectionCard>
 
-        <SectionCard title="Pessoas Envolvidas" subtitle="Partes relacionadas à medida representada.">
-          <Field label="Vítima" placeholder="Nome completo da vítima" value={vitima} onChange={(e) => setVitima(e.target.value)} />
-          <Field label="Investigado / Representado" placeholder="Nome do investigado" value={investigado} onChange={(e) => setInvestigado(e.target.value)} />
-          <Select label="Autor preso?" options={["Sim", "Não", "Não informado"]} value={autorPreso} onChange={setAutorPreso} />
-        </SectionCard>
-
-        <SectionCard title="Fundamentação e Finalidade" subtitle="Contexto técnico-jurídico e finalidade da medida.">
-          <TextArea label="Resumo dos fatos" placeholder="Descreva resumidamente os fatos que motivam a representação..." value={resumoFatos} onChange={(e) => setResumoFatos(e.target.value)} />
-          <TextArea label="Fundamentação da medida" placeholder="Informe a base jurídica e os elementos de convicção..." value={fundamentacao} onChange={(e) => setFundamentacao(e.target.value)} />
-          <TextArea label="Objetivo da representação" placeholder="Ex.: garantir produção de prova, preservar vítima, capturar investigado..." value={objetivo} onChange={(e) => setObjetivo(e.target.value)} />
-          <TextArea label="Diligências relacionadas" placeholder="Liste diligências já realizadas e pendentes relacionadas ao pedido..." value={diligenciasRelacionadas} onChange={(e) => setDiligenciasRelacionadas(e.target.value)} />
-        </SectionCard>
-
         <SectionCard title="Tramitação Judicial" subtitle="Acompanhamento da fase judicial, decisão e cumprimento.">
           <Select label="Status da Representação" options={statusRepresentacao} value={status} onChange={setStatus} />
           <InfoBox>{getStatusHint(status)}</InfoBox>
@@ -185,14 +172,11 @@ function NovaRepresentacao() {
           {exibeDecisaoEObservacoes && <TextArea label="Observações da decisão" placeholder="Observações sobre decisão, condicionantes e determinações judiciais..." value={observacoesDecisao} onChange={(e) => setObservacoesDecisao(e.target.value)} />}
         </SectionCard>
 
-        {exibeBlocoCumprimento && (
-          <SectionCard title="Cumprimento da Medida" subtitle="Registro operacional da execução da decisão.">
-            <Field label="Data do cumprimento" type="date" value={dataCumprimento} onChange={(e) => setDataCumprimento(e.target.value)} />
-            <Field label="Equipe responsável pelo cumprimento" placeholder="Ex.: Equipe Alpha" value={equipeCumprimento} onChange={(e) => setEquipeCumprimento(e.target.value)} />
-            <TextArea label="Resultado do cumprimento" placeholder="Ex.: positiva, parcial, sem êxito, com apreensões..." value={resultadoCumprimento} onChange={(e) => setResultadoCumprimento(e.target.value)} />
-            <TextArea label="Observações do cumprimento" placeholder="Detalhes operacionais adicionais..." value={observacoesCumprimento} onChange={(e) => setObservacoesCumprimento(e.target.value)} />
-          </SectionCard>
-        )}
+        <SectionCard title="Pessoas Envolvidas" subtitle="Partes relacionadas à medida representada.">
+          <Field label="Vítima" placeholder="Nome completo da vítima" value={vitima} onChange={(e) => setVitima(e.target.value)} />
+          <Field label="Investigado / Representado" placeholder="Nome do investigado" value={investigado} onChange={(e) => setInvestigado(e.target.value)} />
+          <Select label="Autor preso?" options={["Sim", "Não", "Não informado"]} value={autorPreso} onChange={setAutorPreso} />
+        </SectionCard>
 
         <SectionCard title="Controle Interno" subtitle="Priorização e acompanhamento interno da unidade.">
           <Select label="Prioridade operacional" options={["Normal", "Atenção", "Urgente"]} value={prioridadeOperacional} onChange={setPrioridadeOperacional} />
@@ -201,6 +185,22 @@ function NovaRepresentacao() {
           <Select label="Acompanhamento especial?" options={["Sim", "Não"]} value={acompanhamentoEspecial} onChange={setAcompanhamentoEspecial} />
           <TextArea label="Observações internas" placeholder="Anotações internas da unidade sobre o acompanhamento da representação..." value={observacoesInternas} onChange={(e) => setObservacoesInternas(e.target.value)} />
         </SectionCard>
+
+        <SectionCard title="Resumo e Fundamentação" subtitle="Contexto fático e base técnico-jurídica da medida.">
+          <TextArea label="Resumo dos fatos" placeholder="Descreva resumidamente os fatos que motivam a representação..." value={resumoFatos} onChange={(e) => setResumoFatos(e.target.value)} />
+          <TextArea label="Fundamentação da medida" placeholder="Informe a base jurídica e os elementos de convicção..." value={fundamentacao} onChange={(e) => setFundamentacao(e.target.value)} />
+          <TextArea label="Objetivo da representação" placeholder="Ex.: garantir produção de prova, preservar vítima, capturar investigado..." value={objetivo} onChange={(e) => setObjetivo(e.target.value)} />
+          <TextArea label="Diligências relacionadas" placeholder="Liste diligências já realizadas e pendentes relacionadas ao pedido..." value={diligenciasRelacionadas} onChange={(e) => setDiligenciasRelacionadas(e.target.value)} />
+        </SectionCard>
+
+        {exibeBlocoCumprimento && (
+          <SectionCard title="Cumprimento da Medida" subtitle="Registro operacional da execução da decisão.">
+            <Field label="Data do cumprimento" type="date" value={dataCumprimento} onChange={(e) => setDataCumprimento(e.target.value)} />
+            <Field label="Equipe responsável pelo cumprimento" placeholder="Ex.: Equipe Alpha" value={equipeCumprimento} onChange={(e) => setEquipeCumprimento(e.target.value)} />
+            <TextArea label="Resultado do cumprimento" placeholder="Ex.: positiva, parcial, sem êxito, com apreensões..." value={resultadoCumprimento} onChange={(e) => setResultadoCumprimento(e.target.value)} />
+            <TextArea label="Observações do cumprimento" placeholder="Detalhes operacionais adicionais..." value={observacoesCumprimento} onChange={(e) => setObservacoesCumprimento(e.target.value)} />
+          </SectionCard>
+        )}
 
         {erro && <div className="rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">{erro}</div>}
         {feedback && <div className="rounded-lg border border-success/30 bg-success/10 px-4 py-3 text-sm text-success">{feedback}</div>}
