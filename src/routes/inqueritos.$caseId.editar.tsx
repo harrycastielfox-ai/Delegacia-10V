@@ -190,13 +190,7 @@ function EditarInquerito() {
         medida_protetiva: medidaProtetiva.trim() || null,
         numero_processo_medida: numeroProcessoMedida.trim() || null,
         representacoes_legais: representacoesLegais.trim() || null,
-        visibilidade: visibilidade.trim() || null,
       };
-
-      console.debug("[DEV][Inqueritos][Editar] visibilidade enviada no update", {
-        inqueritoId: caseId,
-        visibilidade: payload.visibilidade,
-      });
 
       await updateInquerito(caseId, payload);
       try {
