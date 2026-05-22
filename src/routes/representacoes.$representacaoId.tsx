@@ -103,6 +103,21 @@ function getTimelineToneClass(tone: TimelineTone) {
   if (tone === "danger") return "border-rose-400/35 bg-rose-400/12 text-rose-200";
   return "border-zinc-500/45 bg-zinc-700/25 text-zinc-200";
 }
+function getTimelineIconCircleClass(event: TimelineEvent) {
+  if (event.key === "created") return "border-blue-400/35 bg-blue-500/15 text-blue-200";
+  if (event.key === "sent-judiciary") return "border-indigo-400/35 bg-indigo-500/15 text-indigo-200";
+  if (event.key === "deadline") {
+    if (event.tone === "danger") return "border-rose-400/40 bg-rose-500/15 text-rose-200";
+    if (event.tone === "success") return "border-emerald-400/35 bg-emerald-500/15 text-emerald-200";
+    return "border-amber-300/45 bg-amber-400/15 text-amber-100";
+  }
+  if (event.key === "judicial-decision") return "border-zinc-400/45 bg-zinc-700/35 text-zinc-100";
+  if (event.key === "special-tracking") return "border-violet-400/35 bg-violet-500/15 text-violet-200";
+  if (event.tone === "success") return "border-emerald-400/35 bg-emerald-500/15 text-emerald-200";
+  if (event.tone === "danger") return "border-rose-400/40 bg-rose-500/15 text-rose-200";
+  if (event.tone === "warning") return "border-amber-300/45 bg-amber-400/15 text-amber-100";
+  return "border-zinc-500/45 bg-zinc-700/35 text-zinc-100";
+}
 
 function buildTimelineEvents(item: RepresentacaoRecord): TimelineEvent[] {
   const events: Array<TimelineEvent & { sortTime: number }> = [];
@@ -406,21 +421,25 @@ function DetalheRepresentacao() {
           ))}
         </section>
 
-        <section className="rounded-xl border border-border/70 bg-card/55 p-4 shadow-[0_8px_24px_rgba(0,0,0,0.35)]">
+        <section className="rounded-xl border border-border/70 bg-card/55 p-5 shadow-[0_8px_24px_rgba(0,0,0,0.35)] sm:p-6">
           <h2 className={sectionTitleClass}>Linha do Tempo Operacional</h2>
           {timelineEvents.length === 0 ? (
             <div className="rounded-lg border border-border/40 bg-muted/5 px-4 py-3 text-sm text-zinc-400">
               Sem eventos operacionais automáticos disponíveis para esta representação.
             </div>
           ) : (
-            <ol className="relative ml-1 space-y-3 border-l border-zinc-700/70 pl-4">
+            <ol className="relative ml-1 space-y-4 border-l border-border/60 pl-5">
               {timelineEvents.map((event) => {
                 const dateLabel = formatDateBR(event.date);
+                const isCritical = event.tone === "danger" && event.key === "deadline" && Boolean(event.badge?.toLowerCase().includes("vencida"));
                 return (
-                  <li key={event.key} className="relative">
-                    <span className="absolute -left-[1.08rem] top-1.5 h-2.5 w-2.5 rounded-full border border-zinc-500/80 bg-zinc-900" />
+                  <li key={event.key} className="relative pl-6">
+                    <span
+                      className={`absolute -left-[1.64rem] top-0.5 inline-flex h-9 w-9 items-center justify-center rounded-full border text-sm shadow-[0_0_0_1px_rgba(0,0,0,0.45),0_8px_18px_rgba(0,0,0,0.35)] ${getTimelineIconCircleClass(event)}`}
+                    >
+                      {event.icon}
+                    </span>
                     <div className="flex flex-wrap items-start gap-x-2 gap-y-1">
-                      <span className="text-xs text-zinc-300">{event.icon}</span>
                       <p className="text-sm font-semibold text-zinc-100">{event.title}</p>
                       {event.badge ? (
                         <span className={`inline-flex items-center rounded-md border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${getTimelineToneClass(event.tone)}`}>
@@ -428,8 +447,8 @@ function DetalheRepresentacao() {
                         </span>
                       ) : null}
                     </div>
-                    {event.description ? <p className="mt-1 text-xs text-zinc-400">{event.description}</p> : null}
-                    <p className="mt-1 text-[11px] uppercase tracking-[0.12em] text-zinc-500">{dateLabel ?? "Data não informada"}</p>
+                    {event.description ? <p className="mt-1 text-xs text-muted-foreground">{event.description}</p> : null}
+                    <p className={`mt-1 text-xs ${isCritical ? "text-rose-300" : "text-zinc-400"}`}>{dateLabel ?? "Data não informada"}</p>
                   </li>
                 );
               })}
