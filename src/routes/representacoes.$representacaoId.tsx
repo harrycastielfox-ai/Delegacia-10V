@@ -238,7 +238,10 @@ function DetalheRepresentacao() {
               >
                 Editar
               </button>
-              <button onClick={() => setShowDeleteModal(true)} className="rounded-md border border-rose-400/35 bg-rose-400/10 px-3 py-1.5 text-xs text-rose-200 transition hover:bg-rose-400/15">
+              <button
+                onClick={() => setShowDeleteModal(true)}
+                className="rounded-md border border-rose-400/55 bg-rose-500/15 px-3 py-1.5 text-xs font-medium text-rose-100 shadow-[0_0_0_rgba(251,113,133,0)] transition-all duration-200 hover:border-rose-300/70 hover:bg-rose-500/25 hover:text-rose-50 hover:shadow-[0_0_14px_rgba(251,113,133,0.25)]"
+              >
                 Excluir
               </button>
             </div>
@@ -285,16 +288,30 @@ function DetalheRepresentacao() {
               </article>
             ))}
             <article className={sectionCardClass}>
-              <h2 className={sectionTitleClass}>Fundamentação e Finalidade</h2>
-              <div className="space-y-2.5">
-                {fundamentacaoCards.map(([title, value]) => (
-                  <div key={title} className="rounded-lg border border-border/40 bg-muted/5 px-3 py-2">
-                    <p className="text-[11px] uppercase tracking-wide text-zinc-500">{title}</p>
-                    <p className={`mt-1 text-sm whitespace-pre-wrap break-words ${isEmptyValue(value) ? "text-zinc-500" : "text-zinc-100"}`}>{withFallback(value)}</p>
-                  </div>
-                ))}
+              <h2 className={sectionTitleClass}>Pendências e Alertas</h2>
+              <div className="space-y-2">
+                <div className="rounded-lg border border-border/40 bg-muted/5 px-3 py-2">
+                  <p className="text-[11px] uppercase tracking-wide text-zinc-500">Prazo operacional</p>
+                  <p className="mt-1 text-sm text-zinc-100">{formatPrazoStatus(item)}</p>
+                </div>
+                <div className="rounded-lg border border-border/40 bg-muted/5 px-3 py-2">
+                  <p className="text-[11px] uppercase tracking-wide text-zinc-500">Sinalização</p>
+                  <p className="mt-1 text-sm text-zinc-300">
+                    {item.acompanhamento_especial ? "Acompanhamento especial ativo." : "Sem alertas operacionais marcados."}
+                  </p>
+                </div>
               </div>
             </article>
+            {fundamentacaoCards.map(([title, value]) => (
+              <article key={title} className={sectionCardClass}>
+                <h2 className={sectionTitleClass}>{title}</h2>
+                <div className="min-h-[112px] rounded-lg border border-border/40 bg-muted/5 px-4 py-3">
+                  <p className={`text-sm whitespace-pre-wrap break-words leading-relaxed ${isEmptyValue(value) ? "text-zinc-500" : "text-zinc-100"}`}>
+                    {withFallback(value)}
+                  </p>
+                </div>
+              </article>
+            ))}
           </div>
 
           <div className="space-y-4 self-start">
@@ -317,21 +334,6 @@ function DetalheRepresentacao() {
                 </div>
               </article>
             ))}
-            <article className={sectionCardClass}>
-              <h2 className={sectionTitleClass}>Pendências e Alertas</h2>
-              <div className="space-y-2">
-                <div className="rounded-lg border border-border/40 bg-muted/5 px-3 py-2">
-                  <p className="text-[11px] uppercase tracking-wide text-zinc-500">Prazo operacional</p>
-                  <p className="mt-1 text-sm text-zinc-100">{formatPrazoStatus(item)}</p>
-                </div>
-                <div className="rounded-lg border border-border/40 bg-muted/5 px-3 py-2">
-                  <p className="text-[11px] uppercase tracking-wide text-zinc-500">Sinalização</p>
-                  <p className="mt-1 text-sm text-zinc-300">
-                    {item.acompanhamento_especial ? "Acompanhamento especial ativo." : "Sem alertas operacionais marcados."}
-                  </p>
-                </div>
-              </div>
-            </article>
           </div>
         </section>
       </div>
