@@ -48,6 +48,7 @@ function EditarInquerito() {
   const [prioridade, setPrioridade] = useState("");
   const [situacao, setSituacao] = useState("");
   const [statusDiligencias, setStatusDiligencias] = useState("");
+  const [elucidado, setElucidado] = useState("");
   const [dataFato, setDataFato] = useState("");
   const [dataInstauracao, setDataInstauracao] = useState("");
   const [prazo, setPrazo] = useState("");
@@ -58,6 +59,9 @@ function EditarInquerito() {
   const [armaUtilizada, setArmaUtilizada] = useState("");
   const [bairro, setBairro] = useState("");
   const [distrito, setDistrito] = useState("");
+  const [motivacao, setMotivacao] = useState("");
+  const [vinculadoFaccao, setVinculadoFaccao] = useState("");
+  const [nomeFaccao, setNomeFaccao] = useState("");
   const [delegadoResponsavel, setDelegadoResponsavel] = useState("");
   const [equipe, setEquipe] = useState("");
   const [escrivao, setEscrivao] = useState("");
@@ -67,6 +71,7 @@ function EditarInquerito() {
   const [dataEnvioRelatorio, setDataEnvioRelatorio] = useState("");
   const [medidaProtetiva, setMedidaProtetiva] = useState("");
   const [numeroProcessoMedida, setNumeroProcessoMedida] = useState("");
+  const [representacoesLegais, setRepresentacoesLegais] = useState("");
 
   useEffect(() => {
     let ativo = true;
@@ -97,6 +102,7 @@ function EditarInquerito() {
         setPrioridade(inquerito.prioridade ?? "");
         setSituacao(inquerito.situacao ?? "");
         setStatusDiligencias(inquerito.status_diligencias ?? "");
+        setElucidado(inquerito.elucidado ?? "");
         setDataFato(toInputDate(inquerito.data_fato));
         setDataInstauracao(toInputDate(inquerito.data_instauracao));
         setPrazo(toInputDate(inquerito.prazo));
@@ -107,6 +113,9 @@ function EditarInquerito() {
         setArmaUtilizada(inquerito.arma_utilizada ?? "");
         setBairro(inquerito.bairro ?? "");
         setDistrito(inquerito.distrito ?? "");
+        setMotivacao(inquerito.motivacao ?? "");
+        setVinculadoFaccao(inquerito.faccao ?? "");
+        setNomeFaccao(inquerito.nome_faccao ?? "");
         setDelegadoResponsavel(inquerito.delegado_responsavel ?? "");
         setEquipe(inquerito.equipe ?? "");
         setEscrivao(inquerito.escrivao ?? "");
@@ -116,6 +125,7 @@ function EditarInquerito() {
         setDataEnvioRelatorio(toInputDate(inquerito.data_envio_relatorio));
         setMedidaProtetiva(inquerito.medida_protetiva ?? "");
         setNumeroProcessoMedida(inquerito.numero_processo_medida ?? "");
+        setRepresentacoesLegais(inquerito.representacoes_legais ?? "");
       } catch (error) {
         if (!ativo) return;
         setErro(getErrorMessage(error, "Erro ao carregar"));
@@ -147,6 +157,7 @@ function EditarInquerito() {
         prioridade: prioridade.trim() || null,
         situacao: situacao.trim() || null,
         status_diligencias: statusDiligencias.trim() || null,
+        elucidado: elucidado.trim() || null,
         data_fato: dataFato || null,
         data_instauracao: dataInstauracao || null,
         prazo: prazo || null,
@@ -157,6 +168,9 @@ function EditarInquerito() {
         arma_utilizada: armaUtilizada.trim() || null,
         bairro: bairro.trim() || null,
         distrito: distrito.trim() || null,
+        motivacao: motivacao.trim() || null,
+        faccao: vinculadoFaccao.trim() || null,
+        nome_faccao: nomeFaccao.trim() || null,
         delegado_responsavel: delegadoResponsavel.trim() || null,
         equipe: equipe.trim() || null,
         escrivao: escrivao.trim() || null,
@@ -166,6 +180,7 @@ function EditarInquerito() {
         data_envio_relatorio: dataEnvioRelatorio || null,
         medida_protetiva: medidaProtetiva.trim() || null,
         numero_processo_medida: numeroProcessoMedida.trim() || null,
+        representacoes_legais: representacoesLegais.trim() || null,
       });
       try {
         const auditResult = await logAuditoria({
@@ -226,11 +241,12 @@ function EditarInquerito() {
             <Field label="Nº Físico" value={numeroFisico} onChange={(e) => setNumeroFisico(e.target.value)} />
             <Field label="Nº B.O." value={numeroBo} onChange={(e) => setNumeroBo(e.target.value)} />
             <Field label="Tipificação" value={tipificacao} onChange={(e) => setTipificacao(e.target.value)} />
-            <Field label="Gravidade" value={gravidade} onChange={(e) => setGravidade(e.target.value)} />
-            <Field label="Tipo" value={tipo} onChange={(e) => setTipo(e.target.value)} />
-            <Field label="Prioridade" value={prioridade} onChange={(e) => setPrioridade(e.target.value)} />
-            <Field label="Situação" value={situacao} onChange={(e) => setSituacao(e.target.value)} />
-            <Field label="Status Diligências" value={statusDiligencias} onChange={(e) => setStatusDiligencias(e.target.value)} />
+            <Select label="Gravidade" value={gravidade} onChange={setGravidade} options={["Baixa", "Média", "Alta", "Gravíssima"]} />
+            <Select label="Tipo" value={tipo} onChange={setTipo} options={["IP", "APF", "TCO", "BOC", "AIAI"]} />
+            <Select label="Prioridade" value={prioridade} onChange={setPrioridade} options={["BAIXA", "MÉDIA", "ALTA", "URGENTE"]} />
+            <Select label="Situação" value={situacao} onChange={setSituacao} options={["Instaurado", "Em Andamento", "Para Relatar", "Relatado", "Aguardando Diligência", "Aguardando Laudo Pericial", "Requisição Ministerial/Judicial", "Remetido", "Arquivado"]} />
+            <Select label="Status Diligências" value={statusDiligencias} onChange={setStatusDiligencias} options={["Pendente", "Em Andamento", "Concluída", "Aguardando Terceiros", "Aguardando Aprovação/Revisão"]} />
+            <Select label="Elucidado" value={elucidado} onChange={setElucidado} options={["Sim", "Não"]} />
           </SectionCard>
 
           <SectionCard title="Datas e Envolvidos">
@@ -239,21 +255,25 @@ function EditarInquerito() {
             <Field label="Prazo" type="date" value={prazo} onChange={(e) => setPrazo(e.target.value)} />
             <Field label="Vítima" value={vitima} onChange={(e) => setVitima(e.target.value)} />
             <Field label="Investigado" value={investigado} onChange={(e) => setInvestigado(e.target.value)} />
-            <Field label="Réu Preso" value={reuPreso} onChange={(e) => setReuPreso(e.target.value)} />
-            <Field label="Houve Arma de Fogo" value={houveArmaFogo} onChange={(e) => setHouveArmaFogo(e.target.value)} />
+            <Select label="Réu Preso" value={reuPreso} onChange={setReuPreso} options={["Sim", "Não"]} />
+            <Select label="Houve Arma de Fogo" value={houveArmaFogo} onChange={setHouveArmaFogo} options={["Sim", "Não"]} />
             <Field label="Arma Utilizada" value={armaUtilizada} onChange={(e) => setArmaUtilizada(e.target.value)} />
           </SectionCard>
 
           <SectionCard title="Operacional e Relatório">
             <Field label="Bairro" value={bairro} onChange={(e) => setBairro(e.target.value)} />
             <Field label="Distrito" value={distrito} onChange={(e) => setDistrito(e.target.value)} />
+            <Field label="Motivação" value={motivacao} onChange={(e) => setMotivacao(e.target.value)} />
+            <Select label="Vinculado a Facção" value={vinculadoFaccao} onChange={setVinculadoFaccao} options={["Sim", "Não", "A definir"]} />
+            <Field label="Nome da Facção" value={nomeFaccao} onChange={(e) => setNomeFaccao(e.target.value)} />
             <Field label="Delegado Responsável" value={delegadoResponsavel} onChange={(e) => setDelegadoResponsavel(e.target.value)} />
             <Field label="Equipe" value={equipe} onChange={(e) => setEquipe(e.target.value)} />
             <Field label="Escrivão" value={escrivao} onChange={(e) => setEscrivao(e.target.value)} />
-            <Field label="Relatório Enviado" value={relatorioEnviado} onChange={(e) => setRelatorioEnviado(e.target.value)} />
+            <Select label="Relatório Enviado" value={relatorioEnviado} onChange={setRelatorioEnviado} options={["Sim", "Não"]} />
             <Field label="Data Envio Relatório" type="date" value={dataEnvioRelatorio} onChange={(e) => setDataEnvioRelatorio(e.target.value)} />
-            <Field label="Medida Protetiva" value={medidaProtetiva} onChange={(e) => setMedidaProtetiva(e.target.value)} />
+            <Select label="Medida Protetiva" value={medidaProtetiva} onChange={setMedidaProtetiva} options={["Sim", "Não"]} />
             <Field label="Nº Processo Medida" value={numeroProcessoMedida} onChange={(e) => setNumeroProcessoMedida(e.target.value)} />
+            <Field label="Representações Legais" type="number" value={representacoesLegais} onChange={(e) => setRepresentacoesLegais(e.target.value)} />
             <TextArea label="Diligências Pendentes" value={diligenciasPendentes} onChange={(e) => setDiligenciasPendentes(e.target.value)} />
             <TextArea label="Observações" value={observacoes} onChange={(e) => setObservacoes(e.target.value)} />
           </SectionCard>
@@ -299,6 +319,24 @@ function TextArea({ label, ...props }: { label: string } & TextareaHTMLAttribute
     <div className="md:col-span-2 lg:col-span-3">
       <label className="block text-xs font-bold tracking-wider text-muted-foreground mb-2">{label.toUpperCase()}</label>
       <textarea {...props} rows={4} className="w-full bg-card border border-border rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-primary" />
+    </div>
+  );
+}
+
+function Select({ label, options, value, onChange }: { label: string; options: string[]; value?: string; onChange?: (value: string) => void }) {
+  return (
+    <div>
+      <label className="block text-xs font-bold tracking-wider text-muted-foreground mb-2">{label.toUpperCase()}</label>
+      <select
+        value={value}
+        onChange={(e) => onChange?.(e.target.value)}
+        className="w-full bg-card border border-border rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-primary"
+      >
+        <option value="">Selecione…</option>
+        {options.map((option) => (
+          <option key={option} value={option}>{option}</option>
+        ))}
+      </select>
     </div>
   );
 }
