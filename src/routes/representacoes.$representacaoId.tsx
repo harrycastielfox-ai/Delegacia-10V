@@ -60,6 +60,24 @@ function getPrioridadeBadgeClass(prioridade?: string | null) {
   if (normalized.includes("baixa") || normalized.includes("normal")) return "border-emerald-300/35 bg-emerald-300/10 text-emerald-100";
   return "border-zinc-500/40 bg-zinc-800/70 text-zinc-200";
 }
+function isEmptyValue(value?: string | null) {
+  return !value?.trim();
+}
+function formatPrazoStatus(item: RepresentacaoRecord) {
+  if (item.data_cumprimento) return "Cumprida";
+  if (!item.data_vencimento) return "Sem vencimento";
+  const due = new Date(item.data_vencimento);
+  const now = new Date();
+  const dueDate = new Date(due.getFullYear(), due.getMonth(), due.getDate());
+  const nowDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const diffDays = Math.round((dueDate.getTime() - nowDate.getTime()) / 86400000);
+  if (diffDays > 0) return `Vence em ${diffDays} dia${diffDays === 1 ? "" : "s"}`;
+  if (diffDays < 0) {
+    const late = Math.abs(diffDays);
+    return `Vencida há ${late} dia${late === 1 ? "" : "s"}`;
+  }
+  return "Vence hoje";
+}
 
 function DetalheRepresentacao() {
   const { representacaoId } = Route.useParams();
@@ -138,11 +156,11 @@ function DetalheRepresentacao() {
   const situacaoOperacional = getSituacaoOperacional(item.status);
   const prioridadeText = withFallback(item.prioridade_operacional);
   const sectionCardClass =
-    "self-start rounded-xl border border-emerald-400/25 bg-zinc-950/95 p-4 shadow-[0_0_0_1px_rgba(16,185,129,0.1),0_10px_26px_rgba(0,0,0,0.42)] transition-colors duration-200 hover:border-emerald-300/35";
-  const sectionTitleClass = "mb-3 text-[11px] font-bold uppercase tracking-[0.2em] text-emerald-300";
+    "self-start rounded-xl border border-border/70 bg-card/60 p-4 shadow-[0_8px_24px_rgba(0,0,0,0.35)] transition-colors duration-200 hover:border-border";
+  const sectionTitleClass = "mb-3 text-[11px] font-bold uppercase tracking-[0.16em] text-zinc-300";
   const infoRowClass = "grid gap-1 py-2.5 sm:grid-cols-[190px_1fr] sm:gap-3";
   const summaryCardClass =
-    "self-start rounded-lg border border-emerald-400/25 bg-zinc-950/90 px-3 py-2.5 shadow-[inset_0_0_0_1px_rgba(16,185,129,0.07)] transition-colors duration-200 hover:border-emerald-300/35";
+    "self-start rounded-lg border border-border/70 bg-muted/10 px-3 py-2.5 transition-colors duration-200 hover:border-border";
   const cardSections: Array<{ title: string; items: Array<[string, string | null | undefined]> }> = [
     {
       title: "Identificação Judicial",
@@ -197,32 +215,32 @@ function DetalheRepresentacao() {
   return (
     <AppLayout>
       <div className="space-y-4">
-        <header className="rounded-xl border border-emerald-400/25 bg-zinc-950/95 p-4 shadow-[0_0_0_1px_rgba(16,185,129,0.1),0_10px_30px_rgba(0,0,0,0.45)]">
-          <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+        <header className="rounded-xl border border-border/70 bg-card/60 p-4 shadow-[0_10px_30px_rgba(0,0,0,0.4)]">
+          <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
             <div className="min-w-0">
-              <Link to="/representacoes" className="mb-2 inline-flex items-center rounded-md border border-emerald-400/25 bg-emerald-400/10 px-2.5 py-1 text-[11px] text-emerald-100 transition hover:bg-emerald-400/15">
+              <Link to="/representacoes" className="mb-2 inline-flex items-center rounded-md border border-border bg-muted/20 px-2.5 py-1 text-[11px] text-zinc-200 transition hover:bg-muted/35">
                 ← Voltar para lista
               </Link>
-              <h1 className="text-2xl font-extrabold break-words text-zinc-100">Representação</h1>
+              <h1 className="text-2xl font-bold break-words text-zinc-100">Representação</h1>
               <p className="mt-0.5 text-sm break-words text-zinc-400">
                 {subtitleParts.length > 0 ? subtitleParts.join(" • ") : "Detalhes da representação cadastrada"}
               </p>
-              <p className="mt-1.5 text-sm break-words text-emerald-200/90">{item.numero_ppe ? `PPE/Procedimento: ${item.numero_ppe}` : `Processo/PPE: ${withFallback(item.processo_judicial)}`}</p>
+              <p className="mt-1.5 text-sm break-words text-zinc-300">{item.numero_ppe ? `PPE/Procedimento: ${item.numero_ppe}` : `Processo/PPE: ${withFallback(item.processo_judicial)}`}</p>
             </div>
 
-            <div className="flex flex-wrap items-center gap-2 md:justify-end">
+            <div className="flex flex-wrap items-center gap-2 xl:justify-end">
               <span className={`inline-flex items-center rounded-md border px-2.5 py-1 text-[11px] font-semibold ${getStatusBadgeClass(item.status)}`}>
                 {statusAlias}
               </span>
               <span className="inline-flex items-center rounded-md border border-zinc-700 bg-zinc-900 px-2.5 py-1 text-[11px] font-medium text-zinc-200">
                 {situacaoOperacional}
               </span>
-              <button onClick={() => window.print()} className="rounded-md border border-emerald-400/30 bg-emerald-400/10 px-3 py-1.5 text-xs text-emerald-100 transition hover:bg-emerald-400/15">
+              <button onClick={() => window.print()} className="rounded-md border border-border bg-muted/20 px-3 py-1.5 text-xs text-zinc-100 transition hover:bg-muted/35">
                 Imprimir
               </button>
               <button
                 onClick={() => navigate({ to: "/representacoes/$representacaoId/editar", params: { representacaoId: item.id } })}
-                className="rounded-md border border-emerald-400/35 px-3 py-1.5 text-xs text-emerald-100 transition hover:bg-emerald-400/15"
+                className="rounded-md border border-border px-3 py-1.5 text-xs text-zinc-100 transition hover:bg-muted/35"
               >
                 Editar
               </button>
@@ -233,16 +251,18 @@ function DetalheRepresentacao() {
           </div>
         </header>
 
-        <section className="grid items-start gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <section className="grid items-start gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
           {[
-            ["Tipo", withFallback(item.tipo), "text-zinc-100"],
             ["Status judicial", statusAlias, "text-emerald-100"],
+            ["Situação", situacaoOperacional.replace("Situação: ", ""), "text-zinc-100"],
             ["Prioridade", prioridadeText, "text-amber-100"],
-            ["Processo/PPE", withFallback(item.processo_judicial || item.numero_ppe), "text-zinc-100"],
+            ["Prazo", formatPrazoStatus(item), "text-zinc-100"],
+            ["Acomp. especial", item.acompanhamento_especial == null ? "—" : item.acompanhamento_especial ? "Sim" : "Não", "text-zinc-100"],
+            ["Sigilosa", withFallback(item.pedido_sigiloso), "text-zinc-100"],
           ].map(([label, value, valueClass]) => (
             <article key={label} className={summaryCardClass}>
               <p className="text-[10px] uppercase tracking-[0.18em] text-zinc-500">{label}</p>
-              {label === "Status" ? (
+              {label === "Status judicial" ? (
                 <span className={`mt-1 inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-semibold ${getStatusBadgeClass(item.status)}`}>{value}</span>
               ) : label === "Prioridade" ? (
                 <span className={`mt-1 inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-semibold ${getPrioridadeBadgeClass(item.prioridade_operacional)}`}>
@@ -255,28 +275,39 @@ function DetalheRepresentacao() {
           ))}
         </section>
 
-        <section className="grid items-start gap-4 md:grid-cols-2">
+        <section className="grid items-start gap-4 xl:grid-cols-[1.15fr_0.85fr]">
           <div className="space-y-4 self-start">
-            {[cardSections[0], cardSections[3]].map(({ title, items }) => (
+            {[cardSections[0], cardSections[1]].map(({ title, items }) => (
               <article key={title} className={sectionCardClass}>
                 <h2 className={sectionTitleClass}>{title}</h2>
-                <div className="divide-y divide-emerald-500/10">
+                <div className="divide-y divide-border/40">
                   {items.map(([label, value]) => (
                     <div key={label} className={infoRowClass}>
                       <p className="text-[11px] uppercase tracking-wide text-zinc-500">{label}</p>
-                      <p className="text-sm text-zinc-100 whitespace-pre-wrap break-words">{withFallback(value)}</p>
+                      <p className={`text-sm whitespace-pre-wrap break-words ${isEmptyValue(value) ? "text-zinc-500" : "text-zinc-100"}`}>{withFallback(value)}</p>
                     </div>
                   ))}
                 </div>
               </article>
             ))}
+            <article className={sectionCardClass}>
+              <h2 className={sectionTitleClass}>Fundamentação e Finalidade</h2>
+              <div className="space-y-2.5">
+                {fundamentacaoCards.map(([title, value]) => (
+                  <div key={title} className="rounded-lg border border-border/40 bg-muted/5 px-3 py-2">
+                    <p className="text-[11px] uppercase tracking-wide text-zinc-500">{title}</p>
+                    <p className={`mt-1 text-sm whitespace-pre-wrap break-words ${isEmptyValue(value) ? "text-zinc-500" : "text-zinc-100"}`}>{withFallback(value)}</p>
+                  </div>
+                ))}
+              </div>
+            </article>
           </div>
 
           <div className="space-y-4 self-start">
-            {[cardSections[1], cardSections[2]].map(({ title, items }) => (
+            {[cardSections[2], cardSections[3]].map(({ title, items }) => (
               <article key={title} className={sectionCardClass}>
                 <h2 className={sectionTitleClass}>{title}</h2>
-                <div className="divide-y divide-emerald-500/10">
+                <div className="divide-y divide-border/40">
                   {items.map(([label, value]) => (
                     <div key={label} className="grid gap-1 py-2.5 sm:grid-cols-[170px_1fr] sm:gap-3">
                       <p className="text-[11px] uppercase tracking-wide text-zinc-500">{label}</p>
@@ -285,23 +316,29 @@ function DetalheRepresentacao() {
                           {withFallback(value)}
                         </span>
                       ) : (
-                        <p className="text-sm text-zinc-100 whitespace-pre-wrap break-words">{withFallback(value)}</p>
+                        <p className={`text-sm whitespace-pre-wrap break-words ${isEmptyValue(value) ? "text-zinc-500" : "text-zinc-100"}`}>{withFallback(value)}</p>
                       )}
                     </div>
                   ))}
                 </div>
               </article>
             ))}
-          </div>
-        </section>
-
-        <section className="grid items-start gap-3 md:grid-cols-2">
-          {fundamentacaoCards.map(([title, value]) => (
-            <article key={title} className={sectionCardClass}>
-              <h2 className={sectionTitleClass}>{title}</h2>
-              <p className="text-sm text-zinc-100 whitespace-pre-wrap break-words">{withFallback(value)}</p>
+            <article className={sectionCardClass}>
+              <h2 className={sectionTitleClass}>Pendências e Alertas</h2>
+              <div className="space-y-2">
+                <div className="rounded-lg border border-border/40 bg-muted/5 px-3 py-2">
+                  <p className="text-[11px] uppercase tracking-wide text-zinc-500">Prazo operacional</p>
+                  <p className="mt-1 text-sm text-zinc-100">{formatPrazoStatus(item)}</p>
+                </div>
+                <div className="rounded-lg border border-border/40 bg-muted/5 px-3 py-2">
+                  <p className="text-[11px] uppercase tracking-wide text-zinc-500">Sinalização</p>
+                  <p className="mt-1 text-sm text-zinc-300">
+                    {item.acompanhamento_especial ? "Acompanhamento especial ativo." : "Sem alertas operacionais marcados."}
+                  </p>
+                </div>
+              </div>
             </article>
-          ))}
+          </div>
         </section>
       </div>
 
