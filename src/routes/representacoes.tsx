@@ -5,6 +5,7 @@ import { Search, Filter } from "lucide-react";
 import { listRepresentacoes, type RepresentacaoRecord } from "@/lib/repositories/representacoesRepository";
 import { getCurrentProfile } from "@/lib/auth";
 import { canViewRepresentacoes } from "@/lib/authz";
+import { canAccessSigilosa, isRepresentacaoSigilosa } from "@/lib/representacoesSigilo";
 
 export const Route = createFileRoute("/representacoes")({ component: Representacoes });
 
@@ -88,8 +89,9 @@ function Representacoes() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [restricted, setRestricted] = useState(false);
+  const [canOpenSigilosas, setCanOpenSigilosas] = useState(false);
 
-  useEffect(() => { if (!isRepresentacoesIndex) return; (async () => { try { const currentProfile = await getCurrentProfile(); if (!canViewRepresentacoes(currentProfile)) { setRestricted(true); return; } setRestricted(false); setLoading(true); setError(""); setRepresentacoes(await listRepresentacoes()); } catch { setError("Não foi possível carregar representações agora."); } finally { setLoading(false); } })(); }, [isRepresentacoesIndex]);
+  useEffect(() => { if (!isRepresentacoesIndex) return; (async () => { try { const currentProfile = await getCurrentProfile(); if (!canViewRepresentacoes(currentProfile)) { setRestricted(true); return; } setRestricted(false); setCanOpenSigilosas(canAccessSigilosa(currentProfile)); setLoading(true); setError(""); setRepresentacoes(await listRepresentacoes()); } catch { setError("Não foi possível carregar representações agora."); } finally { setLoading(false); } })(); }, [isRepresentacoesIndex]);
 
   const filtered = useMemo(() => {
     const s = normalizeText(searchTerm);
@@ -177,6 +179,9 @@ function Representacoes() {
     <div className="space-y-2">
       {filtered.map((r) => {
         const state = getRepresentacaoState(r);
+        const isSigilosa = isRepresentacaoSigilosa(r) || state.isSigilosa;
+        const canOpenThisRecord = !isSigilosa || canOpenSigilosas;
+        const blockedSigilosaTitle = "Representação sigilosa — acesso restrito";
         const prazo = buildPrazoLabel(state);
         const tone = state.isOverdue
           ? "border-l-red-700/70"
@@ -188,7 +193,7 @@ function Representacoes() {
                 ? "border-l-emerald-500/50"
                 : "border-l-border/40";
 
-        return <div key={r.id} role="button" tabIndex={0} title={`Abrir representação ${r.numero_ppe || r.id}`} aria-label={`Abrir representação ${r.numero_ppe || r.id}`} onClick={() => navigate({ to: "/representacoes/$representacaoId", params: { representacaoId: r.id } })} onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && navigate({ to: "/representacoes/$representacaoId", params: { representacaoId: r.id } })} className={`cursor-pointer rounded-xl border border-border/70 border-l-[3px] bg-card/80 px-3 py-2.5 transition-colors duration-150 hover:border-border hover:bg-accent/25 ${tone}`}>
+        return <div key={r.id} role="button" tabIndex={canOpenThisRecord ? 0 : -1} title={canOpenThisRecord ? `Abrir representação ${r.numero_ppe || r.id}` : blockedSigilosaTitle} aria-label={canOpenThisRecord ? `Abrir representação ${r.numero_ppe || r.id}` : blockedSigilosaTitle} onClick={() => canOpenThisRecord ? navigate({ to: "/representacoes/$representacaoId", params: { representacaoId: r.id } }) : alert(blockedSigilosaTitle)} onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && (canOpenThisRecord ? navigate({ to: "/representacoes/$representacaoId", params: { representacaoId: r.id } }) : alert(blockedSigilosaTitle))} className={`rounded-xl border border-border/70 border-l-[3px] bg-card/80 px-3 py-2.5 transition-colors duration-150 ${canOpenThisRecord ? "cursor-pointer hover:border-border hover:bg-accent/25" : "cursor-not-allowed opacity-90"} ${tone}`}>
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0 space-y-1">
               <p className="truncate text-sm font-semibold">PPE {r.numero_ppe || "—"} • {r.tipo || "Não informado"}</p>
@@ -201,12 +206,12 @@ function Representacoes() {
               <div className="flex flex-wrap gap-1 pt-0.5">
                 {state.pendingJudicial && <span className="rounded border border-warning/40 bg-warning/10 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-warning">PENDENTE</span>}
                 {state.incomplete && <span className="rounded border border-info/40 bg-info/10 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-info">INCOMPLETA</span>}
-                {state.isSigilosa && <span className="rounded border border-purple-400/35 bg-purple-500/10 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide">SIGILOSA</span>}
+                {isSigilosa && <span className="rounded border border-purple-400/35 bg-purple-500/10 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide">🔒 SIGILOSA</span>}
                 {state.isOverdue && <span className="rounded border border-destructive/40 bg-destructive/10 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-destructive">URGENTE</span>}
                 {state.isSpecial && <span className="rounded border border-info/40 bg-info/10 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-info">ACOMP. ESPECIAL</span>}
               </div>
             </div>
-            <button className="shrink-0 rounded-full border border-border/80 px-2 py-0.5 text-xs text-muted-foreground" aria-label={`Abrir detalhe da representação ${r.numero_ppe || r.id}`} title={`Abrir detalhe da representação ${r.numero_ppe || r.id}`}>›</button>
+            <button disabled={!canOpenThisRecord} className="shrink-0 rounded-full border border-border/80 px-2 py-0.5 text-xs text-muted-foreground disabled:cursor-not-allowed disabled:opacity-60" aria-label={canOpenThisRecord ? `Abrir detalhe da representação ${r.numero_ppe || r.id}` : blockedSigilosaTitle} title={canOpenThisRecord ? `Abrir detalhe da representação ${r.numero_ppe || r.id}` : blockedSigilosaTitle}>›</button>
           </div>
         </div>;
       })}
