@@ -302,18 +302,6 @@ function DetalheRepresentacao() {
                 </div>
               </div>
             </article>
-            <div className="grid grid-cols-1 items-start gap-4">
-              {fundamentacaoCards.map(([title, value]) => (
-                <article key={title} className={sectionCardClass}>
-                  <h2 className={sectionTitleClass}>{title}</h2>
-                  <div className="min-h-[112px] rounded-lg border border-border/40 bg-muted/5 px-4 py-3">
-                    <p className={`text-sm whitespace-pre-wrap break-words leading-relaxed ${isEmptyValue(value) ? "text-zinc-500" : "text-zinc-100"}`}>
-                      {withFallback(value)}
-                    </p>
-                  </div>
-                </article>
-              ))}
-            </div>
           </div>
 
           <div className="space-y-4 self-start">
@@ -337,6 +325,23 @@ function DetalheRepresentacao() {
               </article>
             ))}
           </div>
+        </section>
+
+        <section className="space-y-4">
+          {fundamentacaoCards.map(([title, value]) => (
+            <article key={title} className={sectionCardClass}>
+              <h2 className={sectionTitleClass}>{title}</h2>
+              <div className="min-w-0 max-w-full min-h-[124px] overflow-hidden rounded-lg border border-border/40 bg-muted/5 px-4 py-3">
+                <p
+                  className={`min-w-0 max-w-full overflow-hidden whitespace-pre-wrap break-words [overflow-wrap:anywhere] text-sm leading-relaxed ${
+                    isEmptyValue(value) ? "text-zinc-500" : "text-zinc-100"
+                  }`}
+                >
+                  {withFallback(value)}
+                </p>
+              </div>
+            </article>
+          ))}
         </section>
       </div>
 
