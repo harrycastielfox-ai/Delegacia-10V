@@ -4,6 +4,7 @@ import { AppLayout } from "@/components/AppLayout";
 import { getRepresentacaoById, softDeleteRepresentacao, type RepresentacaoRecord } from "@/lib/repositories/representacoesRepository";
 import { getCurrentProfile } from "@/lib/auth";
 import { canViewRepresentacoes } from "@/lib/authz";
+import { canAccessSigilosa, isRepresentacaoSigilosa } from "@/lib/representacoesSigilo";
 
 export const Route = createFileRoute("/representacoes/$representacaoId")({ component: DetalheRepresentacao });
 
@@ -167,6 +168,7 @@ function DetalheRepresentacao() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [error, setError] = useState("");
   const [restricted, setRestricted] = useState(false);
+  const [sigiloRestricted, setSigiloRestricted] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -174,6 +176,7 @@ function DetalheRepresentacao() {
     (async () => {
       setLoading(true);
       setError("");
+      setSigiloRestricted(false);
 
       const currentProfile = await getCurrentProfile();
       if (!canViewRepresentacoes(currentProfile)) {
@@ -186,6 +189,14 @@ function DetalheRepresentacao() {
       try {
         const data = await getRepresentacaoById(representacaoId);
         if (!active) return;
+        const isSigilosa = isRepresentacaoSigilosa(data);
+        const userCanAccessSigilo = canAccessSigilosa(currentProfile);
+        if (isSigilosa && !userCanAccessSigilo) {
+          setSigiloRestricted(true);
+          setItem(null);
+          return;
+        }
+        setSigiloRestricted(false);
         setItem(data);
       } catch (err: unknown) {
         if (!active) return;
@@ -209,6 +220,7 @@ function DetalheRepresentacao() {
   if (restricted) return <AppLayout><div className="space-y-4"><h1 className="text-xl font-bold">Acesso restrito</h1><p className="text-sm text-muted-foreground">Seu perfil não possui permissão para acessar Representações.</p><Link to="/modulos" className="px-4 py-2 border border-border rounded-lg inline-block">Voltar</Link></div></AppLayout>;
   if (loading) return <AppLayout>Carregando representação...</AppLayout>;
   if (error) return <AppLayout>{error}</AppLayout>;
+  if (sigiloRestricted) return <AppLayout><div className="space-y-4"><h1 className="text-xl font-bold">🔒 Representação sigilosa</h1><p className="text-sm text-muted-foreground">Representação sigilosa. Acesso restrito a Delegado, Admin ou Atlas.</p><Link to="/representacoes" className="px-4 py-2 border border-border rounded-lg inline-block">Voltar para lista</Link></div></AppLayout>;
   if (!item) return <AppLayout><div className="space-y-4"><h1 className="text-xl font-bold">Representação não encontrada ou removida</h1><p className="text-sm text-muted-foreground">Esta representação não está mais disponível para visualização.</p><Link to="/representacoes" className="px-4 py-2 border border-border rounded-lg inline-block">Voltar</Link></div></AppLayout>;
 
   const remove = async () => {
@@ -298,7 +310,7 @@ function DetalheRepresentacao() {
               <Link to="/representacoes" className="mb-2 inline-flex items-center rounded-md border border-border bg-muted/20 px-2.5 py-1 text-[11px] text-zinc-200 transition hover:bg-muted/35">
                 ← Voltar para lista
               </Link>
-              <h1 className="text-2xl font-bold break-words text-zinc-100">Representação</h1>
+              <h1 className="text-2xl font-bold break-words text-zinc-100">{isRepresentacaoSigilosa(item) ? "🔒 Representação sigilosa" : "Representação"}</h1>
               <p className="mt-0.5 text-sm break-words text-zinc-400">
                 {subtitleParts.length > 0 ? subtitleParts.join(" • ") : "Detalhes da representação cadastrada"}
               </p>
