@@ -302,16 +302,18 @@ function DetalheRepresentacao() {
                 </div>
               </div>
             </article>
-            {fundamentacaoCards.map(([title, value]) => (
-              <article key={title} className={sectionCardClass}>
-                <h2 className={sectionTitleClass}>{title}</h2>
-                <div className="min-h-[112px] rounded-lg border border-border/40 bg-muted/5 px-4 py-3">
-                  <p className={`text-sm whitespace-pre-wrap break-words leading-relaxed ${isEmptyValue(value) ? "text-zinc-500" : "text-zinc-100"}`}>
-                    {withFallback(value)}
-                  </p>
-                </div>
-              </article>
-            ))}
+            <div className="grid items-start gap-4 md:grid-cols-2">
+              {fundamentacaoCards.map(([title, value]) => (
+                <article key={title} className={sectionCardClass}>
+                  <h2 className={sectionTitleClass}>{title}</h2>
+                  <div className="min-h-[112px] rounded-lg border border-border/40 bg-muted/5 px-4 py-3">
+                    <p className={`text-sm whitespace-pre-wrap break-words leading-relaxed ${isEmptyValue(value) ? "text-zinc-500" : "text-zinc-100"}`}>
+                      {withFallback(value)}
+                    </p>
+                  </div>
+                </article>
+              ))}
+            </div>
           </div>
 
           <div className="space-y-4 self-start">
