@@ -179,16 +179,16 @@ function Representacoes() {
         const state = getRepresentacaoState(r);
         const prazo = buildPrazoLabel(state);
         const tone = state.isOverdue
-          ? "border-l-red-900/40"
+          ? "border-l-red-700/70"
           : state.isDueSoon || state.pendingJudicial
-            ? "border-l-amber-800/40"
+            ? "border-l-amber-500/65"
             : state.incomplete
-              ? "border-l-sky-800/35"
+              ? "border-l-sky-500/55"
               : state.isCumprida
-                ? "border-l-emerald-900/35"
-                : "border-l-border";
+                ? "border-l-emerald-500/50"
+                : "border-l-border/40";
 
-        return <div key={r.id} role="button" tabIndex={0} title={`Abrir representação ${r.numero_ppe || r.id}`} aria-label={`Abrir representação ${r.numero_ppe || r.id}`} onClick={() => navigate({ to: "/representacoes/$representacaoId", params: { representacaoId: r.id } })} onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && navigate({ to: "/representacoes/$representacaoId", params: { representacaoId: r.id } })} className={`cursor-pointer rounded-xl border border-border/70 border-l-2 bg-card/80 px-3 py-2.5 transition-colors duration-150 hover:border-border hover:bg-accent/20 ${tone}`}>
+        return <div key={r.id} role="button" tabIndex={0} title={`Abrir representação ${r.numero_ppe || r.id}`} aria-label={`Abrir representação ${r.numero_ppe || r.id}`} onClick={() => navigate({ to: "/representacoes/$representacaoId", params: { representacaoId: r.id } })} onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && navigate({ to: "/representacoes/$representacaoId", params: { representacaoId: r.id } })} className={`cursor-pointer rounded-xl border border-border/70 border-l-[3px] bg-card/80 px-3 py-2.5 transition-colors duration-150 hover:border-border hover:bg-accent/25 ${tone}`}>
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0 space-y-1">
               <p className="truncate text-sm font-semibold">PPE {r.numero_ppe || "—"} • {r.tipo || "Não informado"}</p>
