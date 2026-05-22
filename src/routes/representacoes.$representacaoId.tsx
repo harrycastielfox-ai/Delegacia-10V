@@ -79,6 +79,67 @@ function formatPrazoStatus(item: RepresentacaoRecord) {
   return "Vence hoje";
 }
 
+type TimelineTone = "neutral" | "success" | "warning" | "danger";
+type TimelineEvent = {
+  key: string;
+  title: string;
+  description?: string;
+  date?: string;
+  badge?: string;
+  tone: TimelineTone;
+  icon: string;
+};
+
+function formatDateBR(value?: string | null) {
+  if (!value) return null;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  return date.toLocaleDateString("pt-BR");
+}
+
+function getTimelineToneClass(tone: TimelineTone) {
+  if (tone === "success") return "border-emerald-400/30 bg-emerald-400/12 text-emerald-200";
+  if (tone === "warning") return "border-amber-300/35 bg-amber-300/12 text-amber-100";
+  if (tone === "danger") return "border-rose-400/35 bg-rose-400/12 text-rose-200";
+  return "border-zinc-500/45 bg-zinc-700/25 text-zinc-200";
+}
+
+function buildTimelineEvents(item: RepresentacaoRecord): TimelineEvent[] {
+  const events: Array<TimelineEvent & { sortTime: number }> = [];
+  const addEvent = (event: TimelineEvent) => {
+    const sortTime = event.date ? new Date(event.date).getTime() : Number.POSITIVE_INFINITY;
+    events.push({ ...event, sortTime: Number.isNaN(sortTime) ? Number.POSITIVE_INFINITY : sortTime });
+  };
+
+  if (item.created_at) addEvent({ key: "created", title: "Representação cadastrada", description: "Registro inicial da representação no sistema.", date: item.created_at, tone: "neutral", icon: "◦" });
+  if (item.data_envio_judiciario) addEvent({ key: "sent-judiciary", title: "Enviada ao Judiciário", description: "Tramitação judicial iniciada.", date: item.data_envio_judiciario, tone: "neutral", icon: "↗" });
+  if (item.data_decisao_judicial) addEvent({ key: "judicial-decision", title: "Decisão judicial registrada", description: isEmptyValue(item.observacoes_decisao) ? undefined : item.observacoes_decisao ?? undefined, date: item.data_decisao_judicial, tone: "neutral", icon: "⚖" });
+
+  if (item.prazo_concedido_dias != null || item.data_vencimento) {
+    const due = item.data_vencimento ? new Date(item.data_vencimento) : null;
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+    const isOverdue = due ? due.getTime() < today : false;
+    addEvent({
+      key: "deadline",
+      title: "Prazo definido",
+      description: item.prazo_concedido_dias != null ? `Prazo concedido: ${item.prazo_concedido_dias} dia(s).` : undefined,
+      date: item.data_vencimento ?? undefined,
+      badge: formatPrazoStatus(item),
+      tone: item.data_cumprimento ? "success" : isOverdue ? "danger" : "warning",
+      icon: "⏱",
+    });
+  }
+
+  const statusNormalized = normalizeText(item.status);
+  if (statusNormalized.includes("deferida")) addEvent({ key: "status-deferida", title: "Representação deferida", date: item.data_decisao_judicial ?? undefined, tone: "success", icon: "✓" });
+  if (statusNormalized.includes("indeferida")) addEvent({ key: "status-indeferida", title: "Representação indeferida", date: item.data_decisao_judicial ?? undefined, tone: "danger", icon: "✕" });
+  if (statusNormalized.includes("cumprida")) addEvent({ key: "status-cumprida", title: "Cumprimento informado", description: isEmptyValue(item.resultado_cumprimento) ? undefined : item.resultado_cumprimento ?? undefined, date: item.data_cumprimento ?? undefined, tone: "success", icon: "✔" });
+  if (item.acompanhamento_especial) addEvent({ key: "special-tracking", title: "Marcada como acompanhamento especial", description: "Sinalização interna de acompanhamento prioritário.", tone: "warning", icon: "⚑" });
+
+  return events.sort((a, b) => a.sortTime - b.sortTime).map(({ sortTime, ...event }) => event);
+}
+
 function DetalheRepresentacao() {
   const { representacaoId } = Route.useParams();
   const navigate = useNavigate();
@@ -211,6 +272,7 @@ function DetalheRepresentacao() {
     ["Objetivo da representação", item.objetivo],
     ["Diligências relacionadas", item.diligencias_relacionadas],
   ];
+  const timelineEvents = buildTimelineEvents(item);
 
   return (
     <AppLayout>
@@ -342,6 +404,37 @@ function DetalheRepresentacao() {
               </div>
             </article>
           ))}
+        </section>
+
+        <section className="rounded-xl border border-border/70 bg-card/55 p-4 shadow-[0_8px_24px_rgba(0,0,0,0.35)]">
+          <h2 className={sectionTitleClass}>Linha do Tempo Operacional</h2>
+          {timelineEvents.length === 0 ? (
+            <div className="rounded-lg border border-border/40 bg-muted/5 px-4 py-3 text-sm text-zinc-400">
+              Sem eventos operacionais automáticos disponíveis para esta representação.
+            </div>
+          ) : (
+            <ol className="relative ml-1 space-y-3 border-l border-zinc-700/70 pl-4">
+              {timelineEvents.map((event) => {
+                const dateLabel = formatDateBR(event.date);
+                return (
+                  <li key={event.key} className="relative">
+                    <span className="absolute -left-[1.08rem] top-1.5 h-2.5 w-2.5 rounded-full border border-zinc-500/80 bg-zinc-900" />
+                    <div className="flex flex-wrap items-start gap-x-2 gap-y-1">
+                      <span className="text-xs text-zinc-300">{event.icon}</span>
+                      <p className="text-sm font-semibold text-zinc-100">{event.title}</p>
+                      {event.badge ? (
+                        <span className={`inline-flex items-center rounded-md border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${getTimelineToneClass(event.tone)}`}>
+                          {event.badge}
+                        </span>
+                      ) : null}
+                    </div>
+                    {event.description ? <p className="mt-1 text-xs text-zinc-400">{event.description}</p> : null}
+                    <p className="mt-1 text-[11px] uppercase tracking-[0.12em] text-zinc-500">{dateLabel ?? "Data não informada"}</p>
+                  </li>
+                );
+              })}
+            </ol>
+          )}
         </section>
       </div>
 
