@@ -174,7 +174,14 @@ function Dashboard() {
   const interactiveItemClass =
     "rounded-md px-1.5 py-1 transition-colors duration-200 hover:bg-success/10 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-success/50";
 
-  const goTo = (to: "/inqueritos" | "/representacoes", search?: Record<string, string>) => navigate({ to, search });
+  const goTo = (to: "/inqueritos" | "/representacoes", search?: Record<string, string>) => {
+    const params = new URLSearchParams();
+    Object.entries(search ?? {}).forEach(([key, value]) => {
+      const normalized = String(value ?? "").trim();
+      if (normalized) params.set(key, normalized);
+    });
+    navigate({ to, search: Object.fromEntries(params.entries()) as Record<string, string> });
+  };
 
   return (
     <AppLayout>
@@ -337,11 +344,11 @@ function Dashboard() {
         <div className={panelFxClass}><Panel title="VISÃO JUDICIAL" accent="info">
           <ul className="space-y-2 text-sm">
             <Row label="Total de representações" value={String(totalRepresentacoes)} color="var(--info)" onClick={() => goTo('/representacoes')} />
-            <Row label="Pendentes" value={String(repsPendentes)} color="var(--warning)" onClick={() => goTo('/representacoes')} />
-            <Row label="Deferidas" value={String(repsDeferidas)} color="var(--success)" onClick={() => goTo('/representacoes')} />
-            <Row label="Indeferidas" value={String(repsIndeferidas)} color="var(--destructive)" onClick={() => goTo('/representacoes')} />
-            <Row label="Cumpridas" value={String(repsCumpridas)} color="var(--primary)" onClick={() => goTo('/representacoes')} />
-            <Row label="Sigilosas" value={String(repsSigilosas)} color="var(--purple)" onClick={() => goTo('/representacoes')} />
+            <Row label="Pendentes" value={String(repsPendentes)} color="var(--warning)" onClick={() => goTo('/representacoes', { operationalFilter: 'pendentes' })} />
+            <Row label="Deferidas" value={String(repsDeferidas)} color="var(--success)" onClick={() => goTo('/representacoes', { operationalFilter: 'deferidas' })} />
+            <Row label="Indeferidas" value={String(repsIndeferidas)} color="var(--destructive)" onClick={() => goTo('/representacoes', { operationalFilter: 'indeferidas' })} />
+            <Row label="Cumpridas" value={String(repsCumpridas)} color="var(--primary)" onClick={() => goTo('/representacoes', { operationalFilter: 'cumpridas' })} />
+            <Row label="Sigilosas" value={String(repsSigilosas)} color="var(--purple)" onClick={() => goTo('/representacoes', { operationalFilter: 'sigilosas' })} />
           </ul>
         </Panel></div>
         <div className={panelFxClass}><Panel title="VISÃO DE URGÊNCIA" accent="destructive">
@@ -349,9 +356,9 @@ function Dashboard() {
             <Row label="Prazo vencido" value={String(prazoVencido)} color="var(--destructive)" onClick={() => goTo('/inqueritos', { prazo: 'critico' })} />
             <Row label="Vencendo em 7 dias" value={String(prazoVencendo7)} color="var(--warning)" onClick={() => goTo('/inqueritos', { prazo: '7dias' })} />
             <Row label="Prazo crítico (0-3 dias)" value={String(prazoCritico)} color="var(--destructive)" onClick={() => goTo('/inqueritos', { prazo: 'critico' })} />
-            <Row label="Representações vencidas" value={String(repsVencidas)} color="var(--destructive)" onClick={() => goTo('/representacoes')} />
-            <Row label="Representações vencendo (7 dias)" value={String(repsVencendo7)} color="var(--warning)" onClick={() => goTo('/representacoes')} />
-            <Row label="Acompanhamento especial" value={String(repsAcompanhamentoEspecial)} color="var(--info)" onClick={() => goTo('/representacoes')} />
+            <Row label="Representações vencidas" value={String(repsVencidas)} color="var(--destructive)" onClick={() => goTo('/representacoes', { operationalFilter: 'vencidas' })} />
+            <Row label="Representações vencendo (7 dias)" value={String(repsVencendo7)} color="var(--warning)" onClick={() => goTo('/representacoes', { operationalFilter: 'vencendo' })} />
+            <Row label="Acompanhamento especial" value={String(repsAcompanhamentoEspecial)} color="var(--info)" onClick={() => goTo('/representacoes', { operationalFilter: 'especial' })} />
           </ul>
         </Panel></div>
       </div>

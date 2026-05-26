@@ -22,6 +22,8 @@ const TIPO_FILTER_NAO_INFORMADO = "__tipo_nao_informado__";
 const TIPO_FILTER_MEDIDA_PROTETIVA = "__tipo_medida_protetiva__";
 const isMedidaProtetivaAlias = (value: string) => normalizeText(value).replace(/-/g, " ").includes("protetiv");
 
+const ALLOWED_OPERATIONAL_FILTERS = new Set(["todas", "pendentes", "deferidas", "indeferidas", "cumpridas", "sigilosas", "vencidas", "vencendo", "especial"]);
+
 const parseDateUtc = (value?: string | null) => {
   if (!value) return null;
   const v = value.trim();
@@ -93,6 +95,13 @@ function Representacoes() {
 
   useEffect(() => { if (!isRepresentacoesIndex) return; (async () => { try { const currentProfile = await getCurrentProfile(); if (!canViewRepresentacoes(currentProfile)) { setRestricted(true); return; } setRestricted(false); setCanOpenSigilosas(canAccessSigilosa(currentProfile)); setLoading(true); setError(""); setRepresentacoes(await listRepresentacoes()); } catch { setError("Não foi possível carregar representações agora."); } finally { setLoading(false); } })(); }, [isRepresentacoesIndex]);
 
+  useEffect(() => {
+    if (!isRepresentacoesIndex) return;
+    const params = new URLSearchParams(location.search);
+    const operational = normalizeText(params.get("operationalFilter") ?? "todas");
+    setOperationalFilter(ALLOWED_OPERATIONAL_FILTERS.has(operational) ? operational : "todas");
+  }, [isRepresentacoesIndex, location.search]);
+
   const filtered = useMemo(() => {
     const s = normalizeText(searchTerm);
     const isFallbackSearch = ["nao informado", "nao informados", "vazio", "sem informacao", "sem valor"].includes(s);
@@ -120,7 +129,8 @@ function Representacoes() {
         if (endDate !== null && (recordDate === null || recordDate > endDate)) return false;
 
         if (operationalFilter === "pendentes" && state.isCumprida) return false;
-        if (operationalFilter === "deferidas" && !normalizeText(r.status).includes("defer")) return false;
+        if (operationalFilter === "deferidas" && !(normalizeText(r.status).includes("defer") && !normalizeText(r.status).includes("indefer"))) return false;
+        if (operationalFilter === "indeferidas" && !normalizeText(r.status).includes("indefer")) return false;
         if (operationalFilter === "cumpridas" && !state.isCumprida) return false;
         if (operationalFilter === "vencendo" && !state.isDueSoon) return false;
         if (operationalFilter === "vencidas" && !state.isOverdue) return false;
