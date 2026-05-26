@@ -1,6 +1,6 @@
 import { Outlet, createFileRoute, Link, useLocation } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { AlertTriangle, ArrowRight, Bell, Clock3, FileSearch, Gavel, ShieldAlert } from "lucide-react";
+import { Activity, AlertCircle, AlertTriangle, ArrowRight, ArrowUpCircle, Bell, Clock3, FileSearch, FileText, Gavel, ListChecks, ShieldAlert } from "lucide-react";
 import { AppLayout } from "@/components/AppLayout";
 import { PageHeader } from "@/components/PageHeader";
 import { listInqueritos } from "@/lib/repositories/inqueritosRepository";
@@ -94,17 +94,15 @@ function Alertas() {
   if (!isAlertasIndex) return <Outlet />;
 
   return <AppLayout><div className="space-y-4"><PageHeader title="Central de Alertas" subtitle="Selecione um módulo para visualizar os alertas detalhados." showActions={false} />
-    <section className="rounded-xl border border-emerald-500/30 bg-emerald-500/[0.07] px-4 py-3">
-      <p className="text-xs font-semibold uppercase tracking-[0.08em] text-emerald-200">Central operacional ativa</p>
-      <p className="mt-1 text-sm text-foreground/90">Alertas calculados com base nos Inquéritos e Representações cadastrados.</p>
-      <p className="mt-1 text-xs text-muted-foreground">Priorize críticos, prazos e pendências operacionais.</p>
-      <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-emerald-100/90">
-        <span>Total de alertas: <strong>{stats.total}</strong></span>
-        <span>Críticos: <strong>{stats.criticos}</strong></span>
-        <span>Representações sigilosas: <strong>{moduleAlerts.sigilosas.length}</strong></span>
-      </div>
-    </section>
-    <section className="grid grid-cols-2 gap-2 md:grid-cols-4">{[["Total", stats.total], ["Críticos", stats.criticos], ["Altos", stats.altos], ["Médios", stats.medios], ["Baixos", stats.baixos], ["Inquéritos", stats.inqueritos], ["Representações", stats.representacoes]].map(([k, v]) => <div key={String(k)} className="rounded-lg border border-border bg-card px-3 py-2"><p className="text-[11px] uppercase tracking-[0.1em] text-muted-foreground">{k}</p><p className="text-xl font-semibold">{v}</p></div>)}</section>
+    <section className="grid grid-cols-2 gap-2 md:grid-cols-4">{[
+      { key: "Total", value: stats.total, icon: Activity, tone: "text-emerald-300/90" },
+      { key: "Críticos", value: stats.criticos, icon: ShieldAlert, tone: "text-red-300/90" },
+      { key: "Altos", value: stats.altos, icon: ArrowUpCircle, tone: "text-orange-300/90" },
+      { key: "Médios", value: stats.medios, icon: AlertCircle, tone: "text-amber-300/90" },
+      { key: "Baixos", value: stats.baixos, icon: ListChecks, tone: "text-slate-300/90" },
+      { key: "Inquéritos", value: stats.inqueritos, icon: FileText, tone: "text-emerald-300/90" },
+      { key: "Representações", value: stats.representacoes, icon: FileText, tone: "text-violet-300/90" },
+    ].map(({ key, value, icon: Icon, tone }) => <div key={key} className="rounded-lg border border-border bg-card px-3 py-2"><div className="flex items-start justify-between gap-2"><div><p className="text-[11px] uppercase tracking-[0.1em] text-muted-foreground">{key}</p><p className="text-xl font-semibold">{value}</p></div><span className="mt-0.5"><Icon className={`h-4 w-4 ${tone}`} /></span></div></div>)}</section>
     {loading ? <div className="rounded-lg border border-border bg-card p-4 text-sm text-muted-foreground">Carregando alertas…</div> : null}
     {!loading && error ? <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive">{error}</div> : null}
     {!loading && !error ? <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">{(Object.keys(moduleMeta) as ModuleKey[]).map((key) => {
