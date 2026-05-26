@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { AlertCircle, AlertTriangle, Bell, Clock3, FileSearch, FolderKanban, Gavel, ShieldAlert } from "lucide-react";
+import { AlertCircle, AlertTriangle, ArrowRight, Bell, Clock3, FileSearch, FolderKanban, Gavel, ShieldAlert } from "lucide-react";
 import { AppLayout } from "@/components/AppLayout";
 import { PageHeader } from "@/components/PageHeader";
 import { listInqueritos, type InqueritoRecord } from "@/lib/repositories/inqueritosRepository";
@@ -10,6 +10,7 @@ type Severity = "critico" | "alto" | "medio" | "baixo";
 type AlertModule = "Inquérito" | "Representação";
 type AlertCategory = "criticos" | "prazo" | "operacional" | "judicial" | "dados_incompletos";
 type FilterKey = "todos" | "criticos" | "altos" | "inqueritos" | "representacoes" | "prazo" | "dados_incompletos";
+type ModuleKey = "criticos" | "prazo" | "operacional" | "judicial" | "dados_incompletos" | "sigilosas" | "todos";
 
 type SmartAlert = {
   id: string;
@@ -90,6 +91,8 @@ function Alertas() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [filter, setFilter] = useState<FilterKey>("todos");
+  const [selectedModule, setSelectedModule] = useState<ModuleKey>("todos");
+  const [showAllInPanel, setShowAllInPanel] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -167,48 +170,79 @@ function Alertas() {
     return true;
   }), [alerts, filter]);
 
-  const grouped = useMemo(() => ({
-    criticos: filtered.filter((a) => a.category === "criticos" || a.severity === "critico"),
+  const moduleAlerts = useMemo(() => ({
+    criticos: filtered.filter((a) => a.severity === "critico"),
     prazo: filtered.filter((a) => a.category === "prazo"),
     operacional: filtered.filter((a) => a.category === "operacional"),
     judicial: filtered.filter((a) => a.category === "judicial"),
-    dados: filtered.filter((a) => a.category === "dados_incompletos"),
+    dados_incompletos: filtered.filter((a) => a.category === "dados_incompletos"),
+    sigilosas: filtered.filter((a) => a.title === "Representação sigilosa"),
+    todos: filtered,
   }), [filtered]);
 
-  const renderBlock = (title: string, data: SmartAlert[]) => (
-    <section className="space-y-2">
-      <h3 className="text-sm font-semibold text-foreground/90">{title} ({data.length})</h3>
-      {data.length === 0 ? <div className="rounded-lg border border-border bg-card p-3 text-xs text-muted-foreground">Sem alertas neste bloco.</div> : data.map((a) => (
-        <article key={a.id} className="rounded-lg border border-border bg-card p-3">
-          <div className="mb-2 flex items-start justify-between gap-2">
-            <p className="text-sm font-semibold">{a.title}</p>
-            <span className="rounded px-2 py-0.5 text-[11px]" style={{ color: sevTone[a.severity], border: `1px solid color-mix(in oklab, ${sevTone[a.severity]} 45%, var(--border))` }}>{a.severity.toUpperCase()}</span>
-          </div>
-          <div className="grid gap-1 text-xs text-muted-foreground md:grid-cols-2">
-            <p><FolderKanban className="mr-1 inline h-3.5 w-3.5" />Módulo: {a.module}</p>
-            <p><FileSearch className="mr-1 inline h-3.5 w-3.5" />Identificação: {a.identifier}</p>
-            <p>Vítima/Alvo: {a.principal}</p><p>Tipo: {a.typeLabel}</p><p>Equipe: {a.team}</p><p>Status: {a.status}</p><p><Clock3 className="mr-1 inline h-3.5 w-3.5" />Prazo/Data: {a.dueLabel}</p>
-            <p className="md:col-span-2"><ShieldAlert className="mr-1 inline h-3.5 w-3.5" />Ação sugerida: {a.action}</p>
-          </div>
-          {a.entityId ? (
-            <div className="mt-3">
-              {a.entityType === "inquerito" ? <Link to="/inqueritos/$caseId" params={{ caseId: a.entityId }} className="text-xs font-medium text-emerald-400 hover:underline">Abrir inquérito</Link> : <Link to="/representacoes/$representacaoId" params={{ representacaoId: a.entityId }} className="text-xs font-medium text-emerald-400 hover:underline">Abrir representação</Link>}
-            </div>
-          ) : <p className="mt-3 text-xs text-muted-foreground">ID indisponível para abertura.</p>}
-        </article>
-      ))}
-    </section>
-  );
+  useEffect(() => {
+    const priority: ModuleKey[] = ["prazo", "criticos", "operacional", "judicial", "dados_incompletos", "sigilosas"];
+    const firstWithAlerts = priority.find((key) => moduleAlerts[key].length > 0);
+    const next = firstWithAlerts ?? "todos";
+    setSelectedModule((prev) => (moduleAlerts[prev]?.length !== undefined ? prev : next));
+  }, [moduleAlerts]);
 
-  return <AppLayout><div className="space-y-4"><PageHeader title="Central de Alertas" subtitle="Alertas inteligentes por Inquéritos e Representações" showActions={false} />
+  useEffect(() => {
+    setShowAllInPanel(false);
+  }, [selectedModule, filter]);
+
+  const moduleMeta: Record<Exclude<ModuleKey, "todos">, { icon: typeof AlertTriangle; title: string; desc: string; badge: string }> = {
+    criticos: { icon: AlertTriangle, title: "Alertas Críticos", desc: "Situações que exigem ação imediata e prioridade máxima.", badge: "Urgência" },
+    prazo: { icon: Clock3, title: "Alertas de Prazo", desc: "Prazos vencidos ou críticos que requerem atenção.", badge: "Temporal" },
+    operacional: { icon: Bell, title: "Alertas Operacionais", desc: "Ocorrências, diligências e tarefas operacionais pendentes.", badge: "Execução" },
+    judicial: { icon: Gavel, title: "Alertas Judiciais", desc: "Decisões, intimações e comunicações judiciais pendentes.", badge: "Forense" },
+    dados_incompletos: { icon: FileSearch, title: "Dados Incompletos", desc: "Registros com informações incompletas ou inconsistentes.", badge: "Qualidade" },
+    sigilosas: { icon: ShieldAlert, title: "Representações Sigilosas", desc: "Representações sigilosas com pendências de análise.", badge: "Acesso restrito" },
+  };
+
+  const detailedAlerts = moduleAlerts[selectedModule] ?? [];
+  const visibleAlerts = showAllInPanel ? detailedAlerts : detailedAlerts.slice(0, 8);
+
+  return <AppLayout><div className="space-y-4"><PageHeader title="Central de Alertas" subtitle="Selecione um módulo para visualizar os alertas detalhados." showActions={false} />
     <section className="grid grid-cols-2 gap-2 md:grid-cols-4">{[
       ["Total", stats.total], ["Críticos", stats.criticos], ["Altos", stats.altos], ["Médios", stats.medios], ["Baixos", stats.baixos], ["Inquéritos", stats.inqueritos], ["Representações", stats.representacoes],
     ].map(([k, v]) => <div key={String(k)} className="rounded-lg border border-border bg-card px-3 py-2"><p className="text-[11px] uppercase tracking-[0.1em] text-muted-foreground">{k}</p><p className="text-xl font-semibold">{v}</p></div>)}</section>
     <section className="flex flex-wrap gap-2">{([
       ["todos", "Todos"], ["criticos", "Críticos"], ["altos", "Altos"], ["inqueritos", "Inquéritos"], ["representacoes", "Representações"], ["prazo", "Prazo"], ["dados_incompletos", "Dados incompletos"],
-    ] as const).map(([k, l]) => <button key={k} onClick={() => setFilter(k)} className={`rounded-md border px-3 py-1.5 text-xs ${filter === k ? "border-emerald-500 bg-emerald-500/10" : "border-border bg-card"}`}>{l}</button>)}</section>
+    ] as const).map(([k, l]) => <button key={k} onClick={() => setFilter(k)} className={`rounded-md border px-3 py-1.5 text-xs ${filter === k ? "border-emerald-500 bg-emerald-500/10 text-emerald-300" : "border-border bg-card"}`}>{l}</button>)}</section>
     {loading ? <div className="rounded-lg border border-border bg-card p-4 text-sm text-muted-foreground">Carregando alertas…</div> : null}
     {!loading && error ? <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive">{error}</div> : null}
-    {!loading && !error ? <div className="space-y-4">{renderBlock("Alertas Críticos", grouped.criticos)}{renderBlock("Alertas de Prazo", grouped.prazo)}{renderBlock("Alertas Operacionais", grouped.operacional)}{renderBlock("Alertas Judiciais", grouped.judicial)}{renderBlock("Alertas de Dados Incompletos", grouped.dados)}</div> : null}
+    {!loading && !error ? <>
+      <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">{(Object.keys(moduleMeta) as Array<Exclude<ModuleKey, "todos">>).map((key) => {
+        const meta = moduleMeta[key];
+        const Icon = meta.icon;
+        const isSelected = selectedModule === key;
+        const count = moduleAlerts[key].length;
+        return <button key={key} type="button" onClick={() => setSelectedModule(key)} className={`rounded-xl border bg-card p-4 text-left transition ${isSelected ? "border-emerald-500/70 shadow-[0_0_0_1px_rgba(16,185,129,0.30)]" : "border-border hover:border-emerald-500/30"}`}>
+          <div className="mb-3 flex items-center justify-between"><span className="rounded-full border border-emerald-500/40 bg-emerald-500/10 px-2 py-0.5 text-[10px] uppercase tracking-[0.08em] text-emerald-300">{meta.badge}</span><Icon className="h-4 w-4 text-emerald-300/90" /></div>
+          <h3 className="text-sm font-semibold text-foreground">{meta.title}</h3><p className="mt-1 min-h-[40px] text-xs text-muted-foreground">{meta.desc}</p>
+          <div className="mt-4 flex items-end justify-between"><div><p className="text-[11px] uppercase tracking-[0.08em] text-muted-foreground">Alertas</p><p className="text-2xl font-semibold text-foreground">{count}</p></div><span className="inline-flex items-center gap-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-emerald-300">Abrir módulo <ArrowRight className="h-3.5 w-3.5" /></span></div>
+        </button>;
+      })}</section>
+
+      <section className="rounded-xl border border-border bg-card p-4">
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <h3 className="text-sm font-semibold text-foreground">{selectedModule === "todos" ? "Todos os alertas" : moduleMeta[selectedModule as Exclude<ModuleKey, "todos">]?.title} ({detailedAlerts.length})</h3>
+            <p className="text-xs text-muted-foreground">Exibindo alertas detalhados do módulo selecionado.</p>
+          </div>
+        </div>
+
+        {detailedAlerts.length === 0 ? <div className="rounded-lg border border-border bg-background/30 p-5 text-center text-sm text-muted-foreground">Nenhum alerta encontrado para este módulo com o filtro atual.</div> : <div className="space-y-2">{visibleAlerts.map((a) => (
+          <article key={a.id} className="rounded-lg border border-border bg-background/40 p-3">
+            <div className="mb-2 flex items-start justify-between gap-2"><p className="text-sm font-semibold">{a.title}</p><span className="rounded px-2 py-0.5 text-[11px]" style={{ color: sevTone[a.severity], border: `1px solid color-mix(in oklab, ${sevTone[a.severity]} 45%, var(--border))` }}>{a.severity.toUpperCase()}</span></div>
+            <div className="grid gap-1 text-xs text-muted-foreground md:grid-cols-2"><p><FolderKanban className="mr-1 inline h-3.5 w-3.5" />Módulo: {a.module}</p><p><FileSearch className="mr-1 inline h-3.5 w-3.5" />Identificação: {a.identifier}</p><p>Vítima/Alvo: {a.principal}</p><p>Tipo: {a.typeLabel}</p><p>Equipe: {a.team}</p><p>Status: {a.status}</p><p><Clock3 className="mr-1 inline h-3.5 w-3.5" />Prazo/Data: {a.dueLabel}</p><p className="md:col-span-2"><AlertCircle className="mr-1 inline h-3.5 w-3.5" />Ação sugerida: {a.action}</p></div>
+            {a.entityId ? <div className="mt-3">{a.entityType === "inquerito" ? <Link to="/inqueritos/$caseId" params={{ caseId: a.entityId }} className="text-xs font-medium text-emerald-400 hover:underline">Abrir inquérito</Link> : <Link to="/representacoes/$representacaoId" params={{ representacaoId: a.entityId }} className="text-xs font-medium text-emerald-400 hover:underline">Abrir representação</Link>}</div> : <p className="mt-3 text-xs text-muted-foreground">ID indisponível para abertura.</p>}
+          </article>
+        ))}</div>}
+
+        {detailedAlerts.length > 8 ? <div className="mt-3"><button type="button" onClick={() => setShowAllInPanel((v) => !v)} className="text-xs font-medium text-emerald-300 hover:underline">{showAllInPanel ? "Mostrar menos" : "Ver todos os alertas deste módulo"}</button></div> : null}
+      </section>
+    </> : null}
   </div></AppLayout>;
 }
