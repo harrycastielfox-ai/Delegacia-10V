@@ -9,8 +9,7 @@ import { listRepresentacoes, type RepresentacaoRecord } from "@/lib/repositories
 type Severity = "critico" | "alto" | "medio" | "baixo";
 type AlertModule = "Inquérito" | "Representação";
 type AlertCategory = "criticos" | "prazo" | "operacional" | "judicial" | "dados_incompletos";
-type FilterKey = "todos" | "criticos" | "altos" | "inqueritos" | "representacoes" | "prazo" | "dados_incompletos";
-type ModuleKey = "criticos" | "prazo" | "operacional" | "judicial" | "dados_incompletos" | "sigilosas" | "todos";
+type ModuleKey = "criticos" | "prazos" | "operacionais" | "judiciais" | "dados-incompletos" | "sigilosas" | "todos" | "inqueritos" | "representacoes";
 
 type SmartAlert = {
   id: string;
@@ -83,16 +82,20 @@ const isRepresentacaoVencendo = (item: RepresentacaoRecord) => isDueIn7Days(item
 
 const sevTone = { critico: "var(--destructive)", alto: "var(--warning)", medio: "#d7b24f", baixo: "var(--info)" } as const;
 
-export const Route = createFileRoute("/alertas")({ component: Alertas, head: () => ({ meta: [{ title: "Alertas — SIPI" }] }) });
+export const Route = createFileRoute("/alertas")({
+  validateSearch: (search: Record<string, unknown>) => ({ modulo: typeof search.modulo === "string" ? search.modulo : undefined }),
+  component: Alertas,
+  head: () => ({ meta: [{ title: "Alertas — SIPI" }] }),
+});
 
 function Alertas() {
   const [inqueritos, setInqueritos] = useState<InqueritoRecord[]>([]);
   const [representacoes, setRepresentacoes] = useState<RepresentacaoRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [filter, setFilter] = useState<FilterKey>("todos");
-  const [selectedModule, setSelectedModule] = useState<ModuleKey>("todos");
   const [showAllInPanel, setShowAllInPanel] = useState(false);
+  const navigate = Route.useNavigate();
+  const { modulo } = Route.useSearch();
 
   useEffect(() => {
     (async () => {
@@ -159,81 +162,67 @@ function Alertas() {
     representacoes: alerts.filter((a) => a.module === "Representação").length,
   }), [alerts]);
 
-  const filtered = useMemo(() => alerts.filter((a) => {
-    if (filter === "todos") return true;
-    if (filter === "criticos") return a.severity === "critico";
-    if (filter === "altos") return a.severity === "alto";
-    if (filter === "inqueritos") return a.module === "Inquérito";
-    if (filter === "representacoes") return a.module === "Representação";
-    if (filter === "prazo") return a.category === "prazo";
-    if (filter === "dados_incompletos") return a.category === "dados_incompletos";
-    return true;
-  }), [alerts, filter]);
+  const filtered = alerts;
 
   const moduleAlerts = useMemo(() => ({
     criticos: filtered.filter((a) => a.severity === "critico"),
-    prazo: filtered.filter((a) => a.category === "prazo"),
-    operacional: filtered.filter((a) => a.category === "operacional"),
-    judicial: filtered.filter((a) => a.category === "judicial"),
-    dados_incompletos: filtered.filter((a) => a.category === "dados_incompletos"),
+    prazos: filtered.filter((a) => a.category === "prazo"),
+    operacionais: filtered.filter((a) => a.category === "operacional"),
+    judiciais: filtered.filter((a) => a.category === "judicial"),
+    "dados-incompletos": filtered.filter((a) => a.category === "dados_incompletos"),
     sigilosas: filtered.filter((a) => a.title === "Representação sigilosa"),
     todos: filtered,
+    inqueritos: filtered.filter((a) => a.module === "Inquérito"),
+    representacoes: filtered.filter((a) => a.module === "Representação"),
   }), [filtered]);
 
-  useEffect(() => {
-    const priority: ModuleKey[] = ["prazo", "criticos", "operacional", "judicial", "dados_incompletos", "sigilosas"];
-    const firstWithAlerts = priority.find((key) => moduleAlerts[key].length > 0);
-    const next = firstWithAlerts ?? "todos";
-    setSelectedModule((prev) => (moduleAlerts[prev]?.length !== undefined ? prev : next));
-  }, [moduleAlerts]);
+  const selectedModule = (Object.keys(moduleAlerts).includes(modulo ?? "") ? modulo : undefined) as ModuleKey | undefined;
+  const isCentralMode = !selectedModule;
 
   useEffect(() => {
     setShowAllInPanel(false);
-  }, [selectedModule, filter]);
+  }, [selectedModule]);
 
-  const moduleMeta: Record<Exclude<ModuleKey, "todos">, { icon: typeof AlertTriangle; title: string; desc: string; badge: string }> = {
+  const moduleMeta: Record<Exclude<ModuleKey, "todos" | "inqueritos" | "representacoes">, { icon: typeof AlertTriangle; title: string; desc: string; badge: string }> = {
     criticos: { icon: AlertTriangle, title: "Alertas Críticos", desc: "Situações que exigem ação imediata e prioridade máxima.", badge: "Urgência" },
-    prazo: { icon: Clock3, title: "Alertas de Prazo", desc: "Prazos vencidos ou críticos que requerem atenção.", badge: "Temporal" },
-    operacional: { icon: Bell, title: "Alertas Operacionais", desc: "Ocorrências, diligências e tarefas operacionais pendentes.", badge: "Execução" },
-    judicial: { icon: Gavel, title: "Alertas Judiciais", desc: "Decisões, intimações e comunicações judiciais pendentes.", badge: "Forense" },
-    dados_incompletos: { icon: FileSearch, title: "Dados Incompletos", desc: "Registros com informações incompletas ou inconsistentes.", badge: "Qualidade" },
+    prazos: { icon: Clock3, title: "Alertas de Prazo", desc: "Prazos vencidos ou críticos que requerem atenção.", badge: "Temporal" },
+    operacionais: { icon: Bell, title: "Alertas Operacionais", desc: "Ocorrências, diligências e tarefas operacionais pendentes.", badge: "Execução" },
+    judiciais: { icon: Gavel, title: "Alertas Judiciais", desc: "Decisões, intimações e comunicações judiciais pendentes.", badge: "Forense" },
+    "dados-incompletos": { icon: FileSearch, title: "Dados Incompletos", desc: "Registros com informações incompletas ou inconsistentes.", badge: "Qualidade" },
     sigilosas: { icon: ShieldAlert, title: "Representações Sigilosas", desc: "Representações sigilosas com pendências de análise.", badge: "Acesso restrito" },
   };
 
-  const detailedAlerts = moduleAlerts[selectedModule] ?? [];
+  const detailedAlerts = selectedModule ? moduleAlerts[selectedModule] ?? [] : [];
   const visibleAlerts = showAllInPanel ? detailedAlerts : detailedAlerts.slice(0, 8);
 
   return <AppLayout><div className="space-y-4"><PageHeader title="Central de Alertas" subtitle="Selecione um módulo para visualizar os alertas detalhados." showActions={false} />
     <section className="grid grid-cols-2 gap-2 md:grid-cols-4">{[
       ["Total", stats.total], ["Críticos", stats.criticos], ["Altos", stats.altos], ["Médios", stats.medios], ["Baixos", stats.baixos], ["Inquéritos", stats.inqueritos], ["Representações", stats.representacoes],
     ].map(([k, v]) => <div key={String(k)} className="rounded-lg border border-border bg-card px-3 py-2"><p className="text-[11px] uppercase tracking-[0.1em] text-muted-foreground">{k}</p><p className="text-xl font-semibold">{v}</p></div>)}</section>
-    <section className="flex flex-wrap gap-2">{([
-      ["todos", "Todos"], ["criticos", "Críticos"], ["altos", "Altos"], ["inqueritos", "Inquéritos"], ["representacoes", "Representações"], ["prazo", "Prazo"], ["dados_incompletos", "Dados incompletos"],
-    ] as const).map(([k, l]) => <button key={k} onClick={() => setFilter(k)} className={`rounded-md border px-3 py-1.5 text-xs ${filter === k ? "border-emerald-500 bg-emerald-500/10 text-emerald-300" : "border-border bg-card"}`}>{l}</button>)}</section>
     {loading ? <div className="rounded-lg border border-border bg-card p-4 text-sm text-muted-foreground">Carregando alertas…</div> : null}
     {!loading && error ? <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive">{error}</div> : null}
     {!loading && !error ? <>
-      <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">{(Object.keys(moduleMeta) as Array<Exclude<ModuleKey, "todos">>).map((key) => {
+      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">{(Object.keys(moduleMeta) as Array<Exclude<ModuleKey, "todos" | "inqueritos" | "representacoes">>).map((key) => {
         const meta = moduleMeta[key];
         const Icon = meta.icon;
-        const isSelected = selectedModule === key;
         const count = moduleAlerts[key].length;
-        return <button key={key} type="button" onClick={() => setSelectedModule(key)} className={`rounded-xl border bg-card p-4 text-left transition ${isSelected ? "border-emerald-500/70 shadow-[0_0_0_1px_rgba(16,185,129,0.30)]" : "border-border hover:border-emerald-500/30"}`}>
-          <div className="mb-3 flex items-center justify-between"><span className="rounded-full border border-emerald-500/40 bg-emerald-500/10 px-2 py-0.5 text-[10px] uppercase tracking-[0.08em] text-emerald-300">{meta.badge}</span><Icon className="h-4 w-4 text-emerald-300/90" /></div>
-          <h3 className="text-sm font-semibold text-foreground">{meta.title}</h3><p className="mt-1 min-h-[40px] text-xs text-muted-foreground">{meta.desc}</p>
-          <div className="mt-4 flex items-end justify-between"><div><p className="text-[11px] uppercase tracking-[0.08em] text-muted-foreground">Alertas</p><p className="text-2xl font-semibold text-foreground">{count}</p></div><span className="inline-flex items-center gap-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-emerald-300">Abrir módulo <ArrowRight className="h-3.5 w-3.5" /></span></div>
-        </button>;
+        return <div key={key} className="rounded-xl border border-border bg-card p-4 text-left transition hover:border-emerald-500/40 hover:shadow-[0_0_0_1px_rgba(16,185,129,0.25)]">
+          <div className="mb-3 flex items-center justify-between"><span className="rounded-md border border-emerald-500/30 bg-emerald-500/10 p-1"><Icon className="h-4 w-4 text-emerald-300/90" /></span><span className="rounded-full border border-border px-2 py-0.5 text-[10px] uppercase tracking-[0.08em] text-muted-foreground">{meta.badge}</span></div>
+          <h3 className="text-sm font-semibold text-foreground">{meta.title}</h3><p className="mt-1 min-h-[36px] text-xs text-muted-foreground">{meta.desc}</p>
+          <div className="mt-3 flex items-end justify-between"><div><p className="text-[11px] uppercase tracking-[0.08em] text-muted-foreground">Alertas</p><p className="text-xl font-semibold text-foreground">{count}</p></div><Link to="/alertas" search={{ modulo: key }} className="inline-flex items-center gap-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-emerald-300 hover:text-emerald-200">Abrir módulo <ArrowRight className="h-3.5 w-3.5" /></Link></div>
+        </div>;
       })}</section>
 
-      <section className="rounded-xl border border-border bg-card p-4">
+      {!isCentralMode ? <section className="rounded-xl border border-border bg-card p-4">
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
           <div>
-            <h3 className="text-sm font-semibold text-foreground">{selectedModule === "todos" ? "Todos os alertas" : moduleMeta[selectedModule as Exclude<ModuleKey, "todos">]?.title} ({detailedAlerts.length})</h3>
+            <button type="button" onClick={() => navigate({ to: "/alertas", search: {} })} className="mb-2 text-xs font-medium text-emerald-300 hover:underline">← Voltar para Central de Alertas</button>
+            <h3 className="text-sm font-semibold text-foreground">{selectedModule === "todos" ? "Todos os alertas" : moduleMeta[selectedModule as Exclude<ModuleKey, "todos" | "inqueritos" | "representacoes">]?.title ?? "Alertas do módulo"} ({detailedAlerts.length})</h3>
             <p className="text-xs text-muted-foreground">Exibindo alertas detalhados do módulo selecionado.</p>
           </div>
         </div>
 
-        {detailedAlerts.length === 0 ? <div className="rounded-lg border border-border bg-background/30 p-5 text-center text-sm text-muted-foreground">Nenhum alerta encontrado para este módulo com o filtro atual.</div> : <div className="space-y-2">{visibleAlerts.map((a) => (
+        {detailedAlerts.length === 0 ? <div className="rounded-lg border border-border bg-background/30 p-5 text-center text-sm text-muted-foreground">Nenhum alerta encontrado neste módulo.<div className="mt-3"><button type="button" onClick={() => navigate({ to: "/alertas", search: {} })} className="text-xs font-medium text-emerald-300 hover:underline">Voltar para Central de Alertas</button></div></div> : <div className="space-y-2">{visibleAlerts.map((a) => (
           <article key={a.id} className="rounded-lg border border-border bg-background/40 p-3">
             <div className="mb-2 flex items-start justify-between gap-2"><p className="text-sm font-semibold">{a.title}</p><span className="rounded px-2 py-0.5 text-[11px]" style={{ color: sevTone[a.severity], border: `1px solid color-mix(in oklab, ${sevTone[a.severity]} 45%, var(--border))` }}>{a.severity.toUpperCase()}</span></div>
             <div className="grid gap-1 text-xs text-muted-foreground md:grid-cols-2"><p><FolderKanban className="mr-1 inline h-3.5 w-3.5" />Módulo: {a.module}</p><p><FileSearch className="mr-1 inline h-3.5 w-3.5" />Identificação: {a.identifier}</p><p>Vítima/Alvo: {a.principal}</p><p>Tipo: {a.typeLabel}</p><p>Equipe: {a.team}</p><p>Status: {a.status}</p><p><Clock3 className="mr-1 inline h-3.5 w-3.5" />Prazo/Data: {a.dueLabel}</p><p className="md:col-span-2"><AlertCircle className="mr-1 inline h-3.5 w-3.5" />Ação sugerida: {a.action}</p></div>
@@ -241,8 +230,8 @@ function Alertas() {
           </article>
         ))}</div>}
 
-        {detailedAlerts.length > 8 ? <div className="mt-3"><button type="button" onClick={() => setShowAllInPanel((v) => !v)} className="text-xs font-medium text-emerald-300 hover:underline">{showAllInPanel ? "Mostrar menos" : "Ver todos os alertas deste módulo"}</button></div> : null}
-      </section>
+        {detailedAlerts.length > 8 ? <div className="mt-3"><button type="button" onClick={() => setShowAllInPanel((v) => !v)} className="text-xs font-medium text-emerald-300 hover:underline">{showAllInPanel ? "Mostrar menos" : "Mostrar mais"}</button></div> : null}
+      </section> : null}
     </> : null}
   </div></AppLayout>;
 }
