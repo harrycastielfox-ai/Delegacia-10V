@@ -336,7 +336,7 @@ function Dashboard() {
             <Row label="Em andamento" value={String(emAndamento)} color="var(--info)" onClick={() => goTo("/inqueritos", { situacao: "em-andamento" })} />
             <Row label="Concluídos" value={String(finalizados)} color="var(--success)" onClick={() => goTo("/inqueritos", { situacao: "concluidos" })} />
             <Row label="Alta prioridade" value={String(prioridadeAlta)} color="var(--warning)" onClick={() => goTo("/inqueritos", { prioridade: "alta" })} />
-            <Row label="Diligências pendentes" value={String(diligenciasPendentes)} color="var(--destructive)" onClick={() => goTo("/inqueritos")} />
+            <Row label="Diligências pendentes" value={String(diligenciasPendentes)} color="var(--destructive)" onClick={() => goTo("/inqueritos", { diligenciasPendentes: "true" })} />
             <Row label="Réu preso" value={String(reuPreso)} color="var(--purple)" onClick={() => goTo("/inqueritos", { reuPreso: "true" })} />
             <Row label="Medida protetiva" value={String(medidasProtetivas)} color="var(--warning)" onClick={() => goTo("/inqueritos", { medidaProtetiva: "true" })} />
           </ul>
@@ -353,8 +353,8 @@ function Dashboard() {
         </Panel></div>
         <div className={panelFxClass}><Panel title="VISÃO DE URGÊNCIA" accent="destructive">
           <ul className="space-y-2 text-sm">
-            <Row label="Prazo vencido" value={String(prazoVencido)} color="var(--destructive)" onClick={() => goTo('/inqueritos', { prazo: 'critico' })} />
-            <Row label="Vencendo em 7 dias" value={String(prazoVencendo7)} color="var(--warning)" onClick={() => goTo('/inqueritos', { prazo: '7dias' })} />
+            <Row label="Prazo vencido" value={String(prazoVencido)} color="var(--destructive)" onClick={() => goTo('/inqueritos', { prazo: 'vencido' })} />
+            <Row label="Vencendo em 7 dias" value={String(prazoVencendo7)} color="var(--warning)" onClick={() => goTo('/inqueritos', { prazo: 'vencendo' })} />
             <Row label="Prazo crítico (0-3 dias)" value={String(prazoCritico)} color="var(--destructive)" onClick={() => goTo('/inqueritos', { prazo: 'critico' })} />
             <Row label="Representações vencidas" value={String(repsVencidas)} color="var(--destructive)" onClick={() => goTo('/representacoes', { operationalFilter: 'vencidas' })} />
             <Row label="Representações vencendo (7 dias)" value={String(repsVencendo7)} color="var(--warning)" onClick={() => goTo('/representacoes', { operationalFilter: 'vencendo' })} />
