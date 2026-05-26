@@ -6,6 +6,7 @@ export type InqueritoRecord = {
   numero_ppe: string | null;
   numero_fisico: string | null;
   numero_bo: string | null;
+  visibilidade: string | null;
   tipo: string | null;
   tipificacao: string | null;
   gravidade: string | null;

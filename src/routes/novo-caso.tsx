@@ -50,6 +50,7 @@ function NovoCaso() {
   const [relatorioEnviado, setRelatorioEnviado] = useState("");
   const [dataEnvioRelatorio, setDataEnvioRelatorio] = useState("");
   const [representacoesLegais, setRepresentacoesLegais] = useState("");
+  const [visibilidade, setVisibilidade] = useState("");
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [checkingAccess, setCheckingAccess] = useState(true);
 
@@ -95,6 +96,7 @@ function NovoCaso() {
       numero_ppe: ppe.trim() || null,
       numero_bo: numeroBo.trim() || null,
       numero_fisico: numeroFisico.trim() || null,
+      visibilidade: visibilidade.trim() || null,
       tipificacao: tipificacao.trim() || null,
       vitima: vitima.trim() || null,
       investigado: investigado.trim() || null,
@@ -185,7 +187,7 @@ function NovoCaso() {
           <Field label="Nº do B.O." placeholder="Ex.: 2026.000001" value={numeroBo} onChange={(e) => setNumeroBo(e.target.value)} />
           <Field label="Nº Físico" placeholder="Ex.: 2026.001.0001" value={numeroFisico} onChange={(e) => setNumeroFisico(e.target.value)} />
           <Select label="Tipo de Procedimento" options={["Inquérito Policial", "TCO", "Verificação Preliminar", "Outros"]} />
-          <Select label="Visibilidade" options={["Público", "Privado"]} />
+          <Select label="Visibilidade" options={["Público", "Privado"]} value={visibilidade} onChange={setVisibilidade} />
         </SectionCard>
 
         <SectionCard title="Datas">

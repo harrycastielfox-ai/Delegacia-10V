@@ -87,7 +87,7 @@ function EditarInquerito() {
         setProfile(currentProfile);
         if (!canEditCases(currentProfile)) { setRestricted(true); return; }
         const raw = inquerito as unknown as Record<string, unknown>;
-        const visibility = String(raw.visibilidade ?? raw.visibility ?? raw.publico_privado ?? "publico").toLowerCase();
+        const visibility = String(raw.visibilidade ?? raw.visibility ?? raw.publico_privado ?? "").toLowerCase();
         const isPrivate = visibility.includes("priv") || visibility.includes("sig");
         if (isPrivate && canOnlyViewPublicCases(currentProfile)) { setRestricted(true); return; }
         if (!ativo) return;
@@ -160,6 +160,7 @@ function EditarInquerito() {
         numero_ppe: numeroPpe.trim() || null,
         numero_fisico: numeroFisico.trim() || null,
         numero_bo: numeroBo.trim() || null,
+        visibilidade: visibilidade.trim() || null,
         tipificacao: tipificacao.trim() || null,
         gravidade: gravidade.trim() || null,
         tipo: tipo.trim() || null,
