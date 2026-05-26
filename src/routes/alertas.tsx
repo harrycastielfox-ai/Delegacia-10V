@@ -18,6 +18,45 @@ const icons: Record<ModuleKey, typeof AlertTriangle> = {
   sigilosas: ShieldAlert,
 };
 
+const moduleTone: Record<ModuleKey, { icon: string; badge: string; cta: string; hover: string }> = {
+  criticos: {
+    icon: "border-red-500/30 bg-red-500/10 text-red-300/90",
+    badge: "border-red-500/30 bg-red-500/10 text-red-200",
+    cta: "text-red-300 group-hover:text-red-200 group-focus-visible:text-red-200",
+    hover: "hover:border-red-500/45 hover:bg-red-500/[0.06] hover:shadow-[0_0_0_1px_rgba(239,68,68,0.2)] focus-visible:border-red-500/55 focus-visible:bg-red-500/[0.08] focus-visible:shadow-[0_0_0_1px_rgba(239,68,68,0.25)]",
+  },
+  prazos: {
+    icon: "border-emerald-500/30 bg-emerald-500/10 text-emerald-300/90",
+    badge: "border-emerald-500/30 bg-emerald-500/10 text-emerald-200",
+    cta: "text-emerald-300 group-hover:text-emerald-200 group-focus-visible:text-emerald-200",
+    hover: "hover:border-emerald-500/45 hover:bg-emerald-500/[0.06] hover:shadow-[0_0_0_1px_rgba(16,185,129,0.2)] focus-visible:border-emerald-500/55 focus-visible:bg-emerald-500/[0.08] focus-visible:shadow-[0_0_0_1px_rgba(16,185,129,0.25)]",
+  },
+  operacionais: {
+    icon: "border-orange-500/30 bg-orange-500/10 text-orange-300/90",
+    badge: "border-orange-500/30 bg-orange-500/10 text-orange-200",
+    cta: "text-orange-300 group-hover:text-orange-200 group-focus-visible:text-orange-200",
+    hover: "hover:border-orange-500/45 hover:bg-orange-500/[0.06] hover:shadow-[0_0_0_1px_rgba(249,115,22,0.2)] focus-visible:border-orange-500/55 focus-visible:bg-orange-500/[0.08] focus-visible:shadow-[0_0_0_1px_rgba(249,115,22,0.25)]",
+  },
+  judiciais: {
+    icon: "border-blue-500/30 bg-blue-500/10 text-blue-300/90",
+    badge: "border-blue-500/30 bg-blue-500/10 text-blue-200",
+    cta: "text-blue-300 group-hover:text-blue-200 group-focus-visible:text-blue-200",
+    hover: "hover:border-blue-500/45 hover:bg-blue-500/[0.06] hover:shadow-[0_0_0_1px_rgba(59,130,246,0.2)] focus-visible:border-blue-500/55 focus-visible:bg-blue-500/[0.08] focus-visible:shadow-[0_0_0_1px_rgba(59,130,246,0.25)]",
+  },
+  "dados-incompletos": {
+    icon: "border-amber-500/30 bg-amber-500/10 text-amber-300/90",
+    badge: "border-amber-500/30 bg-amber-500/10 text-amber-200",
+    cta: "text-amber-300 group-hover:text-amber-200 group-focus-visible:text-amber-200",
+    hover: "hover:border-amber-500/45 hover:bg-amber-500/[0.06] hover:shadow-[0_0_0_1px_rgba(245,158,11,0.2)] focus-visible:border-amber-500/55 focus-visible:bg-amber-500/[0.08] focus-visible:shadow-[0_0_0_1px_rgba(245,158,11,0.25)]",
+  },
+  sigilosas: {
+    icon: "border-violet-500/30 bg-violet-500/10 text-violet-300/90",
+    badge: "border-violet-500/30 bg-violet-500/10 text-violet-200",
+    cta: "text-violet-300 group-hover:text-violet-200 group-focus-visible:text-violet-200",
+    hover: "hover:border-violet-500/45 hover:bg-violet-500/[0.06] hover:shadow-[0_0_0_1px_rgba(139,92,246,0.2)] focus-visible:border-violet-500/55 focus-visible:bg-violet-500/[0.08] focus-visible:shadow-[0_0_0_1px_rgba(139,92,246,0.25)]",
+  },
+};
+
 function Alertas() {
   const location = useLocation();
   const isAlertasIndex = location.pathname === "/alertas";
@@ -62,7 +101,8 @@ function Alertas() {
       const meta = moduleMeta[key];
       const Icon = icons[key];
       const count = moduleAlerts[key].length;
-      return <div key={key} className="rounded-xl border border-border bg-card p-4 text-left transition hover:border-emerald-500/40 hover:shadow-[0_0_0_1px_rgba(16,185,129,0.25)]"><div className="mb-3 flex items-center justify-between"><span className="rounded-md border border-emerald-500/30 bg-emerald-500/10 p-1"><Icon className="h-4 w-4 text-emerald-300/90" /></span><span className="rounded-full border border-border px-2 py-0.5 text-[10px] uppercase tracking-[0.08em] text-muted-foreground">{meta.badge}</span></div><h3 className="text-sm font-semibold text-foreground">{meta.title}</h3><p className="mt-1 min-h-[36px] text-xs text-muted-foreground">{meta.desc}</p><div className="mt-3 flex items-end justify-between"><div><p className="text-[11px] uppercase tracking-[0.08em] text-muted-foreground">Alertas</p><p className="text-xl font-semibold text-foreground">{count}</p></div><Link to="/alertas/$modulo" params={{ modulo: key }} className="inline-flex items-center gap-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-emerald-300 hover:text-emerald-200">Abrir módulo <ArrowRight className="h-3.5 w-3.5" /></Link></div></div>;
+      const tone = moduleTone[key];
+      return <Link key={key} to="/alertas/$modulo" params={{ modulo: key }} className={`group rounded-xl border border-border bg-card p-4 text-left transition-all duration-200 cursor-pointer ${tone.hover}`}><div className="mb-3 flex items-center justify-between"><span className={`rounded-md border p-1 ${tone.icon}`}><Icon className="h-4 w-4" /></span><span className={`rounded-full border px-2 py-0.5 text-[10px] uppercase tracking-[0.08em] ${tone.badge}`}>{meta.badge}</span></div><h3 className="text-sm font-semibold text-foreground">{meta.title}</h3><p className="mt-1 min-h-[36px] text-xs text-muted-foreground">{meta.desc}</p><div className="mt-3 flex items-end justify-between"><div><p className="text-[11px] uppercase tracking-[0.08em] text-muted-foreground">Alertas</p><p className="text-xl font-semibold text-foreground">{count}</p></div><span className={`inline-flex items-center gap-1 text-[11px] font-semibold uppercase tracking-[0.08em] transition-colors ${tone.cta}`}>Abrir módulo <ArrowRight className="h-3.5 w-3.5" /></span></div></Link>;
     })}</section> : null}
   </div></AppLayout>;
 }
