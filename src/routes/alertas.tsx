@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { Outlet, createFileRoute, Link, useLocation } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { AlertTriangle, ArrowRight, Bell, Clock3, FileSearch, Gavel, ShieldAlert } from "lucide-react";
 import { AppLayout } from "@/components/AppLayout";
@@ -19,6 +19,8 @@ const icons: Record<ModuleKey, typeof AlertTriangle> = {
 };
 
 function Alertas() {
+  const location = useLocation();
+  const isAlertasIndex = location.pathname === "/alertas";
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [moduleAlerts, setModuleAlerts] = useState(buildModuleAlerts([]));
@@ -49,6 +51,8 @@ function Alertas() {
       representacoes: alerts.filter((a) => a.module === "Representação").length,
     };
   }, [moduleAlerts]);
+
+  if (!isAlertasIndex) return <Outlet />;
 
   return <AppLayout><div className="space-y-4"><PageHeader title="Central de Alertas" subtitle="Selecione um módulo para visualizar os alertas detalhados." showActions={false} />
     <section className="grid grid-cols-2 gap-2 md:grid-cols-4">{[["Total", stats.total], ["Críticos", stats.criticos], ["Altos", stats.altos], ["Médios", stats.medios], ["Baixos", stats.baixos], ["Inquéritos", stats.inqueritos], ["Representações", stats.representacoes]].map(([k, v]) => <div key={String(k)} className="rounded-lg border border-border bg-card px-3 py-2"><p className="text-[11px] uppercase tracking-[0.1em] text-muted-foreground">{k}</p><p className="text-xl font-semibold">{v}</p></div>)}</section>
