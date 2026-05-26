@@ -94,6 +94,16 @@ function Alertas() {
   if (!isAlertasIndex) return <Outlet />;
 
   return <AppLayout><div className="space-y-4"><PageHeader title="Central de Alertas" subtitle="Selecione um módulo para visualizar os alertas detalhados." showActions={false} />
+    <section className="rounded-xl border border-emerald-500/30 bg-emerald-500/[0.07] px-4 py-3">
+      <p className="text-xs font-semibold uppercase tracking-[0.08em] text-emerald-200">Central operacional ativa</p>
+      <p className="mt-1 text-sm text-foreground/90">Alertas calculados com base nos Inquéritos e Representações cadastrados.</p>
+      <p className="mt-1 text-xs text-muted-foreground">Priorize críticos, prazos e pendências operacionais.</p>
+      <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-emerald-100/90">
+        <span>Total de alertas: <strong>{stats.total}</strong></span>
+        <span>Críticos: <strong>{stats.criticos}</strong></span>
+        <span>Representações sigilosas: <strong>{moduleAlerts.sigilosas.length}</strong></span>
+      </div>
+    </section>
     <section className="grid grid-cols-2 gap-2 md:grid-cols-4">{[["Total", stats.total], ["Críticos", stats.criticos], ["Altos", stats.altos], ["Médios", stats.medios], ["Baixos", stats.baixos], ["Inquéritos", stats.inqueritos], ["Representações", stats.representacoes]].map(([k, v]) => <div key={String(k)} className="rounded-lg border border-border bg-card px-3 py-2"><p className="text-[11px] uppercase tracking-[0.1em] text-muted-foreground">{k}</p><p className="text-xl font-semibold">{v}</p></div>)}</section>
     {loading ? <div className="rounded-lg border border-border bg-card p-4 text-sm text-muted-foreground">Carregando alertas…</div> : null}
     {!loading && error ? <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive">{error}</div> : null}
