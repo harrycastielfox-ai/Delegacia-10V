@@ -60,6 +60,32 @@ function Dashboard() {
     setNowTs(Date.now());
   }, []);
 
+
+
+  const normalizeText = (value: unknown) => String(value ?? "").trim().toLowerCase();
+  const parseValidDate = (value: unknown) => {
+    if (!value) return null;
+    const d = new Date(String(value));
+    return Number.isNaN(d.getTime()) ? null : d;
+  };
+  const isOverdue = (value: unknown) => {
+    const d = parseValidDate(value);
+    return d && nowTs !== null ? d.getTime() < nowTs : false;
+  };
+  const isDueInDays = (value: unknown, days: number) => {
+    const d = parseValidDate(value);
+    if (!d || nowTs === null) return false;
+    const diff = (d.getTime() - nowTs) / (1000 * 60 * 60 * 24);
+    return diff >= 0 && diff <= days;
+  };
+  const isYesLike = (value: unknown) => ["true","t","1","sim","s","yes","y"].includes(normalizeText(value));
+  const isSigilosa = (value: unknown) => ["true","t","1","sim","s","yes","y","sigilosa","sigiloso"].includes(normalizeText(value));
+  const isStatus = (value: unknown, terms: string[]) => terms.some((t) => normalizeText(value).includes(t));
+  const hasDiligenciaPendente = (value: unknown) => {
+    const t = normalizeText(value);
+    return Boolean(t) && !["nao","não","nenhuma","sem","n/a","na"].includes(t);
+  };
+
   useEffect(() => {
     async function loadDashboardData() {
       try {
@@ -80,18 +106,24 @@ function Dashboard() {
 
   const total = inqueritos.length;
   const totalRepresentacoes = representacoes.length;
-  const emAndamento = inqueritos.filter((i) => i.situacao?.toLowerCase().includes("andamento")).length;
-  const finalizados = inqueritos.filter((i) => i.relatorio_enviado?.toLowerCase() === "sim" || i.situacao?.toLowerCase().includes("conclu")).length;
-  const prioridadeAlta = inqueritos.filter((i) => i.prioridade?.toLowerCase().includes("alta")).length;
-  const reuPreso = inqueritos.filter((i) => i.reu_preso?.toLowerCase() === "sim").length;
-  const medidasProtetivas = inqueritos.filter((i) => i.medida_protetiva?.toLowerCase() === "sim").length;
-  const prazoCritico = inqueritos.filter((i) => {
-    if (!i.prazo || nowTs === null) return false;
-    const prazoDate = new Date(i.prazo);
-    if (Number.isNaN(prazoDate.getTime())) return false;
-    const diffDays = (prazoDate.getTime() - nowTs) / (1000 * 60 * 60 * 24);
-    return diffDays >= 0 && diffDays <= 3;
-  }).length;
+  const emAndamento = inqueritos.filter((i) => isStatus(i.situacao, ["andamento"])).length;
+  const finalizados = inqueritos.filter((i) => isYesLike(i.relatorio_enviado) || isStatus(i.situacao, ["conclu"])).length;
+  const prioridadeAlta = inqueritos.filter((i) => isStatus(i.prioridade, ["alta"])).length;
+  const reuPreso = inqueritos.filter((i) => isYesLike(i.reu_preso)).length;
+  const medidasProtetivas = inqueritos.filter((i) => isYesLike(i.medida_protetiva)).length;
+  const prazoCritico = inqueritos.filter((i) => isDueInDays(i.prazo, 3)).length;
+  const prazoVencido = inqueritos.filter((i) => isOverdue(i.prazo)).length;
+  const prazoVencendo7 = inqueritos.filter((i) => isDueInDays(i.prazo, 7)).length;
+  const diligenciasPendentes = inqueritos.filter((i) => hasDiligenciaPendente(i.diligencias_pendentes)).length;
+
+  const repsPendentes = representacoes.filter((r) => isStatus(r.status, ["pendente","analise","análise"])).length;
+  const repsDeferidas = representacoes.filter((r) => isStatus(r.status, ["deferida","deferido"])).length;
+  const repsIndeferidas = representacoes.filter((r) => isStatus(r.status, ["indeferida","indeferido"])).length;
+  const repsCumpridas = representacoes.filter((r) => isStatus(r.status, ["cumprida","cumprido"])).length;
+  const repsSigilosas = representacoes.filter((r) => isSigilosa(r.pedido_sigiloso)).length;
+  const repsVencidas = representacoes.filter((r) => isOverdue(r.data_vencimento)).length;
+  const repsVencendo7 = representacoes.filter((r) => isDueInDays(r.data_vencimento, 7)).length;
+  const repsAcompanhamentoEspecial = representacoes.filter((r) => isYesLike(r.acompanhamento_especial)).length;
   const taxaConclusao = total === 0 ? 0 : Number(((finalizados / total) * 100).toFixed(1));
   const relatadosNaoEnviados = Math.max(total - finalizados, 0);
   const POR_STATUS = useMemo(
@@ -211,17 +243,17 @@ function Dashboard() {
                 <div className="text-xs text-muted-foreground">IP de homicídios pendentes</div>
               </div>
               <span className="text-[10px] font-bold bg-info/15 text-info border border-info/30 px-2 py-1 rounded">
-                {0}
+                {prazoVencido}
               </span>
             </li>
             <li className="flex items-center gap-3 rounded-md px-1.5 py-1 transition-colors duration-200 hover:bg-success/10">
               <span className="h-2 w-2 rounded-full bg-purple shrink-0" />
               <div className="flex-1">
-                <div className="text-sm font-semibold">Crimes Sexuais sem relatar</div>
-                <div className="text-xs text-muted-foreground">Aguardando conclusão</div>
+                <div className="text-sm font-semibold">Representações vencendo (7 dias)</div>
+                <div className="text-xs text-muted-foreground">Urgência judicial</div>
               </div>
               <span className="text-[10px] font-bold bg-purple/15 text-purple border border-purple/30 px-2 py-1 rounded">
-                {0}
+                {repsVencendo7}
               </span>
             </li>
           </ul>
@@ -286,6 +318,41 @@ function Dashboard() {
               </div>
             </div>
           </div>
+        </Panel></div>
+      </div>
+
+
+      {/* Blocos operacionais/judiciais/urgência */}
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-5 mb-6">
+        <div className={panelFxClass}><Panel title="VISÃO OPERACIONAL" accent="success">
+          <ul className="space-y-2 text-sm">
+            <Row label="Em andamento" value={String(emAndamento)} color="var(--info)" onClick={() => goTo("/inqueritos", { situacao: "em-andamento" })} />
+            <Row label="Concluídos" value={String(finalizados)} color="var(--success)" onClick={() => goTo("/inqueritos", { situacao: "concluidos" })} />
+            <Row label="Alta prioridade" value={String(prioridadeAlta)} color="var(--warning)" onClick={() => goTo("/inqueritos", { prioridade: "alta" })} />
+            <Row label="Diligências pendentes" value={String(diligenciasPendentes)} color="var(--destructive)" onClick={() => goTo("/inqueritos")} />
+            <Row label="Réu preso" value={String(reuPreso)} color="var(--purple)" onClick={() => goTo("/inqueritos", { reuPreso: "true" })} />
+            <Row label="Medida protetiva" value={String(medidasProtetivas)} color="var(--warning)" onClick={() => goTo("/inqueritos", { medidaProtetiva: "true" })} />
+          </ul>
+        </Panel></div>
+        <div className={panelFxClass}><Panel title="VISÃO JUDICIAL" accent="info">
+          <ul className="space-y-2 text-sm">
+            <Row label="Total de representações" value={String(totalRepresentacoes)} color="var(--info)" onClick={() => goTo('/representacoes')} />
+            <Row label="Pendentes" value={String(repsPendentes)} color="var(--warning)" onClick={() => goTo('/representacoes')} />
+            <Row label="Deferidas" value={String(repsDeferidas)} color="var(--success)" onClick={() => goTo('/representacoes')} />
+            <Row label="Indeferidas" value={String(repsIndeferidas)} color="var(--destructive)" onClick={() => goTo('/representacoes')} />
+            <Row label="Cumpridas" value={String(repsCumpridas)} color="var(--primary)" onClick={() => goTo('/representacoes')} />
+            <Row label="Sigilosas" value={String(repsSigilosas)} color="var(--purple)" onClick={() => goTo('/representacoes')} />
+          </ul>
+        </Panel></div>
+        <div className={panelFxClass}><Panel title="VISÃO DE URGÊNCIA" accent="destructive">
+          <ul className="space-y-2 text-sm">
+            <Row label="Prazo vencido" value={String(prazoVencido)} color="var(--destructive)" onClick={() => goTo('/inqueritos', { prazo: 'critico' })} />
+            <Row label="Vencendo em 7 dias" value={String(prazoVencendo7)} color="var(--warning)" onClick={() => goTo('/inqueritos', { prazo: '7dias' })} />
+            <Row label="Prazo crítico (0-3 dias)" value={String(prazoCritico)} color="var(--destructive)" onClick={() => goTo('/inqueritos', { prazo: 'critico' })} />
+            <Row label="Representações vencidas" value={String(repsVencidas)} color="var(--destructive)" onClick={() => goTo('/representacoes')} />
+            <Row label="Representações vencendo (7 dias)" value={String(repsVencendo7)} color="var(--warning)" onClick={() => goTo('/representacoes')} />
+            <Row label="Acompanhamento especial" value={String(repsAcompanhamentoEspecial)} color="var(--info)" onClick={() => goTo('/representacoes')} />
+          </ul>
         </Panel></div>
       </div>
 
