@@ -42,7 +42,7 @@ function AlertasModulo() {
   const meta = selectedModule ? moduleMeta[selectedModule] : null;
 
   return <AppLayout><div className="space-y-4">
-    <div><Link to="/alertas" className="text-xs font-medium text-emerald-300 hover:underline">← Voltar para Central de Alertas</Link></div>
+    <div><Link to="/alertas" className="inline-flex items-center gap-2 text-xs font-medium text-emerald-300 hover:underline"><span aria-hidden="true" className="inline-block h-2 w-2 rounded-[2px] border border-emerald-300/60 bg-emerald-400/90 shadow-[0_0_8px_rgba(52,211,153,0.35)]" />← Voltar para Central de Alertas</Link></div>
 
     {!selectedModule ? <section className="rounded-xl border border-border bg-card p-4"><h2 className="text-lg font-semibold">Módulo inválido</h2><p className="mt-1 text-sm text-muted-foreground">O módulo informado não existe. Use os cards da Central de Alertas para abrir um módulo válido.</p></section> : <section className="rounded-xl border border-border bg-card p-4"><h2 className="text-lg font-semibold">{meta?.title}</h2><p className="mt-1 text-xs text-muted-foreground">{meta?.desc}</p><p className="mt-2 text-sm font-medium">Total de alertas do módulo: {detailedAlerts.length}</p></section>}
 
