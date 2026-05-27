@@ -244,11 +244,11 @@ function DetalheRepresentacao() {
   const situacaoOperacional = getSituacaoOperacional(item.status);
   const prioridadeText = withFallback(item.prioridade_operacional);
   const sectionCardClass =
-    "self-start rounded-xl border border-border/70 bg-card/60 p-4 shadow-[0_8px_24px_rgba(0,0,0,0.35)] transition-colors duration-200 hover:border-border";
-  const sectionTitleClass = "mb-3 text-[11px] font-bold uppercase tracking-[0.16em] text-zinc-100 drop-shadow-[0_0_6px_rgba(255,255,255,0.18)]";
+    "self-start rounded-2xl border border-emerald-400/15 bg-gradient-to-b from-zinc-900/95 to-black/85 p-4 shadow-[0_14px_36px_rgba(0,0,0,0.5)] transition-all duration-200 hover:border-emerald-300/25";
+  const sectionTitleClass = "mb-3 text-[11px] font-bold uppercase tracking-[0.16em] text-zinc-100";
   const infoRowClass = "grid gap-1 py-2.5 sm:grid-cols-[190px_1fr] sm:gap-3";
   const summaryCardClass =
-    "self-start rounded-lg border border-border/70 bg-muted/10 px-3 py-2.5 transition-colors duration-200 hover:border-border";
+    "self-start rounded-xl border border-emerald-400/15 bg-zinc-950/80 px-3.5 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)] transition-all duration-200 hover:border-emerald-300/25";
   const cardSections: Array<{ title: string; items: Array<[string, string | null | undefined]> }> = [
     {
       title: "Identificação Judicial",
@@ -303,30 +303,37 @@ function DetalheRepresentacao() {
 
   return (
     <AppLayout>
-      <div className="space-y-4">
-        <header className="rounded-xl border border-border/70 bg-card/60 p-4 shadow-[0_10px_30px_rgba(0,0,0,0.4)]">
+      <div className="space-y-5">
+        <header className="rounded-2xl border border-emerald-400/20 bg-gradient-to-br from-zinc-950 via-zinc-900 to-black p-5 shadow-[0_18px_50px_rgba(0,0,0,0.55)]">
           <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
             <div className="min-w-0">
-              <h1 className="text-2xl font-bold break-words text-zinc-100">{isRepresentacaoSigilosa(item) ? "Representação sigilosa" : "Representação"}</h1>
-              <p className="mt-0.5 text-sm break-words text-zinc-400">
+              <div className="flex flex-wrap items-center gap-2">
+                <h1 className="text-2xl font-bold break-words text-zinc-100">{isRepresentacaoSigilosa(item) ? "Representação sigilosa" : "Representação"}</h1>
+                {isRepresentacaoSigilosa(item) ? (
+                  <span className="inline-flex items-center rounded-full border border-amber-300/35 bg-amber-400/10 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-amber-100">
+                    Sigilo ativo
+                  </span>
+                ) : null}
+              </div>
+              <p className="mt-1 text-sm break-words text-zinc-400">
                 {subtitleParts.length > 0 ? subtitleParts.join(" • ") : "Detalhes da representação cadastrada"}
               </p>
-              <p className="mt-1.5 text-sm break-words text-zinc-300">{item.numero_ppe ? `PPE/Procedimento: ${item.numero_ppe}` : `Processo/PPE: ${withFallback(item.processo_judicial)}`}</p>
+              <p className="mt-2 text-sm break-words text-emerald-100/90">{item.numero_ppe ? `PPE/Procedimento: ${item.numero_ppe}` : `Processo/PPE: ${withFallback(item.processo_judicial)}`}</p>
             </div>
 
             <div className="flex flex-wrap items-center gap-2 xl:justify-end">
-              <button onClick={() => window.print()} className="rounded-md border border-border bg-muted/20 px-3 py-1.5 text-xs text-zinc-100 transition hover:bg-muted/35">
+              <button onClick={() => window.print()} className="rounded-lg border border-zinc-700 bg-zinc-900/80 px-3.5 py-1.5 text-xs text-zinc-100 transition hover:border-zinc-500 hover:bg-zinc-800/80">
                 Imprimir
               </button>
               <button
                 onClick={() => navigate({ to: "/representacoes/$representacaoId/editar", params: { representacaoId: item.id } })}
-                className="rounded-md border border-border px-3 py-1.5 text-xs text-zinc-100 transition hover:bg-muted/35"
+                className="rounded-lg border border-emerald-400/35 bg-emerald-500/10 px-3.5 py-1.5 text-xs text-emerald-100 transition hover:border-emerald-300/50 hover:bg-emerald-500/15"
               >
                 Editar
               </button>
               <button
                 onClick={() => setShowDeleteModal(true)}
-                className="rounded-md border border-rose-400/55 bg-rose-500/15 px-3 py-1.5 text-xs font-medium text-rose-100 shadow-[0_0_0_rgba(251,113,133,0)] transition-all duration-200 hover:border-rose-300/70 hover:bg-rose-500/25 hover:text-rose-50 hover:shadow-[0_0_14px_rgba(251,113,133,0.25)]"
+                className="rounded-lg border border-rose-400/40 bg-rose-500/10 px-3.5 py-1.5 text-xs font-medium text-rose-100 shadow-[0_0_0_rgba(251,113,133,0)] transition-all duration-200 hover:border-rose-300/60 hover:bg-rose-500/20 hover:text-rose-50 hover:shadow-[0_0_14px_rgba(251,113,133,0.2)]"
               >
                 Excluir
               </button>
@@ -334,7 +341,7 @@ function DetalheRepresentacao() {
           </div>
         </header>
 
-        <section className="grid items-start gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+        <section className="grid items-start gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
           {[
             ["Status judicial", statusAlias, "text-emerald-100"],
             ["Situação", situacaoOperacional.replace("Situação: ", ""), "text-zinc-100"],
@@ -352,18 +359,18 @@ function DetalheRepresentacao() {
                   {value}
                 </span>
               ) : (
-                <p className={`mt-1 text-sm font-semibold break-words ${valueClass}`}>{value}</p>
+                <p className={`mt-1.5 text-sm font-semibold break-words ${valueClass}`}>{value}</p>
               )}
             </article>
           ))}
         </section>
 
-        <section className="grid items-start gap-4 xl:grid-cols-[1.15fr_0.85fr]">
+        <section className="grid items-start gap-4 xl:grid-cols-2">
           <div className="space-y-4 self-start">
             {[cardSections[0], cardSections[1]].map(({ title, items }) => (
               <article key={title} className={sectionCardClass}>
                 <h2 className={sectionTitleClass}>{title}</h2>
-                <div className="divide-y divide-border/40">
+                <div className="divide-y divide-zinc-700/50">
                   {items.map(([label, value]) => (
                     <div key={label} className={infoRowClass}>
                       <p className="text-[11px] uppercase tracking-wide text-zinc-500">{label}</p>
@@ -376,11 +383,11 @@ function DetalheRepresentacao() {
             <article className={sectionCardClass}>
               <h2 className={sectionTitleClass}>Pendências e Alertas</h2>
               <div className="space-y-2">
-                <div className="rounded-lg border border-border/40 bg-muted/5 px-3 py-2">
+                <div className="rounded-xl border border-emerald-400/15 bg-zinc-900/70 px-3 py-2.5">
                   <p className="text-[11px] uppercase tracking-wide text-zinc-500">Prazo operacional</p>
                   <p className="mt-1 text-sm text-zinc-100">{formatPrazoStatus(item)}</p>
                 </div>
-                <div className="rounded-lg border border-border/40 bg-muted/5 px-3 py-2">
+                <div className="rounded-xl border border-emerald-400/15 bg-zinc-900/70 px-3 py-2.5">
                   <p className="text-[11px] uppercase tracking-wide text-zinc-500">Sinalização</p>
                   <p className="mt-1 text-sm text-zinc-300">
                     {item.acompanhamento_especial ? "Acompanhamento especial ativo." : "Sem alertas operacionais marcados."}
@@ -394,7 +401,7 @@ function DetalheRepresentacao() {
             {[cardSections[2], cardSections[3]].map(({ title, items }) => (
               <article key={title} className={sectionCardClass}>
                 <h2 className={sectionTitleClass}>{title}</h2>
-                <div className="divide-y divide-border/40">
+                <div className="divide-y divide-zinc-700/50">
                   {items.map(([label, value]) => (
                     <div key={label} className="grid gap-1 py-2.5 sm:grid-cols-[170px_1fr] sm:gap-3">
                       <p className="text-[11px] uppercase tracking-wide text-zinc-500">{label}</p>
@@ -417,7 +424,7 @@ function DetalheRepresentacao() {
           {fundamentacaoCards.map(([title, value]) => (
             <article key={title} className={sectionCardClass}>
               <h2 className={sectionTitleClass}>{title}</h2>
-              <div className="min-w-0 max-w-full min-h-[124px] overflow-hidden rounded-lg border border-border/40 bg-muted/5 px-4 py-3">
+              <div className="min-w-0 max-w-full overflow-hidden rounded-xl border border-emerald-400/15 bg-zinc-900/70 px-4 py-3">
                 <p
                   className={`min-w-0 max-w-full overflow-hidden whitespace-pre-wrap break-words [overflow-wrap:anywhere] text-sm leading-relaxed ${
                     isEmptyValue(value) ? "text-zinc-500" : "text-zinc-100"
@@ -430,7 +437,7 @@ function DetalheRepresentacao() {
           ))}
         </section>
 
-        <section className="rounded-xl border border-border/70 bg-card/55 p-5 shadow-[0_8px_24px_rgba(0,0,0,0.35)] sm:p-6">
+        <section className="rounded-2xl border border-emerald-400/15 bg-gradient-to-b from-zinc-900/95 to-black/85 p-5 shadow-[0_14px_36px_rgba(0,0,0,0.5)] sm:p-6">
           <h2 className={sectionTitleClass}>Linha do Tempo Operacional</h2>
           {timelineEvents.length === 0 ? (
             <div className="rounded-lg border border-border/40 bg-muted/5 px-4 py-3 text-sm text-zinc-400">
