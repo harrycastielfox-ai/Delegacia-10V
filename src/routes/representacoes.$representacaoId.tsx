@@ -40,27 +40,27 @@ function getSituacaoOperacional(status?: string | null) {
 function getStatusBadgeClass(status?: string | null) {
   const normalized = normalizeText(status);
   if (normalized.includes("deferida") || normalized.includes("cumprida")) {
-    return "border-emerald-400/35 bg-emerald-400/10 text-emerald-200";
+    return "border-emerald-300/55 bg-emerald-400/20 text-emerald-50";
   }
   if (normalized.includes("indeferida")) {
-    return "border-rose-400/35 bg-rose-400/10 text-rose-200";
+    return "border-rose-300/55 bg-rose-400/20 text-rose-50";
   }
   if (normalized.includes("aguardando") || normalized.includes("pendente")) {
-    return "border-amber-300/35 bg-amber-300/10 text-amber-100";
+    return "border-amber-300/60 bg-amber-400/22 text-amber-50";
   }
   if (normalized.includes("enviada") || normalized.includes("analise")) {
-    return "border-emerald-300/30 bg-emerald-300/10 text-emerald-100";
+    return "border-sky-300/55 bg-sky-400/18 text-sky-50";
   }
-  return "border-emerald-200/30 bg-emerald-200/10 text-emerald-100";
+  return "border-zinc-300/45 bg-zinc-500/16 text-zinc-50";
 }
 
 function getPrioridadeBadgeClass(prioridade?: string | null) {
   const normalized = prioridade?.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "") ?? "";
-  if (normalized.includes("urgente")) return "border-rose-300/35 bg-rose-400/10 text-rose-100";
-  if (normalized.includes("alta")) return "border-amber-300/35 bg-amber-300/10 text-amber-100";
-  if (normalized.includes("media")) return "border-amber-300/35 bg-amber-300/10 text-amber-100";
-  if (normalized.includes("baixa") || normalized.includes("normal")) return "border-emerald-300/35 bg-emerald-300/10 text-emerald-100";
-  return "border-zinc-500/40 bg-zinc-800/70 text-zinc-200";
+  if (normalized.includes("urgente")) return "border-rose-300/60 bg-rose-400/22 text-rose-50";
+  if (normalized.includes("alta")) return "border-amber-300/60 bg-amber-400/22 text-amber-50";
+  if (normalized.includes("media")) return "border-amber-300/60 bg-amber-400/22 text-amber-50";
+  if (normalized.includes("baixa") || normalized.includes("normal")) return "border-emerald-300/55 bg-emerald-400/20 text-emerald-50";
+  return "border-zinc-300/45 bg-zinc-600/30 text-zinc-50";
 }
 function isEmptyValue(value?: string | null) {
   return !value?.trim();
@@ -155,6 +155,30 @@ function buildTimelineEvents(item: RepresentacaoRecord): TimelineEvent[] {
   if (item.acompanhamento_especial) addEvent({ key: "special-tracking", title: "Marcada como acompanhamento especial", description: "Sinalização interna de acompanhamento prioritário.", tone: "warning", icon: "⚑" });
 
   return events.sort((a, b) => a.sortTime - b.sortTime).map(({ sortTime, ...event }) => event);
+}
+
+
+function getTopIndicatorBadgeClass(label: string, value?: string | null) {
+  const normalized = normalizeText(value);
+  if (label === "Situação") {
+    if (normalized.includes("indefer")) return "border-rose-300/55 bg-rose-400/20 text-rose-50";
+    if (normalized.includes("defer") || normalized.includes("cumpr")) return "border-emerald-300/55 bg-emerald-400/20 text-emerald-50";
+    return "border-amber-300/60 bg-amber-400/22 text-amber-50";
+  }
+  if (label === "Prazo") {
+    if (normalized.includes("vencida")) return "border-rose-300/60 bg-rose-400/22 text-rose-50";
+    if (normalized.includes("cumprida")) return "border-emerald-300/55 bg-emerald-400/20 text-emerald-50";
+    return "border-sky-300/55 bg-sky-400/18 text-sky-50";
+  }
+  if (label === "Acomp. especial") {
+    if (normalized === "sim") return "border-violet-300/55 bg-violet-400/20 text-violet-50";
+    if (normalized === "nao") return "border-zinc-300/45 bg-zinc-500/14 text-zinc-100";
+  }
+  if (label === "Sigilosa") {
+    if (normalized.includes("sim") || normalized.includes("sigil")) return "border-amber-300/55 bg-amber-400/18 text-amber-50";
+    if (normalized.includes("nao") || normalized.includes("não")) return "border-zinc-300/45 bg-zinc-500/14 text-zinc-100";
+  }
+  return "border-zinc-300/45 bg-zinc-600/24 text-zinc-50";
 }
 
 function DetalheRepresentacao() {
@@ -309,7 +333,7 @@ function DetalheRepresentacao() {
               <div className="flex flex-wrap items-center gap-2">
                 <h1 className="text-2xl font-bold break-words text-zinc-100">{isRepresentacaoSigilosa(item) ? "Representação sigilosa" : "Representação"}</h1>
                 {isRepresentacaoSigilosa(item) ? (
-                  <span className="inline-flex items-center rounded-full border border-amber-300/35 bg-amber-400/10 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-amber-100">
+                  <span className="inline-flex items-center rounded-full border border-amber-300/55 bg-amber-400/18 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-amber-50 shadow-[0_0_0_1px_rgba(251,191,36,0.12)]">
                     Sigilo ativo
                   </span>
                 ) : null}
@@ -342,13 +366,13 @@ function DetalheRepresentacao() {
 
         <section className="grid items-start gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
           {[
-            ["Status judicial", statusAlias, "text-emerald-100"],
-            ["Situação", situacaoOperacional.replace("Situação: ", ""), "text-zinc-100"],
-            ["Prioridade", prioridadeText, "text-amber-100"],
-            ["Prazo", formatPrazoStatus(item), "text-zinc-100"],
-            ["Acomp. especial", item.acompanhamento_especial == null ? "—" : item.acompanhamento_especial ? "Sim" : "Não", "text-zinc-100"],
-            ["Sigilosa", withFallback(item.pedido_sigiloso), "text-zinc-100"],
-          ].map(([label, value, valueClass]) => (
+            ["Status judicial", statusAlias],
+            ["Situação", situacaoOperacional.replace("Situação: ", "")],
+            ["Prioridade", prioridadeText],
+            ["Prazo", formatPrazoStatus(item)],
+            ["Acomp. especial", item.acompanhamento_especial == null ? "—" : item.acompanhamento_especial ? "Sim" : "Não"],
+            ["Sigilosa", withFallback(item.pedido_sigiloso)],
+          ].map(([label, value]) => (
             <article key={label} className={summaryCardClass}>
               <p className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground">{label}</p>
               {label === "Status judicial" ? (
@@ -358,7 +382,7 @@ function DetalheRepresentacao() {
                   {value}
                 </span>
               ) : (
-                <p className={`mt-1 text-sm font-semibold break-words ${valueClass}`}>{value}</p>
+                <span className={`mt-1 inline-flex w-fit items-center rounded-md border px-2 py-0.5 text-xs font-semibold ${getTopIndicatorBadgeClass(label, value)}`}>{value}</span>
               )}
             </article>
           ))}
