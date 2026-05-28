@@ -244,7 +244,7 @@ const TONE_STYLES: Record<
     iconBg: "bg-cyan-500/10",
     iconBorder: "border-cyan-400/20",
     iconText: "text-cyan-300/85",
-    ring: "hover:border-border hover:shadow-slate-950/10",
+    ring: "",
     chip: "bg-cyan-500/10 text-cyan-100/80 border-cyan-300/20",
   },
 };
@@ -257,7 +257,7 @@ function ModuloCard({ modulo, onIndisponivel }: { modulo: Modulo; onIndisponivel
     <div
       className={`group relative h-full overflow-hidden rounded-xl border p-6 flex flex-col transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xl ${styles.ring} ${
         isOperationalLocation
-          ? "border-border bg-card shadow-[0_0_16px_rgba(34,211,238,0.025),inset_0_1px_0_rgba(255,255,255,0.025)]"
+          ? "border-border bg-card shadow-[0_0_16px_rgba(34,211,238,0.025),inset_0_1px_0_rgba(255,255,255,0.025)] group-hover:border-cyan-400/45 group-focus-visible:border-cyan-400/45 group-hover:bg-cyan-950/10 group-focus-visible:bg-cyan-950/10 group-hover:shadow-[0_0_24px_rgba(34,211,238,0.18),0_0_44px_rgba(16,185,129,0.08),inset_0_1px_0_rgba(255,255,255,0.05)] group-focus-visible:shadow-[0_0_24px_rgba(34,211,238,0.18),0_0_44px_rgba(16,185,129,0.08),inset_0_1px_0_rgba(255,255,255,0.05)]"
           : "border-border bg-card"
       } ${modulo.disponivel ? "cursor-pointer" : "cursor-not-allowed opacity-95"}`}
     >
@@ -267,11 +267,17 @@ function ModuloCard({ modulo, onIndisponivel }: { modulo: Modulo; onIndisponivel
         <div className="flex items-start justify-between gap-3 mb-5">
           <div
             className={`h-14 w-14 rounded-xl border ${styles.iconBg} ${styles.iconBorder} flex items-center justify-center ${
-              isOperationalLocation ? "shadow-[0_0_14px_rgba(34,211,238,0.08)]" : ""
+              isOperationalLocation
+                ? "transition-all duration-200 group-hover:border-cyan-300/40 group-focus-visible:border-cyan-300/40 group-hover:bg-cyan-400/15 group-focus-visible:bg-cyan-400/15 group-hover:shadow-[0_0_14px_rgba(34,211,238,0.16)] group-focus-visible:shadow-[0_0_14px_rgba(34,211,238,0.16)]"
+                : ""
             }`}
           >
             <Icon
-              className={`h-7 w-7 ${styles.iconText} ${isOperationalLocation ? "drop-shadow-[0_0_6px_rgba(34,211,238,0.18)]" : ""}`}
+              className={`h-7 w-7 ${styles.iconText} ${
+                isOperationalLocation
+                  ? "transition-all duration-200 group-hover:text-cyan-200 group-focus-visible:text-cyan-200 group-hover:drop-shadow-[0_0_8px_rgba(34,211,238,0.28)] group-focus-visible:drop-shadow-[0_0_8px_rgba(34,211,238,0.28)]"
+                  : ""
+              }`}
             />
           </div>
           {isOperationalLocation && (
@@ -298,7 +304,13 @@ function ModuloCard({ modulo, onIndisponivel }: { modulo: Modulo; onIndisponivel
             {modulo.disponivel ? "Acessar módulo" : "Em desenvolvimento"}
           </span>
           <ArrowRight
-            className={`h-4 w-4 ${styles.iconText} transition-transform ${modulo.disponivel ? "group-hover:translate-x-1" : "opacity-60"}`}
+            className={`h-4 w-4 ${styles.iconText} transition-all ${
+              modulo.disponivel ? "group-hover:translate-x-1" : "opacity-60"
+            } ${
+              isOperationalLocation
+                ? "group-hover:text-cyan-200 group-focus-visible:text-cyan-200 group-hover:drop-shadow-[0_0_6px_rgba(34,211,238,0.24)] group-focus-visible:drop-shadow-[0_0_6px_rgba(34,211,238,0.24)]"
+                : ""
+            }`}
           />
         </div>
       </div>
@@ -307,7 +319,7 @@ function ModuloCard({ modulo, onIndisponivel }: { modulo: Modulo; onIndisponivel
 
   if (modulo.disponivel && modulo.to)
     return (
-      <Link to={modulo.to} className="block h-full">
+      <Link to={modulo.to} className="group block h-full">
         {cardContent}
       </Link>
     );
@@ -315,7 +327,7 @@ function ModuloCard({ modulo, onIndisponivel }: { modulo: Modulo; onIndisponivel
     <button
       type="button"
       onClick={onIndisponivel}
-      className="block h-full text-left w-full cursor-not-allowed"
+      className="group block h-full text-left w-full cursor-not-allowed focus-visible:outline-none"
     >
       {cardContent}
     </button>
@@ -325,9 +337,9 @@ function ModuloCard({ modulo, onIndisponivel }: { modulo: Modulo; onIndisponivel
 function OperationalMapBackdrop() {
   return (
     <div className="pointer-events-none absolute inset-0" aria-hidden="true">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_18%,rgba(34,211,238,0.035),transparent_34%),radial-gradient(circle_at_88%_78%,rgba(16,185,129,0.03),transparent_32%),linear-gradient(135deg,rgba(2,6,23,0.30),rgba(8,47,73,0.035)_48%,rgba(2,6,23,0.70))]" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_18%,rgba(34,211,238,0.035),transparent_34%),radial-gradient(circle_at_88%_78%,rgba(16,185,129,0.03),transparent_32%),linear-gradient(135deg,rgba(2,6,23,0.30),rgba(8,47,73,0.035)_48%,rgba(2,6,23,0.70))] opacity-90 transition-opacity duration-200 group-hover:opacity-100 group-focus-visible:opacity-100" />
       <svg
-        className="absolute inset-0 h-full w-full opacity-35"
+        className="absolute inset-0 h-full w-full opacity-35 transition-opacity duration-200 group-hover:opacity-50 group-focus-visible:opacity-50"
         viewBox="0 0 420 260"
         preserveAspectRatio="none"
         role="presentation"
@@ -382,6 +394,7 @@ function OperationalMapBackdrop() {
           d="M215 235 L254 211 L287 214 L312 181 L345 170 L362 142 L385 132 L374 101 L337 88 L309 72"
           fill="none"
           stroke="rgba(34,211,238,0.09)"
+          className="transition-all duration-200 group-hover:stroke-[rgba(34,211,238,0.18)] group-focus-visible:stroke-[rgba(34,211,238,0.18)]"
           strokeLinecap="round"
           strokeLinejoin="round"
           strokeWidth="3"
@@ -391,6 +404,7 @@ function OperationalMapBackdrop() {
           d="M215 235 L254 211 L287 214 L312 181 L345 170 L362 142 L385 132 L374 101 L337 88 L309 72"
           fill="none"
           stroke="rgba(16,185,129,0.055)"
+          className="transition-all duration-200 group-hover:stroke-[rgba(16,185,129,0.12)] group-focus-visible:stroke-[rgba(16,185,129,0.12)]"
           strokeDasharray="7 8"
           strokeLinecap="round"
           strokeLinejoin="round"
