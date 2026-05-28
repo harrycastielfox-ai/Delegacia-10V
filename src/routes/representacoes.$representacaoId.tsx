@@ -5,6 +5,7 @@ import { getRepresentacaoById, softDeleteRepresentacao, type RepresentacaoRecord
 import { getCurrentProfile } from "@/lib/auth";
 import { canViewRepresentacoes } from "@/lib/authz";
 import { canAccessSigilosa, isRepresentacaoSigilosa } from "@/lib/representacoesSigilo";
+import { Scale, UserRound, BellRing, FileText, Gavel, ShieldCheck, Clock3 } from "lucide-react";
 
 export const Route = createFileRoute("/representacoes/$representacaoId")({ component: DetalheRepresentacao });
 
@@ -243,12 +244,10 @@ function DetalheRepresentacao() {
   const statusAlias = getStatusAlias(item.status);
   const situacaoOperacional = getSituacaoOperacional(item.status);
   const prioridadeText = withFallback(item.prioridade_operacional);
-  const sectionCardClass =
-    "self-start rounded-2xl border border-emerald-400/15 bg-gradient-to-b from-zinc-900/95 to-black/85 p-4 shadow-[0_14px_36px_rgba(0,0,0,0.5)] transition-all duration-200 hover:border-emerald-300/25";
-  const sectionTitleClass = "mb-3 text-[11px] font-bold uppercase tracking-[0.16em] text-zinc-100";
+  const sectionCardClass = "self-start rounded-xl border border-border/60 bg-card/80 p-4 lg:p-5";
+  const sectionTitleClass = "text-xs font-extrabold uppercase tracking-[0.16em] text-primary";
   const infoRowClass = "grid gap-1 py-2.5 sm:grid-cols-[190px_1fr] sm:gap-3";
-  const summaryCardClass =
-    "self-start rounded-xl border border-emerald-400/15 bg-zinc-950/80 px-3.5 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)] transition-all duration-200 hover:border-emerald-300/25";
+  const summaryCardClass = "self-start rounded-md border border-border/70 bg-card/65 px-3 py-2.5";
   const cardSections: Array<{ title: string; items: Array<[string, string | null | undefined]> }> = [
     {
       title: "Identificação Judicial",
@@ -303,8 +302,8 @@ function DetalheRepresentacao() {
 
   return (
     <AppLayout>
-      <div className="space-y-5">
-        <header className="rounded-2xl border border-emerald-400/20 bg-gradient-to-br from-zinc-950 via-zinc-900 to-black p-5 shadow-[0_18px_50px_rgba(0,0,0,0.55)]">
+      <div className="mx-auto w-full max-w-[1480px] space-y-4 px-1 lg:px-2">
+        <header className="rounded-xl border border-border/70 bg-card/65 p-4 lg:p-5">
           <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
@@ -315,25 +314,25 @@ function DetalheRepresentacao() {
                   </span>
                 ) : null}
               </div>
-              <p className="mt-1 text-sm break-words text-zinc-400">
+              <p className="mt-1 text-sm break-words text-muted-foreground">
                 {subtitleParts.length > 0 ? subtitleParts.join(" • ") : "Detalhes da representação cadastrada"}
               </p>
-              <p className="mt-2 text-sm break-words text-emerald-100/90">{item.numero_ppe ? `PPE/Procedimento: ${item.numero_ppe}` : `Processo/PPE: ${withFallback(item.processo_judicial)}`}</p>
+              <p className="mt-2 text-sm break-words text-foreground">{item.numero_ppe ? `PPE/Procedimento: ${item.numero_ppe}` : `Processo/PPE: ${withFallback(item.processo_judicial)}`}</p>
             </div>
 
             <div className="flex flex-wrap items-center gap-2 xl:justify-end">
-              <button onClick={() => window.print()} className="rounded-lg border border-zinc-700 bg-zinc-900/80 px-3.5 py-1.5 text-xs text-zinc-100 transition hover:border-zinc-500 hover:bg-zinc-800/80">
+              <button onClick={() => window.print()} className="px-3.5 py-2 text-xs rounded-md border border-border bg-card hover:bg-accent">
                 Imprimir
               </button>
               <button
                 onClick={() => navigate({ to: "/representacoes/$representacaoId/editar", params: { representacaoId: item.id } })}
-                className="rounded-lg border border-emerald-400/35 bg-emerald-500/10 px-3.5 py-1.5 text-xs text-emerald-100 transition hover:border-emerald-300/50 hover:bg-emerald-500/15"
+                className="px-3.5 py-2 text-xs rounded-md bg-primary text-primary-foreground font-semibold"
               >
                 Editar
               </button>
               <button
                 onClick={() => setShowDeleteModal(true)}
-                className="rounded-lg border border-rose-400/40 bg-rose-500/10 px-3.5 py-1.5 text-xs font-medium text-rose-100 shadow-[0_0_0_rgba(251,113,133,0)] transition-all duration-200 hover:border-rose-300/60 hover:bg-rose-500/20 hover:text-rose-50 hover:shadow-[0_0_14px_rgba(251,113,133,0.2)]"
+                className="px-3.5 py-2 text-xs rounded-md border border-destructive/30 bg-destructive/10 text-destructive"
               >
                 Excluir
               </button>
@@ -341,7 +340,7 @@ function DetalheRepresentacao() {
           </div>
         </header>
 
-        <section className="grid items-start gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+        <section className="grid items-start gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
           {[
             ["Status judicial", statusAlias, "text-emerald-100"],
             ["Situação", situacaoOperacional.replace("Situação: ", ""), "text-zinc-100"],
@@ -351,7 +350,7 @@ function DetalheRepresentacao() {
             ["Sigilosa", withFallback(item.pedido_sigiloso), "text-zinc-100"],
           ].map(([label, value, valueClass]) => (
             <article key={label} className={summaryCardClass}>
-              <p className="text-[10px] uppercase tracking-[0.18em] text-zinc-500">{label}</p>
+              <p className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground">{label}</p>
               {label === "Status judicial" ? (
                 <span className={`mt-1 inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-semibold ${getStatusBadgeClass(item.status)}`}>{value}</span>
               ) : label === "Prioridade" ? (
@@ -359,7 +358,7 @@ function DetalheRepresentacao() {
                   {value}
                 </span>
               ) : (
-                <p className={`mt-1.5 text-sm font-semibold break-words ${valueClass}`}>{value}</p>
+                <p className={`mt-1 text-sm font-semibold break-words ${valueClass}`}>{value}</p>
               )}
             </article>
           ))}
@@ -369,27 +368,35 @@ function DetalheRepresentacao() {
           <div className="space-y-4 self-start">
             {[cardSections[0], cardSections[1]].map(({ title, items }) => (
               <article key={title} className={sectionCardClass}>
-                <h2 className={sectionTitleClass}>{title}</h2>
-                <div className="divide-y divide-zinc-700/50">
+                <div className="flex items-center gap-2 pb-2">
+                  {title === "Identificação Judicial" ? <Scale className="h-4 w-4 text-primary" /> : <UserRound className="h-4 w-4 text-primary" />}
+                  <h2 className={sectionTitleClass}>{title}</h2>
+                </div>
+                <div className="mb-3 h-px w-full bg-border/70" />
+                <div className="divide-y divide-border/60">
                   {items.map(([label, value]) => (
                     <div key={label} className={infoRowClass}>
-                      <p className="text-[11px] uppercase tracking-wide text-zinc-500">{label}</p>
-                      <p className={`text-sm whitespace-pre-wrap break-words ${isEmptyValue(value) ? "text-zinc-500" : "text-zinc-100"}`}>{withFallback(value)}</p>
+                      <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">{label}</p>
+                      <p className={`text-sm whitespace-pre-wrap break-words [overflow-wrap:anywhere] ${isEmptyValue(value) ? "text-zinc-500" : "text-foreground"}`}>{withFallback(value)}</p>
                     </div>
                   ))}
                 </div>
               </article>
             ))}
             <article className={sectionCardClass}>
-              <h2 className={sectionTitleClass}>Pendências e Alertas</h2>
+              <div className="flex items-center gap-2 pb-2">
+                <BellRing className="h-4 w-4 text-primary" />
+                <h2 className={sectionTitleClass}>Pendências e Alertas</h2>
+              </div>
+              <div className="mb-3 h-px w-full bg-border/70" />
               <div className="space-y-2">
-                <div className="rounded-xl border border-emerald-400/15 bg-zinc-900/70 px-3 py-2.5">
-                  <p className="text-[11px] uppercase tracking-wide text-zinc-500">Prazo operacional</p>
-                  <p className="mt-1 text-sm text-zinc-100">{formatPrazoStatus(item)}</p>
+                <div className="rounded-lg border border-border/60 bg-background/30 px-3 py-2.5">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">Prazo operacional</p>
+                  <p className="mt-1 text-sm text-foreground">{formatPrazoStatus(item)}</p>
                 </div>
-                <div className="rounded-xl border border-emerald-400/15 bg-zinc-900/70 px-3 py-2.5">
-                  <p className="text-[11px] uppercase tracking-wide text-zinc-500">Sinalização</p>
-                  <p className="mt-1 text-sm text-zinc-300">
+                <div className="rounded-lg border border-border/60 bg-background/30 px-3 py-2.5">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">Sinalização</p>
+                  <p className="mt-1 text-sm text-foreground">
                     {item.acompanhamento_especial ? "Acompanhamento especial ativo." : "Sem alertas operacionais marcados."}
                   </p>
                 </div>
@@ -400,17 +407,21 @@ function DetalheRepresentacao() {
           <div className="space-y-4 self-start">
             {[cardSections[2], cardSections[3]].map(({ title, items }) => (
               <article key={title} className={sectionCardClass}>
-                <h2 className={sectionTitleClass}>{title}</h2>
-                <div className="divide-y divide-zinc-700/50">
+                <div className="flex items-center gap-2 pb-2">
+                  {title === "Tramitação Judicial" ? <Gavel className="h-4 w-4 text-primary" /> : <ShieldCheck className="h-4 w-4 text-primary" />}
+                  <h2 className={sectionTitleClass}>{title}</h2>
+                </div>
+                <div className="mb-3 h-px w-full bg-border/70" />
+                <div className="divide-y divide-border/60">
                   {items.map(([label, value]) => (
                     <div key={label} className="grid gap-1 py-2.5 sm:grid-cols-[170px_1fr] sm:gap-3">
-                      <p className="text-[11px] uppercase tracking-wide text-zinc-500">{label}</p>
+                      <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">{label}</p>
                       {title === "Tramitação Judicial" && label === "Status" ? (
                         <span className={`mt-0.5 inline-flex w-fit items-center rounded-md border px-2 py-0.5 text-xs font-semibold ${getStatusBadgeClass(item.status)}`}>
                           {withFallback(value)}
                         </span>
                       ) : (
-                        <p className={`text-sm whitespace-pre-wrap break-words ${isEmptyValue(value) ? "text-zinc-500" : "text-zinc-100"}`}>{withFallback(value)}</p>
+                        <p className={`text-sm whitespace-pre-wrap break-words [overflow-wrap:anywhere] ${isEmptyValue(value) ? "text-zinc-500" : "text-foreground"}`}>{withFallback(value)}</p>
                       )}
                     </div>
                   ))}
@@ -423,8 +434,12 @@ function DetalheRepresentacao() {
         <section className="space-y-4">
           {fundamentacaoCards.map(([title, value]) => (
             <article key={title} className={sectionCardClass}>
-              <h2 className={sectionTitleClass}>{title}</h2>
-              <div className="min-w-0 max-w-full overflow-hidden rounded-xl border border-emerald-400/15 bg-zinc-900/70 px-4 py-3">
+              <div className="flex items-center gap-2 pb-2">
+                <FileText className="h-4 w-4 text-primary" />
+                <h2 className={sectionTitleClass}>{title}</h2>
+              </div>
+              <div className="mb-3 h-px w-full bg-border/70" />
+              <div className="min-w-0 max-w-full overflow-hidden rounded-lg border border-border/60 bg-background/30 px-4 py-3">
                 <p
                   className={`min-w-0 max-w-full overflow-hidden whitespace-pre-wrap break-words [overflow-wrap:anywhere] text-sm leading-relaxed ${
                     isEmptyValue(value) ? "text-zinc-500" : "text-zinc-100"
@@ -437,8 +452,12 @@ function DetalheRepresentacao() {
           ))}
         </section>
 
-        <section className="rounded-2xl border border-emerald-400/15 bg-gradient-to-b from-zinc-900/95 to-black/85 p-5 shadow-[0_14px_36px_rgba(0,0,0,0.5)] sm:p-6">
-          <h2 className={sectionTitleClass}>Linha do Tempo Operacional</h2>
+        <section className={sectionCardClass}>
+          <div className="flex items-center gap-2 pb-2">
+            <Clock3 className="h-4 w-4 text-primary" />
+            <h2 className={sectionTitleClass}>Linha do Tempo Operacional</h2>
+          </div>
+          <div className="mb-3 h-px w-full bg-border/70" />
           {timelineEvents.length === 0 ? (
             <div className="rounded-lg border border-border/40 bg-muted/5 px-4 py-3 text-sm text-zinc-400">
               Sem eventos operacionais automáticos disponíveis para esta representação.
