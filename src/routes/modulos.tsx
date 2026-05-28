@@ -257,7 +257,7 @@ function ModuloCard({ modulo, onIndisponivel }: { modulo: Modulo; onIndisponivel
     <div
       className={`group relative h-full overflow-hidden rounded-xl border p-6 flex flex-col transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xl ${styles.ring} ${
         isOperationalLocation
-          ? "border-cyan-300/25 bg-slate-950/95 shadow-[0_0_34px_rgba(34,211,238,0.10),inset_0_1px_0_rgba(255,255,255,0.05)]"
+          ? "border-cyan-300/20 bg-slate-950/95 shadow-[0_0_28px_rgba(34,211,238,0.06),inset_0_1px_0_rgba(255,255,255,0.04)]"
           : "border-border bg-card"
       } ${modulo.disponivel ? "cursor-pointer" : "cursor-not-allowed opacity-95"}`}
     >
@@ -323,20 +323,20 @@ function ModuloCard({ modulo, onIndisponivel }: { modulo: Modulo; onIndisponivel
 function OperationalMapBackdrop() {
   return (
     <div className="pointer-events-none absolute inset-0" aria-hidden="true">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_18%,rgba(34,211,238,0.16),transparent_34%),radial-gradient(circle_at_88%_78%,rgba(16,185,129,0.14),transparent_32%),linear-gradient(135deg,rgba(2,6,23,0.32),rgba(8,47,73,0.12)_48%,rgba(2,6,23,0.78))]" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_18%,rgba(34,211,238,0.09),transparent_34%),radial-gradient(circle_at_88%_78%,rgba(16,185,129,0.08),transparent_32%),linear-gradient(135deg,rgba(2,6,23,0.40),rgba(8,47,73,0.07)_48%,rgba(2,6,23,0.82))]" />
       <svg
-        className="absolute inset-0 h-full w-full opacity-90"
+        className="absolute inset-0 h-full w-full opacity-65"
         viewBox="0 0 420 260"
         preserveAspectRatio="none"
         role="presentation"
       >
         <defs>
           <filter id="operational-route-glow" x="-60%" y="-60%" width="220%" height="220%">
-            <feGaussianBlur stdDeviation="3" result="blur" />
+            <feGaussianBlur stdDeviation="2.2" result="blur" />
             <feColorMatrix
               in="blur"
               type="matrix"
-              values="0 0 0 0 0.13 0 0 0 0 0.83 0 0 0 0 0.93 0 0 0 0.8 0"
+              values="0 0 0 0 0.13 0 0 0 0 0.83 0 0 0 0 0.93 0 0 0 0.42 0"
             />
             <feMerge>
               <feMergeNode />
@@ -344,11 +344,11 @@ function OperationalMapBackdrop() {
             </feMerge>
           </filter>
           <filter id="operational-destination-glow" x="-90%" y="-90%" width="280%" height="280%">
-            <feGaussianBlur stdDeviation="5" result="blur" />
+            <feGaussianBlur stdDeviation="3.2" result="blur" />
             <feColorMatrix
               in="blur"
               type="matrix"
-              values="0 0 0 0 0.06 0 0 0 0 0.73 0 0 0 0 0.62 0 0 0 0.75 0"
+              values="0 0 0 0 0.06 0 0 0 0 0.73 0 0 0 0 0.62 0 0 0 0.36 0"
             />
             <feMerge>
               <feMergeNode />
@@ -357,7 +357,7 @@ function OperationalMapBackdrop() {
           </filter>
         </defs>
 
-        <g fill="none" stroke="rgba(34,211,238,0.09)" strokeLinecap="round" strokeWidth="1">
+        <g fill="none" stroke="rgba(34,211,238,0.045)" strokeLinecap="round" strokeWidth="1">
           <path d="M-20 62 C44 46 92 57 151 28 S260 14 330 36 S410 52 445 22" />
           <path d="M-8 150 C46 126 72 138 113 102 S191 58 246 74 S335 99 430 82" />
           <path d="M34 258 C75 205 103 188 142 166 S222 133 281 113 S366 82 440 128" />
@@ -371,7 +371,7 @@ function OperationalMapBackdrop() {
           <path d="M303 4 L276 45 L291 87 L260 132 L284 172 L257 241" />
         </g>
 
-        <g fill="none" stroke="rgba(45,212,191,0.06)" strokeLinecap="round" strokeWidth="4">
+        <g fill="none" stroke="rgba(45,212,191,0.025)" strokeLinecap="round" strokeWidth="4">
           <path d="M182 252 L220 219 L260 214 L289 184 L326 179 L361 154 L386 123" />
           <path d="M248 4 L281 34 L316 47 L348 76 L382 90 L426 119" />
         </g>
@@ -379,7 +379,7 @@ function OperationalMapBackdrop() {
         <path
           d="M215 235 L254 211 L287 214 L312 181 L345 170 L362 142 L385 132 L374 101 L337 88 L309 72"
           fill="none"
-          stroke="rgba(34,211,238,0.42)"
+          stroke="rgba(34,211,238,0.24)"
           strokeLinecap="round"
           strokeLinejoin="round"
           strokeWidth="3"
@@ -388,14 +388,14 @@ function OperationalMapBackdrop() {
         <path
           d="M215 235 L254 211 L287 214 L312 181 L345 170 L362 142 L385 132 L374 101 L337 88 L309 72"
           fill="none"
-          stroke="rgba(16,185,129,0.24)"
+          stroke="rgba(16,185,129,0.13)"
           strokeDasharray="7 8"
           strokeLinecap="round"
           strokeLinejoin="round"
           strokeWidth="1.2"
         />
 
-        <g fill="rgba(34,211,238,0.62)" filter="url(#operational-route-glow)">
+        <g fill="rgba(34,211,238,0.35)" filter="url(#operational-route-glow)">
           <circle cx="254" cy="211" r="3" />
           <circle cx="287" cy="214" r="2.6" />
           <circle cx="312" cy="181" r="3.4" />
@@ -405,13 +405,13 @@ function OperationalMapBackdrop() {
           <circle cx="337" cy="88" r="2.6" />
         </g>
         <g filter="url(#operational-destination-glow)">
-          <circle cx="309" cy="72" r="8" fill="rgba(20,184,166,0.22)" />
-          <circle cx="309" cy="72" r="4.5" fill="rgba(34,211,238,0.72)" />
-          <circle cx="309" cy="72" r="2.2" fill="rgba(240,253,250,0.85)" />
+          <circle cx="309" cy="72" r="8" fill="rgba(20,184,166,0.12)" />
+          <circle cx="309" cy="72" r="4.5" fill="rgba(34,211,238,0.42)" />
+          <circle cx="309" cy="72" r="2.2" fill="rgba(240,253,250,0.58)" />
         </g>
       </svg>
-      <div className="absolute inset-0 bg-gradient-to-r from-slate-950/78 via-slate-950/52 to-slate-950/20" />
-      <div className="absolute inset-0 rounded-xl ring-1 ring-inset ring-cyan-200/10" />
+      <div className="absolute inset-0 bg-gradient-to-r from-slate-950/84 via-slate-950/62 to-slate-950/30" />
+      <div className="absolute inset-0 rounded-xl ring-1 ring-inset ring-cyan-200/6" />
     </div>
   );
 }
