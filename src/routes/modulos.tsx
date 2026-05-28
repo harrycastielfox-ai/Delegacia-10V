@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { FileText, Car, Package, ArrowRight, LockKeyhole, Construction, Shield, LogOut } from "lucide-react";
+import { FileText, Car, Package, ArrowRight, LockKeyhole, Construction, Shield, LogOut, Route as RouteIcon } from "lucide-react";
 import { getCurrentProfile, getProfileAvatarPublicUrl, getSession, logout } from "@/lib/auth";
 import { isAuthorized, type UserProfile } from "@/lib/authz";
 
@@ -14,7 +14,7 @@ export const Route = createFileRoute("/modulos")({
   component: ModulosPage,
 });
 
-type ModuloTone = "success" | "info" | "warning";
+type ModuloTone = "success" | "info" | "warning" | "operational";
 
 interface Modulo {
   id: string;
@@ -31,6 +31,7 @@ const MODULOS: Modulo[] = [
   { id: "inqueritos", titulo: "INQUÉRITOS", hint: "Procedimentos investigativos", descricao: "IP, APF, TCO, BOC e AIAI — controle de prazos, situações e equipes.", icon: FileText, tone: "success", to: "/", disponivel: true },
   { id: "veiculos", titulo: "VEÍCULOS APREENDIDOS", hint: "Pátio e custódia", descricao: "Registro de veículos apreendidos, vínculo a procedimentos e devoluções.", icon: Car, tone: "info", disponivel: false },
   { id: "objetos", titulo: "OBJETOS APREENDIDOS", hint: "Bens, armas e cautelas", descricao: "Cadastro e rastreio de objetos apreendidos vinculados a casos.", icon: Package, tone: "warning", disponivel: false },
+  { id: "localizacao-operacional", titulo: "LOCALIZAÇÃO OPERACIONAL", hint: "Diligências e rotas", descricao: "Apoio a diligências externas com cadastro de pessoas, endereços, rotas, chegada ao local, fotos e Street View.", icon: RouteIcon, tone: "operational", disponivel: false },
 ];
 
 function ModulosPage() {
@@ -136,7 +137,7 @@ function ModulosPage() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
           {MODULOS.map((m) => (
-            <ModuloCard key={m.id} modulo={m} onIndisponivel={() => setAviso(`Módulo "${m.titulo}" em desenvolvimento — em breve.`)} />
+            <ModuloCard key={m.id} modulo={m} onIndisponivel={() => setAviso(`Módulo "${m.titulo}" em breve — sendo criado neste momento.`)} />
           ))}
         </div>
 
@@ -155,12 +156,13 @@ const TONE_STYLES: Record<ModuloTone, { iconBg: string; iconBorder: string; icon
   success: { iconBg: "bg-success/15", iconBorder: "border-success/30", iconText: "text-success", ring: "hover:border-success/50 hover:shadow-success/10", chip: "bg-success/15 text-success border-success/30" },
   info: { iconBg: "bg-info/15", iconBorder: "border-info/30", iconText: "text-info", ring: "hover:border-info/50 hover:shadow-info/10", chip: "bg-info/15 text-info border-info/30" },
   warning: { iconBg: "bg-warning/15", iconBorder: "border-warning/30", iconText: "text-warning", ring: "hover:border-warning/50 hover:shadow-warning/10", chip: "bg-warning/15 text-warning border-warning/30" },
+  operational: { iconBg: "bg-cyan-500/15", iconBorder: "border-cyan-400/30", iconText: "text-cyan-300", ring: "hover:border-cyan-300/50 hover:shadow-cyan-400/10", chip: "bg-cyan-500/15 text-cyan-200 border-cyan-300/30" },
 };
 
 function ModuloCard({ modulo, onIndisponivel }: { modulo: Modulo; onIndisponivel: () => void }) {
   const Icon = modulo.icon;
   const styles = TONE_STYLES[modulo.tone];
-  const cardContent = (<div className={`group relative h-full bg-card border border-border rounded-xl p-6 flex flex-col transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xl ${styles.ring} ${modulo.disponivel ? "cursor-pointer" : "cursor-not-allowed opacity-95"}`}><div className="flex items-start justify-between mb-5"><div className={`h-14 w-14 rounded-xl border ${styles.iconBg} ${styles.iconBorder} flex items-center justify-center`}><Icon className={`h-7 w-7 ${styles.iconText}`} /></div>{!modulo.disponivel && (<span className="inline-flex items-center gap-1 text-[10px] font-bold tracking-wider uppercase px-2 py-1 rounded border border-border bg-muted/40 text-muted-foreground"><LockKeyhole className="h-3 w-3" /> Em breve</span>)}</div><div className={`text-[10px] font-bold tracking-[0.2em] mb-1.5 inline-flex w-fit px-2 py-0.5 rounded border ${styles.chip}`}>{modulo.hint}</div><h3 className="text-lg font-bold tracking-wide text-foreground mb-2">{modulo.titulo}</h3><p className="text-sm text-muted-foreground leading-relaxed flex-1">{modulo.descricao}</p><div className="mt-6 pt-4 border-t border-border flex items-center justify-between"><span className="text-xs font-semibold tracking-wider uppercase text-muted-foreground group-hover:text-foreground transition-colors">Acessar módulo</span><ArrowRight className={`h-4 w-4 ${styles.iconText} transition-transform group-hover:translate-x-1`} /></div></div>);
+  const cardContent = (<div className={`group relative h-full bg-card border border-border rounded-xl p-6 flex flex-col transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xl ${styles.ring} ${modulo.disponivel ? "cursor-pointer" : "cursor-not-allowed opacity-95"}`}><div className="flex items-start justify-between mb-5"><div className={`h-14 w-14 rounded-xl border ${styles.iconBg} ${styles.iconBorder} flex items-center justify-center`}><Icon className={`h-7 w-7 ${styles.iconText}`} /></div>{!modulo.disponivel && (<span className="inline-flex items-center gap-1 text-[10px] font-bold tracking-wider uppercase px-2 py-1 rounded border border-cyan-300/30 bg-cyan-500/10 text-cyan-200"><LockKeyhole className="h-3 w-3" /> EM BREVE — sendo criado neste momento</span>)}</div><div className={`text-[10px] font-bold tracking-[0.2em] mb-1.5 inline-flex w-fit px-2 py-0.5 rounded border ${styles.chip}`}>{modulo.hint}</div><h3 className="text-lg font-bold tracking-wide text-foreground mb-2">{modulo.titulo}</h3><p className="text-sm text-muted-foreground leading-relaxed flex-1">{modulo.descricao}</p><div className="mt-6 pt-4 border-t border-border flex items-center justify-between"><span className="text-xs font-semibold tracking-wider uppercase text-muted-foreground group-hover:text-foreground transition-colors">{modulo.disponivel ? "Acessar módulo" : "Em desenvolvimento"}</span><ArrowRight className={`h-4 w-4 ${styles.iconText} transition-transform ${modulo.disponivel ? "group-hover:translate-x-1" : "opacity-60"}`} /></div></div>);
 
   if (modulo.disponivel && modulo.to) return <Link to={modulo.to} className="block h-full">{cardContent}</Link>;
   return <button type="button" onClick={onIndisponivel} className="block h-full text-left w-full cursor-not-allowed">{cardContent}</button>;
