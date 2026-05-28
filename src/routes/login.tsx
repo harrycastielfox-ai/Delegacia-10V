@@ -171,7 +171,7 @@ function LoginPage() {
         <div className="bg-card border border-border rounded-2xl shadow-2xl shadow-black/40">
           <div className="px-8 pt-8 pb-6 text-center border-b border-border bg-gradient-to-b from-primary/5 to-transparent">
             <div className="relative mx-auto h-24 w-24 rounded-lg bg-primary/12 border border-primary/25 shadow-[0_0_12px_rgba(34,197,94,0.16)] flex items-center justify-center mb-3 p-2 overflow-hidden">
-              <img src="/sipi-logo.png" alt="Logo SIPI" className="h-[72px] w-[72px] scale-[1.28] object-contain" />
+              <img src="/sipi-logo.png" alt="Logo SIPI" className="mx-auto h-[110px] w-[110px] max-w-none scale-[1.35] object-contain" />
               <span
                 aria-hidden="true"
                 className="sipi-logo-sheen pointer-events-none absolute inset-y-[-20%] left-[-35%] w-[48%] bg-gradient-to-r from-transparent via-primary/45 to-transparent blur-[1px]"
