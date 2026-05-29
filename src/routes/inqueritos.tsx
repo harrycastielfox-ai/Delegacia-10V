@@ -5,6 +5,7 @@ import { Search, Filter, Plus } from "lucide-react";
 import { listInqueritos, type InqueritoRecord } from "@/lib/repositories/inqueritosRepository";
 import { getCurrentProfile } from "@/lib/auth";
 import { canCreateCases, canOnlyViewPublicCases, type UserProfile } from "@/lib/authz";
+import { calculateInqueritoOperationalPriority } from "@/lib/inqueritosPriority";
 
 export const Route = createFileRoute("/inqueritos")({ component: Inqueritos });
 const priorTone: Record<string, string> = { ALTA: "bg-destructive/15 text-destructive border-destructive/30", "MÉDIA": "bg-warning/15 text-warning border-warning/30", BAIXA: "bg-info/15 text-info border-info/30" };
@@ -36,21 +37,7 @@ function hasMedidaProtetiva(row: InqueritoListRow) { const direct = normalizeTex
 function hasDiligenciasPendentes(value: string) { const t = normalizeText(value); return Boolean(t) && !["nao","não","nenhuma","sem","n/a","na","false","0"].includes(t); }
 function priorityToneClass(value: string) { const normalized = normalizeText(value); if (["alta", "urgente"].includes(normalized)) return priorTone.ALTA; if (["media", "média"].includes(normalized)) return priorTone["MÉDIA"]; if (normalized === "baixa") return priorTone.BAIXA; return "border-border/70 bg-muted/20 text-muted-foreground"; }
 function daysUntilPrazo(prazo: string) { const ts = parseAnyDate(prazo); if (ts === null) return null; return Math.ceil((ts - Date.now()) / (1000 * 60 * 60 * 24)); }
-function normalizeManualPriority(value: string) { const n = normalizeText(value); if (["alta", "urgente"].includes(n)) return "ALTA"; if (["media", "média"].includes(n)) return "MÉDIA"; if (n === "baixa") return "BAIXA"; return FALLBACK; }
-function calculateOperationalPriority(row: InqueritoListRow) {
-  const prazoDias = daysUntilPrazo(row.prazo);
-  const categoria = normalizeText(row.gravidade);
-  const hasAnySignal = prazoDias !== null || hasReuPreso(row) || hasMedidaProtetiva(row) || !isEmpty(row.gravidade) || !isEmpty(row.situacao) || !isEmpty(row.statusDiligencias);
-  const highCategories = ["cvli", "miae", "crimes sexuais", "violencia domestica", "violento"];
-  const mediumCategories = ["drogas", "cvp", "crimes contra o patrimonio", "crimes de transito", "violencia contra crianca e adolescente", "violencia contra a crianca e o adolescente", "violencia contra pessoa idosa", "violencia contra a pessoa idosa"];
-  if ((prazoDias !== null && prazoDias <= 7) || hasReuPreso(row) || hasMedidaProtetiva(row) || highCategories.includes(categoria)) return "ALTA";
-  if ((prazoDias !== null && prazoDias <= 15) || mediumCategories.includes(categoria)) return "MÉDIA";
-  if (!hasAnySignal) {
-    const manual = normalizeManualPriority(row.prioridade);
-    if (manual !== FALLBACK) return manual;
-  }
-  return "BAIXA";
-}
+function calculateOperationalPriority(row: InqueritoListRow) { return calculateInqueritoOperationalPriority(row as unknown as Record<string, unknown>); }
 function getProcedureShortLabel(value: string) { const n = normalizeText(value); if (n === "inquerito policial" || n === "ip") return "IP"; if (n === "tco") return "TCO"; if (n === "verificacao preliminar" || n === "vp") return "VP"; if (n === "outros" || n === "outro") return "Outros"; return value || FALLBACK; }
 function statusToneClass(value: string) { if (statusTone[value]) return statusTone[value]; if (isConcluidoAlias(value)) return statusTone["Concluída"]; if (isAndamentoAlias(value)) return statusTone["Em Andamento"]; return "border-warning/30 bg-warning/10 text-warning"; }
 function formatPrazoDias(prazo: string) { const ts = parseAnyDate(prazo); if (ts === null) { const dias = /^\s*(vencido\s*)?(-?\d+)\s*d\s*$/iu.exec(prazo); if (!dias) return FALLBACK; const quantidade = Math.abs(Number(dias[2])); return dias[1] || Number(dias[2]) < 0 ? `Vencido ${quantidade}d` : `${quantidade}d`; } const diffDays = Math.ceil((ts - Date.now()) / (1000 * 60 * 60 * 24)); return diffDays < 0 ? `Vencido ${Math.abs(diffDays)}d` : `${diffDays}d`; }

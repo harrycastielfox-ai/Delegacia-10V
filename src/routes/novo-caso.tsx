@@ -23,6 +23,7 @@ function NovoCaso() {
   const [tipificacao, setTipificacao] = useState("");
   const [vitima, setVitima] = useState("");
   const [investigado, setInvestigado] = useState("");
+  const [autoria, setAutoria] = useState("");
   const [numeroBo, setNumeroBo] = useState("");
   const [numeroFisico, setNumeroFisico] = useState("");
   const [prazo, setPrazo] = useState("");
@@ -100,6 +101,7 @@ function NovoCaso() {
       tipificacao: tipificacao.trim() || null,
       vitima: vitima.trim() || null,
       investigado: investigado.trim() || null,
+      autoria_determinada: autoria || null,
       reu_preso: reuPreso || null,
       prazo: prazo || null,
       data_fato: dataFato || null,
@@ -240,7 +242,7 @@ function NovoCaso() {
         <SectionCard title="Pessoas Envolvidas">
           <Field label="Vítima" placeholder="Nome completo da vítima" value={vitima} onChange={(e) => setVitima(e.target.value)} />
           <Field label="Autor / Investigado" placeholder="Nome ou 'Desconhecido'" value={investigado} onChange={(e) => setInvestigado(e.target.value)} />
-          <Select label="Autoria Determinada ou Indeterminada" options={["Determinada", "Indeterminada", "Desconhecida", "Sem Autoria"]} />
+          <Select label="Autoria Determinada ou Indeterminada" options={["Determinada", "Indeterminada", "Desconhecida", "Sem Autoria"]} value={autoria} onChange={setAutoria} />
           <Select label="Réu Preso" options={["Sim", "Não"]} value={reuPreso} onChange={setReuPreso} />
         </SectionCard>
 
