@@ -28,9 +28,9 @@ function NovoCaso() {
   const [prazo, setPrazo] = useState("");
   const [dataFato, setDataFato] = useState("");
   const [dataInstauracao, setDataInstauracao] = useState("");
-  const [tipo, setTipo] = useState("IP");
+  const [tipo, setTipo] = useState("Inquérito Policial");
   const [prioridade, setPrioridade] = useState("MÉDIA");
-  const [gravidade, setGravidade] = useState("Média");
+  const [gravidade, setGravidade] = useState("Outro");
   const [situacao, setSituacao] = useState("Instaurado");
   const [statusDiligencias, setStatusDiligencias] = useState("Pendente");
   const [elucidado, setElucidado] = useState("");
@@ -186,7 +186,7 @@ function NovoCaso() {
           <Field label="PPE" placeholder="Ex.: 001/2026-DPPC" value={ppe} onChange={(e) => setPpe(e.target.value)} />
           <Field label="Nº do B.O." placeholder="Ex.: 2026.000001" value={numeroBo} onChange={(e) => setNumeroBo(e.target.value)} />
           <Field label="Nº Físico" placeholder="Ex.: 2026.001.0001" value={numeroFisico} onChange={(e) => setNumeroFisico(e.target.value)} />
-          <Select label="Tipo de Procedimento" options={["Inquérito Policial", "TCO", "Verificação Preliminar", "Outros"]} />
+          <Select label="Tipo de Procedimento" value={tipo} onChange={setTipo} options={["Inquérito Policial", "TCO", "Verificação Preliminar", "Outros"]} />
           <Select label="Visibilidade" options={["Público", "Privado"]} value={visibilidade} onChange={setVisibilidade} />
         </SectionCard>
 
@@ -198,7 +198,6 @@ function NovoCaso() {
 
         <SectionCard title="Classificação do Caso">
           <Field label="Tipificação" placeholder="Ex.: Homicídio Qualificado" value={tipificacao} onChange={(e) => setTipificacao(e.target.value)} />
-          <Select label="Tipo" options={["IP", "APF", "TCO", "BOC", "AIAI"]} value={tipo} onChange={setTipo} />
           <Select
             label="Categoria do Caso"
             options={[
@@ -216,6 +215,8 @@ function NovoCaso() {
               "MAE",
               "Outro",
             ]}
+            value={gravidade}
+            onChange={setGravidade}
           />
           <Select
             label="Situação" value={situacao} onChange={setSituacao}

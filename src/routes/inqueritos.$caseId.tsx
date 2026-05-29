@@ -53,11 +53,15 @@ type InqueritoDetalheUI = {
 
 const FALLBACK = "—";
 
+function normalizeText(value: string) {
+  return value.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
+}
+
 function pick(record: Record<string, unknown>, ...keys: string[]) {
   for (const key of keys) {
-    const value = record[key];
-    if (value !== null && value !== undefined && String(value).trim() !== "") {
-      return String(value);
+    const text = String(record[key] ?? "").trim();
+    if (text && normalizeText(text) !== "selecione") {
+      return text;
     }
   }
   return FALLBACK;
@@ -72,10 +76,10 @@ function normalizeInqueritoForDetail(caso: InqueritoRecord): InqueritoDetalheUI 
     tipificacao: pick(raw, "tipificacao"),
     numeroFisico: pick(raw, "numero_fisico", "numeroFisico"),
     numeroBo: pick(raw, "numero_bo", "numeroBo"),
-    tipo: pick(raw, "tipo"),
+    tipo: pick(raw, "tipo_procedimento", "tipoProcedimento", "tipo", "procedimento"),
     situacao: pick(raw, "situacao", "status_diligencias"),
     prioridade: pick(raw, "prioridade"),
-    gravidade: pick(raw, "gravidade"),
+    gravidade: pick(raw, "categoria_caso", "categoriaCaso", "gravidade"),
     dataFato: pick(raw, "data_fato", "dataFato"),
     dataInstauracao: pick(raw, "data_instauracao", "dataInstauracao"),
     prazo: pick(raw, "prazo"),
@@ -209,8 +213,8 @@ function InqueritoDetalhes() {
   const badges = [
     ["Prioridade", detalhe.prioridade],
     ["Situação", detalhe.situacao],
-    ["Gravidade", detalhe.gravidade],
-    ["Tipo", detalhe.tipo],
+    ["Categoria do Caso", detalhe.gravidade],
+    ["Tipo de Procedimento", detalhe.tipo],
     ["Status diligências", detalhe.statusDiligencias],
     ["Elucidado", detalhe.elucidado],
   ] as const;
@@ -218,8 +222,8 @@ function InqueritoDetalhes() {
   const badgeTone: Record<string, string> = {
     Prioridade: "border-rose-500/35 bg-rose-500/15 text-rose-200",
     Situação: "border-amber-500/35 bg-amber-500/15 text-amber-200",
-    Gravidade: "border-orange-500/35 bg-orange-500/15 text-orange-200",
-    Tipo: "border-sky-500/35 bg-sky-500/15 text-sky-200",
+    "Categoria do Caso": "border-orange-500/35 bg-orange-500/15 text-orange-200",
+    "Tipo de Procedimento": "border-sky-500/35 bg-sky-500/15 text-sky-200",
     "Status diligências": "border-violet-500/35 bg-violet-500/15 text-violet-200",
     Elucidado: "border-emerald-500/35 bg-emerald-500/15 text-emerald-200",
   };
@@ -258,7 +262,7 @@ function InqueritoDetalhes() {
         <InfoCard title="Diligências Pendentes" icon={<NotebookPen className="h-4 w-4 text-primary" />} items={[["Diligências pendentes", detalhe.diligenciasPendentes]]} stacked preWrapValues />
       </div>
       <div className="space-y-4">
-        <InfoCard title="Classificação" icon={<FileSearch className="h-4 w-4 text-primary" />} items={[["Tipificação", detalhe.tipificacao], ["Prioridade", detalhe.prioridade], ["Gravidade", detalhe.gravidade], ["Tipo", detalhe.tipo], ["Situação", detalhe.situacao], ["Elucidado", detalhe.elucidado], ["Houve arma de fogo?", detalhe.houveArmaFogo], ["Arma utilizada", detalhe.armaUtilizada], ["Vinculado à facção?", detalhe.vinculadoFaccao], ["Nome da facção", detalhe.nomeFaccao]]} highlightFirst />
+        <InfoCard title="Classificação" icon={<FileSearch className="h-4 w-4 text-primary" />} items={[["Tipificação", detalhe.tipificacao], ["Prioridade", detalhe.prioridade], ["Categoria do Caso", detalhe.gravidade], ["Tipo de Procedimento", detalhe.tipo], ["Situação", detalhe.situacao], ["Elucidado", detalhe.elucidado], ["Houve arma de fogo?", detalhe.houveArmaFogo], ["Arma utilizada", detalhe.armaUtilizada], ["Vinculado à facção?", detalhe.vinculadoFaccao], ["Nome da facção", detalhe.nomeFaccao]]} highlightFirst />
         <InfoCard title="Dados Operacionais" icon={<ShieldCheck className="h-4 w-4 text-primary" />} items={[["Delegado responsável", detalhe.delegadoResponsavel], ["Equipe", detalhe.equipe], ["Escrivão", detalhe.escrivao], ["Bairro", detalhe.bairro], ["Distrito", detalhe.distrito], ["Status diligências", detalhe.statusDiligencias], ["Última atualização", formatDateTime(detalhe.ultimaEdicao)]]} />
         <InfoCard title="Observações" icon={<NotebookPen className="h-4 w-4 text-primary" />} items={[["Observações", detalhe.observacoes]]} stacked preWrapValues />
       </div>
