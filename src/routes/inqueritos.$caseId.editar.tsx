@@ -21,6 +21,16 @@ function toInputDate(value: string | null | undefined) {
   return `${year}-${month}-${day}`;
 }
 
+function normalizeProcedureValue(value: string | null | undefined) {
+  const normalized = (value ?? "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
+  if (!normalized) return "";
+  if (normalized === "ip" || normalized === "inquerito policial") return "Inquérito Policial";
+  if (normalized === "tco") return "TCO";
+  if (normalized === "vp" || normalized === "verificacao preliminar") return "Verificação Preliminar";
+  if (normalized === "outro" || normalized === "outros") return "Outros";
+  return value ?? "";
+}
+
 function getErrorMessage(error: unknown, fallback: string) {
   if (typeof error === "object" && error !== null && "message" in error && typeof error.message === "string" && error.message.trim()) {
     return `${fallback} (${error.message})`;
@@ -73,7 +83,6 @@ function EditarInquerito() {
   const [numeroProcessoMedida, setNumeroProcessoMedida] = useState("");
   const [representacoesLegais, setRepresentacoesLegais] = useState("");
   const [visibilidade, setVisibilidade] = useState("");
-  const [categoriaCaso, setCategoriaCaso] = useState("");
   const [autoria, setAutoria] = useState("");
 
   useEffect(() => {
@@ -101,7 +110,7 @@ function EditarInquerito() {
         setNumeroBo(inquerito.numero_bo ?? "");
         setTipificacao(inquerito.tipificacao ?? "");
         setGravidade(inquerito.gravidade ?? "");
-        setTipo(inquerito.tipo ?? "");
+        setTipo(normalizeProcedureValue(inquerito.tipo));
         setPrioridade(inquerito.prioridade ?? "");
         setSituacao(inquerito.situacao ?? "");
         setStatusDiligencias(inquerito.status_diligencias ?? "");
@@ -252,7 +261,7 @@ function EditarInquerito() {
             <Field label="PPE" placeholder="Ex.: 001/2026-DPPC" value={numeroPpe} onChange={(e) => setNumeroPpe(e.target.value)} />
             <Field label="Nº do B.O." placeholder="Ex.: 2026.000001" value={numeroBo} onChange={(e) => setNumeroBo(e.target.value)} />
             <Field label="Nº Físico" placeholder="Ex.: 2026.001.0001" value={numeroFisico} onChange={(e) => setNumeroFisico(e.target.value)} />
-            <Select label="Tipo de Procedimento" options={["Inquérito Policial", "TCO", "Verificação Preliminar", "Outros"]} />
+            <Select label="Tipo de Procedimento" value={tipo} onChange={setTipo} options={["Inquérito Policial", "TCO", "Verificação Preliminar", "Outros"]} />
             <Select label="Visibilidade" options={["Público", "Privado"]} value={visibilidade} onChange={setVisibilidade} />
           </SectionCard>
 
@@ -264,8 +273,7 @@ function EditarInquerito() {
 
           <SectionCard title="Classificação do Caso">
             <Field label="Tipificação" placeholder="Ex.: Homicídio Qualificado" value={tipificacao} onChange={(e) => setTipificacao(e.target.value)} />
-            <Select label="Tipo" value={tipo} onChange={setTipo} options={["IP", "APF", "TCO", "BOC", "AIAI"]} />
-            <Select label="Categoria do Caso" value={categoriaCaso} onChange={setCategoriaCaso} options={["CVLI", "CVP", "MIAE", "Drogas", "Crimes Contra o Patrimônio", "Crimes Sexuais", "Violência Doméstica", "Violento", "Violência contra a Criança e o Adolescente", "Violência contra a Pessoa Idosa", "Crimes de Trânsito", "MAE", "Outro"]} />
+            <Select label="Categoria do Caso" value={gravidade} onChange={setGravidade} options={["CVLI", "CVP", "MIAE", "Drogas", "Crimes Contra o Patrimônio", "Crimes Sexuais", "Violência Doméstica", "Violento", "Violência contra a Criança e o Adolescente", "Violência contra a Pessoa Idosa", "Crimes de Trânsito", "MAE", "Outro"]} />
             <Select label="Situação" value={situacao} onChange={setSituacao} options={["Instaurado", "Em Andamento", "Para Relatar", "Relatado", "Aguardando Diligência", "Aguardando Laudo Pericial", "Requisição Ministerial/Judicial", "Remetido", "Arquivado"]} />
             <Select label="Elucidado" value={elucidado} onChange={setElucidado} options={["Sim", "Não"]} />
             <Select label="Houve arma de fogo?" value={houveArmaFogo} onChange={setHouveArmaFogo} options={["Sim", "Não"]} />

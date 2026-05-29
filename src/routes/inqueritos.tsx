@@ -14,7 +14,7 @@ const EMPTY_FILTER = "__vazio__";
 
 type InqueritoListRow = { id: string; numeroPpe: string; tipificacao: string; vitima: string; prioridade: string; gravidade: string; tipoProcedimento: string; bairro: string; situacao: string; statusDiligencias: string; equipe: string; prazo: string; investigado: string; reuPreso: string; custodia: string; medidaProtetiva: string; diligenciasPendentes: string; protetivaTexto: string; fullText: string; };
 
-function pick(record: Record<string, unknown>, ...keys: string[]) { for (const key of keys) { const value = record[key]; if (value !== null && value !== undefined && String(value).trim() !== "") return String(value); } return FALLBACK; }
+function pick(record: Record<string, unknown>, ...keys: string[]) { for (const key of keys) { const value = record[key]; const text = String(value ?? "").trim(); if (text && normalizeText(text) !== "selecione") return text; } return FALLBACK; }
 function normalizeText(value?: string) { return (value ?? "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim(); }
 function parseDateToUtc(value: string, endDay: boolean) { if (!value) return null; const [y,m,d]=value.split('-').map(Number); if(!y||!m||!d) return null; return Date.UTC(y,m-1,d,endDay?23:0,endDay?59:0,endDay?59:0,endDay?999:0); }
 function parseAnyDate(value?: string) { if (!value || value === FALLBACK) return null; const raw=value.trim(); const br=/^(\d{2})\/(\d{2})\/(\d{4})$/u.exec(raw); if(br) return Date.UTC(Number(br[3]),Number(br[2])-1,Number(br[1]),12,0,0,0); const iso=/^(\d{4})-(\d{2})-(\d{2})/u.exec(raw); if(iso) return Date.UTC(Number(iso[1]),Number(iso[2])-1,Number(iso[3]),12,0,0,0); const d=new Date(raw); if(Number.isNaN(d.getTime())) return null; return Date.UTC(d.getUTCFullYear(),d.getUTCMonth(),d.getUTCDate(),12,0,0,0); }
@@ -35,13 +35,30 @@ function hasReuPreso(row: InqueritoListRow) { const preso = normalizeText(row.re
 function hasMedidaProtetiva(row: InqueritoListRow) { const direct = normalizeText(row.medidaProtetiva); if (isTruthyLike(direct) || ["ativa", "ativo"].includes(direct)) return true; return row.protetivaTexto.includes("protetiv"); }
 function hasDiligenciasPendentes(value: string) { const t = normalizeText(value); return Boolean(t) && !["nao","não","nenhuma","sem","n/a","na","false","0"].includes(t); }
 function priorityToneClass(value: string) { const normalized = normalizeText(value); if (["alta", "urgente"].includes(normalized)) return priorTone.ALTA; if (["media", "média"].includes(normalized)) return priorTone["MÉDIA"]; if (normalized === "baixa") return priorTone.BAIXA; return "border-border/70 bg-muted/20 text-muted-foreground"; }
+function daysUntilPrazo(prazo: string) { const ts = parseAnyDate(prazo); if (ts === null) return null; return Math.ceil((ts - Date.now()) / (1000 * 60 * 60 * 24)); }
+function normalizeManualPriority(value: string) { const n = normalizeText(value); if (["alta", "urgente"].includes(n)) return "ALTA"; if (["media", "média"].includes(n)) return "MÉDIA"; if (n === "baixa") return "BAIXA"; return FALLBACK; }
+function calculateOperationalPriority(row: InqueritoListRow) {
+  const prazoDias = daysUntilPrazo(row.prazo);
+  const categoria = normalizeText(row.gravidade);
+  const hasAnySignal = prazoDias !== null || hasReuPreso(row) || hasMedidaProtetiva(row) || !isEmpty(row.gravidade) || !isEmpty(row.situacao) || !isEmpty(row.statusDiligencias);
+  const highCategories = ["cvli", "miae", "crimes sexuais", "violencia domestica", "violento"];
+  const mediumCategories = ["drogas", "cvp", "crimes contra o patrimonio", "crimes de transito", "violencia contra crianca e adolescente", "violencia contra a crianca e o adolescente", "violencia contra pessoa idosa", "violencia contra a pessoa idosa"];
+  if ((prazoDias !== null && prazoDias <= 7) || hasReuPreso(row) || hasMedidaProtetiva(row) || highCategories.includes(categoria)) return "ALTA";
+  if ((prazoDias !== null && prazoDias <= 15) || mediumCategories.includes(categoria)) return "MÉDIA";
+  if (!hasAnySignal) {
+    const manual = normalizeManualPriority(row.prioridade);
+    if (manual !== FALLBACK) return manual;
+  }
+  return "BAIXA";
+}
+function getProcedureShortLabel(value: string) { const n = normalizeText(value); if (n === "inquerito policial" || n === "ip") return "IP"; if (n === "tco") return "TCO"; if (n === "verificacao preliminar" || n === "vp") return "VP"; if (n === "outros" || n === "outro") return "Outros"; return value || FALLBACK; }
 function statusToneClass(value: string) { if (statusTone[value]) return statusTone[value]; if (isConcluidoAlias(value)) return statusTone["Concluída"]; if (isAndamentoAlias(value)) return statusTone["Em Andamento"]; return "border-warning/30 bg-warning/10 text-warning"; }
 function formatPrazoDias(prazo: string) { const ts = parseAnyDate(prazo); if (ts === null) { const dias = /^\s*(vencido\s*)?(-?\d+)\s*d\s*$/iu.exec(prazo); if (!dias) return FALLBACK; const quantidade = Math.abs(Number(dias[2])); return dias[1] || Number(dias[2]) < 0 ? `Vencido ${quantidade}d` : `${quantidade}d`; } const diffDays = Math.ceil((ts - Date.now()) / (1000 * 60 * 60 * 24)); return diffDays < 0 ? `Vencido ${Math.abs(diffDays)}d` : `${diffDays}d`; }
 
 function normalizeInqueritoForList(caso: InqueritoRecord): InqueritoListRow {
   const raw = caso as unknown as Record<string, unknown>;
   const fields = Object.values(raw).map((v) => normalizeText(v == null ? "" : String(v)));
-  return { id: caso.id, numeroPpe: pick(raw, "numero_ppe", "numeroPpe", "ppe"), tipificacao: pick(raw, "tipificacao", "classificacao", "tipo_penal"), vitima: pick(raw, "vitima", "vítima"), prioridade: pick(raw, "prioridade"), gravidade: pick(raw, "gravidade"), tipoProcedimento: pick(raw, "tipo_procedimento", "tipoProcedimento", "tipo", "procedimento"), bairro: pick(raw, "bairro", "localidade", "local", "comunidade"), situacao: pick(raw, "situacao", "situação", "status"), statusDiligencias: pick(raw, "status_diligencias", "statusDiligencias"), equipe: pick(raw, "equipe"), prazo: pick(raw, "prazo", "data_prazo"), investigado: pick(raw, "investigado", "suspeito", "autor_investigado", "autorInvestigado"), reuPreso: pick(raw, "reu_preso", "reuPreso"), custodia: pick(raw, "custodia", "situacao_custodia"), medidaProtetiva: pick(raw, "medida_protetiva", "medidaProtetiva", "medidas_protetivas", "medidasProtetivas", "protetiva"), diligenciasPendentes: pick(raw, "diligencias_pendentes", "diligenciasPendentes"), protetivaTexto: [pick(raw, "tipo", "tipificacao", "classificacao", "tipo_penal"), pick(raw, "medida_protetiva", "medidaProtetiva", "medidas_protetivas", "medidasProtetivas", "protetiva")].map(normalizeText).join(" "), fullText: fields.join(" ") };
+  return { id: caso.id, numeroPpe: pick(raw, "numero_ppe", "numeroPpe", "ppe"), tipificacao: pick(raw, "tipificacao", "classificacao", "tipo_penal"), vitima: pick(raw, "vitima", "vítima"), prioridade: pick(raw, "prioridade"), gravidade: pick(raw, "categoria_caso", "categoriaCaso", "gravidade"), tipoProcedimento: pick(raw, "tipo_procedimento", "tipoProcedimento", "tipo", "procedimento"), bairro: pick(raw, "bairro", "localidade", "local", "comunidade"), situacao: pick(raw, "situacao", "situação", "status"), statusDiligencias: pick(raw, "status_diligencias", "statusDiligencias"), equipe: pick(raw, "equipe"), prazo: pick(raw, "prazo", "data_prazo"), investigado: pick(raw, "investigado", "suspeito", "autor_investigado", "autorInvestigado"), reuPreso: pick(raw, "reu_preso", "reuPreso"), custodia: pick(raw, "custodia", "situacao_custodia"), medidaProtetiva: pick(raw, "medida_protetiva", "medidaProtetiva", "medidas_protetivas", "medidasProtetivas", "protetiva"), diligenciasPendentes: pick(raw, "diligencias_pendentes", "diligenciasPendentes"), protetivaTexto: [pick(raw, "tipo", "tipificacao", "classificacao", "tipo_penal"), pick(raw, "medida_protetiva", "medidaProtetiva", "medidas_protetivas", "medidasProtetivas", "protetiva")].map(normalizeText).join(" "), fullText: fields.join(" ") };
 }
 
 function Inqueritos() {
@@ -68,10 +85,10 @@ function Inqueritos() {
   const normalizedRows = useMemo(() => visibleRows.map((r) => normalizeInqueritoForList(r)), [visibleRows]);
   const options = (items:string[])=>Array.from(new Set(items.filter((v)=>!isEmpty(v)))).sort((a,b)=>a.localeCompare(b,"pt-BR"));
   const situacaoOptions=useMemo(()=>options(normalizedRows.map((r)=>r.situacao!==FALLBACK?r.situacao:r.statusDiligencias)),[normalizedRows]);
-  const prioridadeOptions=useMemo(()=>options(normalizedRows.map((r)=>r.prioridade)),[normalizedRows]);
+  const prioridadeOptions=useMemo(()=>options(normalizedRows.map((r)=>calculateOperationalPriority(r))),[normalizedRows]);
   const gravidadeOptions=useMemo(()=>options(normalizedRows.map((r)=>r.gravidade)),[normalizedRows]);
   const equipeOptions=useMemo(()=>options(normalizedRows.map((r)=>r.equipe)),[normalizedRows]);
-  const tipoOptions=useMemo(()=>options(normalizedRows.map((r)=>r.tipificacao)),[normalizedRows]);
+  const tipoOptions=useMemo(()=>options(normalizedRows.map((r)=>r.tipoProcedimento)),[normalizedRows]);
 
   const filtered = useMemo(() => normalizedRows.filter((r) => {
     const query = normalizeText(searchTerm);
@@ -79,10 +96,10 @@ function Inqueritos() {
     if (query && !(r.fullText.includes(query) || (isFallbackSearch && [r.numeroPpe,r.tipificacao,r.vitima,r.investigado,r.prioridade,r.gravidade,r.situacao,r.statusDiligencias,r.equipe,r.prazo].some(isEmpty)))) return false;
     const situacao = isConcluidoAlias(situacaoFilter) ? [r.situacao, r.statusDiligencias].find((v) => !isEmpty(v) && matchesSituacaoAlias(v, situacaoFilter)) ?? (r.situacao !== FALLBACK ? r.situacao : r.statusDiligencias) : (r.situacao !== FALLBACK ? r.situacao : r.statusDiligencias);
     if (normalizeText(situacaoFilter) !== "todos" && !(situacaoFilter===EMPTY_FILTER ? isEmpty(situacao) : matchesSituacaoAlias(situacao, situacaoFilter))) return false;
-    if (normalizeText(prioridadeFilter) !== "todos" && !(prioridadeFilter===EMPTY_FILTER ? isEmpty(r.prioridade) : normalizeText(r.prioridade)===normalizeText(prioridadeFilter))) return false;
+    if (normalizeText(prioridadeFilter) !== "todos") { const prioridadeOperacional = calculateOperationalPriority(r); if (!(prioridadeFilter===EMPTY_FILTER ? isEmpty(prioridadeOperacional) : normalizeText(prioridadeOperacional)===normalizeText(prioridadeFilter))) return false; }
     if (normalizeText(gravidadeFilter) !== "todos" && !(gravidadeFilter===EMPTY_FILTER ? isEmpty(r.gravidade) : normalizeText(r.gravidade)===normalizeText(gravidadeFilter))) return false;
     if (normalizeText(equipeFilter) !== "todos" && !(equipeFilter===EMPTY_FILTER ? isEmpty(r.equipe) : normalizeText(r.equipe)===normalizeText(equipeFilter))) return false;
-    if (normalizeText(tipoFilter) !== "todos" && !(tipoFilter===EMPTY_FILTER ? isEmpty(r.tipificacao) : normalizeText(r.tipificacao)===normalizeText(tipoFilter))) return false;
+    if (normalizeText(tipoFilter) !== "todos" && !(tipoFilter===EMPTY_FILTER ? isEmpty(r.tipoProcedimento) : normalizeText(r.tipoProcedimento)===normalizeText(tipoFilter))) return false;
     if (normalizeText(prazoFilter) !== "todos") { if (prazoFilter === EMPTY_FILTER && !isEmpty(r.prazo)) return false; if (prazoFilter === "vencido" && !isPrazoVencido(r.prazo)) return false; if (prazoFilter === "critico" && !isPrazoCritico(r.prazo)) return false; if (prazoFilter === "vencendo" && !isPrazoVencendo(r.prazo)) return false; }
     if (reuPresoFilter && !hasReuPreso(r)) return false;
     if (medidaProtetivaFilter && !hasMedidaProtetiva(r)) return false;
@@ -107,11 +124,11 @@ function Inqueritos() {
       <col className="w-[7%]" />
       <col className="w-[26%]" />
       <col className="w-[8%]" />
-      <col className="w-[5%]" />
-      <col className="w-[10%]" />
+      <col className="w-[6%]" />
+      <col className="w-[9%]" />
       <col className="w-[8%]" />
-      <col className="w-[14%]" />
-      <col className="w-[7%]" />
+      <col className="w-[16%]" />
+      <col className="w-[6%]" />
       <col className="w-[5%]" />
     </colgroup>
     <thead className="bg-muted/25 text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
@@ -139,14 +156,16 @@ function Inqueritos() {
         const tipificacao = row.tipificacao || FALLBACK;
         const gravidade = row.gravidade || FALLBACK;
         const tipoProcedimento = row.tipoProcedimento || FALLBACK;
+        const tipoProcedimentoLabel = getProcedureShortLabel(tipoProcedimento);
+        const prioridadeOperacional = calculateOperationalPriority(row);
         const bairro = row.bairro || FALLBACK;
         const statusTexto = situacao || FALLBACK;
         return <tr key={row.id} className="border-t border-border/70 align-middle transition hover:bg-muted/20">
           <td className="px-3 py-2.5 align-middle"><p className="truncate font-mono text-[15px] font-bold leading-5 text-primary drop-shadow-[0_0_8px_rgba(34,197,94,0.16)]" title={numeroPpe}>{numeroPpe}</p></td>
-          <td className="px-2.5 py-2.5 align-middle"><button type="button" onClick={()=>setPrioridadeFilter(row.prioridade || EMPTY_FILTER)} className={`inline-flex min-h-6 max-w-full items-center justify-center rounded border px-2 py-0.5 text-[10px] font-extrabold uppercase leading-none tracking-wide ${priorityToneClass(row.prioridade)}`}>{row.prioridade || FALLBACK}</button></td>
-          <td className="px-2.5 py-2.5 align-middle"><button type="button" onClick={() => setTipoFilter(row.tipificacao || EMPTY_FILTER)} className="block max-w-full truncate text-left text-[13px] font-semibold leading-5 text-foreground/95 hover:underline" title={tipificacao}>{tipificacao}</button></td>
+          <td className="px-2.5 py-2.5 align-middle"><button type="button" onClick={()=>setPrioridadeFilter(prioridadeOperacional || EMPTY_FILTER)} className={`inline-flex min-h-6 max-w-full items-center justify-center rounded border px-2 py-0.5 text-[10px] font-extrabold uppercase leading-none tracking-wide ${priorityToneClass(prioridadeOperacional)}`} title="Prioridade operacional calculada para exibição">{prioridadeOperacional}</button></td>
+          <td className="px-2.5 py-2.5 align-middle"><button type="button" className="block max-w-full truncate text-left text-[13px] font-semibold leading-5 text-foreground/95" title={tipificacao}>{tipificacao}</button></td>
           <td className="px-2.5 py-2.5 align-middle"><button type="button" onClick={()=>setGravidadeFilter(row.gravidade || EMPTY_FILTER)} className="block max-w-full truncate text-left text-xs font-medium leading-5 text-sky-100/70 hover:text-sky-100" title={gravidade}>{gravidade}</button></td>
-          <td className="px-2.5 py-2.5 text-center align-middle"><span className="block max-w-full truncate font-mono text-[12px] font-semibold text-foreground/90" title={tipoProcedimento}>{tipoProcedimento}</span></td>
+          <td className="px-2.5 py-2.5 text-center align-middle"><span className="block max-w-full truncate font-mono text-[12px] font-semibold text-foreground/90" title={tipoProcedimento}>{tipoProcedimentoLabel}</span></td>
           <td className="px-2.5 py-2.5 align-middle"><span className="block max-w-full truncate text-xs leading-5 text-muted-foreground" title={bairro}>{bairro}</span></td>
           <td className="px-2.5 py-2.5 text-center align-middle">{reuPreso ? <span className="inline-flex min-h-6 items-center justify-center rounded border border-destructive/35 bg-destructive/15 px-2 py-0.5 text-[10px] font-extrabold uppercase leading-none tracking-wide text-destructive">SIM</span> : <span className="text-xs text-muted-foreground">{FALLBACK}</span>}</td>
           <td className="px-2.5 py-2.5 text-center align-middle"><button type="button" onClick={()=>setSituacaoFilter(situacao || EMPTY_FILTER)} className={`inline-flex min-h-6 max-w-full items-center justify-center overflow-hidden rounded border px-2 py-0.5 text-[10px] font-extrabold uppercase leading-none tracking-wide ${statusToneClass(situacao)}`} title={statusTexto}><span className="block max-w-full truncate whitespace-nowrap">{statusTexto}</span></button></td>
