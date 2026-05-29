@@ -120,6 +120,7 @@ function EditarInquerito() {
         setPrazo(toInputDate(inquerito.prazo));
         setVitima(inquerito.vitima ?? "");
         setInvestigado(inquerito.investigado ?? "");
+        setAutoria(inquerito.autoria_determinada ?? "");
         setReuPreso(inquerito.reu_preso ?? "");
         setHouveArmaFogo(inquerito.houve_arma_fogo ?? "");
         setArmaUtilizada(inquerito.arma_utilizada ?? "");
@@ -182,6 +183,7 @@ function EditarInquerito() {
         prazo: prazo || null,
         vitima: vitima.trim() || null,
         investigado: investigado.trim() || null,
+        autoria_determinada: autoria.trim() || null,
         reu_preso: reuPreso.trim() || null,
         houve_arma_fogo: houveArmaFogo.trim() || null,
         arma_utilizada: armaUtilizada.trim() || null,
