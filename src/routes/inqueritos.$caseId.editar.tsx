@@ -95,15 +95,15 @@ function EditarInquerito() {
         const [currentProfile, inquerito] = await Promise.all([getCurrentProfile(), getInqueritoById(caseId)]);
         setProfile(currentProfile);
         if (!canEditCases(currentProfile)) { setRestricted(true); return; }
-        const raw = inquerito as unknown as Record<string, unknown>;
-        const visibility = String(raw.visibilidade ?? raw.visibility ?? raw.publico_privado ?? "").toLowerCase();
-        const isPrivate = visibility.includes("priv") || visibility.includes("sig");
-        if (isPrivate && canOnlyViewPublicCases(currentProfile)) { setRestricted(true); return; }
         if (!ativo) return;
         if (!inquerito) {
           setNotFound(true);
           return;
         }
+        const raw = inquerito as unknown as Record<string, unknown>;
+        const visibility = String(raw.visibilidade ?? raw.visibility ?? raw.publico_privado ?? "").toLowerCase();
+        const isPrivate = visibility.includes("priv") || visibility.includes("sig");
+        if (isPrivate && canOnlyViewPublicCases(currentProfile)) { setRestricted(true); return; }
 
         setNumeroPpe(inquerito.numero_ppe ?? "");
         setNumeroFisico(inquerito.numero_fisico ?? "");

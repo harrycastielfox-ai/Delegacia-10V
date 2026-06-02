@@ -69,6 +69,43 @@ function pick(record: Record<string, unknown>, ...keys: string[]) {
   return FALLBACK;
 }
 
+function parsePrazoToUtc(value: string) {
+  if (!value || value === FALLBACK) return null;
+  const raw = value.trim();
+  const br = /^(\d{2})\/(\d{2})\/(\d{4})$/u.exec(raw);
+  if (br) return Date.UTC(Number(br[3]), Number(br[2]) - 1, Number(br[1]), 12, 0, 0, 0);
+  const iso = /^(\d{4})-(\d{2})-(\d{2})/u.exec(raw);
+  if (iso) return Date.UTC(Number(iso[1]), Number(iso[2]) - 1, Number(iso[3]), 12, 0, 0, 0);
+  const parsed = new Date(raw);
+  if (Number.isNaN(parsed.getTime())) return null;
+  return Date.UTC(parsed.getUTCFullYear(), parsed.getUTCMonth(), parsed.getUTCDate(), 12, 0, 0, 0);
+}
+
+function formatDatePtBr(ts: number) {
+  const date = new Date(ts);
+  const day = String(date.getUTCDate()).padStart(2, "0");
+  const month = String(date.getUTCMonth() + 1).padStart(2, "0");
+  const year = date.getUTCFullYear();
+  return `${day}/${month}/${year}`;
+}
+
+function formatPrazoDisplay(value: string) {
+  const ts = parsePrazoToUtc(value);
+  if (ts === null) return FALLBACK;
+  const dateText = formatDatePtBr(ts);
+  const now = new Date();
+  const todayTs = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 12, 0, 0, 0);
+  return ts < todayTs ? `Vencido — ${dateText}` : dateText;
+}
+
+function isPrazoVencido(value: string) {
+  const ts = parsePrazoToUtc(value.replace("Vencido — ", ""));
+  if (ts === null) return false;
+  const now = new Date();
+  const todayTs = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 12, 0, 0, 0);
+  return ts < todayTs;
+}
+
 function normalizeInqueritoForDetail(caso: InqueritoRecord): InqueritoDetalheUI {
   const raw = caso as unknown as Record<string, unknown>;
   const priorityDetails = calculateInqueritoOperationalPriorityDetails(raw);
@@ -79,14 +116,14 @@ function normalizeInqueritoForDetail(caso: InqueritoRecord): InqueritoDetalheUI 
     tipificacao: pick(raw, "tipificacao"),
     numeroFisico: pick(raw, "numero_fisico", "numeroFisico"),
     numeroBo: pick(raw, "numero_bo", "numeroBo"),
-    tipo: pick(raw, "tipo_procedimento", "tipoProcedimento", "tipo", "procedimento"),
+    tipo: pick(raw, "tipo", "tipo_procedimento", "tipoProcedimento", "procedimento"),
     situacao: pick(raw, "situacao", "status_diligencias"),
     prioridade: priorityDetails.priority,
     prioridadeMotivo: priorityDetails.reason,
     gravidade: pick(raw, "categoria_caso", "categoriaCaso", "gravidade"),
     dataFato: pick(raw, "data_fato", "dataFato"),
     dataInstauracao: pick(raw, "data_instauracao", "dataInstauracao"),
-    prazo: pick(raw, "prazo"),
+    prazo: formatPrazoDisplay(pick(raw, "prazo")),
     diasDecorridos: pick(raw, "dias_decorridos", "diasDecorridos"),
     ultimaEdicao: pick(raw, "updated_at", "updatedAt", "ultima_edicao", "ultimaEdicao"),
     delegadoResponsavel: pick(raw, "delegado_responsavel", "delegadoResponsavel"),
@@ -254,7 +291,7 @@ function InqueritoDetalhes() {
             {label}: {value || FALLBACK}
           </span>
         ))}
-        {detalhe.prazo !== FALLBACK && new Date(detalhe.prazo) < new Date() && <span className="rounded-md border border-red-500/40 bg-red-500/15 px-2.5 py-1 text-[10px] font-semibold text-red-200">Vencido</span>}
+        {isPrazoVencido(detalhe.prazo) && <span className="rounded-md border border-red-500/40 bg-red-500/15 px-2.5 py-1 text-[10px] font-semibold text-red-200">Vencido</span>}
       </div>
       {deleteError && <p className="mt-3 rounded-lg border border-destructive/50 bg-destructive/10 px-3 py-1.5 text-xs text-destructive">{deleteError}</p>}
     </header>
