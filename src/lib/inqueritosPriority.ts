@@ -1,5 +1,12 @@
 const FALLBACK = "—";
 
+export type InqueritoOperationalPriority = "ALTA" | "MÉDIA" | "BAIXA";
+
+export type InqueritoOperationalPriorityDetails = {
+  priority: InqueritoOperationalPriority;
+  reason: string;
+};
+
 type PrioritySource = Record<string, unknown>;
 
 function normalizeText(value?: string) {
@@ -31,20 +38,18 @@ function isTruthyLike(value: unknown) {
   return ["true", "t", "1", "sim", "s", "yes", "y"].includes(normalizeText(String(value ?? "")));
 }
 
-function isEmpty(value: string) {
-  return !value || value === FALLBACK;
-}
-
 function daysUntilPrazo(prazo: string) {
   const ts = parseAnyDate(prazo);
   if (ts === null) return null;
-  return Math.ceil((ts - Date.now()) / (1000 * 60 * 60 * 24));
+  const now = new Date();
+  const today = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 12, 0, 0, 0);
+  return Math.round((ts - today) / (1000 * 60 * 60 * 24));
 }
 
 function normalizeManualPriority(value: string) {
   const normalized = normalizeText(value);
   if (["alta", "urgente"].includes(normalized)) return "ALTA";
-  if (["media", "média"].includes(normalized)) return "MÉDIA";
+  if (normalized === "media") return "MÉDIA";
   if (normalized === "baixa") return "BAIXA";
   return FALLBACK;
 }
@@ -52,7 +57,7 @@ function normalizeManualPriority(value: string) {
 function hasReuPreso(record: PrioritySource) {
   const preso = normalizeText(pick(record, "reu_preso", "reuPreso"));
   const custodia = normalizeText(pick(record, "custodia", "situacao_custodia"));
-  return isTruthyLike(preso) || ["preso", "reu preso", "réu preso", "custodiado"].includes(preso) || custodia.includes("pres");
+  return isTruthyLike(preso) || ["preso", "reu preso", "custodiado"].includes(preso) || custodia.includes("pres");
 }
 
 function hasMedidaProtetiva(record: PrioritySource) {
@@ -65,21 +70,40 @@ function hasMedidaProtetiva(record: PrioritySource) {
   return protetivaTexto.includes("protetiv");
 }
 
-export function calculateInqueritoOperationalPriority(record: PrioritySource) {
+function categoryMatches(categoria: string, categories: string[]) {
+  return categories.some((option) => categoria === option || categoria.includes(option));
+}
+
+export function calculateInqueritoOperationalPriorityDetails(record: PrioritySource): InqueritoOperationalPriorityDetails {
   const prazo = pick(record, "prazo", "data_prazo");
   const prazoDias = daysUntilPrazo(prazo);
   const categoria = normalizeText(pick(record, "categoria_caso", "categoriaCaso", "gravidade"));
-  const situacao = pick(record, "situacao", "situação", "status");
-  const statusDiligencias = pick(record, "status_diligencias", "statusDiligencias");
-  const hasAnySignal = prazoDias !== null || hasReuPreso(record) || hasMedidaProtetiva(record) || !isEmpty(categoria) || !isEmpty(situacao) || !isEmpty(statusDiligencias);
+  const manual = normalizeManualPriority(pick(record, "prioridade"));
   const highCategories = ["cvli", "miae", "crimes sexuais", "violencia domestica", "violento"];
-  const mediumCategories = ["drogas", "cvp", "crimes contra o patrimonio", "crimes de transito", "violencia contra crianca e adolescente", "violencia contra a crianca e o adolescente", "violencia contra pessoa idosa", "violencia contra a pessoa idosa"];
+  const mediumCategories = [
+    "drogas",
+    "cvp",
+    "crimes contra o patrimonio",
+    "crimes de transito",
+    "violencia contra crianca e adolescente",
+    "violencia contra a crianca e o adolescente",
+    "violencia contra pessoa idosa",
+    "violencia contra a pessoa idosa",
+  ];
 
-  if ((prazoDias !== null && prazoDias <= 7) || hasReuPreso(record) || hasMedidaProtetiva(record) || highCategories.includes(categoria)) return "ALTA";
-  if ((prazoDias !== null && prazoDias <= 15) || mediumCategories.includes(categoria)) return "MÉDIA";
-  if (!hasAnySignal) {
-    const manual = normalizeManualPriority(pick(record, "prioridade"));
-    if (manual !== FALLBACK) return manual;
-  }
-  return "BAIXA";
+  if (hasReuPreso(record)) return { priority: "ALTA", reason: "Alta por réu preso" };
+  if (hasMedidaProtetiva(record)) return { priority: "ALTA", reason: "Alta por medida protetiva" };
+  if (categoryMatches(categoria, highCategories)) return { priority: "ALTA", reason: "Alta por categoria crítica" };
+  if (prazoDias !== null && prazoDias < 0) return { priority: "ALTA", reason: "Alta por prazo vencido" };
+
+  if (prazoDias !== null && prazoDias <= 7) return { priority: "MÉDIA", reason: "Média por prazo próximo" };
+  if (categoryMatches(categoria, mediumCategories)) return { priority: "MÉDIA", reason: "Média por categoria intermediária" };
+  if (manual === "MÉDIA") return { priority: "MÉDIA", reason: "Média por prioridade manual" };
+  if (manual === "BAIXA") return { priority: "BAIXA", reason: "Baixa por prioridade manual" };
+
+  return { priority: "BAIXA", reason: "Baixa sem sinais críticos" };
+}
+
+export function calculateInqueritoOperationalPriority(record: PrioritySource) {
+  return calculateInqueritoOperationalPriorityDetails(record).priority;
 }
