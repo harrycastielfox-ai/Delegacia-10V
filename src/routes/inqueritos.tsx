@@ -40,7 +40,22 @@ function daysUntilPrazo(prazo: string) { const ts = parseAnyDate(prazo); if (ts 
 function calculateOperationalPriority(row: InqueritoListRow) { return calculateInqueritoOperationalPriority(row as unknown as Record<string, unknown>); }
 function getProcedureShortLabel(value: string) { const n = normalizeText(value); if (n === "inquerito policial" || n === "ip") return "IP"; if (n === "tco") return "TCO"; if (n === "verificacao preliminar" || n === "vp") return "VP"; if (n === "outros" || n === "outro") return "Outros"; return value || FALLBACK; }
 function statusToneClass(value: string) { if (statusTone[value]) return statusTone[value]; if (isConcluidoAlias(value)) return statusTone["Concluída"]; if (isAndamentoAlias(value)) return statusTone["Em Andamento"]; return "border-warning/30 bg-warning/10 text-warning"; }
-function formatPrazoDias(prazo: string) { const ts = parseAnyDate(prazo); if (ts === null) { const dias = /^\s*(vencido\s*)?(-?\d+)\s*d\s*$/iu.exec(prazo); if (!dias) return FALLBACK; const quantidade = Math.abs(Number(dias[2])); return dias[1] || Number(dias[2]) < 0 ? `Vencido ${quantidade}d` : `${quantidade}d`; } const diffDays = Math.ceil((ts - Date.now()) / (1000 * 60 * 60 * 24)); return diffDays < 0 ? `Vencido ${Math.abs(diffDays)}d` : `${diffDays}d`; }
+function formatDatePtBr(ts: number) { const date = new Date(ts); const day = String(date.getUTCDate()).padStart(2, "0"); const month = String(date.getUTCMonth() + 1).padStart(2, "0"); const year = date.getUTCFullYear(); return `${day}/${month}/${year}`; }
+function pluralizeDays(value: number) { return value === 1 ? "dia" : "dias"; }
+function getPrazoDisplay(prazo: string) {
+  const ts = parseAnyDate(prazo);
+  if (ts === null) return { text: FALLBACK, title: "Prazo não informado", tone: "text-muted-foreground" };
+  const dateText = formatDatePtBr(ts);
+  const now = new Date();
+  const todayTs = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 12, 0, 0, 0);
+  const diffDays = Math.round((ts - todayTs) / (1000 * 60 * 60 * 24));
+  if (diffDays < 0) {
+    const daysOverdue = Math.abs(diffDays);
+    return { text: `Vencido — ${dateText}`, title: `Vencido há ${daysOverdue} ${pluralizeDays(daysOverdue)}. Prazo: ${dateText}`, tone: "border border-destructive/30 bg-destructive/10 text-destructive" };
+  }
+  if (diffDays === 0) return { text: `Vence hoje — ${dateText}`, title: `Vence hoje. Prazo: ${dateText}`, tone: "border border-warning/30 bg-warning/10 text-warning" };
+  return { text: dateText, title: `Prazo em ${diffDays} ${pluralizeDays(diffDays)}. Prazo: ${dateText}`, tone: "text-muted-foreground" };
+}
 
 function normalizeInqueritoForList(caso: InqueritoRecord): InqueritoListRow {
   const raw = caso as unknown as Record<string, unknown>;
@@ -114,8 +129,8 @@ function Inqueritos() {
       <col className="w-[6%]" />
       <col className="w-[9%]" />
       <col className="w-[8%]" />
-      <col className="w-[16%]" />
-      <col className="w-[6%]" />
+      <col className="w-[12%]" />
+      <col className="w-[12%]" />
       <col className="w-[5%]" />
     </colgroup>
     <thead className="bg-muted/25 text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
@@ -137,7 +152,7 @@ function Inqueritos() {
       {filtered.map((row) => {
         const situacao = row.situacao !== FALLBACK ? row.situacao : row.statusDiligencias;
         const prazoVencido = isPrazoVencido(row.prazo);
-        const prazoTexto = formatPrazoDias(row.prazo);
+        const prazoDisplay = getPrazoDisplay(row.prazo);
         const reuPreso = hasReuPreso(row);
         const numeroPpe = row.numeroPpe || FALLBACK;
         const tipificacao = row.tipificacao || FALLBACK;
@@ -156,7 +171,7 @@ function Inqueritos() {
           <td className="px-2.5 py-2.5 align-middle"><span className="block max-w-full truncate text-xs leading-5 text-muted-foreground" title={bairro}>{bairro}</span></td>
           <td className="px-2.5 py-2.5 text-center align-middle">{reuPreso ? <span className="inline-flex min-h-6 items-center justify-center rounded border border-destructive/35 bg-destructive/15 px-2 py-0.5 text-[10px] font-extrabold uppercase leading-none tracking-wide text-destructive">SIM</span> : <span className="text-xs text-muted-foreground">{FALLBACK}</span>}</td>
           <td className="px-2.5 py-2.5 text-center align-middle"><button type="button" onClick={()=>setSituacaoFilter(situacao || EMPTY_FILTER)} className={`inline-flex min-h-6 max-w-full items-center justify-center overflow-hidden rounded border px-2 py-0.5 text-[10px] font-extrabold uppercase leading-none tracking-wide ${statusToneClass(situacao)}`} title={statusTexto}><span className="block max-w-full truncate whitespace-nowrap">{statusTexto}</span></button></td>
-          <td className="px-2.5 py-2.5 text-right align-middle"><button type="button" onClick={()=>setPrazoFilter(prazoVencido?"vencido":"critico")} className={`inline-flex min-h-6 items-center justify-center rounded px-1.5 py-0.5 text-xs font-bold ${prazoVencido ? "text-destructive" : "text-muted-foreground"}`}>{prazoTexto}</button></td>
+          <td className="px-2.5 py-2.5 text-right align-middle"><button type="button" onClick={()=>setPrazoFilter(prazoVencido?"vencido":"critico")} className={`inline-flex min-h-6 max-w-full items-center justify-center truncate whitespace-nowrap rounded px-1.5 py-0.5 text-xs font-bold ${prazoDisplay.tone}`} title={prazoDisplay.title}>{prazoDisplay.text}</button></td>
           <td className="px-3 py-2.5 text-center align-middle"><button className="inline-flex min-h-8 items-center justify-center rounded-lg border border-info/40 bg-info/15 px-3 py-1.5 text-xs font-semibold text-info transition hover:bg-info/25 hover:text-info/90" onClick={() => navigate({ to: "/inqueritos/$caseId", params: { caseId: row.id } })}>Abrir</button></td>
         </tr>;
       })}
