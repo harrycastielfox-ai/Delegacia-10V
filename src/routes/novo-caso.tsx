@@ -101,7 +101,6 @@ function NovoCaso() {
       tipificacao: tipificacao.trim() || null,
       vitima: vitima.trim() || null,
       investigado: investigado.trim() || null,
-      autoria_determinada: autoria || null,
       reu_preso: reuPreso || null,
       prazo: prazo || null,
       data_fato: dataFato || null,

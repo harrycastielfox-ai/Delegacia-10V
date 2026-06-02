@@ -5,7 +5,7 @@ import { getInqueritoById, softDeleteInquerito, type InqueritoRecord } from "@/l
 import { logAuditoria } from "@/lib/repositories/auditoriaRepository";
 import { getCurrentProfile } from "@/lib/auth";
 import { canDeleteCases, canEditCases, canOnlyViewPublicCases, type UserProfile } from "@/lib/authz";
-import { calculateInqueritoOperationalPriority } from "@/lib/inqueritosPriority";
+import { calculateInqueritoOperationalPriorityDetails } from "@/lib/inqueritosPriority";
 import { BookOpen, FileSearch, Scale, UserRound, ShieldCheck, NotebookPen, CalendarClock } from "lucide-react";
 
 export const Route = createFileRoute("/inqueritos/$caseId")({ component: InqueritoDetalhes });
@@ -20,6 +20,7 @@ type InqueritoDetalheUI = {
   tipo: string;
   situacao: string;
   prioridade: string;
+  prioridadeMotivo: string;
   gravidade: string;
   dataFato: string;
   dataInstauracao: string;
@@ -70,6 +71,7 @@ function pick(record: Record<string, unknown>, ...keys: string[]) {
 
 function normalizeInqueritoForDetail(caso: InqueritoRecord): InqueritoDetalheUI {
   const raw = caso as unknown as Record<string, unknown>;
+  const priorityDetails = calculateInqueritoOperationalPriorityDetails(raw);
   return {
     id: caso.id,
     idInterno: caso.id,
@@ -79,7 +81,8 @@ function normalizeInqueritoForDetail(caso: InqueritoRecord): InqueritoDetalheUI 
     numeroBo: pick(raw, "numero_bo", "numeroBo"),
     tipo: pick(raw, "tipo_procedimento", "tipoProcedimento", "tipo", "procedimento"),
     situacao: pick(raw, "situacao", "status_diligencias"),
-    prioridade: calculateInqueritoOperationalPriority(raw),
+    prioridade: priorityDetails.priority,
+    prioridadeMotivo: priorityDetails.reason,
     gravidade: pick(raw, "categoria_caso", "categoriaCaso", "gravidade"),
     dataFato: pick(raw, "data_fato", "dataFato"),
     dataInstauracao: pick(raw, "data_instauracao", "dataInstauracao"),
@@ -213,6 +216,7 @@ function InqueritoDetalhes() {
 
   const badges = [
     ["Prioridade operacional", detalhe.prioridade],
+    ["Motivo", detalhe.prioridadeMotivo],
     ["Situação", detalhe.situacao],
     ["Categoria do Caso", detalhe.gravidade],
     ["Tipo de Procedimento", detalhe.tipo],
@@ -263,7 +267,7 @@ function InqueritoDetalhes() {
         <InfoCard title="Diligências Pendentes" icon={<NotebookPen className="h-4 w-4 text-primary" />} items={[["Diligências pendentes", detalhe.diligenciasPendentes]]} stacked preWrapValues />
       </div>
       <div className="space-y-4">
-        <InfoCard title="Classificação" icon={<FileSearch className="h-4 w-4 text-primary" />} items={[["Tipificação", detalhe.tipificacao], ["Prioridade operacional", detalhe.prioridade], ["Categoria do Caso", detalhe.gravidade], ["Tipo de Procedimento", detalhe.tipo], ["Situação", detalhe.situacao], ["Elucidado", detalhe.elucidado], ["Houve arma de fogo?", detalhe.houveArmaFogo], ["Arma utilizada", detalhe.armaUtilizada], ["Vinculado à facção?", detalhe.vinculadoFaccao], ["Nome da facção", detalhe.nomeFaccao]]} highlightFirst />
+        <InfoCard title="Classificação" icon={<FileSearch className="h-4 w-4 text-primary" />} items={[["Tipificação", detalhe.tipificacao], ["Prioridade operacional", detalhe.prioridade], ["Motivo da prioridade", detalhe.prioridadeMotivo], ["Categoria do Caso", detalhe.gravidade], ["Tipo de Procedimento", detalhe.tipo], ["Situação", detalhe.situacao], ["Elucidado", detalhe.elucidado], ["Houve arma de fogo?", detalhe.houveArmaFogo], ["Arma utilizada", detalhe.armaUtilizada], ["Vinculado à facção?", detalhe.vinculadoFaccao], ["Nome da facção", detalhe.nomeFaccao]]} highlightFirst />
         <InfoCard title="Dados Operacionais" icon={<ShieldCheck className="h-4 w-4 text-primary" />} items={[["Delegado responsável", detalhe.delegadoResponsavel], ["Equipe", detalhe.equipe], ["Escrivão", detalhe.escrivao], ["Bairro", detalhe.bairro], ["Distrito", detalhe.distrito], ["Status diligências", detalhe.statusDiligencias], ["Última atualização", formatDateTime(detalhe.ultimaEdicao)]]} />
         <InfoCard title="Observações" icon={<NotebookPen className="h-4 w-4 text-primary" />} items={[["Observações", detalhe.observacoes]]} stacked preWrapValues />
       </div>

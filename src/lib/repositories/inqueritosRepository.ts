@@ -21,7 +21,6 @@ export type InqueritoRecord = {
   distrito: string | null;
   vitima: string | null;
   investigado: string | null;
-  autoria_determinada: string | null;
   reu_preso: string | null;
   elucidado: string | null;
   houve_arma_fogo: string | null;
