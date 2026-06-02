@@ -1,29 +1,59 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import { LayoutDashboard, FileText, FilePlus2, Bell, LogOut, Gavel, Users, ClipboardList } from "lucide-react";
 import { getProfileAvatarPublicUrl, logout } from "@/lib/auth";
 import { canCreateCases, canManageUsers, canViewAuditoria, canViewRepresentacoes, type UserProfile } from "@/lib/authz";
+import { buildModuleAlerts, buildSmartAlerts, countModuleAlertsTotal } from "@/lib/alertasInteligentes";
+import { listInqueritos } from "@/lib/repositories/inqueritosRepository";
+import { listRepresentacoes } from "@/lib/repositories/representacoesRepository";
 
 const baseItems = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
   { title: "Inquéritos", url: "/inqueritos", icon: FileText },
   { title: "Representações", url: "/representacoes", icon: Gavel },
   { title: "Novo Caso", url: "/novo-caso", icon: FilePlus2 },
-  { title: "Alertas", url: "/alertas", icon: Bell, badge: 5 },
+  { title: "Alertas", url: "/alertas", icon: Bell },
   { title: "Auditoria", url: "/auditoria", icon: ClipboardList },
 ] as const;
 
 export function AppSidebar({ profile }: { profile: UserProfile }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const navigate = useNavigate();
+  const [alertasBadge, setAlertasBadge] = useState<number | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const [inqueritos, representacoes] = await Promise.all([listInqueritos(), listRepresentacoes()]);
+        if (!cancelled) {
+          setAlertasBadge(countModuleAlertsTotal(buildModuleAlerts(buildSmartAlerts(inqueritos, representacoes))));
+        }
+      } catch {
+        if (!cancelled) {
+          setAlertasBadge(null);
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const visibleBaseItems = baseItems.filter((item) => {
     if (item.url === "/novo-caso") return canCreateCases(profile);
     if (item.url === "/representacoes") return canViewRepresentacoes(profile);
     if (item.url === "/auditoria") return canViewAuditoria(profile);
     return true;
   });
+  const itemsWithAlertasBadge = visibleBaseItems.map((item) =>
+    item.url === "/alertas" && alertasBadge !== null ? { ...item, badge: alertasBadge } : item,
+  );
   const items = canManageUsers(profile)
-    ? [...visibleBaseItems, { title: "Admin Usuários", url: "/admin/usuarios", icon: Users }]
-    : visibleBaseItems;
+    ? [...itemsWithAlertasBadge, { title: "Admin Usuários", url: "/admin/usuarios", icon: Users }]
+    : itemsWithAlertasBadge;
   const avatarUrl = getProfileAvatarPublicUrl(profile.avatar_path);
   const initial = (profile.nome?.trim().charAt(0) || "?").toUpperCase();
 
@@ -64,7 +94,7 @@ export function AppSidebar({ profile }: { profile: UserProfile }) {
             >
               <Icon className="h-4 w-4" />
               <span className="flex-1">{item.title}</span>
-              {"badge" in item && item.badge ? (
+              {"badge" in item ? (
                 <span className="text-[10px] font-semibold bg-destructive/20 text-destructive px-1.5 py-0.5 rounded">
                   {item.badge}
                 </span>

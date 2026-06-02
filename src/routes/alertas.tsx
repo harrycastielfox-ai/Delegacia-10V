@@ -5,7 +5,7 @@ import { AppLayout } from "@/components/AppLayout";
 import { PageHeader } from "@/components/PageHeader";
 import { listInqueritos } from "@/lib/repositories/inqueritosRepository";
 import { listRepresentacoes } from "@/lib/repositories/representacoesRepository";
-import { buildModuleAlerts, buildSmartAlerts, moduleMeta, type ModuleKey } from "@/lib/alertasInteligentes";
+import { buildModuleAlerts, buildSmartAlerts, countModuleAlertsTotal, moduleMeta, type ModuleKey } from "@/lib/alertasInteligentes";
 
 export const Route = createFileRoute("/alertas")({ component: Alertas, head: () => ({ meta: [{ title: "Alertas — SIPI" }] }) });
 
@@ -81,7 +81,7 @@ function Alertas() {
   const stats = useMemo(() => {
     const alerts = Object.values(moduleAlerts).flat();
     return {
-      total: alerts.length,
+      total: countModuleAlertsTotal(moduleAlerts),
       criticos: alerts.filter((a) => a.severity === "critico").length,
       altos: alerts.filter((a) => a.severity === "alto").length,
       medios: alerts.filter((a) => a.severity === "medio").length,
