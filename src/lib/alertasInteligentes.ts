@@ -132,4 +132,8 @@ export const buildModuleAlerts = (alerts: SmartAlert[]) => ({
   sigilosas: alerts.filter((a) => a.title === "Representação sigilosa"),
 });
 
+export type ModuleAlerts = ReturnType<typeof buildModuleAlerts>;
+
+export const countModuleAlertsTotal = (moduleAlerts: ModuleAlerts) => Object.values(moduleAlerts).flat().length;
+
 export const isValidModulo = (modulo: string): modulo is ModuleKey => modulo in moduleMeta;
