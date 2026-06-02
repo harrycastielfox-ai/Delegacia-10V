@@ -163,7 +163,7 @@ function Inqueritos() {
         const bairro = row.bairro || FALLBACK;
         const statusTexto = situacao || FALLBACK;
         return <tr key={row.id} className="border-t border-border/70 align-middle transition hover:bg-muted/20">
-          <td className="px-3 py-2.5 align-middle"><p className="truncate font-mono text-[15px] font-bold leading-5 text-primary drop-shadow-[0_0_8px_rgba(34,197,94,0.16)]" title={numeroPpe}>{numeroPpe}</p></td>
+          <td className="px-3 py-2.5 align-middle"><p className="truncate font-mono text-[14px] font-bold leading-5 text-primary drop-shadow-[0_0_8px_rgba(34,197,94,0.16)]" title={numeroPpe}>{numeroPpe}</p></td>
           <td className="px-2.5 py-2.5 align-middle"><button type="button" onClick={()=>setPrioridadeFilter(prioridadeOperacional || EMPTY_FILTER)} className={`inline-flex min-h-6 max-w-full items-center justify-center rounded border px-2 py-0.5 text-[10px] font-extrabold uppercase leading-none tracking-wide ${priorityToneClass(prioridadeOperacional)}`} title="Prioridade operacional calculada para exibição">{prioridadeOperacional}</button></td>
           <td className="px-2.5 py-2.5 align-middle"><button type="button" className="block max-w-full truncate text-left text-[13px] font-semibold leading-5 text-foreground/95" title={tipificacao}>{tipificacao}</button></td>
           <td className="px-2.5 py-2.5 align-middle"><button type="button" onClick={()=>setGravidadeFilter(row.gravidade || EMPTY_FILTER)} className="block max-w-full truncate text-left text-xs font-medium leading-5 text-sky-100/70 hover:text-sky-100" title={gravidade}>{gravidade}</button></td>
