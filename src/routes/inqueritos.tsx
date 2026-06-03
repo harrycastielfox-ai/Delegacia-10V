@@ -51,10 +51,10 @@ function getPrazoDisplay(prazo: string) {
   const diffDays = Math.round((ts - todayTs) / (1000 * 60 * 60 * 24));
   if (diffDays < 0) {
     const daysOverdue = Math.abs(diffDays);
-    return { text: dateText, title: `Vencido há ${daysOverdue} ${pluralizeDays(daysOverdue)}. Prazo: ${dateText}`, tone: "text-white" };
+    return { text: dateText, title: `Vencido há ${daysOverdue} ${pluralizeDays(daysOverdue)}. Prazo: ${dateText}`, tone: "text-foreground/70" };
   }
   const title = diffDays === 0 ? `Vence hoje. Prazo: ${dateText}` : `Prazo em ${diffDays} ${pluralizeDays(diffDays)}. Prazo: ${dateText}`;
-  return { text: dateText, title, tone: "text-emerald-400" };
+  return { text: dateText, title, tone: "text-emerald-400/80" };
 }
 
 function normalizeInqueritoForList(caso: InqueritoRecord): InqueritoListRow {
@@ -124,23 +124,23 @@ function Inqueritos() {
     <colgroup>
       <col className="w-[10%]" />
       <col className="w-[7%]" />
-      <col className="w-[25%]" />
-      <col className="w-[9%]" />
-      <col className="w-[7%]" />
+      <col className="w-[24%]" />
       <col className="w-[10%]" />
+      <col className="w-[7.5%]" />
+      <col className="w-[10.5%]" />
       <col className="w-[8%]" />
-      <col className="w-[12%]" />
+      <col className="w-[11.5%]" />
       <col className="w-[7%]" />
-      <col className="w-[5%]" />
+      <col className="w-[5.5%]" />
     </colgroup>
     <thead className="bg-muted/25 text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
       <tr>
         <th className="px-3 py-2.5 text-left font-bold align-middle">Nº PPE</th>
         <th className="px-2.5 py-2.5 text-left font-bold align-middle">PRIOR.</th>
         <th className="px-2.5 py-2.5 text-left font-bold align-middle">TIPIFICAÇÃO</th>
-        <th className="px-2 py-2.5 text-left font-bold align-middle">GRAVIDADE</th>
-        <th className="px-2 py-2.5 text-left font-bold align-middle">TIPO</th>
-        <th className="px-2 py-2.5 text-left font-bold align-middle">BAIRRO</th>
+        <th className="px-2 py-2.5 text-center font-bold align-middle">GRAVIDADE</th>
+        <th className="px-2 py-2.5 text-center font-bold align-middle">TIPO</th>
+        <th className="px-2.5 py-2.5 text-left font-bold align-middle">BAIRRO</th>
         <th className="px-2.5 py-2.5 text-center font-bold align-middle">RÉU PRESO</th>
         <th className="px-2.5 py-2.5 text-center font-bold align-middle">STATUS</th>
         <th className="px-2.5 py-2.5 text-right font-bold align-middle">PRAZO</th>
@@ -166,12 +166,12 @@ function Inqueritos() {
           <td className="px-3 py-2.5 align-middle"><p className="truncate font-mono text-[14px] font-bold leading-5 text-primary drop-shadow-[0_0_8px_rgba(34,197,94,0.16)]" title={numeroPpe}>{numeroPpe}</p></td>
           <td className="px-2.5 py-2.5 align-middle"><button type="button" onClick={()=>setPrioridadeFilter(prioridadeOperacional || EMPTY_FILTER)} className={`inline-flex min-h-6 max-w-full items-center justify-center rounded border px-2 py-0.5 text-[10px] font-extrabold uppercase leading-none tracking-wide ${priorityToneClass(prioridadeOperacional)}`} title="Prioridade operacional calculada para exibição">{prioridadeOperacional}</button></td>
           <td className="px-2.5 py-2.5 align-middle"><button type="button" className="block max-w-full truncate text-left text-[13px] font-semibold leading-5 text-foreground/95" title={tipificacao}>{tipificacao}</button></td>
-          <td className="px-2 py-2.5 align-middle"><button type="button" onClick={()=>setGravidadeFilter(row.gravidade || EMPTY_FILTER)} className="block w-full truncate text-left text-xs font-medium leading-5 text-sky-100/70 hover:text-sky-100" title={gravidade}>{gravidade}</button></td>
-          <td className="px-2 py-2.5 text-left align-middle"><span className="block w-full truncate font-mono text-[12px] font-semibold text-foreground/90" title={tipoProcedimento}>{tipoProcedimentoLabel}</span></td>
-          <td className="px-2 py-2.5 align-middle"><span className="block w-full truncate text-left text-xs leading-5 text-muted-foreground" title={bairro}>{bairro}</span></td>
+          <td className="px-2 py-2.5 text-center align-middle"><button type="button" onClick={()=>setGravidadeFilter(row.gravidade || EMPTY_FILTER)} className="mx-auto block max-w-full truncate text-center text-xs font-medium leading-5 text-sky-100/70 hover:text-sky-100" title={gravidade}>{gravidade}</button></td>
+          <td className="px-2 py-2.5 text-center align-middle"><span className="mx-auto block max-w-full truncate text-center font-mono text-[12px] font-semibold text-foreground/90" title={tipoProcedimento}>{tipoProcedimentoLabel}</span></td>
+          <td className="px-2.5 py-2.5 align-middle"><span className="block w-full truncate text-left text-xs leading-5 text-muted-foreground" title={bairro}>{bairro}</span></td>
           <td className="px-2.5 py-2.5 text-center align-middle">{reuPreso ? <span className="inline-flex min-h-6 items-center justify-center rounded border border-destructive/35 bg-destructive/15 px-2 py-0.5 text-[10px] font-extrabold uppercase leading-none tracking-wide text-destructive">SIM</span> : <span className="text-xs text-muted-foreground">{FALLBACK}</span>}</td>
           <td className="px-2.5 py-2.5 text-center align-middle"><button type="button" onClick={()=>setSituacaoFilter(situacao || EMPTY_FILTER)} className={`inline-flex min-h-6 max-w-full items-center justify-center overflow-hidden rounded border px-2 py-0.5 text-[10px] font-extrabold uppercase leading-none tracking-wide ${statusToneClass(situacao)}`} title={statusTexto}><span className="block max-w-full truncate whitespace-nowrap">{statusTexto}</span></button></td>
-          <td className="px-2.5 py-2.5 text-right align-middle"><button type="button" onClick={()=>setPrazoFilter(prazoVencido?"vencido":"critico")} className={`inline-flex min-h-6 max-w-full items-center justify-center truncate whitespace-nowrap rounded px-1.5 py-0.5 text-xs font-bold ${prazoDisplay.tone}`} title={prazoDisplay.title}>{prazoDisplay.text}</button></td>
+          <td className="px-2.5 py-2.5 text-right align-middle"><button type="button" onClick={()=>setPrazoFilter(prazoVencido?"vencido":"critico")} className={`inline-flex max-w-full items-center justify-center truncate whitespace-nowrap rounded px-1 py-0.5 text-[13px] font-medium tabular-nums ${prazoDisplay.tone}`} title={prazoDisplay.title}>{prazoDisplay.text}</button></td>
           <td className="px-3 py-2.5 text-center align-middle"><button className="inline-flex min-h-8 items-center justify-center rounded-lg border border-info/40 bg-info/15 px-3 py-1.5 text-xs font-semibold text-info transition hover:bg-info/25 hover:text-info/90" onClick={() => navigate({ to: "/inqueritos/$caseId", params: { caseId: row.id } })}>Abrir</button></td>
         </tr>;
       })}
