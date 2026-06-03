@@ -143,7 +143,7 @@ function Inqueritos() {
         <th className="px-2.5 py-2.5 text-left font-bold align-middle">BAIRRO</th>
         <th className="px-2.5 py-2.5 text-center font-bold align-middle">RÉU PRESO</th>
         <th className="px-2.5 py-2.5 text-center font-bold align-middle">STATUS</th>
-        <th className="px-2.5 py-2.5 text-right font-bold align-middle">PRAZO</th>
+        <th className="px-2.5 py-2.5 text-center font-bold align-middle">PRAZO</th>
         <th className="px-3 py-2.5 text-center font-bold align-middle">AÇÃO</th>
       </tr>
     </thead>
