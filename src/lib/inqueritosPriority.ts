@@ -7,6 +7,34 @@ export type InqueritoOperationalPriorityDetails = {
   reason: string;
 };
 
+export const CASE_CATEGORY_OPTIONS = [
+  "CVLI",
+  "CVP",
+  "MIAE",
+  "Drogas",
+  "Crimes Contra o Patrimônio",
+  "Crimes Sexuais",
+  "Violência Doméstica",
+  "Violento",
+  "Violência contra a Criança e o Adolescente",
+  "Violência contra a Pessoa Idosa",
+  "Crimes de Trânsito",
+  "MAE",
+  "Outro",
+] as const;
+
+const CASE_CATEGORY_BY_NORMALIZED = new Map(CASE_CATEGORY_OPTIONS.map((category) => [normalizeText(category), category]));
+
+export function normalizeCaseCategory(value: string | null | undefined, fallback = FALLBACK) {
+  const normalized = normalizeText(value ?? "");
+  if (!normalized || normalized === "selecione") return fallback;
+  return CASE_CATEGORY_BY_NORMALIZED.get(normalized) ?? fallback;
+}
+
+export function isValidCaseCategory(value: string | null | undefined) {
+  return normalizeCaseCategory(value, "") !== "";
+}
+
 type PrioritySource = Record<string, unknown>;
 
 function normalizeText(value?: string) {
@@ -77,7 +105,7 @@ function categoryMatches(categoria: string, categories: string[]) {
 export function calculateInqueritoOperationalPriorityDetails(record: PrioritySource): InqueritoOperationalPriorityDetails {
   const prazo = pick(record, "prazo", "data_prazo");
   const prazoDias = daysUntilPrazo(prazo);
-  const categoria = normalizeText(pick(record, "categoria_caso", "categoriaCaso", "gravidade"));
+  const categoria = normalizeText(normalizeCaseCategory(pick(record, "categoria_caso", "categoriaCaso", "gravidade")));
   const manual = normalizeManualPriority(pick(record, "prioridade"));
   const highCategories = ["cvli", "miae", "crimes sexuais", "violencia domestica", "violento"];
   const mediumCategories = [

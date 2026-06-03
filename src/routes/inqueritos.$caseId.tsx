@@ -5,7 +5,7 @@ import { getInqueritoById, softDeleteInquerito, type InqueritoRecord } from "@/l
 import { logAuditoria } from "@/lib/repositories/auditoriaRepository";
 import { getCurrentProfile } from "@/lib/auth";
 import { canDeleteCases, canEditCases, canOnlyViewPublicCases, type UserProfile } from "@/lib/authz";
-import { calculateInqueritoOperationalPriorityDetails } from "@/lib/inqueritosPriority";
+import { calculateInqueritoOperationalPriorityDetails, normalizeCaseCategory } from "@/lib/inqueritosPriority";
 import { BookOpen, FileSearch, Scale, UserRound, ShieldCheck, NotebookPen, CalendarClock } from "lucide-react";
 
 export const Route = createFileRoute("/inqueritos/$caseId")({ component: InqueritoDetalhes });
@@ -120,7 +120,7 @@ function normalizeInqueritoForDetail(caso: InqueritoRecord): InqueritoDetalheUI 
     situacao: pick(raw, "situacao", "status_diligencias"),
     prioridade: priorityDetails.priority,
     prioridadeMotivo: priorityDetails.reason,
-    gravidade: pick(raw, "categoria_caso", "categoriaCaso", "gravidade"),
+    gravidade: normalizeCaseCategory(pick(raw, "categoria_caso", "categoriaCaso", "gravidade")),
     dataFato: pick(raw, "data_fato", "dataFato"),
     dataInstauracao: pick(raw, "data_instauracao", "dataInstauracao"),
     prazo: formatPrazoDisplay(pick(raw, "prazo")),

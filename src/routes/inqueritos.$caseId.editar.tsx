@@ -5,6 +5,7 @@ import { getInqueritoById, updateInquerito } from "@/lib/repositories/inqueritos
 import { logAuditoria } from "@/lib/repositories/auditoriaRepository";
 import { getCurrentProfile } from "@/lib/auth";
 import { canEditCases, canOnlyViewPublicCases, type UserProfile } from "@/lib/authz";
+import { CASE_CATEGORY_OPTIONS, normalizeCaseCategory } from "@/lib/inqueritosPriority";
 
 export const Route = createFileRoute("/inqueritos/$caseId/editar")({ component: EditarInquerito });
 
@@ -109,7 +110,7 @@ function EditarInquerito() {
         setNumeroFisico(inquerito.numero_fisico ?? "");
         setNumeroBo(inquerito.numero_bo ?? "");
         setTipificacao(inquerito.tipificacao ?? "");
-        setGravidade(inquerito.gravidade ?? "");
+        setGravidade(normalizeCaseCategory(inquerito.gravidade, "Outro"));
         setTipo(normalizeProcedureValue(inquerito.tipo));
         setPrioridade(inquerito.prioridade ?? "");
         setSituacao(inquerito.situacao ?? "");
@@ -172,7 +173,7 @@ function EditarInquerito() {
         numero_bo: numeroBo.trim() || null,
         visibilidade: visibilidade.trim() || null,
         tipificacao: tipificacao.trim() || null,
-        gravidade: gravidade.trim() || null,
+        gravidade: normalizeCaseCategory(gravidade, "Outro"),
         tipo: tipo.trim() || null,
         prioridade: prioridade.trim() || null,
         situacao: situacao.trim() || null,
@@ -274,7 +275,7 @@ function EditarInquerito() {
 
           <SectionCard title="Classificação do Caso">
             <Field label="Tipificação" placeholder="Ex.: Homicídio Qualificado" value={tipificacao} onChange={(e) => setTipificacao(e.target.value)} />
-            <Select label="Categoria do Caso" value={gravidade} onChange={setGravidade} options={["CVLI", "CVP", "MIAE", "Drogas", "Crimes Contra o Patrimônio", "Crimes Sexuais", "Violência Doméstica", "Violento", "Violência contra a Criança e o Adolescente", "Violência contra a Pessoa Idosa", "Crimes de Trânsito", "MAE", "Outro"]} />
+            <Select label="Categoria do Caso" value={gravidade} onChange={setGravidade} options={[...CASE_CATEGORY_OPTIONS]} />
             <Select label="Situação" value={situacao} onChange={setSituacao} options={["Instaurado", "Em Andamento", "Para Relatar", "Relatado", "Aguardando Diligência", "Aguardando Laudo Pericial", "Requisição Ministerial/Judicial", "Remetido", "Arquivado"]} />
             <Select label="Elucidado" value={elucidado} onChange={setElucidado} options={["Sim", "Não"]} />
             <Select label="Houve arma de fogo?" value={houveArmaFogo} onChange={setHouveArmaFogo} options={["Sim", "Não"]} />
