@@ -6,6 +6,7 @@ import { createInquerito } from "@/lib/repositories/inqueritosRepository";
 import { logAuditoria } from "@/lib/repositories/auditoriaRepository";
 import { getCurrentProfile } from "@/lib/auth";
 import { canCreateCases, type UserProfile } from "@/lib/authz";
+import { CASE_CATEGORY_OPTIONS, normalizeCaseCategory } from "@/lib/inqueritosPriority";
 
 export const Route = createFileRoute("/novo-caso")({
   head: () => ({ meta: [{ title: "Novo Caso — SIPI" }] }),
@@ -107,7 +108,7 @@ function NovoCaso() {
       data_instauracao: dataInstauracao || null,
       tipo: tipo || null,
       prioridade: prioridade || null,
-      gravidade: gravidade || null,
+      gravidade: normalizeCaseCategory(gravidade, "Outro"),
       status_diligencias: statusDiligencias || null,
       situacao: situacao || null,
       elucidado: elucidado || null,
@@ -201,21 +202,7 @@ function NovoCaso() {
           <Field label="Tipificação" placeholder="Ex.: Homicídio Qualificado" value={tipificacao} onChange={(e) => setTipificacao(e.target.value)} />
           <Select
             label="Categoria do Caso"
-            options={[
-              "CVLI",
-              "CVP",
-              "MIAE",
-              "Drogas",
-              "Crimes Contra o Patrimônio",
-              "Crimes Sexuais",
-              "Violência Doméstica",
-              "Violento",
-              "Violência contra a Criança e o Adolescente",
-              "Violência contra a Pessoa Idosa",
-              "Crimes de Trânsito",
-              "MAE",
-              "Outro",
-            ]}
+            options={[...CASE_CATEGORY_OPTIONS]}
             value={gravidade}
             onChange={setGravidade}
           />
