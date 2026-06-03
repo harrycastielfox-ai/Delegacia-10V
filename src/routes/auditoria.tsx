@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Activity, Clock3, Database, FileSearch, Filter, Search, ShieldCheck, Sparkles, UserCog } from "lucide-react";
+import { Activity, Clock3, Database, FileSearch, Filter, Search, ShieldCheck, UserCog } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { AppLayout } from "@/components/AppLayout";
 import { getCurrentProfile, getProfileAvatarPublicUrl } from "@/lib/auth";
@@ -96,10 +96,7 @@ function Auditoria() {
             <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-primary/25 bg-primary/10 text-primary shadow-[0_0_18px_rgba(34,197,94,0.08)]">
               <ShieldCheck className="h-6 w-6" aria-hidden="true" />
             </div>
-            <div className="min-w-0 space-y-1.5">
-              <p className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.22em] text-primary/75">
-                <Sparkles className="h-3.5 w-3.5" aria-hidden="true" /> Painel administrativo
-              </p>
+            <div className="min-w-0 space-y-1">
               <h1 className="text-3xl font-black tracking-tight">Auditoria</h1>
               <p className="text-sm text-muted-foreground">Registro completo de ações no sistema</p>
             </div>
@@ -186,6 +183,8 @@ function AuditEventCard({ event }: { event: AuditoriaEvent }) {
   const executorName = getExecutorName(event);
   const executorEmail = getExecutorEmail(event);
   const executorAvatarUrl = getExecutorAvatarUrl(event);
+  const [avatarFailed, setAvatarFailed] = useState(false);
+  const shouldShowAvatar = Boolean(executorAvatarUrl) && !avatarFailed;
   const executorRole = "executor_cargo" in event && typeof event.executor_cargo === "string" ? event.executor_cargo : null;
   const action = getFriendlyAction(event.acao);
   const moduleInfo = getModuleInfo(event);
@@ -200,8 +199,13 @@ function AuditEventCard({ event }: { event: AuditoriaEvent }) {
     <>
       <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
         <div className="flex min-w-0 items-start gap-3">
-          {executorAvatarUrl ? (
-            <img src={executorAvatarUrl} alt={`Avatar de ${executorName}`} className="h-10 w-10 shrink-0 rounded-full border border-primary/25 object-cover" />
+          {shouldShowAvatar ? (
+            <img
+              src={executorAvatarUrl ?? undefined}
+              alt={`Avatar de ${executorName}`}
+              className="h-10 w-10 shrink-0 rounded-full border border-primary/25 object-cover"
+              onError={() => setAvatarFailed(true)}
+            />
           ) : (
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-primary/25 bg-primary/10 text-xs font-black text-primary/90">
               {avatarInitials || "?"}
@@ -456,9 +460,25 @@ function capitalize(value: string) {
 }
 
 function getExecutorAvatarUrl(event: AuditoriaEvent): string | null {
-  if (event.executor_avatar_url && String(event.executor_avatar_url).trim()) return String(event.executor_avatar_url).trim();
-  if (event.executor_avatar_path && String(event.executor_avatar_path).trim()) return getProfileAvatarPublicUrl(String(event.executor_avatar_path).trim());
-  return null;
+  const avatarUrl = getSafeImageUrl(event.executor_avatar_url);
+  if (avatarUrl) return avatarUrl;
+
+  const avatarPath = String(event.executor_avatar_path ?? "").trim();
+  if (!avatarPath) return null;
+
+  return getSafeImageUrl(getProfileAvatarPublicUrl(avatarPath));
+}
+
+function getSafeImageUrl(value: string | null | undefined): string | null {
+  const candidate = String(value ?? "").trim();
+  if (!candidate) return null;
+
+  try {
+    const url = new URL(candidate);
+    return ["http:", "https:"].includes(url.protocol) ? url.toString() : null;
+  } catch {
+    return null;
+  }
 }
 
 function getAuditEventHref(event: AuditoriaEvent) {
