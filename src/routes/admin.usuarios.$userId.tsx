@@ -1,8 +1,21 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { ArrowLeft, ShieldAlert } from "lucide-react";
+import { useEffect, useMemo, useState, type ComponentType, type ReactNode } from "react";
+import {
+  Activity,
+  ArrowLeft,
+  BadgeCheck,
+  CalendarDays,
+  Clock3,
+  FileText,
+  KeyRound,
+  Mail,
+  Phone,
+  Shield,
+  ShieldAlert,
+  UserCog,
+} from "lucide-react";
 import { getCurrentProfile, getProfileAvatarPublicUrl, getSession } from "@/lib/auth";
-import { canManageUsers, type UserProfile } from "@/lib/authz";
+import { canManageUsers, type AuthorizationStatus, type UserProfile, type UserRole } from "@/lib/authz";
 import { listAuditoriaForAdminUser, type AuditoriaEvent } from "@/lib/repositories/auditoriaRepository";
 import { supabase } from "@/lib/supabaseClient";
 
@@ -10,13 +23,16 @@ export const Route = createFileRoute("/admin/usuarios/$userId")({
   component: AdminUserProfilePage,
 });
 
+type AdminUserProfile = UserProfile & { telefone?: string | null };
+type IconType = ComponentType<{ className?: string }>;
+
 function AdminUserProfilePage() {
   const navigate = useNavigate();
   const { userId } = Route.useParams();
   const [checkingAccess, setCheckingAccess] = useState(true);
   const [hasAccess, setHasAccess] = useState(false);
   const [loadingUser, setLoadingUser] = useState(false);
-  const [targetUser, setTargetUser] = useState<UserProfile | null>(null);
+  const [targetUser, setTargetUser] = useState<AdminUserProfile | null>(null);
   const [requestState, setRequestState] = useState<"idle" | "not_found" | "forbidden" | "rpc_unavailable" | "error">("idle");
   const [auditoriaLoading, setAuditoriaLoading] = useState(false);
   const [auditoriaError, setAuditoriaError] = useState<string | null>(null);
@@ -82,7 +98,7 @@ function AdminUserProfilePage() {
         return;
       }
 
-      const users = (data ?? []) as UserProfile[];
+      const users = (data ?? []) as AdminUserProfile[];
       if (!Array.isArray(data)) {
         if (import.meta.env.DEV) {
           console.warn("[admin][usuarios][$userId] list_profiles_for_admin retornou payload não-lista", {
@@ -154,13 +170,18 @@ function AdminUserProfilePage() {
     return null;
   }, [requestState]);
 
+  const activitySummary = useMemo(() => getActivitySummary(auditoriaEvents), [auditoriaEvents]);
   const avatarUrl = getProfileAvatarPublicUrl(targetUser?.avatar_path ?? null);
   const initial = (targetUser?.nome?.trim().charAt(0) || "?").toUpperCase();
   const createdAt = formatDate(targetUser?.created_at);
   const updatedAt = formatDate(targetUser?.updated_at);
 
   if (checkingAccess) {
-    return <PageShell><StateBox text="Verificando permissões..." /></PageShell>;
+    return (
+      <PageShell>
+        <StateBox text="Verificando permissões..." />
+      </PageShell>
+    );
   }
 
   if (!hasAccess) {
@@ -168,11 +189,20 @@ function AdminUserProfilePage() {
       <PageShell>
         <section className="rounded-2xl border border-border bg-card/80 p-8 shadow-2xl">
           <div className="mb-4 flex items-center gap-3">
-            <div className="rounded-lg border border-warning/40 bg-warning/10 p-2"><ShieldAlert className="h-5 w-5 text-warning" /></div>
+            <div className="rounded-lg border border-warning/40 bg-warning/10 p-2">
+              <ShieldAlert className="h-5 w-5 text-warning" />
+            </div>
             <h1 className="text-2xl font-bold">Acesso restrito</h1>
           </div>
-          <p className="text-sm text-muted-foreground">Esta área é permitida somente para perfis com permissão de administração de usuários (gestão completa para Admin/Delegado e limitada para Atlas Access).</p>
-          <Link to="/modulos" className="mt-6 inline-flex items-center rounded-md border border-primary/30 bg-primary/10 px-4 py-2 text-sm font-semibold text-primary hover:bg-primary/20">Voltar para módulos</Link>
+          <p className="text-sm text-muted-foreground">
+            Esta área é permitida somente para perfis com permissão de administração de usuários.
+          </p>
+          <Link
+            to="/modulos"
+            className="mt-6 inline-flex items-center rounded-md border border-primary/30 bg-primary/10 px-4 py-2 text-sm font-semibold text-primary hover:bg-primary/20"
+          >
+            Voltar para módulos
+          </Link>
         </section>
       </PageShell>
     );
@@ -180,9 +210,16 @@ function AdminUserProfilePage() {
 
   return (
     <PageShell>
-      <section className="rounded-2xl border border-primary/30 bg-card/80 p-6 shadow-[0_0_30px_rgba(34,197,94,0.09)]">
-        <Link to="/admin/usuarios" className="mb-4 inline-flex items-center gap-2 rounded-md border border-primary/30 bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary hover:bg-primary/20"><ArrowLeft className="h-4 w-4" />Voltar para usuários</Link>
-        <h1 className="text-2xl font-bold tracking-wide">Perfil administrativo do usuário</h1>
+      <section className="rounded-2xl border border-primary/25 bg-card/80 p-6 shadow-[0_0_30px_rgba(34,197,94,0.07)]">
+        <Link
+          to="/admin/usuarios"
+          className="mb-5 inline-flex items-center gap-2 rounded-md border border-primary/30 bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary hover:bg-primary/20"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Voltar para usuários
+        </Link>
+        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary/70">Dossiê administrativo</p>
+        <h1 className="mt-2 text-2xl font-bold tracking-wide">Perfil administrativo do usuário</h1>
         <p className="mt-1 text-sm text-muted-foreground">Visualização institucional em modo somente leitura.</p>
       </section>
 
@@ -191,61 +228,90 @@ function AdminUserProfilePage() {
 
       {!loadingUser && targetUser ? (
         <>
-          <section className="rounded-2xl border border-border bg-card/80 p-6">
-            <div className="flex items-center gap-4">
-              {avatarUrl ? <img src={avatarUrl} alt={`Avatar de ${targetUser.nome}`} className="h-20 w-20 rounded-full border border-primary/30 object-cover" /> : <div className="flex h-20 w-20 items-center justify-center rounded-full border border-primary/40 bg-primary/20 text-2xl font-bold text-primary">{initial}</div>}
-              <div>
-                <p className="text-xl font-semibold">{targetUser.nome}</p>
-                <p className="text-sm text-muted-foreground">{targetUser.email}</p>
+          <section className="rounded-2xl border border-primary/20 bg-card/75 p-6">
+            <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
+              <div className="flex min-w-0 items-center gap-5">
+                {avatarUrl ? (
+                  <img
+                    src={avatarUrl}
+                    alt={`Avatar de ${targetUser.nome}`}
+                    className="h-24 w-24 rounded-full border border-primary/35 object-cover shadow-xl"
+                  />
+                ) : (
+                  <div className="flex h-24 w-24 items-center justify-center rounded-full border border-primary/40 bg-primary/15 text-3xl font-bold text-primary">
+                    {initial}
+                  </div>
+                )}
+                <div className="min-w-0">
+                  <p className="truncate text-2xl font-bold text-foreground">{targetUser.nome}</p>
+                  <div className="mt-2 flex min-w-0 items-center gap-2 text-sm text-muted-foreground">
+                    <Mail className="h-4 w-4 shrink-0" />
+                    <span className="truncate">{targetUser.email}</span>
+                  </div>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    <StatusBadge status={targetUser.status_autorizacao} />
+                    <RoleBadge role={targetUser.cargo} />
+                  </div>
+                </div>
+              </div>
+              <div className="rounded-xl border border-primary/15 bg-background/55 px-4 py-3 text-sm">
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Criado em</p>
+                <p className="mt-1 font-semibold text-foreground">{createdAt}</p>
               </div>
             </div>
           </section>
 
-          <section className="grid gap-4 md:grid-cols-2">
-            <InfoCard label="Login" value={targetUser.login} />
-            <InfoCard label="Cargo" value={targetUser.cargo} />
-            <InfoCard label="Status de autorização" value={targetUser.status_autorizacao} />
-            <InfoCard label="Data de criação" value={createdAt} />
-            {targetUser.updated_at ? <InfoCard label="Atualizado em" value={updatedAt} /> : null}
+          <section className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <InfoCard icon={KeyRound} label="Login" value={targetUser.login} />
+            <InfoCard icon={Phone} label="Telefone institucional" value={formatPhone(targetUser.telefone) || "Não informado"} />
+            <InfoCard icon={CalendarDays} label="Data de criação" value={createdAt} />
           </section>
 
-          <section className="rounded-2xl border border-border bg-card/80 p-6">
-            <h2 className="text-lg font-semibold">Auditoria individual</h2>
-            {auditoriaLoading ? <p className="mt-2 text-sm text-muted-foreground">Carregando eventos de auditoria...</p> : null}
-            {!auditoriaLoading && auditoriaError ? <p className="mt-2 text-sm text-warning">{auditoriaError}</p> : null}
-            {!auditoriaLoading && !auditoriaError && auditoriaEvents.length === 0 ? <p className="mt-2 text-sm text-muted-foreground">Nenhum evento de auditoria registrado para este usuário.</p> : null}
+          <section className="grid gap-4 md:grid-cols-2">
+            <InfoCard icon={UserCog} label="Cargo" value={formatRole(targetUser.cargo)} tone={getRoleTone(targetUser.cargo)} />
+            <InfoCard icon={Shield} label="Status de autorização" value={formatStatus(targetUser.status_autorizacao)} tone={getStatusTone(targetUser.status_autorizacao)} />
+            {targetUser.updated_at ? <InfoCard icon={Clock3} label="Atualizado em" value={updatedAt} /> : null}
+          </section>
+
+          <section className="rounded-2xl border border-primary/15 bg-card/70 p-5">
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <div>
+                <h2 className="text-lg font-semibold">Resumo de atividade</h2>
+                <p className="mt-1 text-sm text-muted-foreground">Derivado dos eventos de auditoria já carregados para este usuário.</p>
+              </div>
+              <Activity className="h-5 w-5 text-primary/70" />
+            </div>
+            {auditoriaLoading ? (
+              <p className="text-sm text-muted-foreground">Carregando resumo operacional...</p>
+            ) : (
+              <div className="grid gap-3 md:grid-cols-3">
+                <ActivityCard label="Eventos registrados" value={String(activitySummary.total)} />
+                <ActivityCard label="Última ação" value={activitySummary.latestAction} />
+                <ActivityCard label="Último registro" value={activitySummary.latestDate} />
+              </div>
+            )}
+          </section>
+
+          <section className="rounded-2xl border border-primary/15 bg-card/70 p-6">
+            <div className="mb-5 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+              <div>
+                <h2 className="text-lg font-semibold">Auditoria individual</h2>
+                <p className="mt-1 text-sm text-muted-foreground">Histórico operacional vinculado ao usuário selecionado.</p>
+              </div>
+              <span className="text-xs font-medium text-muted-foreground">{auditoriaEvents.length} evento(s)</span>
+            </div>
+
+            {auditoriaLoading ? <p className="text-sm text-muted-foreground">Carregando eventos de auditoria...</p> : null}
+            {!auditoriaLoading && auditoriaError ? <p className="text-sm text-warning">{auditoriaError}</p> : null}
+            {!auditoriaLoading && !auditoriaError && auditoriaEvents.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Nenhum evento de auditoria registrado para este usuário.</p>
+            ) : null}
+
             {!auditoriaLoading && !auditoriaError && auditoriaEvents.length > 0 ? (
-              <div className="mt-3 space-y-2">
-                {auditoriaEvents.map((event) => {
-                  const eventHref = getAuditEventHref(event);
-                  const isDeleteEvent = isDeleteAction(event.acao);
-                  const cardBaseClassName = "rounded-xl border border-zinc-800/80 bg-[#080c0f] p-4 transition-colors";
-                  const cardContent = (
-                    <>
-                      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-                      <p className="rounded-md border border-zinc-800 bg-zinc-950/70 px-2 py-1 text-xs tabular-nums text-muted-foreground">{formatDate(event.created_at)}</p>
-                      <p className="text-xs uppercase tracking-[0.14em] text-primary/70">{event.modulo}</p>
-                    </div>
-                    <p className="text-sm font-semibold break-words">{formatFriendlyAction(event.acao)}</p>
-                    {event.entidade ? <p className="mt-1 text-xs font-mono break-words text-primary/80">{event.entidade}{event.entidade_id ? `/${event.entidade_id}` : ""}</p> : null}
-                    <p className="mt-3 text-sm break-words text-muted-foreground">{event.descricao || "Sem descrição"}</p>
-                    </>
-                  );
-
-                  if (!eventHref || isDeleteEvent) return <article key={event.id} className={cardBaseClassName}>{cardContent}</article>;
-
-                  return (
-                    <Link
-                      key={event.id}
-                      to={eventHref}
-                      className={`${cardBaseClassName} block cursor-pointer hover:border-primary/30 hover:bg-[#0b1014]`}
-                      title="Abrir item relacionado"
-                      aria-label="Abrir item relacionado"
-                    >
-                      {cardContent}
-                    </Link>
-                  );
-                })}
+              <div className="space-y-3">
+                {auditoriaEvents.map((event) => (
+                  <AuditEventCard key={event.id} event={event} />
+                ))}
               </div>
             ) : null}
           </section>
@@ -256,15 +322,109 @@ function AdminUserProfilePage() {
 }
 
 function PageShell({ children }: { children: ReactNode }) {
-  return <main className="min-h-screen bg-background px-4 py-6 text-foreground sm:px-6 lg:px-8"><div className="mx-auto max-w-5xl space-y-6">{children}</div></main>;
+  return (
+    <main className="min-h-screen bg-background px-4 py-6 text-foreground sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-6xl space-y-6">{children}</div>
+    </main>
+  );
 }
 
 function StateBox({ text }: { text: string }) {
   return <section className="rounded-2xl border border-border bg-card/80 p-6 text-sm text-muted-foreground">{text}</section>;
 }
 
-function InfoCard({ label, value }: { label: string; value: string }) {
-  return <div className="rounded-xl border border-primary/20 bg-card/60 p-4"><p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">{label}</p><p className="mt-2 break-words text-sm font-medium text-foreground">{value}</p></div>;
+function InfoCard({
+  icon: Icon,
+  label,
+  value,
+  tone,
+}: {
+  icon: IconType;
+  label: string;
+  value: string;
+  tone?: string;
+}) {
+  return (
+    <div className="rounded-xl border border-primary/20 bg-card/60 p-4">
+      <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+        <Icon className="h-4 w-4" />
+        {label}
+      </div>
+      <p className={`mt-3 break-words text-sm font-semibold ${tone ?? "text-foreground"}`}>{value}</p>
+    </div>
+  );
+}
+
+function ActivityCard({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-xl border border-primary/10 bg-background/55 p-4">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">{label}</p>
+      <p className="mt-2 line-clamp-2 text-sm font-semibold text-foreground">{value}</p>
+    </div>
+  );
+}
+
+function AuditEventCard({ event }: { event: AuditoriaEvent }) {
+  const eventHref = getAuditEventHref(event);
+  const isDeleteEvent = isDeleteAction(event.acao);
+  const cardBaseClassName = "rounded-2xl border border-primary/10 bg-background/60 p-4 transition-colors";
+  const cardContent = (
+    <>
+      <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+        <div className="min-w-0">
+          <div className="mb-2 flex flex-wrap items-center gap-2">
+            <span className="rounded-full border border-primary/25 bg-primary/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-primary/85">
+              {formatModule(event.modulo)}
+            </span>
+            <span className="rounded-full border border-zinc-700/70 bg-zinc-900/70 px-3 py-1 text-[11px] font-medium text-muted-foreground">
+              {event.entidade || "registro"}
+            </span>
+          </div>
+          <p className="text-sm font-semibold text-foreground">{formatFriendlyAction(event.acao)}</p>
+          {event.descricao ? <p className="mt-2 break-words text-sm leading-6 text-muted-foreground">{event.descricao}</p> : null}
+        </div>
+        <div className="flex shrink-0 items-center gap-2 rounded-lg border border-primary/10 bg-card/50 px-3 py-2 text-xs text-muted-foreground">
+          <Clock3 className="h-3.5 w-3.5" />
+          {formatDate(event.created_at)}
+        </div>
+      </div>
+      {event.entidade_id ? (
+        <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
+          <FileText className="h-3.5 w-3.5" />
+          <span className="truncate">ID {shortId(event.entidade_id)}</span>
+        </div>
+      ) : null}
+    </>
+  );
+
+  if (!eventHref || isDeleteEvent) return <article className={cardBaseClassName}>{cardContent}</article>;
+
+  return (
+    <Link
+      to={eventHref}
+      className={`${cardBaseClassName} block cursor-pointer hover:border-primary/30 hover:bg-background/80`}
+      title="Abrir item relacionado"
+      aria-label="Abrir item relacionado"
+    >
+      {cardContent}
+    </Link>
+  );
+}
+
+function StatusBadge({ status }: { status: AuthorizationStatus }) {
+  return (
+    <span className={`rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] ${getStatusBadgeClass(status)}`}>
+      {formatStatus(status)}
+    </span>
+  );
+}
+
+function RoleBadge({ role }: { role: UserRole }) {
+  return (
+    <span className="rounded-full border border-primary/25 bg-primary/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-primary/85">
+      {formatRole(role)}
+    </span>
+  );
 }
 
 function formatDate(value?: string) {
@@ -275,6 +435,72 @@ function formatDate(value?: string) {
 function formatFriendlyAction(action?: string) {
   if (!action) return "Ação não informada";
   return action.replaceAll("_", " ").toLowerCase();
+}
+
+function formatModule(value?: string) {
+  return String(value || "modulo").replaceAll("_", " ");
+}
+
+function getActivitySummary(events: AuditoriaEvent[]) {
+  const latest = events[0];
+  return {
+    total: events.length,
+    latestAction: latest ? formatFriendlyAction(latest.acao) : "Sem eventos",
+    latestDate: latest ? formatDate(latest.created_at) : "Não informado",
+  };
+}
+
+function formatPhone(value?: string | null) {
+  const digits = String(value ?? "").replace(/\D/g, "").slice(0, 11);
+  if (!digits) return "";
+  if (digits.length <= 2) return `(${digits}`;
+  if (digits.length <= 7) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
+  return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
+}
+
+function formatRole(role: UserRole) {
+  const labels: Record<UserRole, string> = {
+    membro: "Membro",
+    sipi_access: "SIPI Access",
+    atlas_access: "Atlas Access",
+    delegado: "Delegado",
+    admin: "Admin",
+  };
+  return labels[role] ?? role;
+}
+
+function formatStatus(status: AuthorizationStatus) {
+  const labels: Record<AuthorizationStatus, string> = {
+    aguardando: "Aguardando",
+    autorizado: "Autorizado",
+    bloqueado: "Bloqueado",
+  };
+  return labels[status] ?? status;
+}
+
+function getRoleTone(role: UserRole) {
+  if (role === "admin" || role === "delegado") return "text-primary";
+  if (role === "atlas_access") return "text-violet-300";
+  if (role === "sipi_access") return "text-sky-300";
+  return "text-muted-foreground";
+}
+
+function getStatusTone(status: AuthorizationStatus) {
+  if (status === "autorizado") return "text-emerald-300";
+  if (status === "bloqueado") return "text-rose-300";
+  return "text-amber-300";
+}
+
+function getStatusBadgeClass(status: AuthorizationStatus) {
+  if (status === "autorizado") return "border-emerald-400/30 bg-emerald-400/10 text-emerald-200";
+  if (status === "bloqueado") return "border-rose-400/30 bg-rose-400/10 text-rose-200";
+  return "border-amber-400/30 bg-amber-400/10 text-amber-200";
+}
+
+function shortId(value: string) {
+  const clean = value.trim();
+  if (clean.length <= 14) return clean;
+  return `${clean.slice(0, 8)}...${clean.slice(-4)}`;
 }
 
 function getAuditEventHref(event: AuditoriaEvent) {
@@ -295,7 +521,11 @@ function getAuditEventHref(event: AuditoriaEvent) {
   if (["|inqueritos", "|inquerito", "inqueritos|", "inquerito|", "inqueritos|inqueritos", "inqueritos|inquerito"].includes(target)) {
     return `/inqueritos/${entityId}`;
   }
-  if (["|representacoes", "|representacao", "representacoes|", "representacao|", "representacoes|representacoes", "representacoes|representacao"].includes(target)) {
+  if (
+    ["|representacoes", "|representacao", "representacoes|", "representacao|", "representacoes|representacoes", "representacoes|representacao"].includes(
+      target,
+    )
+  ) {
     return `/representacoes/${entityId}`;
   }
   if (["|profiles", "|admin_usuarios", "admin_usuarios|", "usuarios|profiles", "administracao|profiles"].includes(target)) {
@@ -306,6 +536,8 @@ function getAuditEventHref(event: AuditoriaEvent) {
 }
 
 function isDeleteAction(action?: string | null) {
-  const normalized = String(action || "").trim().toLowerCase();
+  const normalized = String(action || "")
+    .trim()
+    .toLowerCase();
   return normalized === "delete" || normalized.endsWith("_delete") || normalized.includes("exclu");
 }
