@@ -1,11 +1,14 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, type FormEvent } from "react";
-import { User, Lock, Eye, EyeOff, LogIn, AlertCircle } from "lucide-react";
+import { User, Lock, Eye, EyeOff, LogIn, AlertCircle, CheckCircle2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { authenticateWithLoginOrEmail, AuthFlowError, getCurrentProfile, getSession, logout } from "@/lib/auth";
 import { isAuthorized } from "@/lib/authz";
+
+const POST_SIGNUP_LOGIN_KEY = "sipi:post-signup-login";
+const POST_SIGNUP_MESSAGE = "Conta criada com sucesso. Aguarde autorização de um administrador para acessar o SIPI.";
 
 export const Route = createFileRoute("/login")({
   head: () => ({
@@ -45,13 +48,40 @@ function getFriendlyLoginError(err: unknown): string {
   return "Falha no login. Verifique suas credenciais e permissões.";
 }
 
+function readPostSignupLogin() {
+  try {
+    const raw = sessionStorage.getItem(POST_SIGNUP_LOGIN_KEY);
+    if (!raw) return null;
+    sessionStorage.removeItem(POST_SIGNUP_LOGIN_KEY);
+    const parsed = JSON.parse(raw) as { login?: unknown; password?: unknown; message?: unknown };
+    return {
+      login: typeof parsed.login === "string" ? parsed.login : "",
+      password: typeof parsed.password === "string" ? parsed.password : "",
+      message: typeof parsed.message === "string" && parsed.message.trim() ? parsed.message : POST_SIGNUP_MESSAGE,
+    };
+  } catch (error) {
+    console.warn("[LoginPage] Não foi possível ler dados temporários pós-cadastro", error);
+    sessionStorage.removeItem(POST_SIGNUP_LOGIN_KEY);
+    return null;
+  }
+}
+
 function LoginPage() {
   const navigate = useNavigate();
   const [usuario, setUsuario] = useState("");
   const [senha, setSenha] = useState("");
   const [showSenha, setShowSenha] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
+  const [postSignupMessage, setPostSignupMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const postSignup = readPostSignupLogin();
+    if (!postSignup) return;
+    setUsuario(postSignup.login);
+    setSenha(postSignup.password);
+    setPostSignupMessage(postSignup.message);
+  }, []);
 
   useEffect(() => {
     void (async () => {
@@ -201,6 +231,13 @@ function LoginPage() {
                 </button>
               </div>
             </div>
+
+            {postSignupMessage && (
+              <div className="flex items-start gap-2 rounded-lg border border-primary/30 bg-primary/10 px-3 py-2.5 text-xs text-primary">
+                <CheckCircle2 className="h-4 w-4 shrink-0 mt-0.5" />
+                <span>{postSignupMessage}</span>
+              </div>
+            )}
 
             {erro && (
               <div className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2.5 text-xs text-destructive">
