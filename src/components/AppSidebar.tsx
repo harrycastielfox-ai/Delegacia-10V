@@ -63,7 +63,7 @@ export function AppSidebar({ profile }: { profile: UserProfile }) {
   }
 
   return (
-    <aside className="hidden md:flex w-64 shrink-0 flex-col bg-sidebar border-r border-sidebar-border">
+    <aside className="hidden md:sticky md:top-0 md:flex h-screen w-64 shrink-0 flex-col bg-sidebar border-r border-sidebar-border">
       <div className="px-5 py-5 flex items-center gap-3">
         <div className="h-14 w-14 rounded-lg bg-primary/15 border border-primary/30 shadow-[0_0_18px_rgba(34,197,94,0.24)] flex items-center justify-center p-1.5">
           <img src="/sipi-logo.png" alt="Logo SIPI" className="h-full w-full object-contain" />
@@ -78,7 +78,7 @@ export function AppSidebar({ profile }: { profile: UserProfile }) {
         MÓDULOS
       </div>
 
-      <nav className="px-3 flex-1 space-y-1">
+      <nav className="min-h-0 flex-1 space-y-1 overflow-y-auto px-3">
         {items.map((item) => {
           const active = pathname === item.url;
           const Icon = item.icon;
@@ -105,7 +105,7 @@ export function AppSidebar({ profile }: { profile: UserProfile }) {
         })}
       </nav>
 
-      <div className="border-t border-sidebar-border p-4 flex items-center gap-2">
+      <div className="flex shrink-0 items-center gap-2 border-t border-sidebar-border p-4">
         <Link
           to="/perfil"
           className="group flex min-w-0 flex-1 items-center gap-3 rounded-lg p-1.5 transition-colors hover:bg-sidebar-accent"
@@ -132,7 +132,7 @@ export function AppSidebar({ profile }: { profile: UserProfile }) {
           <LogOut className="h-4 w-4" />
         </button>
       </div>
-      <div className="px-4 pb-3 text-[10px] text-muted-foreground">v2.0.0 · SIPI © 2026</div>
+      <div className="shrink-0 px-4 pb-3 text-[10px] text-muted-foreground">v2.0.0 · SIPI © 2026</div>
     </aside>
   );
 }
