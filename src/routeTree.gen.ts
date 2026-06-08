@@ -9,24 +9,25 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as PerfilRouteImport } from './routes/perfil'
-import { Route as CriarContaRouteImport } from './routes/criar-conta'
-import { Route as AguardandoAutorizacaoRouteImport } from './routes/aguardando-autorizacao'
-import { Route as AdminUsuariosUserIdRouteImport } from './routes/admin.usuarios.$userId'
-import { Route as AdminUsuariosRouteImport } from './routes/admin.usuarios'
 import { Route as RepresentacoesRouteImport } from './routes/representacoes'
+import { Route as PerfilRouteImport } from './routes/perfil'
 import { Route as NovoCasoRouteImport } from './routes/novo-caso'
+import { Route as NovaRepresentacaoRouteImport } from './routes/nova-representacao'
 import { Route as ModulosRouteImport } from './routes/modulos'
 import { Route as LoginRouteImport } from './routes/login'
-import { Route as RepresentacoesRepresentacaoIdEditarRouteImport } from './routes/representacoes.$representacaoId.editar'
-import { Route as RepresentacoesRepresentacaoIdRouteImport } from './routes/representacoes.$representacaoId'
-import { Route as NovaRepresentacaoRouteImport } from './routes/nova-representacao'
-import { Route as InqueritosEditarRouteImport } from './routes/inqueritos.$caseId.editar'
-import { Route as InqueritosCaseIdRouteImport } from './routes/inqueritos.$caseId'
 import { Route as InqueritosRouteImport } from './routes/inqueritos'
+import { Route as CriarContaRouteImport } from './routes/criar-conta'
 import { Route as AuditoriaRouteImport } from './routes/auditoria'
 import { Route as AlertasRouteImport } from './routes/alertas'
+import { Route as AguardandoAutorizacaoRouteImport } from './routes/aguardando-autorizacao'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as RepresentacoesRepresentacaoIdRouteImport } from './routes/representacoes.$representacaoId'
+import { Route as InqueritosCaseIdRouteImport } from './routes/inqueritos.$caseId'
+import { Route as AlertasModuloRouteImport } from './routes/alertas.$modulo'
+import { Route as AdminUsuariosRouteImport } from './routes/admin.usuarios'
+import { Route as RepresentacoesRepresentacaoIdEditarRouteImport } from './routes/representacoes.$representacaoId.editar'
+import { Route as InqueritosCaseIdEditarRouteImport } from './routes/inqueritos.$caseId.editar'
+import { Route as AdminUsuariosUserIdRouteImport } from './routes/admin.usuarios.$userId'
 
 const RepresentacoesRoute = RepresentacoesRouteImport.update({
   id: '/representacoes',
@@ -38,41 +39,14 @@ const PerfilRoute = PerfilRouteImport.update({
   path: '/perfil',
   getParentRoute: () => rootRouteImport,
 } as any)
-const CriarContaRoute = CriarContaRouteImport.update({
-  id: '/criar-conta',
-  path: '/criar-conta',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AguardandoAutorizacaoRoute = AguardandoAutorizacaoRouteImport.update({
-  id: '/aguardando-autorizacao',
-  path: '/aguardando-autorizacao',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AdminUsuariosRoute = AdminUsuariosRouteImport.update({
-  id: '/admin/usuarios',
-  path: '/admin/usuarios',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AdminUsuariosUserIdRoute = AdminUsuariosUserIdRouteImport.update({
-  id: '/$userId',
-  path: '/$userId',
-  getParentRoute: () => AdminUsuariosRoute,
-} as any)
-const RepresentacoesRepresentacaoIdRoute =
-  RepresentacoesRepresentacaoIdRouteImport.update({
-    id: '/$representacaoId',
-    path: '/$representacaoId',
-    getParentRoute: () => RepresentacoesRoute,
-  } as any)
-const RepresentacoesRepresentacaoIdEditarRoute =
-  RepresentacoesRepresentacaoIdEditarRouteImport.update({
-    id: '/editar',
-    path: '/editar',
-    getParentRoute: () => RepresentacoesRepresentacaoIdRoute,
-  } as any)
 const NovoCasoRoute = NovoCasoRouteImport.update({
   id: '/novo-caso',
   path: '/novo-caso',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const NovaRepresentacaoRoute = NovaRepresentacaoRouteImport.update({
+  id: '/nova-representacao',
+  path: '/nova-representacao',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ModulosRoute = ModulosRouteImport.update({
@@ -85,25 +59,15 @@ const LoginRoute = LoginRouteImport.update({
   path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
-const NovaRepresentacaoRoute = NovaRepresentacaoRouteImport.update({
-  id: '/nova-representacao',
-  path: '/nova-representacao',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const InqueritosRoute = InqueritosRouteImport.update({
   id: '/inqueritos',
   path: '/inqueritos',
   getParentRoute: () => rootRouteImport,
 } as any)
-const InqueritosCaseIdRoute = InqueritosCaseIdRouteImport.update({
-  id: '/$caseId',
-  path: '/$caseId',
-  getParentRoute: () => InqueritosRoute,
-} as any)
-const InqueritosEditarRoute = InqueritosEditarRouteImport.update({
-  id: '/editar',
-  path: '/editar',
-  getParentRoute: () => InqueritosCaseIdRoute,
+const CriarContaRoute = CriarContaRouteImport.update({
+  id: '/criar-conta',
+  path: '/criar-conta',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AuditoriaRoute = AuditoriaRouteImport.update({
   id: '/auditoria',
@@ -115,150 +79,198 @@ const AlertasRoute = AlertasRouteImport.update({
   path: '/alertas',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AguardandoAutorizacaoRoute = AguardandoAutorizacaoRouteImport.update({
+  id: '/aguardando-autorizacao',
+  path: '/aguardando-autorizacao',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const RepresentacoesRepresentacaoIdRoute =
+  RepresentacoesRepresentacaoIdRouteImport.update({
+    id: '/$representacaoId',
+    path: '/$representacaoId',
+    getParentRoute: () => RepresentacoesRoute,
+  } as any)
+const InqueritosCaseIdRoute = InqueritosCaseIdRouteImport.update({
+  id: '/$caseId',
+  path: '/$caseId',
+  getParentRoute: () => InqueritosRoute,
+} as any)
+const AlertasModuloRoute = AlertasModuloRouteImport.update({
+  id: '/$modulo',
+  path: '/$modulo',
+  getParentRoute: () => AlertasRoute,
+} as any)
+const AdminUsuariosRoute = AdminUsuariosRouteImport.update({
+  id: '/admin/usuarios',
+  path: '/admin/usuarios',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RepresentacoesRepresentacaoIdEditarRoute =
+  RepresentacoesRepresentacaoIdEditarRouteImport.update({
+    id: '/editar',
+    path: '/editar',
+    getParentRoute: () => RepresentacoesRepresentacaoIdRoute,
+  } as any)
+const InqueritosCaseIdEditarRoute = InqueritosCaseIdEditarRouteImport.update({
+  id: '/editar',
+  path: '/editar',
+  getParentRoute: () => InqueritosCaseIdRoute,
+} as any)
+const AdminUsuariosUserIdRoute = AdminUsuariosUserIdRouteImport.update({
+  id: '/$userId',
+  path: '/$userId',
+  getParentRoute: () => AdminUsuariosRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
-  '/admin/usuarios': typeof AdminUsuariosRoute
-  '/admin/usuarios/$userId': typeof AdminUsuariosUserIdRoute
-  '/aguardando-autorizacao': typeof AguardandoAutorizacaoRoute
-  '/criar-conta': typeof CriarContaRoute
   '/': typeof IndexRoute
-  '/alertas': typeof AlertasRoute
+  '/aguardando-autorizacao': typeof AguardandoAutorizacaoRoute
+  '/alertas': typeof AlertasRouteWithChildren
   '/auditoria': typeof AuditoriaRoute
-  '/inqueritos': typeof InqueritosRoute
-  '/inqueritos/$caseId': typeof InqueritosCaseIdRoute
-  '/inqueritos/$caseId/editar': typeof InqueritosEditarRoute
+  '/criar-conta': typeof CriarContaRoute
+  '/inqueritos': typeof InqueritosRouteWithChildren
   '/login': typeof LoginRoute
   '/modulos': typeof ModulosRoute
+  '/nova-representacao': typeof NovaRepresentacaoRoute
   '/novo-caso': typeof NovoCasoRoute
   '/perfil': typeof PerfilRoute
-  '/nova-representacao': typeof NovaRepresentacaoRoute
-  '/representacoes': typeof RepresentacoesRoute
-  '/representacoes/$representacaoId': typeof RepresentacoesRepresentacaoIdRoute
+  '/representacoes': typeof RepresentacoesRouteWithChildren
+  '/admin/usuarios': typeof AdminUsuariosRouteWithChildren
+  '/alertas/$modulo': typeof AlertasModuloRoute
+  '/inqueritos/$caseId': typeof InqueritosCaseIdRouteWithChildren
+  '/representacoes/$representacaoId': typeof RepresentacoesRepresentacaoIdRouteWithChildren
+  '/admin/usuarios/$userId': typeof AdminUsuariosUserIdRoute
+  '/inqueritos/$caseId/editar': typeof InqueritosCaseIdEditarRoute
   '/representacoes/$representacaoId/editar': typeof RepresentacoesRepresentacaoIdEditarRoute
 }
 export interface FileRoutesByTo {
-  '/admin/usuarios': typeof AdminUsuariosRoute
-  '/admin/usuarios/$userId': typeof AdminUsuariosUserIdRoute
-  '/aguardando-autorizacao': typeof AguardandoAutorizacaoRoute
-  '/criar-conta': typeof CriarContaRoute
   '/': typeof IndexRoute
-  '/alertas': typeof AlertasRoute
+  '/aguardando-autorizacao': typeof AguardandoAutorizacaoRoute
+  '/alertas': typeof AlertasRouteWithChildren
   '/auditoria': typeof AuditoriaRoute
-  '/inqueritos': typeof InqueritosRoute
-  '/inqueritos/$caseId': typeof InqueritosCaseIdRoute
-  '/inqueritos/$caseId/editar': typeof InqueritosEditarRoute
+  '/criar-conta': typeof CriarContaRoute
+  '/inqueritos': typeof InqueritosRouteWithChildren
   '/login': typeof LoginRoute
   '/modulos': typeof ModulosRoute
+  '/nova-representacao': typeof NovaRepresentacaoRoute
   '/novo-caso': typeof NovoCasoRoute
   '/perfil': typeof PerfilRoute
-  '/nova-representacao': typeof NovaRepresentacaoRoute
-  '/representacoes': typeof RepresentacoesRoute
-  '/representacoes/$representacaoId': typeof RepresentacoesRepresentacaoIdRoute
+  '/representacoes': typeof RepresentacoesRouteWithChildren
+  '/admin/usuarios': typeof AdminUsuariosRouteWithChildren
+  '/alertas/$modulo': typeof AlertasModuloRoute
+  '/inqueritos/$caseId': typeof InqueritosCaseIdRouteWithChildren
+  '/representacoes/$representacaoId': typeof RepresentacoesRepresentacaoIdRouteWithChildren
+  '/admin/usuarios/$userId': typeof AdminUsuariosUserIdRoute
+  '/inqueritos/$caseId/editar': typeof InqueritosCaseIdEditarRoute
   '/representacoes/$representacaoId/editar': typeof RepresentacoesRepresentacaoIdEditarRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/admin/usuarios': typeof AdminUsuariosRoute
-  '/admin/usuarios/$userId': typeof AdminUsuariosUserIdRoute
   '/aguardando-autorizacao': typeof AguardandoAutorizacaoRoute
-  '/alertas': typeof AlertasRoute
+  '/alertas': typeof AlertasRouteWithChildren
   '/auditoria': typeof AuditoriaRoute
-  '/inqueritos': typeof InqueritosRoute
-  '/inqueritos/$caseId': typeof InqueritosCaseIdRoute
-  '/inqueritos/$caseId/editar': typeof InqueritosEditarRoute
+  '/criar-conta': typeof CriarContaRoute
+  '/inqueritos': typeof InqueritosRouteWithChildren
   '/login': typeof LoginRoute
   '/modulos': typeof ModulosRoute
-  '/novo-caso': typeof NovoCasoRoute
-  '/criar-conta': typeof CriarContaRoute
-  '/perfil': typeof PerfilRoute
   '/nova-representacao': typeof NovaRepresentacaoRoute
-  '/representacoes': typeof RepresentacoesRoute
-  '/representacoes/$representacaoId': typeof RepresentacoesRepresentacaoIdRoute
+  '/novo-caso': typeof NovoCasoRoute
+  '/perfil': typeof PerfilRoute
+  '/representacoes': typeof RepresentacoesRouteWithChildren
+  '/admin/usuarios': typeof AdminUsuariosRouteWithChildren
+  '/alertas/$modulo': typeof AlertasModuloRoute
+  '/inqueritos/$caseId': typeof InqueritosCaseIdRouteWithChildren
+  '/representacoes/$representacaoId': typeof RepresentacoesRepresentacaoIdRouteWithChildren
+  '/admin/usuarios/$userId': typeof AdminUsuariosUserIdRoute
+  '/inqueritos/$caseId/editar': typeof InqueritosCaseIdEditarRoute
   '/representacoes/$representacaoId/editar': typeof RepresentacoesRepresentacaoIdEditarRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/admin/usuarios'
-    | '/admin/usuarios/$userId'
     | '/aguardando-autorizacao'
     | '/alertas'
-    | '/criar-conta'
     | '/auditoria'
+    | '/criar-conta'
     | '/inqueritos'
-    | '/inqueritos/$caseId'
-    | '/inqueritos/$caseId/editar'
     | '/login'
     | '/modulos'
+    | '/nova-representacao'
     | '/novo-caso'
     | '/perfil'
-    | '/nova-representacao'
     | '/representacoes'
+    | '/admin/usuarios'
+    | '/alertas/$modulo'
+    | '/inqueritos/$caseId'
     | '/representacoes/$representacaoId'
+    | '/admin/usuarios/$userId'
+    | '/inqueritos/$caseId/editar'
     | '/representacoes/$representacaoId/editar'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/admin/usuarios'
-    | '/admin/usuarios/$userId'
     | '/aguardando-autorizacao'
     | '/alertas'
-    | '/criar-conta'
     | '/auditoria'
+    | '/criar-conta'
     | '/inqueritos'
-    | '/inqueritos/$caseId'
-    | '/inqueritos/$caseId/editar'
     | '/login'
     | '/modulos'
+    | '/nova-representacao'
     | '/novo-caso'
     | '/perfil'
-    | '/nova-representacao'
     | '/representacoes'
+    | '/admin/usuarios'
+    | '/alertas/$modulo'
+    | '/inqueritos/$caseId'
     | '/representacoes/$representacaoId'
+    | '/admin/usuarios/$userId'
+    | '/inqueritos/$caseId/editar'
     | '/representacoes/$representacaoId/editar'
   id:
     | '__root__'
     | '/'
-    | '/admin/usuarios'
-    | '/admin/usuarios/$userId'
     | '/aguardando-autorizacao'
     | '/alertas'
-    | '/criar-conta'
     | '/auditoria'
+    | '/criar-conta'
     | '/inqueritos'
-    | '/inqueritos/$caseId'
-    | '/inqueritos/$caseId/editar'
     | '/login'
     | '/modulos'
+    | '/nova-representacao'
     | '/novo-caso'
     | '/perfil'
-    | '/nova-representacao'
     | '/representacoes'
+    | '/admin/usuarios'
+    | '/alertas/$modulo'
+    | '/inqueritos/$caseId'
     | '/representacoes/$representacaoId'
+    | '/admin/usuarios/$userId'
+    | '/inqueritos/$caseId/editar'
     | '/representacoes/$representacaoId/editar'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AguardandoAutorizacaoRoute: typeof AguardandoAutorizacaoRoute
-  CriarContaRoute: typeof CriarContaRoute
-  PerfilRoute: typeof PerfilRoute
-  AdminUsuariosRoute: typeof AdminUsuariosRouteWithChildren
-  AlertasRoute: typeof AlertasRoute
+  AlertasRoute: typeof AlertasRouteWithChildren
   AuditoriaRoute: typeof AuditoriaRoute
-  InqueritosRoute: typeof InqueritosRoute
+  CriarContaRoute: typeof CriarContaRoute
+  InqueritosRoute: typeof InqueritosRouteWithChildren
   LoginRoute: typeof LoginRoute
   ModulosRoute: typeof ModulosRoute
-  NovoCasoRoute: typeof NovoCasoRoute
   NovaRepresentacaoRoute: typeof NovaRepresentacaoRoute
+  NovoCasoRoute: typeof NovoCasoRoute
+  PerfilRoute: typeof PerfilRoute
   RepresentacoesRoute: typeof RepresentacoesRouteWithChildren
+  AdminUsuariosRoute: typeof AdminUsuariosRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
@@ -277,34 +289,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PerfilRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/criar-conta': {
-      id: '/criar-conta'
-      path: '/criar-conta'
-      fullPath: '/criar-conta'
-      preLoaderRoute: typeof CriarContaRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/aguardando-autorizacao': {
-      id: '/aguardando-autorizacao'
-      path: '/aguardando-autorizacao'
-      fullPath: '/aguardando-autorizacao'
-      preLoaderRoute: typeof AguardandoAutorizacaoRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/admin/usuarios': {
-      id: '/admin/usuarios'
-      path: '/admin/usuarios'
-      fullPath: '/admin/usuarios'
-      preLoaderRoute: typeof AdminUsuariosRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/admin/usuarios/$userId': {
-      id: '/admin/usuarios/$userId'
-      path: '/$userId'
-      fullPath: '/admin/usuarios/$userId'
-      preLoaderRoute: typeof AdminUsuariosUserIdRouteImport
-      parentRoute: typeof AdminUsuariosRoute
-    }
     '/novo-caso': {
       id: '/novo-caso'
       path: '/novo-caso'
@@ -318,20 +302,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/nova-representacao'
       preLoaderRoute: typeof NovaRepresentacaoRouteImport
       parentRoute: typeof rootRouteImport
-    }
-    '/representacoes/$representacaoId': {
-      id: '/representacoes/$representacaoId'
-      path: '/$representacaoId'
-      fullPath: '/representacoes/$representacaoId'
-      preLoaderRoute: typeof RepresentacoesRepresentacaoIdRouteImport
-      parentRoute: typeof RepresentacoesRoute
-    }
-    '/representacoes/$representacaoId/editar': {
-      id: '/representacoes/$representacaoId/editar'
-      path: '/editar'
-      fullPath: '/representacoes/$representacaoId/editar'
-      preLoaderRoute: typeof RepresentacoesRepresentacaoIdEditarRouteImport
-      parentRoute: typeof RepresentacoesRepresentacaoIdRoute
     }
     '/modulos': {
       id: '/modulos'
@@ -354,20 +324,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof InqueritosRouteImport
       parentRoute: typeof rootRouteImport
     }
-
-    '/inqueritos/$caseId': {
-      id: '/inqueritos/$caseId'
-      path: '/$caseId'
-      fullPath: '/inqueritos/$caseId'
-      preLoaderRoute: typeof InqueritosCaseIdRouteImport
-      parentRoute: typeof InqueritosRoute
-    }
-    '/inqueritos/$caseId/editar': {
-      id: '/inqueritos/$caseId/editar'
-      path: '/editar'
-      fullPath: '/inqueritos/$caseId/editar'
-      preLoaderRoute: typeof InqueritosEditarRouteImport
-      parentRoute: typeof InqueritosCaseIdRoute
+    '/criar-conta': {
+      id: '/criar-conta'
+      path: '/criar-conta'
+      fullPath: '/criar-conta'
+      preLoaderRoute: typeof CriarContaRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/auditoria': {
       id: '/auditoria'
@@ -383,6 +345,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AlertasRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/aguardando-autorizacao': {
+      id: '/aguardando-autorizacao'
+      path: '/aguardando-autorizacao'
+      fullPath: '/aguardando-autorizacao'
+      preLoaderRoute: typeof AguardandoAutorizacaoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -390,39 +359,85 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/representacoes/$representacaoId': {
+      id: '/representacoes/$representacaoId'
+      path: '/$representacaoId'
+      fullPath: '/representacoes/$representacaoId'
+      preLoaderRoute: typeof RepresentacoesRepresentacaoIdRouteImport
+      parentRoute: typeof RepresentacoesRoute
+    }
+    '/inqueritos/$caseId': {
+      id: '/inqueritos/$caseId'
+      path: '/$caseId'
+      fullPath: '/inqueritos/$caseId'
+      preLoaderRoute: typeof InqueritosCaseIdRouteImport
+      parentRoute: typeof InqueritosRoute
+    }
+    '/alertas/$modulo': {
+      id: '/alertas/$modulo'
+      path: '/$modulo'
+      fullPath: '/alertas/$modulo'
+      preLoaderRoute: typeof AlertasModuloRouteImport
+      parentRoute: typeof AlertasRoute
+    }
+    '/admin/usuarios': {
+      id: '/admin/usuarios'
+      path: '/admin/usuarios'
+      fullPath: '/admin/usuarios'
+      preLoaderRoute: typeof AdminUsuariosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/representacoes/$representacaoId/editar': {
+      id: '/representacoes/$representacaoId/editar'
+      path: '/editar'
+      fullPath: '/representacoes/$representacaoId/editar'
+      preLoaderRoute: typeof RepresentacoesRepresentacaoIdEditarRouteImport
+      parentRoute: typeof RepresentacoesRepresentacaoIdRoute
+    }
+    '/inqueritos/$caseId/editar': {
+      id: '/inqueritos/$caseId/editar'
+      path: '/editar'
+      fullPath: '/inqueritos/$caseId/editar'
+      preLoaderRoute: typeof InqueritosCaseIdEditarRouteImport
+      parentRoute: typeof InqueritosCaseIdRoute
+    }
+    '/admin/usuarios/$userId': {
+      id: '/admin/usuarios/$userId'
+      path: '/$userId'
+      fullPath: '/admin/usuarios/$userId'
+      preLoaderRoute: typeof AdminUsuariosUserIdRouteImport
+      parentRoute: typeof AdminUsuariosRoute
+    }
   }
 }
 
-const RepresentacoesRepresentacaoIdRouteChildren = {
-  RepresentacoesRepresentacaoIdEditarRoute: RepresentacoesRepresentacaoIdEditarRoute,
-}
-const AdminUsuariosRouteChildren = {
-  AdminUsuariosUserIdRoute: AdminUsuariosUserIdRoute,
-}
-const AdminUsuariosRouteWithChildren =
-  AdminUsuariosRoute._addFileChildren(AdminUsuariosRouteChildren)
-
-const RepresentacoesRepresentacaoIdRouteWithChildren =
-  RepresentacoesRepresentacaoIdRoute._addFileChildren(
-    RepresentacoesRepresentacaoIdRouteChildren,
-  )
-
-const RepresentacoesRouteChildren = {
-  RepresentacoesRepresentacaoIdRoute: RepresentacoesRepresentacaoIdRouteWithChildren,
+interface AlertasRouteChildren {
+  AlertasModuloRoute: typeof AlertasModuloRoute
 }
 
-const RepresentacoesRouteWithChildren =
-  RepresentacoesRoute._addFileChildren(RepresentacoesRouteChildren)
-
-const InqueritosCaseIdRouteChildren = {
-  InqueritosEditarRoute: InqueritosEditarRoute,
+const AlertasRouteChildren: AlertasRouteChildren = {
+  AlertasModuloRoute: AlertasModuloRoute,
 }
 
-const InqueritosCaseIdRouteWithChildren = InqueritosCaseIdRoute._addFileChildren(
-  InqueritosCaseIdRouteChildren,
-)
+const AlertasRouteWithChildren =
+  AlertasRoute._addFileChildren(AlertasRouteChildren)
 
-const InqueritosRouteChildren = {
+interface InqueritosCaseIdRouteChildren {
+  InqueritosCaseIdEditarRoute: typeof InqueritosCaseIdEditarRoute
+}
+
+const InqueritosCaseIdRouteChildren: InqueritosCaseIdRouteChildren = {
+  InqueritosCaseIdEditarRoute: InqueritosCaseIdEditarRoute,
+}
+
+const InqueritosCaseIdRouteWithChildren =
+  InqueritosCaseIdRoute._addFileChildren(InqueritosCaseIdRouteChildren)
+
+interface InqueritosRouteChildren {
+  InqueritosCaseIdRoute: typeof InqueritosCaseIdRouteWithChildren
+}
+
+const InqueritosRouteChildren: InqueritosRouteChildren = {
   InqueritosCaseIdRoute: InqueritosCaseIdRouteWithChildren,
 }
 
@@ -430,20 +445,60 @@ const InqueritosRouteWithChildren = InqueritosRoute._addFileChildren(
   InqueritosRouteChildren,
 )
 
+interface RepresentacoesRepresentacaoIdRouteChildren {
+  RepresentacoesRepresentacaoIdEditarRoute: typeof RepresentacoesRepresentacaoIdEditarRoute
+}
+
+const RepresentacoesRepresentacaoIdRouteChildren: RepresentacoesRepresentacaoIdRouteChildren =
+  {
+    RepresentacoesRepresentacaoIdEditarRoute:
+      RepresentacoesRepresentacaoIdEditarRoute,
+  }
+
+const RepresentacoesRepresentacaoIdRouteWithChildren =
+  RepresentacoesRepresentacaoIdRoute._addFileChildren(
+    RepresentacoesRepresentacaoIdRouteChildren,
+  )
+
+interface RepresentacoesRouteChildren {
+  RepresentacoesRepresentacaoIdRoute: typeof RepresentacoesRepresentacaoIdRouteWithChildren
+}
+
+const RepresentacoesRouteChildren: RepresentacoesRouteChildren = {
+  RepresentacoesRepresentacaoIdRoute:
+    RepresentacoesRepresentacaoIdRouteWithChildren,
+}
+
+const RepresentacoesRouteWithChildren = RepresentacoesRoute._addFileChildren(
+  RepresentacoesRouteChildren,
+)
+
+interface AdminUsuariosRouteChildren {
+  AdminUsuariosUserIdRoute: typeof AdminUsuariosUserIdRoute
+}
+
+const AdminUsuariosRouteChildren: AdminUsuariosRouteChildren = {
+  AdminUsuariosUserIdRoute: AdminUsuariosUserIdRoute,
+}
+
+const AdminUsuariosRouteWithChildren = AdminUsuariosRoute._addFileChildren(
+  AdminUsuariosRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AguardandoAutorizacaoRoute: AguardandoAutorizacaoRoute,
-  AdminUsuariosRoute: AdminUsuariosRouteWithChildren,
-  AlertasRoute: AlertasRoute,
-  CriarContaRoute: CriarContaRoute,
+  AlertasRoute: AlertasRouteWithChildren,
   AuditoriaRoute: AuditoriaRoute,
+  CriarContaRoute: CriarContaRoute,
   InqueritosRoute: InqueritosRouteWithChildren,
   LoginRoute: LoginRoute,
   ModulosRoute: ModulosRoute,
+  NovaRepresentacaoRoute: NovaRepresentacaoRoute,
   NovoCasoRoute: NovoCasoRoute,
   PerfilRoute: PerfilRoute,
-  NovaRepresentacaoRoute: NovaRepresentacaoRoute,
   RepresentacoesRoute: RepresentacoesRouteWithChildren,
+  AdminUsuariosRoute: AdminUsuariosRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
