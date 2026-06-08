@@ -74,10 +74,10 @@ function Auditoria() {
   }, []);
 
   const filteredEvents = useMemo(() => filterAuditEvents(events, searchTerm, moduleFilter), [events, moduleFilter, searchTerm]);
-  const loadedEvents = events.length > 0 ? events : filteredEvents;
-  const loadedEventCount = loadedEvents.length;
-  const visibleEventCount = filteredEvents.length;
+  const loadedEvents = events;
   const summaryCards = useMemo(() => getSummaryCards(loadedEvents), [loadedEvents]);
+  const loadedEventCount = summaryCards[0]?.value ?? loadedEvents.length;
+  const visibleEventCount = filteredEvents.length;
 
   if (restricted) {
     return (
@@ -192,17 +192,19 @@ function AuditEventCard({ event }: { event: AuditoriaEvent }) {
   const action = getFriendlyAction(event.acao);
   const moduleInfo = getModuleInfo(event);
   const target = getReadableTarget(event);
-  const metadata = getMetadataPreview(event.metadata);
+  const metadata = getMetadataPreview(event.metadata, target.metadataKeys);
   const changeSummary = getChangeSummary(event.metadata);
   const avatarInitials = getInitials(executorName === FALLBACK ? executorEmail : executorName);
   const timestamp = formatDateTime(event.created_at);
   const description = String(event.descricao || "").trim() || "Sem descrição";
+  const eventTitle = getAuditEventTitle(event, action, target, changeSummary);
+  const shouldShowDescription = normalizeText(description) !== normalizeText(eventTitle);
   const isNavigable = Boolean(eventHref) && !isDeleteEvent;
 
   const cardBaseClassName = "group relative block rounded-xl border border-transparent bg-transparent transition-colors";
   const cardContent = (
     <div className="relative grid gap-3 px-3 py-4 sm:px-4 lg:grid-cols-[minmax(170px,205px)_minmax(0,1fr)] lg:items-start">
-      <div className="flex min-w-0 items-start gap-3">
+      <div className="flex min-w-0 items-center gap-3 lg:self-center">
         <div className="relative shrink-0">
           <span className="absolute -left-3 top-1/2 hidden h-2.5 w-2.5 -translate-y-1/2 rounded-full border border-primary/55 bg-[#070b0e] shadow-[0_0_0_5px_rgba(34,197,94,0.08)] sm:block" aria-hidden="true" />
           {shouldShowAvatar ? (
@@ -218,7 +220,7 @@ function AuditEventCard({ event }: { event: AuditoriaEvent }) {
             </div>
           )}
         </div>
-        <div className="min-w-0 pt-0.5">
+        <div className="min-w-0">
           <p className="truncate text-sm font-bold text-foreground" title={executorName}>{executorName}</p>
           <p className="truncate text-xs text-muted-foreground" title={executorEmail}>{executorEmail}</p>
           {executorRole ? <p className="mt-1 truncate text-[10px] font-bold uppercase tracking-[0.14em] text-primary/70" title={executorRole}>{executorRole}</p> : null}
@@ -229,8 +231,6 @@ function AuditEventCard({ event }: { event: AuditoriaEvent }) {
         <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
           <div className="flex min-w-0 flex-wrap items-center gap-2">
             <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.08em] ${moduleInfo.className}`}>{moduleInfo.label}</span>
-            <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.08em] ${action.className}`}>{action.label}</span>
-            <span className="text-xs text-muted-foreground">{action.sentence}</span>
           </div>
           <div className="flex shrink-0 items-center gap-2 text-xs text-muted-foreground sm:justify-end">
             <time className="inline-flex items-center gap-1.5 whitespace-nowrap tabular-nums" dateTime={event.created_at}>
@@ -249,13 +249,18 @@ function AuditEventCard({ event }: { event: AuditoriaEvent }) {
           </div>
         ) : null}
 
-        <p className="break-words text-sm font-semibold leading-6 text-foreground/90">{description}</p>
+        <div className="space-y-1">
+          <p className="break-words text-sm font-semibold leading-6 text-foreground/90">{eventTitle}</p>
+          {shouldShowDescription ? <p className="break-words text-xs leading-5 text-muted-foreground">{description}</p> : null}
+        </div>
 
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
           <span className="font-bold uppercase tracking-[0.12em] text-muted-foreground/70">Alvo</span>
           <span className="font-semibold text-foreground/85" title={target.fullLabel}>{target.label}</span>
-          {target.shortId ? (
-            <span className="font-mono text-primary/80" title={target.fullId ?? target.shortId}>{target.shortId}</span>
+          {target.identifier ? (
+            <span className={target.identifier.isFallback ? "font-mono text-muted-foreground" : "font-semibold text-primary/85"} title={target.identifier.fullValue}>
+              {target.identifier.label} {target.identifier.value}
+            </span>
           ) : (
             <span className="text-muted-foreground">ID não informado</span>
           )}
@@ -264,12 +269,17 @@ function AuditEventCard({ event }: { event: AuditoriaEvent }) {
         {metadata.length > 0 ? (
           <div className="flex flex-wrap gap-1.5 pt-1">
             {metadata.map((item) => (
-              <span key={item.key} className="max-w-full rounded-full border border-border/45 bg-background/30 px-2.5 py-1 text-[11px] text-muted-foreground">
-                <span className="font-semibold text-foreground/80">{item.key}:</span> <span className="break-words">{item.value}</span>
+              <span
+                key={item.id}
+                className="inline-flex min-w-0 max-w-full items-center gap-1 rounded-full border border-border/45 bg-background/30 px-2.5 py-1 text-[11px] text-muted-foreground sm:max-w-[15rem]"
+                title={`${item.key}: ${item.fullValue}`}
+              >
+                <span className="shrink-0 font-semibold text-foreground/80">{item.key}:</span>
+                <span className="min-w-0 truncate">{item.value}</span>
               </span>
             ))}
           </div>
-        ) : hasMetadata(event.metadata) ? <p className="text-xs text-muted-foreground">Metadados disponíveis.</p> : null}
+        ) : null}
       </div>
     </div>
   );
@@ -361,6 +371,44 @@ function getFriendlyAction(action?: string | null) {
   return { label: capitalize(fallback), sentence: fallback, className: "border-border/80 bg-muted/20 text-muted-foreground" };
 }
 
+function getAuditEventTitle(
+  event: AuditoriaEvent,
+  action: ReturnType<typeof getFriendlyAction>,
+  target: ReturnType<typeof getReadableTarget>,
+  changeSummary: { field: string; value: string } | null,
+) {
+  if (changeSummary) return `${getChangeTitleVerb(changeSummary.field)} ${lowercaseFirst(changeSummary.field)}`;
+
+  const descriptionTitle = getDescriptionTitle(event.descricao);
+  if (descriptionTitle) return descriptionTitle;
+
+  return `${action.label} ${target.label.toLowerCase()}`;
+}
+
+function getChangeTitleVerb(field: string) {
+  const normalized = normalizeText(field);
+  if (normalized.includes("observac")) return "Editou";
+  if (normalized.includes("anexo")) return "Adicionou";
+  return "Alterou";
+}
+
+function getDescriptionTitle(description?: string | null) {
+  const cleanDescription = String(description ?? "").trim();
+  if (!cleanDescription) return null;
+
+  const beforeDetails = cleanDescription.split(":")[0]?.trim() || cleanDescription;
+  const normalized = normalizeText(beforeDetails);
+  if (normalized.startsWith("atualizou acesso do usuario")) return "Atualizou acesso do usuário";
+
+  return beforeDetails.length <= 72 ? beforeDetails : null;
+}
+
+function lowercaseFirst(value: string) {
+  const trimmed = value.trim();
+  if (!trimmed) return FALLBACK;
+  return trimmed.charAt(0).toLowerCase() + trimmed.slice(1);
+}
+
 function isCreateAction(action?: string | null) {
   const normalized = normalizeText(action);
   return normalized === "create" || normalized === "insert" || normalized.includes("cria");
@@ -395,16 +443,62 @@ function getModuleInfo(event: AuditoriaEvent) {
   return labels[category];
 }
 
+const TARGET_IDENTIFIER_CANDIDATES = [
+  { label: "PPE", keys: ["ppe", "numero_ppe"] },
+  { label: "Processo", keys: ["numero_processo", "processo_judicial", "numero_processo_medida", "processo"] },
+  { label: "Número", keys: ["numero_bo", "numero_fisico", "codigo_interno"] },
+  { label: "Usuário", keys: ["target_login", "target_email", "target_nome"] },
+];
+
 function getReadableTarget(event: AuditoriaEvent) {
   const normalizedEntity = normalizeText(event.entidade);
   const label = getEntityLabel(normalizedEntity, event.entidade);
   const fullId = event.entidade_id ? String(event.entidade_id).trim() : null;
+  const identifier = getTargetIdentifier(event.metadata, fullId);
   return {
     label,
     fullId,
-    fullLabel: fullId ? `${label} ${fullId}` : label,
+    fullLabel: identifier ? `${label} ${identifier.label} ${identifier.fullValue}` : fullId ? `${label} ${fullId}` : label,
+    identifier,
+    metadataKeys: identifier?.metadataKeys ?? [],
+    secondaryId: identifier && !identifier.isFallback && fullId ? shortenId(fullId) : null,
     shortId: fullId ? shortenId(fullId) : null,
   };
+}
+
+function getTargetIdentifier(metadata: Record<string, unknown> | null | undefined, fullId: string | null) {
+  if (metadata && typeof metadata === "object") {
+    for (const candidate of TARGET_IDENTIFIER_CANDIDATES) {
+      for (const key of candidate.keys) {
+        const value = getMetadataDisplayValue(metadata, key);
+        if (value) {
+          return {
+            label: candidate.label,
+            value,
+            fullValue: value,
+            isFallback: false,
+            metadataKeys: candidate.keys,
+          };
+        }
+      }
+    }
+  }
+
+  if (!fullId) return null;
+  return {
+    label: "ID",
+    value: shortenId(fullId),
+    fullValue: fullId,
+    isFallback: true,
+    metadataKeys: [],
+  };
+}
+
+function getMetadataDisplayValue(metadata: Record<string, unknown>, key: string) {
+  const value = metadata[key];
+  if (!isPrimitiveMetadata(value)) return null;
+  const formatted = formatMetadataValue(value);
+  return formatted === FALLBACK ? null : formatted;
 }
 
 function getEntityLabel(normalizedEntity: string, rawEntity?: string | null) {
@@ -421,18 +515,39 @@ function shortenId(value: string) {
 }
 
 const METADATA_PREVIEW_PRIORITY = ["ppe", "numero_ppe", "tipo", "status", "situacao", "status_diligencias", "numero_processo", "prioridade"];
+const METADATA_LABELS: Record<string, string> = {
+  ppe: "PPE",
+  numero_ppe: "PPE",
+  numero_processo: "Número processo",
+  processo_judicial: "Processo judicial",
+  numero_processo_medida: "Número processo",
+  tipo: "Tipo",
+  status: "Status",
+  situacao: "Situação",
+  status_diligencias: "Status diligências",
+  prioridade: "Prioridade",
+  numero_bo: "Número BO",
+  numero_fisico: "Número físico",
+  codigo_interno: "Código interno",
+  target_login: "Login",
+  target_email: "E-mail",
+  target_nome: "Usuário",
+};
 
-function getMetadataPreview(metadata: Record<string, unknown> | null | undefined) {
+function getMetadataPreview(metadata: Record<string, unknown> | null | undefined, excludedKeys: string[] = []) {
   if (!metadata || typeof metadata !== "object") return [];
+  const excluded = new Set(excludedKeys.map((key) => key.toLowerCase()));
   return Object.entries(metadata)
+    .filter(([key]) => !excluded.has(key.toLowerCase()))
     .filter(([, value]) => isPrimitiveMetadata(value))
+    .filter(([, value]) => formatMetadataFullValue(value) !== FALLBACK)
     .sort(([leftKey], [rightKey]) => getMetadataPriority(leftKey) - getMetadataPriority(rightKey))
     .slice(0, 3)
-    .map(([key, value]) => ({ key: capitalize(key.replaceAll("_", " ")), value: formatMetadataValue(value) }));
+    .map(([key, value]) => ({ id: key, key: formatMetadataLabel(key), value: formatMetadataValue(value), fullValue: formatMetadataFullValue(value) }));
 }
 
 function getMetadataPriority(key: string) {
-  const index = METADATA_PREVIEW_PRIORITY.indexOf(key);
+  const index = METADATA_PREVIEW_PRIORITY.indexOf(key.toLowerCase());
   return index === -1 ? METADATA_PREVIEW_PRIORITY.length : index;
 }
 
@@ -465,21 +580,23 @@ function getFirstMetadataString(metadata: Record<string, unknown>, keys: string[
 }
 
 function formatMetadataLabel(value: string) {
-  return capitalize(value.replaceAll("_", " "));
-}
-
-function hasMetadata(metadata: Record<string, unknown> | null | undefined) {
-  return Boolean(metadata && typeof metadata === "object" && Object.keys(metadata).length > 0);
+  const normalized = value.trim().toLowerCase();
+  return METADATA_LABELS[normalized] ?? capitalize(value.replaceAll("_", " "));
 }
 
 function isPrimitiveMetadata(value: unknown) {
   return value === null || ["string", "number", "boolean"].includes(typeof value);
 }
 
-function formatMetadataValue(value: unknown) {
+function formatMetadataFullValue(value: unknown) {
   if (value === null || value === undefined || value === "") return FALLBACK;
   if (typeof value === "boolean") return value ? "Sim" : "Não";
-  const text = String(value);
+  return String(value);
+}
+
+function formatMetadataValue(value: unknown) {
+  const text = formatMetadataFullValue(value);
+  if (text === FALLBACK) return text;
   return text.length > 42 ? `${text.slice(0, 39)}...` : text;
 }
 
