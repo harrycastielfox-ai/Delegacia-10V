@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Activity, Clock3, Database, FileSearch, Filter, Search, ShieldCheck, UserCog } from "lucide-react";
+import { Activity, ChevronRight, Clock3, Database, FileSearch, Filter, Search, ShieldCheck, UserCog } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { AppLayout } from "@/components/AppLayout";
 import { getCurrentProfile, getProfileAvatarPublicUrl } from "@/lib/auth";
@@ -73,8 +73,11 @@ function Auditoria() {
     return () => { cancelled = true; };
   }, []);
 
-  const summaryCards = useMemo(() => getSummaryCards(events), [events]);
   const filteredEvents = useMemo(() => filterAuditEvents(events, searchTerm, moduleFilter), [events, moduleFilter, searchTerm]);
+  const loadedEvents = events.length > 0 ? events : filteredEvents;
+  const loadedEventCount = loadedEvents.length;
+  const visibleEventCount = filteredEvents.length;
+  const summaryCards = useMemo(() => getSummaryCards(loadedEvents), [loadedEvents]);
 
   if (restricted) {
     return (
@@ -90,10 +93,10 @@ function Auditoria() {
 
   return (
     <AppLayout>
-      <div className="space-y-5">
-        <header className="flex flex-col gap-4 rounded-2xl border border-border/70 bg-card/60 p-5 shadow-[0_0_0_1px_rgba(255,255,255,0.015)] lg:flex-row lg:items-center lg:justify-between lg:p-6">
+      <div className="space-y-4">
+        <header className="flex flex-col gap-4 rounded-2xl border border-border/55 bg-card/50 p-5 lg:flex-row lg:items-center lg:justify-between lg:p-6">
           <div className="flex min-w-0 items-center gap-4">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-primary/25 bg-primary/10 text-primary shadow-[0_0_18px_rgba(34,197,94,0.08)]">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-primary/20 bg-primary/10 text-primary shadow-[0_0_24px_rgba(34,197,94,0.08)]">
               <ShieldCheck className="h-6 w-6" aria-hidden="true" />
             </div>
             <div className="min-w-0 space-y-1">
@@ -101,9 +104,9 @@ function Auditoria() {
               <p className="text-sm text-muted-foreground">Registro completo de ações no sistema</p>
             </div>
           </div>
-          <div className="inline-flex w-fit items-center gap-2 rounded-xl border border-border/80 bg-background/50 px-3 py-2 text-xs font-medium text-muted-foreground">
+          <div className="inline-flex w-fit items-center gap-2 rounded-full border border-border/65 bg-background/45 px-3 py-2 text-xs font-medium text-muted-foreground">
             <Clock3 className="h-4 w-4 text-primary/80" aria-hidden="true" />
-            Últimos {events.length} evento(s) carregados
+            Últimos {loadedEventCount} evento(s) carregados
           </div>
         </header>
 
@@ -111,7 +114,7 @@ function Auditoria() {
           {summaryCards.map((card) => {
             const Icon = card.icon;
             return (
-              <article key={card.label} className="rounded-2xl border border-border/75 bg-card/70 p-4 shadow-[0_10px_30px_rgba(0,0,0,0.16)]">
+              <article key={card.label} className="rounded-xl border border-border/55 bg-card/45 p-4 shadow-[0_12px_30px_rgba(0,0,0,0.08)]">
                 <div className="flex items-start justify-between gap-3">
                   <div className="space-y-1">
                     <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">{card.label}</p>
@@ -127,7 +130,7 @@ function Auditoria() {
           })}
         </section>
 
-        <section className="rounded-2xl border border-border/75 bg-card/70 p-4 shadow-[0_10px_35px_rgba(0,0,0,0.18)]">
+        <section className="rounded-2xl border border-border/55 bg-card/45 p-4 shadow-[0_12px_35px_rgba(0,0,0,0.1)]">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <label className="relative block flex-1">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
@@ -135,7 +138,7 @@ function Auditoria() {
                 value={searchTerm}
                 onChange={(event) => setSearchTerm(event.target.value)}
                 placeholder="Buscar por executor, email, ação, módulo, entidade, descrição ou data..."
-                className="h-11 w-full rounded-xl border border-border/90 bg-background/70 py-2 pl-10 pr-3 text-sm outline-none transition placeholder:text-muted-foreground/70 focus:border-primary/45 focus:ring-2 focus:ring-primary/10"
+                className="h-11 w-full rounded-xl border border-border/70 bg-background/55 py-2 pl-10 pr-3 text-sm outline-none transition placeholder:text-muted-foreground/70 focus:border-primary/45 focus:ring-2 focus:ring-primary/10"
               />
             </label>
             <div className="flex flex-wrap items-center gap-2">
@@ -147,7 +150,7 @@ function Auditoria() {
                   key={filter.id}
                   type="button"
                   onClick={() => setModuleFilter(filter.id)}
-                  className={`rounded-lg border px-3 py-2 text-xs font-bold transition ${moduleFilter === filter.id ? "border-primary/45 bg-primary/15 text-primary" : "border-border/80 bg-background/50 text-muted-foreground hover:border-primary/25 hover:text-foreground"}`}
+                  className={`rounded-full border px-3 py-2 text-xs font-bold transition ${moduleFilter === filter.id ? "border-primary/45 bg-primary/15 text-primary" : "border-border/65 bg-background/35 text-muted-foreground hover:border-primary/25 hover:text-foreground"}`}
                 >
                   {filter.label}
                 </button>
@@ -156,18 +159,18 @@ function Auditoria() {
           </div>
           {!loading && !error ? (
             <p className="mt-3 text-xs text-muted-foreground">
-              Exibindo <span className="font-semibold text-foreground">{filteredEvents.length}</span> de <span className="font-semibold text-foreground">{events.length}</span> evento(s) carregados.
+              Exibindo <span className="font-semibold text-foreground">{visibleEventCount}</span> de <span className="font-semibold text-foreground">{loadedEventCount}</span> evento(s) carregados.
             </p>
           ) : null}
         </section>
 
-        <section className="rounded-2xl border border-primary/15 bg-card/60 p-3 sm:p-4">
+        <section className="rounded-2xl border border-border/50 bg-[#070b0e]/55 p-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.02)] sm:p-3">
           {loading ? <AuditState icon={Activity} title="Carregando eventos..." description="Consultando a listagem atual de auditoria." /> : null}
           {!loading && error ? <AuditState icon={ShieldCheck} title="Não foi possível carregar auditoria" description={error} tone="warning" /> : null}
-          {!loading && !error && events.length === 0 ? <AuditState icon={Database} title="Nenhum evento de auditoria encontrado." description="Não há registros carregados para exibir neste momento." /> : null}
-          {!loading && !error && events.length > 0 && filteredEvents.length === 0 ? <AuditState icon={Search} title="Nenhum evento de auditoria encontrado." description="Ajuste a busca ou os filtros locais para ver outros eventos carregados." /> : null}
-          {!loading && !error && filteredEvents.length > 0 ? (
-            <div className="space-y-3">
+          {!loading && !error && loadedEventCount === 0 ? <AuditState icon={Database} title="Nenhum evento de auditoria encontrado." description="Não há registros carregados para exibir neste momento." /> : null}
+          {!loading && !error && loadedEventCount > 0 && visibleEventCount === 0 ? <AuditState icon={Search} title="Nenhum evento de auditoria encontrado." description="Ajuste a busca ou os filtros locais para ver outros eventos carregados." /> : null}
+          {!loading && !error && visibleEventCount > 0 ? (
+            <div className="divide-y divide-border/45">
               {filteredEvents.map((event) => <AuditEventCard key={event.id} event={event} />)}
             </div>
           ) : null}
@@ -190,73 +193,85 @@ function AuditEventCard({ event }: { event: AuditoriaEvent }) {
   const moduleInfo = getModuleInfo(event);
   const target = getReadableTarget(event);
   const metadata = getMetadataPreview(event.metadata);
+  const changeSummary = getChangeSummary(event.metadata);
   const avatarInitials = getInitials(executorName === FALLBACK ? executorEmail : executorName);
   const timestamp = formatDateTime(event.created_at);
   const description = String(event.descricao || "").trim() || "Sem descrição";
+  const isNavigable = Boolean(eventHref) && !isDeleteEvent;
 
-  const cardBaseClassName = "rounded-xl border border-zinc-800/80 bg-[#080c0f] p-4 transition-colors shadow-[0_8px_28px_rgba(0,0,0,0.18)]";
+  const cardBaseClassName = "group relative block rounded-xl border border-transparent bg-transparent transition-colors";
   const cardContent = (
-    <>
-      <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-        <div className="flex min-w-0 items-start gap-3">
+    <div className="relative grid gap-3 px-3 py-4 sm:px-4 lg:grid-cols-[minmax(170px,205px)_minmax(0,1fr)] lg:items-start">
+      <div className="flex min-w-0 items-start gap-3">
+        <div className="relative shrink-0">
+          <span className="absolute -left-3 top-1/2 hidden h-2.5 w-2.5 -translate-y-1/2 rounded-full border border-primary/55 bg-[#070b0e] shadow-[0_0_0_5px_rgba(34,197,94,0.08)] sm:block" aria-hidden="true" />
           {shouldShowAvatar ? (
             <img
               src={executorAvatarUrl ?? undefined}
               alt={`Avatar de ${executorName}`}
-              className="h-10 w-10 shrink-0 rounded-full border border-primary/25 object-cover"
+              className="h-12 w-12 rounded-full border border-primary/25 object-cover shadow-[0_10px_24px_rgba(0,0,0,0.24)]"
               onError={() => setAvatarFailed(true)}
             />
           ) : (
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-primary/25 bg-primary/10 text-xs font-black text-primary/90">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full border border-primary/25 bg-primary/10 text-sm font-black text-primary/90 shadow-[0_10px_24px_rgba(0,0,0,0.24)]">
               {avatarInitials || "?"}
             </div>
           )}
-          <div className="min-w-0">
-            <p className="truncate text-sm font-bold text-foreground" title={executorName}>{executorName}</p>
-            <p className="truncate text-xs text-muted-foreground" title={executorEmail}>{executorEmail}</p>
-            {executorRole ? <p className="mt-1 truncate text-[10px] font-bold uppercase tracking-[0.16em] text-primary/70" title={executorRole}>{executorRole}</p> : null}
-          </div>
         </div>
-        <div className="flex shrink-0 flex-wrap items-center gap-2 md:justify-end">
-          <span className={`inline-flex items-center rounded-lg border px-2.5 py-1 text-[11px] font-extrabold uppercase tracking-[0.08em] ${action.className}`}>{action.label}</span>
-          <time className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-800 bg-zinc-950/70 px-2.5 py-1 text-xs tabular-nums text-muted-foreground" dateTime={event.created_at}>
-            <Clock3 className="h-3.5 w-3.5" aria-hidden="true" /> {timestamp}
-          </time>
+        <div className="min-w-0 pt-0.5">
+          <p className="truncate text-sm font-bold text-foreground" title={executorName}>{executorName}</p>
+          <p className="truncate text-xs text-muted-foreground" title={executorEmail}>{executorEmail}</p>
+          {executorRole ? <p className="mt-1 truncate text-[10px] font-bold uppercase tracking-[0.14em] text-primary/70" title={executorRole}>{executorRole}</p> : null}
         </div>
       </div>
 
-      <div className="mt-4 space-y-3">
-        <div className="flex flex-wrap items-center gap-2 text-sm">
-          <span className="font-semibold text-foreground">{executorName}</span>
-          <span className="text-muted-foreground">{action.sentence}</span>
-          <span className={`inline-flex items-center rounded-md border px-2 py-0.5 text-[11px] font-bold ${moduleInfo.className}`}>{moduleInfo.label}</span>
+      <div className="min-w-0 space-y-2.5">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+          <div className="flex min-w-0 flex-wrap items-center gap-2">
+            <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.08em] ${moduleInfo.className}`}>{moduleInfo.label}</span>
+            <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.08em] ${action.className}`}>{action.label}</span>
+            <span className="text-xs text-muted-foreground">{action.sentence}</span>
+          </div>
+          <div className="flex shrink-0 items-center gap-2 text-xs text-muted-foreground sm:justify-end">
+            <time className="inline-flex items-center gap-1.5 whitespace-nowrap tabular-nums" dateTime={event.created_at}>
+              <Clock3 className="h-3.5 w-3.5 text-primary/70" aria-hidden="true" /> {timestamp}
+            </time>
+            {isNavigable ? <ChevronRight className="h-4 w-4 text-muted-foreground/55 transition group-hover:translate-x-0.5 group-hover:text-primary" aria-hidden="true" /> : null}
+          </div>
         </div>
 
-        <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.7fr)]">
-          <div className="rounded-lg border border-zinc-800 bg-zinc-950/55 p-3">
-            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">Alvo</p>
-            <div className="mt-1 min-w-0">
-              <p className="truncate text-sm font-semibold text-foreground" title={target.fullLabel}>{target.label}</p>
-              {target.shortId ? <p className="mt-0.5 truncate font-mono text-xs text-primary/80" title={target.fullId ?? target.shortId}>{target.shortId}</p> : <p className="mt-0.5 text-xs text-muted-foreground">ID não informado</p>}
-            </div>
+        {changeSummary ? (
+          <div className="inline-flex max-w-full flex-wrap items-center gap-x-2 gap-y-1 rounded-full border border-border/35 bg-background/25 px-2.5 py-1 text-[11px] text-muted-foreground">
+            <span className="font-bold uppercase tracking-[0.12em] text-muted-foreground/75">Última alteração</span>
+            <span className="font-semibold text-foreground/80">{changeSummary.field}</span>
+            <span aria-hidden="true">→</span>
+            <span className="font-semibold text-primary/85">{changeSummary.value}</span>
           </div>
-          <div className="rounded-lg border border-zinc-800 bg-zinc-950/55 p-3">
-            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">Descrição</p>
-            <p className="mt-1 break-words text-sm leading-6 text-foreground/85">{description}</p>
-          </div>
+        ) : null}
+
+        <p className="break-words text-sm font-semibold leading-6 text-foreground/90">{description}</p>
+
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
+          <span className="font-bold uppercase tracking-[0.12em] text-muted-foreground/70">Alvo</span>
+          <span className="font-semibold text-foreground/85" title={target.fullLabel}>{target.label}</span>
+          {target.shortId ? (
+            <span className="font-mono text-primary/80" title={target.fullId ?? target.shortId}>{target.shortId}</span>
+          ) : (
+            <span className="text-muted-foreground">ID não informado</span>
+          )}
         </div>
 
         {metadata.length > 0 ? (
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-1.5 pt-1">
             {metadata.map((item) => (
-              <span key={item.key} className="max-w-full rounded-md border border-zinc-800 bg-zinc-950/45 px-2.5 py-1 text-[11px] text-muted-foreground">
+              <span key={item.key} className="max-w-full rounded-full border border-border/45 bg-background/30 px-2.5 py-1 text-[11px] text-muted-foreground">
                 <span className="font-semibold text-foreground/80">{item.key}:</span> <span className="break-words">{item.value}</span>
               </span>
             ))}
           </div>
         ) : hasMetadata(event.metadata) ? <p className="text-xs text-muted-foreground">Metadados disponíveis.</p> : null}
       </div>
-    </>
+    </div>
   );
 
   if (!eventHref || isDeleteEvent) return <article className={cardBaseClassName}>{cardContent}</article>;
@@ -264,7 +279,7 @@ function AuditEventCard({ event }: { event: AuditoriaEvent }) {
   return (
     <Link
       to={eventHref}
-      className={`${cardBaseClassName} block cursor-pointer hover:border-primary/30 hover:bg-[#0b1014]`}
+      className={`${cardBaseClassName} cursor-pointer hover:border-primary/20 hover:bg-primary/5 focus-visible:border-primary/35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/15`}
       title="Abrir item relacionado"
       aria-label="Abrir item relacionado"
     >
@@ -405,12 +420,52 @@ function shortenId(value: string) {
   return `${value.slice(0, 8)}...${value.slice(-4)}`;
 }
 
+const METADATA_PREVIEW_PRIORITY = ["ppe", "numero_ppe", "tipo", "status", "situacao", "status_diligencias", "numero_processo", "prioridade"];
+
 function getMetadataPreview(metadata: Record<string, unknown> | null | undefined) {
   if (!metadata || typeof metadata !== "object") return [];
   return Object.entries(metadata)
     .filter(([, value]) => isPrimitiveMetadata(value))
+    .sort(([leftKey], [rightKey]) => getMetadataPriority(leftKey) - getMetadataPriority(rightKey))
     .slice(0, 3)
     .map(([key, value]) => ({ key: capitalize(key.replaceAll("_", " ")), value: formatMetadataValue(value) }));
+}
+
+function getMetadataPriority(key: string) {
+  const index = METADATA_PREVIEW_PRIORITY.indexOf(key);
+  return index === -1 ? METADATA_PREVIEW_PRIORITY.length : index;
+}
+
+function getChangeSummary(metadata: Record<string, unknown> | null | undefined): { field: string; value: string } | null {
+  if (!metadata || typeof metadata !== "object") return null;
+
+  const explicitField = getFirstMetadataString(metadata, ["campo", "field", "field_name", "campo_alterado"]);
+  const explicitValue = getFirstMetadataString(metadata, ["novo_valor", "new_value", "valor_novo", "value"]);
+  if (explicitField && explicitValue) return { field: formatMetadataLabel(explicitField), value: explicitValue };
+
+  for (const [oldKey, oldValue] of Object.entries(metadata)) {
+    if (!oldKey.startsWith("old_") || !isPrimitiveMetadata(oldValue)) continue;
+    const suffix = oldKey.slice(4);
+    const newValue = metadata[`new_${suffix}`];
+    if (!isPrimitiveMetadata(newValue)) continue;
+    const formattedNewValue = formatMetadataValue(newValue);
+    if (formattedNewValue === FALLBACK || formatMetadataValue(oldValue) === formattedNewValue) continue;
+    return { field: formatMetadataLabel(suffix), value: formattedNewValue };
+  }
+
+  return null;
+}
+
+function getFirstMetadataString(metadata: Record<string, unknown>, keys: string[]) {
+  for (const key of keys) {
+    const value = metadata[key];
+    if (typeof value === "string" && value.trim()) return value.trim();
+  }
+  return null;
+}
+
+function formatMetadataLabel(value: string) {
+  return capitalize(value.replaceAll("_", " "));
 }
 
 function hasMetadata(metadata: Record<string, unknown> | null | undefined) {
