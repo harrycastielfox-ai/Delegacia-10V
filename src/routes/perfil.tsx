@@ -1,7 +1,7 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
-import { useMemo, useRef, useState, type ChangeEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
 import { AppLayout } from "@/components/AppLayout";
-import { getCurrentProfile, getProfileAvatarPublicUrl, updateOwnAvatar } from "@/lib/auth";
+import { getCurrentProfile, getProfileAvatarPublicUrl, updateOwnAvatar, updateOwnPhone } from "@/lib/auth";
 
 export const Route = createFileRoute("/perfil")({
   head: () => ({
@@ -26,9 +26,11 @@ export const Route = createFileRoute("/perfil")({
 });
 
 const MAX_AVATAR_BYTES = 2 * 1024 * 1024;
+const MAX_PHONE_DIGITS = 11;
 
 function PerfilPage() {
-  const { profile } = Route.useLoaderData();
+  const { profile: loadedProfile } = Route.useLoaderData();
+  const [profile, setProfile] = useState(loadedProfile);
   const profileMissing = !profile;
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -38,6 +40,32 @@ function PerfilPage() {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isSavingAvatar, setIsSavingAvatar] = useState(false);
   const [feedback, setFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
+  const [phoneDigits, setPhoneDigits] = useState(getPhoneDigits(profile?.telefone ?? ""));
+  const [phoneDraft, setPhoneDraft] = useState(getPhoneDigits(profile?.telefone ?? ""));
+  const [isEditingPhone, setIsEditingPhone] = useState(false);
+  const [isSavingPhone, setIsSavingPhone] = useState(false);
+  const [phoneFeedback, setPhoneFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const freshProfile = await getCurrentProfile();
+        if (cancelled || !freshProfile) return;
+        const freshPhone = getPhoneDigits(freshProfile.telefone ?? "");
+        setProfile(freshProfile);
+        setAvatarPath(freshProfile.avatar_path ?? null);
+        setPhoneDigits(freshPhone);
+        setPhoneDraft(freshPhone);
+      } catch (error) {
+        console.warn("[perfil] Não foi possível revalidar perfil atualizado", error);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const avatarUrl = useMemo(() => {
     if (previewUrl) return previewUrl;
@@ -89,6 +117,57 @@ function PerfilPage() {
   const cancelAvatarChange = () => {
     setFeedback(null);
     resetPendingAvatar();
+  };
+
+  const startPhoneEdit = () => {
+    if (isSavingPhone) return;
+    setPhoneDraft(phoneDigits);
+    setPhoneFeedback(null);
+    setIsEditingPhone(true);
+  };
+
+  const cancelPhoneEdit = () => {
+    if (isSavingPhone) return;
+    setPhoneDraft(phoneDigits);
+    setPhoneFeedback(null);
+    setIsEditingPhone(false);
+  };
+
+  const savePhone = async () => {
+    if (isSavingPhone) return;
+    setIsSavingPhone(true);
+    setPhoneFeedback(null);
+
+    try {
+      const requestedPhone = getPhoneDigits(phoneDraft);
+      await updateOwnPhone(requestedPhone);
+      const freshProfile = await getCurrentProfile();
+      const savedPhone = getPhoneDigits(freshProfile?.telefone ?? "");
+
+      if (requestedPhone !== savedPhone) {
+        throw new Error("PHONE_NOT_PERSISTED");
+      }
+
+      if (freshProfile) {
+        setProfile(freshProfile);
+        setAvatarPath(freshProfile.avatar_path ?? null);
+      }
+      setPhoneDigits(savedPhone);
+      setPhoneDraft(savedPhone);
+      setIsEditingPhone(false);
+      setPhoneFeedback({ type: "success", message: "Telefone atualizado com sucesso." });
+    } catch (error) {
+      console.error("[perfil] Erro ao atualizar telefone", {
+        userId: profile?.id ?? "unknown",
+        error,
+      });
+      setPhoneFeedback({
+        type: "error",
+        message: "Não foi possível salvar o telefone agora. Tente novamente em instantes.",
+      });
+    } finally {
+      setIsSavingPhone(false);
+    }
   };
 
   const saveAvatar = async () => {
@@ -222,6 +301,17 @@ function PerfilPage() {
 
         <div className="grid gap-4 md:grid-cols-2">
           <InfoCard label="Login" value={profile.login} />
+          <PhoneInfoCard
+            value={formatPhone(phoneDigits) || "Não informado"}
+            draftValue={formatPhone(phoneDraft)}
+            editing={isEditingPhone}
+            saving={isSavingPhone}
+            feedback={phoneFeedback}
+            onEdit={startPhoneEdit}
+            onCancel={cancelPhoneEdit}
+            onSave={savePhone}
+            onChange={(value) => setPhoneDraft(getPhoneDigits(value))}
+          />
           <InfoCard label="Cargo" value={profile.cargo} />
           <InfoCard label="Status de autorização" value={profile.status_autorizacao} />
           <InfoCard label="Data de criação" value={createdAt} />
@@ -238,4 +328,95 @@ function InfoCard({ label, value }: { label: string; value: string }) {
       <p className="mt-2 text-sm font-medium text-foreground break-words">{value}</p>
     </div>
   );
+}
+
+function PhoneInfoCard({
+  value,
+  draftValue,
+  editing,
+  saving,
+  feedback,
+  onEdit,
+  onCancel,
+  onSave,
+  onChange,
+}: {
+  value: string;
+  draftValue: string;
+  editing: boolean;
+  saving: boolean;
+  feedback: { type: "success" | "error"; message: string } | null;
+  onEdit: () => void;
+  onCancel: () => void;
+  onSave: () => void;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <div className="rounded-xl border border-primary/20 bg-card/60 p-4">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Telefone institucional</p>
+          {!editing ? <p className="mt-2 text-sm font-medium text-foreground break-words">{value}</p> : null}
+        </div>
+        {!editing ? (
+          <button
+            type="button"
+            onClick={onEdit}
+            className="shrink-0 rounded-md border border-primary/25 px-3 py-1 text-xs font-medium text-primary/80 transition hover:border-primary/45 hover:text-primary"
+          >
+            Editar telefone
+          </button>
+        ) : null}
+      </div>
+
+      {editing ? (
+        <div className="mt-3 space-y-3">
+          <input
+            value={draftValue}
+            onChange={(event) => onChange(event.target.value)}
+            inputMode="numeric"
+            autoComplete="tel"
+            placeholder="(83) 99999-9999"
+            className="h-10 w-full rounded-lg border border-border bg-background/70 px-3 text-sm outline-none transition placeholder:text-muted-foreground/60 focus:border-primary/45 focus:ring-2 focus:ring-primary/10"
+          />
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={onSave}
+              disabled={saving}
+              className="rounded-md border border-primary/40 bg-primary/15 px-3 py-1 text-xs font-semibold text-primary transition hover:bg-primary/20 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {saving ? "Salvando..." : "Salvar telefone"}
+            </button>
+            <button
+              type="button"
+              onClick={onCancel}
+              disabled={saving}
+              className="rounded-md border border-primary/25 px-3 py-1 text-xs font-medium text-muted-foreground transition hover:text-foreground disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              Cancelar
+            </button>
+          </div>
+        </div>
+      ) : null}
+
+      {feedback ? (
+        <p className={`mt-3 text-xs ${feedback.type === "success" ? "text-emerald-400" : "text-rose-400"}`}>
+          {feedback.message}
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
+function getPhoneDigits(value: string) {
+  return value.replace(/\D/g, "").slice(0, MAX_PHONE_DIGITS);
+}
+
+function formatPhone(value: string) {
+  const digits = getPhoneDigits(value);
+  if (!digits) return "";
+  if (digits.length <= 2) return `(${digits}`;
+  if (digits.length <= 7) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
+  return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
 }

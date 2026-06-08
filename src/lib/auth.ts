@@ -1,7 +1,9 @@
 import { supabase } from "@/lib/supabaseClient";
 import type { UserProfile } from "@/lib/authz";
 
-const PROFILE_SELECT = "id,nome,email,login,avatar_path,cargo,status_autorizacao,created_at,updated_at";
+export type CurrentUserProfile = UserProfile & { telefone: string | null };
+
+const PROFILE_SELECT = "id,nome,email,login,avatar_path,telefone,cargo,status_autorizacao,created_at,updated_at";
 const AVATAR_BUCKET = "profile-avatars";
 const MAX_AVATAR_BYTES = 2 * 1024 * 1024;
 
@@ -28,6 +30,10 @@ function normalizeLogin(value: string): string {
   return normalizeIdentifier(value).toLowerCase();
 }
 
+function normalizePhone(value?: string): string {
+  return String(value ?? "").replace(/\D/g, "").slice(0, 11);
+}
+
 function isAuthDuplicateEmailError(error: unknown): boolean {
   const message = String((error as { message?: string } | undefined)?.message || "").toLowerCase();
   return message.includes("already registered") || message.includes("already exists");
@@ -48,7 +54,7 @@ export async function logout(): Promise<void> {
   await supabase.auth.signOut();
 }
 
-export async function getCurrentProfile(): Promise<UserProfile | null> {
+export async function getCurrentProfile(): Promise<CurrentUserProfile | null> {
   const session = await getSession();
   if (!session?.user) return null;
 
@@ -64,7 +70,7 @@ export async function getCurrentProfile(): Promise<UserProfile | null> {
     throw new AuthFlowError("PROFILE_NOT_FOUND", "Perfil não encontrado para o usuário autenticado.");
   }
 
-  return data as UserProfile;
+  return data as CurrentUserProfile;
 }
 
 export async function resolveEmailFromLoginOrEmail(loginOrEmail: string): Promise<string> {
@@ -113,16 +119,30 @@ export async function updateOwnAvatar(userId: string, avatarFile: File): Promise
   return path;
 }
 
+export async function updateOwnPhone(telefone: string): Promise<string | null> {
+  const cleanTelefone = normalizePhone(telefone);
+  const { error } = await supabase.rpc("update_own_phone", {
+    p_telefone: cleanTelefone || null,
+  });
+  if (error) {
+    throw new AuthFlowError("PHONE_RPC_UPDATE_FAILED", "Falha ao atualizar telefone no perfil.", error);
+  }
+
+  return cleanTelefone || null;
+}
+
 export async function signUpUser(payload: {
   nome: string;
   email: string;
   login: string;
+  telefone?: string;
   password: string;
   avatarFile?: File | null;
 }) {
-  const { nome, email, login, password, avatarFile } = payload;
+  const { nome, email, login, telefone, password, avatarFile } = payload;
   const cleanEmail = normalizeEmail(email);
   const cleanLogin = normalizeLogin(login);
+  const cleanTelefone = normalizePhone(telefone);
 
   if (!cleanLogin) throw new Error("LOGIN_REQUIRED");
 
@@ -139,7 +159,7 @@ export async function signUpUser(payload: {
     email: cleanEmail,
     password,
     options: {
-      data: { nome: nome.trim(), login: cleanLogin },
+      data: { nome: nome.trim(), login: cleanLogin, telefone: cleanTelefone || null },
     },
   });
 
