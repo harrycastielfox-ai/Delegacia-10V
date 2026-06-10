@@ -12,6 +12,10 @@ import {
   ChevronRight,
   Gavel,
   Shield,
+  Gauge,
+  CalendarDays,
+  MapPin,
+  Users,
 } from "lucide-react";
 import {
   PieChart,
@@ -33,6 +37,7 @@ import { StatCard } from "@/components/StatCard";
 import { Panel } from "@/components/Panel";
 import { listInqueritos, type InqueritoRecord } from "@/lib/repositories/inqueritosRepository";
 import { listRepresentacoes, type RepresentacaoRecord } from "@/lib/repositories/representacoesRepository";
+import { normalizeCaseCategory } from "@/lib/inqueritosPriority";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -43,6 +48,81 @@ export const Route = createFileRoute("/")({
   }),
   component: Dashboard,
 });
+
+const PROCEDIMENTO_TYPES = [
+  { sigla: "IP", label: "Inquérito Policial", searchValue: "Inquérito Policial" },
+  { sigla: "APF", label: "Auto de Prisão em Flagrante", searchValue: "APF" },
+  { sigla: "TCO", label: "Termo Circunstanciado", searchValue: "TCO" },
+  { sigla: "BOC", label: "Boletim de Ocorrência Circunstanciada", searchValue: "BOC" },
+  { sigla: "AIAI", label: "Ato Infracional", searchValue: "AIAI" },
+] as const;
+
+const GRAVIDADE_TYPES = [
+  { key: "cvli", label: "CVLI", color: "var(--destructive)", terms: ["CVLI", "HOMICIDIO", "LATROCINIO", "FEMINICIDIO"] },
+  { key: "violencia_domestica", label: "Violência Doméstica", color: "var(--destructive)", terms: ["VIOLENCIA DOMESTICA", "MARIA DA PENHA"] },
+  { key: "patrimoniais", label: "Crimes Patrimoniais", color: "var(--warning)", terms: ["CRIMES CONTRA O PATRIMONIO", "PATRIMONIO", "FURTO", "ROUBO", "RECEPTACAO", "ESTELIONATO", "DANO"] },
+  { key: "drogas", label: "Drogas", color: "var(--info)", terms: ["DROGAS", "TRAFICO", "ENTORPECENTE"] },
+  { key: "sexuais", label: "Crimes Sexuais", color: "var(--destructive)", terms: ["CRIMES SEXUAIS", "ESTUPRO", "SEXUAL", "IMPORTUNACAO"] },
+  { key: "miae", label: "MIAE", color: "var(--warning)", terms: ["MIAE", "MORTE POR INTERVENCAO"] },
+  { key: "violento", label: "Violento", color: "var(--destructive)", terms: ["VIOLENTO", "LESÃO CORPORAL", "LESAO CORPORAL", "AMEACA", "AMEAÇA"] },
+  { key: "crianca_adolescente", label: "Viol. Criança/Adolesc.", color: "var(--destructive)", terms: ["CRIANCA", "CRIANÇA", "ADOLESCENTE", "ECA"] },
+  { key: "outros", label: "Outros", color: "var(--muted-foreground)", terms: ["OUTRO", "OUTROS"] },
+] as const;
+
+const WEEKDAY_LOAD_TYPES = [
+  { key: 1, label: "Segunda" },
+  { key: 2, label: "Terça" },
+  { key: 3, label: "Quarta" },
+  { key: 4, label: "Quinta" },
+  { key: 5, label: "Sexta" },
+  { key: 6, label: "Sábado" },
+  { key: 0, label: "Domingo" },
+] as const;
+
+const DAY_MS = 1000 * 60 * 60 * 24;
+
+function normalizeProcedureText(value: unknown) {
+  return String(value ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toUpperCase();
+}
+
+function getProcedureType(value: unknown) {
+  const normalized = normalizeProcedureText(value);
+  if (!normalized) return null;
+  if (normalized === "IP" || normalized.includes("INQUERITO POLICIAL")) return "IP";
+  if (normalized === "APF" || normalized.includes("AUTO DE PRISAO EM FLAGRANTE") || normalized.includes("FLAGRANTE")) return "APF";
+  if (normalized === "TCO" || normalized.includes("TERMO CIRCUNSTANCIADO")) return "TCO";
+  if (normalized === "BOC" || normalized.includes("BOLETIM DE OCORRENCIA")) return "BOC";
+  if (normalized === "AIAI" || normalized.includes("ATO INFRACIONAL")) return "AIAI";
+  return null;
+}
+
+function pickRecordText(record: InqueritoRecord, ...keys: string[]) {
+  const source = record as unknown as Record<string, unknown>;
+  return keys.map((key) => source[key]).filter(Boolean).join(" ");
+}
+
+function getGravidadeType(record: InqueritoRecord) {
+  const formalCategory = normalizeCaseCategory(pickRecordText(record, "categoria_caso", "categoriaCaso", "gravidade"), "");
+  const searchable = normalizeProcedureText(
+    [
+      formalCategory,
+      pickRecordText(record, "gravidade", "tipificacao", "classificacao", "tipo_penal", "tipo"),
+    ].join(" "),
+  );
+
+  return GRAVIDADE_TYPES.find((category) => category.terms.some((term) => searchable.includes(term)))?.key ?? "outros";
+}
+
+function isCvliRecord(record: InqueritoRecord) {
+  const searchable = normalizeProcedureText(
+    pickRecordText(record, "gravidade", "tipificacao", "tipo", "motivacao", "observacoes"),
+  );
+  return getGravidadeType(record) === "cvli" || ["CVLI", "HOMICIDIO", "LATROCINIO", "FEMINICIDIO"].some((term) => searchable.includes(term));
+}
 
 function Dashboard() {
   const navigate = Route.useNavigate();
@@ -85,6 +165,25 @@ function Dashboard() {
     const t = normalizeText(value);
     return Boolean(t) && !["nao","não","nenhuma","sem","n/a","na"].includes(t);
   };
+  const isConcluido = (inquerito: InqueritoRecord) => isYesLike(inquerito.relatorio_enviado) || isStatus(inquerito.situacao, ["conclu"]);
+  const isWithinLastDays = (value: unknown, days: number) => {
+    const date = parseValidDate(value);
+    if (!date || nowTs === null) return false;
+    const diff = (nowTs - date.getTime()) / DAY_MS;
+    return diff >= 0 && diff <= days;
+  };
+  const getConclusaoDate = (inquerito: InqueritoRecord) => {
+    if (!isConcluido(inquerito)) return null;
+    return parseValidDate(inquerito.data_envio_relatorio) ?? parseValidDate(inquerito.updated_at);
+  };
+  const getOperationalEntryDate = (inquerito: InqueritoRecord) => parseValidDate(inquerito.created_at) ?? parseValidDate(inquerito.data_instauracao);
+  const getCvliReferenceDate = (inquerito: InqueritoRecord) =>
+    parseValidDate(inquerito.data_fato) ?? parseValidDate(inquerito.data_instauracao) ?? parseValidDate(inquerito.created_at);
+  const isCvliElucidado = (inquerito: InqueritoRecord) =>
+    isYesLike(inquerito.elucidado) ||
+    isYesLike(inquerito.relatorio_enviado) ||
+    Boolean(parseValidDate(inquerito.data_envio_relatorio)) ||
+    isStatus(inquerito.situacao, ["elucid", "conclu"]);
 
   useEffect(() => {
     async function loadDashboardData() {
@@ -107,7 +206,7 @@ function Dashboard() {
   const total = inqueritos.length;
   const totalRepresentacoes = representacoes.length;
   const emAndamento = inqueritos.filter((i) => isStatus(i.situacao, ["andamento"])).length;
-  const finalizados = inqueritos.filter((i) => isYesLike(i.relatorio_enviado) || isStatus(i.situacao, ["conclu"])).length;
+  const finalizados = inqueritos.filter(isConcluido).length;
   const prioridadeAlta = inqueritos.filter((i) => isStatus(i.prioridade, ["alta"])).length;
   const reuPreso = inqueritos.filter((i) => isYesLike(i.reu_preso)).length;
   const medidasProtetivas = inqueritos.filter((i) => isYesLike(i.medida_protetiva)).length;
@@ -126,6 +225,59 @@ function Dashboard() {
   const repsAcompanhamentoEspecial = representacoes.filter((r) => isYesLike(r.acompanhamento_especial)).length;
   const taxaConclusao = total === 0 ? 0 : Number(((finalizados / total) * 100).toFixed(1));
   const relatadosNaoEnviados = Math.max(total - finalizados, 0);
+  const produtividade = useMemo(() => {
+    const novos7 = inqueritos.filter((i) => isWithinLastDays(i.created_at, 7)).length;
+    const novos30 = inqueritos.filter((i) => isWithinLastDays(i.created_at, 30)).length;
+    const concluidos7 = inqueritos.filter((i) => {
+      const conclusao = getConclusaoDate(i);
+      return conclusao ? isWithinLastDays(conclusao, 7) : false;
+    }).length;
+    const concluidos30 = inqueritos.filter((i) => {
+      const conclusao = getConclusaoDate(i);
+      return conclusao ? isWithinLastDays(conclusao, 30) : false;
+    }).length;
+    const backlogGerado = novos30 - concluidos30;
+    const taxaConclusao30 = novos30 === 0 ? 0 : Math.round((concluidos30 / novos30) * 100);
+    const situacaoOperacional =
+      concluidos30 >= novos30
+        ? "Controlada"
+        : concluidos30 >= novos30 * 0.8
+          ? "Atenção"
+          : "Acumulando";
+    return { novos7, novos30, concluidos7, concluidos30, backlogGerado, taxaConclusao30, situacaoOperacional };
+  }, [inqueritos, nowTs]);
+  const backlogGeradoColor = produtividade.backlogGerado > 0 ? "var(--destructive)" : "var(--success)";
+  const situacaoOperacionalColor =
+    produtividade.situacaoOperacional === "Controlada"
+      ? "var(--success)"
+      : produtividade.situacaoOperacional === "Atenção"
+        ? "var(--warning)"
+        : "var(--destructive)";
+  const cargaPorDiaSemana = useMemo(() => {
+    const counts = new Map<number, number>();
+    WEEKDAY_LOAD_TYPES.forEach((day) => counts.set(day.key, 0));
+    let totalAnalisado = 0;
+
+    inqueritos.forEach((inquerito) => {
+      const entryDate = getOperationalEntryDate(inquerito);
+      if (!entryDate) return;
+      const dayKey = entryDate.getDay();
+      counts.set(dayKey, (counts.get(dayKey) ?? 0) + 1);
+      totalAnalisado += 1;
+    });
+
+    const maxValue = Math.max(0, ...Array.from(counts.values()));
+    const dias = WEEKDAY_LOAD_TYPES.map((day) => ({
+      ...day,
+      total: counts.get(day.key) ?? 0,
+      percent: maxValue === 0 ? 0 : Math.round(((counts.get(day.key) ?? 0) / maxValue) * 100),
+      isPeak: totalAnalisado > 0 && (counts.get(day.key) ?? 0) === maxValue,
+    }));
+    const peakDay = totalAnalisado === 0 ? null : dias.find((day) => day.isPeak) ?? null;
+    const mediaDiaria = totalAnalisado === 0 ? 0 : Number((totalAnalisado / WEEKDAY_LOAD_TYPES.length).toFixed(1));
+
+    return { dias, totalAnalisado, maxValue, peakDay, mediaDiaria };
+  }, [inqueritos]);
   const POR_STATUS = useMemo(
     () => [
       { name: "Em andamento", value: emAndamento, color: "var(--info)" },
@@ -141,15 +293,65 @@ function Dashboard() {
     [prioridadeAlta, total],
   );
   const POR_GRAVIDADE = useMemo(
-    () => ["alta", "média", "baixa"].map((g) => ({ name: g.toUpperCase(), value: inqueritos.filter((i) => i.gravidade?.toLowerCase().includes(g)).length })),
+    () => {
+      const counts = new Map<(typeof GRAVIDADE_TYPES)[number]["key"], number>();
+      GRAVIDADE_TYPES.forEach((category) => counts.set(category.key, 0));
+      inqueritos.forEach((inquerito) => {
+        const key = getGravidadeType(inquerito);
+        counts.set(key, (counts.get(key) ?? 0) + 1);
+      });
+
+      return GRAVIDADE_TYPES.map((category, order) => ({
+        ...category,
+        order,
+        value: counts.get(category.key) ?? 0,
+      })).sort((a, b) => b.value - a.value || a.order - b.order);
+    },
     [inqueritos],
   );
+  const maxGravidadeCount = useMemo(() => Math.max(1, ...POR_GRAVIDADE.map((item) => item.value)), [POR_GRAVIDADE]);
   const PROCEDIMENTOS = useMemo(
-    () => ["IP", "APF", "TCO", "BOC", "AIAI"].map((sigla) => ({ sigla, total: inqueritos.filter((i) => i.tipo?.toUpperCase().includes(sigla)).length })),
-    [inqueritos],
+    () =>
+      PROCEDIMENTO_TYPES.map((type) => {
+        const totalPorTipo = inqueritos.filter((i) => getProcedureType(i.tipo) === type.sigla).length;
+        return {
+          ...type,
+          total: totalPorTipo,
+          percent: total === 0 ? 0 : Math.round((totalPorTipo / total) * 100),
+        };
+      }),
+    [inqueritos, total],
   );
-  const totalProcedimentos = useMemo(() => PROCEDIMENTOS.reduce((acc, item) => acc + item.total, 0), [PROCEDIMENTOS]);
-  const CVLI_ANUAL = useMemo(() => [{ ano: new Date().getFullYear(), registros: total, elucidados: finalizados, taxa: taxaConclusao }], [total, finalizados, taxaConclusao]);
+  const maxProcedimentoCount = useMemo(() => Math.max(1, ...PROCEDIMENTOS.map((item) => item.total)), [PROCEDIMENTOS]);
+  const CVLI_ANUAL = useMemo(() => {
+    const byYear = new Map<number, { ano: number; registros: number; elucidados: number; pendentes: number; taxa: number }>();
+
+    inqueritos.filter(isCvliRecord).forEach((inquerito) => {
+      const referenceDate = getCvliReferenceDate(inquerito);
+      if (!referenceDate) return;
+
+      const ano = referenceDate.getFullYear();
+      const current = byYear.get(ano) ?? { ano, registros: 0, elucidados: 0, pendentes: 0, taxa: 0 };
+      current.registros += 1;
+      if (isCvliElucidado(inquerito)) current.elucidados += 1;
+      byYear.set(ano, current);
+    });
+
+    return Array.from(byYear.values())
+      .map((row) => ({
+        ...row,
+        pendentes: Math.max(row.registros - row.elucidados, 0),
+        taxa: row.registros === 0 ? 0 : Number(((row.elucidados / row.registros) * 100).toFixed(1)),
+      }))
+      .sort((a, b) => a.ano - b.ano);
+  }, [inqueritos]);
+  const CVLI_TOTAL = useMemo(() => {
+    const registros = CVLI_ANUAL.reduce((acc, row) => acc + row.registros, 0);
+    const elucidados = CVLI_ANUAL.reduce((acc, row) => acc + row.elucidados, 0);
+    const pendentes = Math.max(registros - elucidados, 0);
+    const taxa = registros === 0 ? 0 : Number(((elucidados / registros) * 100).toFixed(1));
+    return { registros, elucidados, pendentes, taxa };
+  }, [CVLI_ANUAL]);
   const CVLI_MENSAL = useMemo(() => ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"].map((mes) => ({ mes, r2023: 0, r2024: 0, r2025: 0, r2026: 0 })), []);
   const POR_BAIRRO = useMemo(() => {
     const byBairro = new Map<string, { total: number; cvli: number; alta: number }>();
@@ -200,7 +402,7 @@ function Dashboard() {
       </div>
 
       {/* Mid row */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-5 mb-6">
         <div className={panelFxClass}><Panel
           title="ALERTAS CRÍTICOS"
           accent="destructive"
@@ -292,7 +494,7 @@ function Dashboard() {
           </ul>
         </Panel></div>
 
-        <div className={panelFxClass}><Panel title="META DE CONCLUSÃO" accent="success">
+        <div className={panelFxClass}><Panel title="META DE CONCLUSÃO" accent="success" icon={<CheckCircle2 className="h-4 w-4 text-success" />}>
           <ul className="space-y-3 text-sm">
             <Row label="Procedimentos cadastrados" value={String(total)} color="var(--info)" onClick={() => goTo("/inqueritos")} title="Abrir todos os inquéritos" />
             <Row label="Relatórios enviados" value={String(finalizados)} color="var(--success)" onClick={() => goTo("/inqueritos", { situacao: "relatado" })} title="Abrir inquéritos relatados" />
@@ -326,6 +528,7 @@ function Dashboard() {
             </div>
           </div>
         </Panel></div>
+
       </div>
 
 
@@ -372,30 +575,33 @@ function Dashboard() {
           accent="success"
           action={<Maximize2 className="h-3.5 w-3.5 text-muted-foreground" />}
         >
-          <ul className="space-y-3.5">
-            {PROCEDIMENTOS.map((t) => (
-              <li
-                key={t.sigla}
-                className={`flex items-center gap-3 ${interactiveItemClass}`}
-                role="button"
-                tabIndex={0}
-                title={`Abrir inquéritos do tipo ${t.sigla}`}
-                aria-label={`Abrir inquéritos do tipo ${t.sigla}`}
-                onClick={() => goTo("/inqueritos", { tipo: t.sigla.toLowerCase() })}
-                onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && goTo("/inqueritos", { tipo: t.sigla.toLowerCase() })}
-              >
-                <span className="text-xs text-muted-foreground w-12 font-bold">{t.sigla}</span>
-                <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-success rounded-full"
-                    style={{ width: `${totalProcedimentos === 0 ? 0 : (t.total / totalProcedimentos) * 100}%` }}
-                  />
-                </div>
-                <span className="text-xs tabular-nums text-muted-foreground w-20 text-right">
-                  {t.total}
-                </span>
-              </li>
-            ))}
+          <ul className="space-y-4">
+            {PROCEDIMENTOS.map((t) => {
+              const width = t.total === 0 ? 0 : Math.max(5, Math.round((t.total / maxProcedimentoCount) * 100));
+              return (
+                <li
+                  key={t.sigla}
+                  className="cursor-pointer rounded-md px-0.5 py-0.5 transition-colors duration-200 hover:bg-success/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-success/50"
+                  role="button"
+                  tabIndex={0}
+                  title={`Abrir inquéritos do tipo ${t.sigla}`}
+                  aria-label={`Abrir inquéritos do tipo ${t.sigla}`}
+                  onClick={() => goTo("/inqueritos", { tipo: t.searchValue })}
+                  onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && goTo("/inqueritos", { tipo: t.searchValue })}
+                >
+                  <div className="mb-2 flex items-center justify-between gap-3">
+                    <span className="text-sm font-black tracking-wide text-foreground">{t.sigla}</span>
+                    <span className="text-sm font-black tabular-nums text-success">{t.total}</span>
+                  </div>
+                  <div className="h-2.5 overflow-hidden rounded-full bg-muted/70 shadow-inner shadow-black/20">
+                    <div
+                      className="h-full rounded-full bg-success shadow-[0_0_18px_rgba(34,197,94,0.5)] transition-all duration-500"
+                      style={{ width: `${width}%` }}
+                    />
+                  </div>
+                </li>
+              );
+            })}
           </ul>
           <div className="mt-4 text-[11px] text-muted-foreground">
             IP: Inquéritos · APF: Flagrantes · TCO: Termos · BOC: Boletins · AIAI: Ato Infracional
@@ -405,92 +611,115 @@ function Dashboard() {
 
       {/* CVLI Chart */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-5 mb-6">
-        <div className={panelFxClass}><Panel title="CVLI — COMPARATIVO ANUAL" accent="success" className="xl:col-span-2">
-          <div className="flex items-center gap-5 text-xs mb-3">
-            <Legend color="var(--info)" label="Registros" />
-            <Legend color="var(--success)" label="Elucidados" />
-            <Legend color="var(--foreground)" label="Taxa de elucidação (%)" line />
-          </div>
-          <SafeChartContainer fallback="Nenhum dado disponível.">
+        <div className={`${panelFxClass} xl:col-span-2`}><Panel title="CVLI — COMPARATIVO ANUAL" accent="info">
+          <div className="h-[285px] min-h-[285px] w-full min-w-0">
             {isClient && CVLI_ANUAL.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
-                <ComposedChart data={CVLI_ANUAL} margin={{ top: 20, right: 20, bottom: 0, left: -10 }}>
-                <CartesianGrid stroke="var(--border)" vertical={false} />
-                <XAxis dataKey="ano" stroke="var(--muted-foreground)" fontSize={11} />
-                <YAxis yAxisId="left" stroke="var(--muted-foreground)" fontSize={11} />
-                <YAxis
-                  yAxisId="right"
-                  orientation="right"
-                  stroke="var(--muted-foreground)"
-                  fontSize={11}
-                  tickFormatter={(v) => `${v}%`}
-                />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "var(--card)",
-                    border: "1px solid var(--border)",
-                    borderRadius: 8,
-                    fontSize: 12,
-                  }}
-                />
-                <Bar yAxisId="left" dataKey="registros" fill="var(--info)" radius={[4, 4, 0, 0]} />
-                <Bar yAxisId="left" dataKey="elucidados" fill="var(--success)" radius={[4, 4, 0, 0]} />
-                <Line
-                  yAxisId="right"
-                  type="monotone"
-                  dataKey="taxa"
-                  stroke="var(--foreground)"
-                  strokeWidth={2}
-                  dot={{ r: 3, fill: "var(--foreground)" }}
-                />
+                <ComposedChart data={CVLI_ANUAL} margin={{ top: 16, right: 32, bottom: 26, left: -8 }}>
+                  <CartesianGrid stroke="var(--border)" strokeDasharray="3 4" />
+                  <XAxis dataKey="ano" stroke="var(--muted-foreground)" fontSize={11} />
+                  <YAxis yAxisId="left" stroke="var(--muted-foreground)" fontSize={11} allowDecimals={false} />
+                  <YAxis
+                    yAxisId="right"
+                    orientation="right"
+                    stroke="var(--muted-foreground)"
+                    fontSize={11}
+                    tickFormatter={(v) => `${v}%`}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "var(--card)",
+                      border: "1px solid var(--border)",
+                      borderRadius: 8,
+                      fontSize: 12,
+                    }}
+                  />
+                  <Bar yAxisId="left" dataKey="registros" name="Registros" fill="var(--info)" radius={[4, 4, 0, 0]} />
+                  <Bar yAxisId="left" dataKey="elucidados" name="Elucidados" fill="var(--success)" radius={[4, 4, 0, 0]} />
+                  <Line
+                    yAxisId="right"
+                    type="monotone"
+                    dataKey="taxa"
+                    name="Taxa de elucidação (%)"
+                    stroke="var(--foreground)"
+                    strokeWidth={2}
+                    dot={{ r: 3, fill: "var(--foreground)" }}
+                  />
                 </ComposedChart>
               </ResponsiveContainer>
             ) : (
               <div className="h-full flex items-center justify-center text-sm text-muted-foreground">Nenhum dado disponível.</div>
             )}
-          </SafeChartContainer>
+          </div>
+          <div className="mt-2 flex flex-wrap items-center justify-center gap-4 text-[11px]">
+            <Legend color="var(--info)" label="Registros" />
+            <Legend color="var(--success)" label="Elucidados" />
+            <Legend color="var(--foreground)" label="Taxa de elucidação (%)" line />
+          </div>
         </Panel></div>
 
         <div className="bg-card border border-border rounded-xl overflow-hidden transition-all duration-300 hover:border-success/55 hover:shadow-[0_0_0_1px_rgba(34,197,94,0.25),0_14px_28px_-22px_rgba(34,197,94,0.75)]">
           <div className="px-4 py-3 border-b border-border bg-muted/20">
-            <div className="text-[10px] tracking-[0.15em] text-muted-foreground font-bold">
+            <div className="text-[10px] tracking-[0.15em] text-info font-bold">
               CVLI — RESUMO ANUAL
             </div>
           </div>
-          <table className="w-full text-sm">
-            <thead className="bg-muted/40 text-[10px] tracking-[0.15em] text-muted-foreground">
-              <tr>
-                <th className="text-left px-4 py-3 font-bold">ANO</th>
-                <th className="text-right px-4 py-3 font-bold">REG</th>
-                <th className="text-right px-4 py-3 font-bold">ELUC</th>
-                <th className="text-right px-4 py-3 font-bold">%</th>
-              </tr>
-            </thead>
-            <tbody>
-              {CVLI_ANUAL.map((r) => (
-                <tr key={r.ano} className="border-t border-border transition-colors duration-200 hover:bg-success/10">
-                  <td className="px-4 py-3 font-semibold">{r.ano}</td>
-                  <td className="px-4 py-3 text-right tabular-nums">{r.registros}</td>
-                  <td className="px-4 py-3 text-right tabular-nums">{r.elucidados}</td>
-                  <td className="px-4 py-3 text-right tabular-nums text-success font-semibold">
-                    {r.taxa.toString().replace(".", ",")}%
+          <div className="md:hidden divide-y divide-border">
+            {CVLI_ANUAL.map((r) => (
+              <div key={r.ano} className="px-4 py-3">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="font-semibold">{r.ano}</span>
+                  <span className="text-success font-black">{r.taxa.toString().replace(".", ",")}%</span>
+                </div>
+                <div className="mt-2 grid grid-cols-2 gap-2 text-[11px] text-muted-foreground">
+                  <span>Reg. <strong className="text-foreground">{r.registros}</strong></span>
+                  <span>Eluc. <strong className="text-foreground">{r.elucidados}</strong></span>
+                </div>
+              </div>
+            ))}
+            <div className="px-4 py-3 bg-muted/30 font-bold">
+              <div className="flex items-center justify-between gap-3">
+                <span>TOTAL</span>
+                <span className="text-success">{CVLI_TOTAL.taxa.toString().replace(".", ",")}%</span>
+              </div>
+              <div className="mt-2 grid grid-cols-2 gap-2 text-[11px] text-muted-foreground">
+                <span>Reg. <strong className="text-foreground">{CVLI_TOTAL.registros}</strong></span>
+                <span>Eluc. <strong className="text-foreground">{CVLI_TOTAL.elucidados}</strong></span>
+              </div>
+            </div>
+          </div>
+          <div className="hidden md:block overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="text-[10px] tracking-[0.15em] text-muted-foreground">
+                <tr className="border-b border-border">
+                  <th className="text-left px-4 py-3 font-bold">ANO</th>
+                  <th className="text-right px-4 py-3 font-bold">REG</th>
+                  <th className="text-right px-4 py-3 font-bold">ELUC</th>
+                  <th className="text-right px-4 py-3 font-bold">%</th>
+                </tr>
+              </thead>
+              <tbody>
+                {CVLI_ANUAL.map((r) => (
+                  <tr key={r.ano} className="border-b border-border/50 transition-colors duration-200 hover:bg-success/10">
+                    <td className="px-4 py-3 font-semibold">{r.ano}</td>
+                    <td className="px-4 py-3 text-right tabular-nums">{r.registros}</td>
+                    <td className="px-4 py-3 text-right tabular-nums">{r.elucidados}</td>
+                    <td className="px-4 py-3 text-right tabular-nums text-success font-semibold">
+                      {r.taxa.toString().replace(".", ",")}%
+                    </td>
+                  </tr>
+                ))}
+                <tr className="font-bold">
+                  <td className="px-4 py-3">TOTAL</td>
+                  <td className="px-4 py-3 text-right tabular-nums">{CVLI_TOTAL.registros}</td>
+                  <td className="px-4 py-3 text-right tabular-nums">{CVLI_TOTAL.elucidados}</td>
+                  <td className="px-4 py-3 text-right tabular-nums text-success">
+                    {CVLI_TOTAL.taxa.toString().replace(".", ",")}%
                   </td>
                 </tr>
-              ))}
-              <tr className="border-t border-border bg-muted/30 font-bold">
-                <td className="px-4 py-3">TOTAL</td>
-                <td className="px-4 py-3 text-right tabular-nums">
-                  {CVLI_ANUAL.reduce((a, b) => a + b.registros, 0)}
-                </td>
-                <td className="px-4 py-3 text-right tabular-nums">
-                  {CVLI_ANUAL.reduce((a, b) => a + b.elucidados, 0)}
-                </td>
-                <td className="px-4 py-3 text-right tabular-nums text-success">
-                  {taxaConclusao.toString().replace(".", ",")}%
-                </td>
-              </tr>
-            </tbody>
-          </table>
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
 
@@ -524,7 +753,7 @@ function Dashboard() {
           </SafeChartContainer>
         </Panel></div>
 
-        <div className={panelFxClass}><Panel title="ANÁLISE POR LOCALIDADE" accent="warning">
+        <div className={panelFxClass}><Panel title="ANÁLISE POR LOCALIDADE" accent="warning" icon={<MapPin className="h-4 w-4 text-warning" />}>
           <div className="overflow-auto max-h-72">
             <table className="w-full text-sm">
               <thead className="text-[10px] tracking-[0.15em] text-muted-foreground sticky top-0 bg-card">
@@ -561,33 +790,49 @@ function Dashboard() {
       {/* Gravidade + Equipe */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
         <div className={panelFxClass}><Panel title="ANÁLISE POR GRAVIDADE" accent="destructive">
-          <SafeChartContainer fallback="Nenhum dado disponível.">
-            {isClient && POR_GRAVIDADE.some((item) => item.value > 0) ? (
+          <div className="h-[300px] min-h-[300px] w-full min-w-0">
+            {isClient ? (
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={POR_GRAVIDADE} layout="vertical" margin={{ top: 5, right: 20, bottom: 0, left: 10 }}>
-                <CartesianGrid stroke="var(--border)" horizontal={false} />
-                <XAxis type="number" stroke="var(--muted-foreground)" fontSize={11} />
-                <YAxis type="category" dataKey="name" stroke="var(--muted-foreground)" fontSize={10} width={140} />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "var(--card)",
-                    border: "1px solid var(--border)",
-                    borderRadius: 8,
-                    fontSize: 12,
-                  }}
-                />
-                <Bar dataKey="value" fill="var(--destructive)" radius={[0, 4, 4, 0]} />
+                <BarChart data={POR_GRAVIDADE} layout="vertical" margin={{ top: 10, right: 12, bottom: 4, left: 72 }}>
+                  <CartesianGrid stroke="var(--border)" strokeDasharray="3 4" horizontal={false} />
+                  <XAxis
+                    type="number"
+                    stroke="var(--muted-foreground)"
+                    fontSize={11}
+                    allowDecimals={false}
+                    domain={[0, Math.max(1, maxGravidadeCount)]}
+                  />
+                  <YAxis
+                    type="category"
+                    dataKey="label"
+                    stroke="var(--muted-foreground)"
+                    fontSize={10}
+                    width={72}
+                    tickLine={false}
+                    axisLine={false}
+                  />
+                  <Tooltip
+                    cursor={{ fill: "rgba(255,255,255,0.03)" }}
+                    contentStyle={{
+                      backgroundColor: "var(--card)",
+                      border: "1px solid var(--border)",
+                      borderRadius: 8,
+                      fontSize: 12,
+                    }}
+                  />
+                  <Bar dataKey="value" name="Procedimentos" fill="var(--destructive)" radius={[0, 4, 4, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             ) : (
               <div className="h-full flex items-center justify-center text-sm text-muted-foreground">Nenhum dado disponível.</div>
             )}
-          </SafeChartContainer>
+          </div>
         </Panel></div>
 
         <div className={panelFxClass}><Panel
           title="DISTRIBUIÇÃO POR EQUIPE"
           accent="success"
+          icon={<Users className="h-4 w-4 text-success" />}
           action={<ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />}
         >
           {EQUIPES.length === 0 ? (
@@ -611,7 +856,141 @@ function Dashboard() {
             </ul>
           )}
         </Panel></div>
+
       </div>
+
+      <section className="mt-6">
+        <div className="mb-3 flex items-end justify-between gap-3">
+          <div>
+            <h2 className="text-sm font-black uppercase tracking-[0.18em] text-foreground">Gestão Operacional</h2>
+            <p className="mt-1 text-xs text-muted-foreground">Ritmo da unidade, carga semanal e módulos planejados.</p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 items-stretch gap-5 lg:grid-cols-3">
+          <div className={`${panelFxClass} h-full`}><Panel title="PRODUTIVIDADE OPERACIONAL" accent="success" icon={<Gauge className="h-4 w-4 text-success" />} className="h-full">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="rounded-lg border border-border/55 bg-background/25 px-3.5 py-3">
+                <div className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">Novos (7d)</div>
+                <div className="mt-1.5 text-2xl font-black tabular-nums text-info">{produtividade.novos7}</div>
+              </div>
+              <div className="rounded-lg border border-border/55 bg-background/25 px-3.5 py-3">
+                <div className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">Concluídos (7d)</div>
+                <div className="mt-1.5 text-2xl font-black tabular-nums text-success">{produtividade.concluidos7}</div>
+              </div>
+              <div className="rounded-lg border border-border/55 bg-background/25 px-3.5 py-3">
+                <div className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">Novos (30d)</div>
+                <div className="mt-1.5 text-2xl font-black tabular-nums text-info">{produtividade.novos30}</div>
+              </div>
+              <div className="rounded-lg border border-border/55 bg-background/25 px-3.5 py-3">
+                <div className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">Concluídos (30d)</div>
+                <div className="mt-1.5 text-2xl font-black tabular-nums text-success">{produtividade.concluidos30}</div>
+              </div>
+            </div>
+
+            <div className="mt-4 rounded-lg border border-border/60 bg-background/25 px-3.5 py-3.5">
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-xs font-black text-foreground">Taxa de conclusão</span>
+                <span className="text-sm font-black tabular-nums text-success">{produtividade.taxaConclusao30}%</span>
+              </div>
+              <div className="mt-2 h-2 overflow-hidden rounded-full bg-muted/80 shadow-inner shadow-black/20">
+                <div
+                  className="h-full rounded-full bg-success transition-all duration-500"
+                  style={{
+                    width: `${Math.min(100, produtividade.taxaConclusao30)}%`,
+                    boxShadow: produtividade.taxaConclusao30 > 0 ? "0 0 18px rgba(34,197,94,0.45)" : "none",
+                  }}
+                />
+              </div>
+              <div className="mt-2 flex flex-wrap items-center justify-between gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                <span>
+                  Backlog gerado:{" "}
+                  <strong className="font-black tabular-nums" style={{ color: backlogGeradoColor }}>
+                    {produtividade.backlogGerado > 0 ? `+${produtividade.backlogGerado}` : produtividade.backlogGerado}
+                  </strong>
+                </span>
+                <span>
+                  Situação:{" "}
+                  <strong className="font-black" style={{ color: situacaoOperacionalColor }}>
+                    {produtividade.situacaoOperacional}
+                  </strong>
+                </span>
+              </div>
+            </div>
+          </Panel></div>
+
+          <div className={`${panelFxClass} h-full`}><Panel title="CARGA POR DIA DA SEMANA" accent="info" icon={<CalendarDays className="h-4 w-4 text-info" />} className="h-full">
+            <div className="mb-4 grid grid-cols-3 gap-2">
+              <div className="rounded-md border border-success/25 bg-success/5 px-3 py-2.5">
+                <div className="text-[9px] font-bold uppercase tracking-[0.12em] text-muted-foreground">Maior</div>
+                <div className="mt-1 truncate text-sm font-black text-success">{cargaPorDiaSemana.peakDay?.label ?? "Sem dados"}</div>
+              </div>
+              <div className="rounded-md border border-border/60 bg-background/30 px-3 py-2.5">
+                <div className="text-[9px] font-bold uppercase tracking-[0.12em] text-muted-foreground">Média</div>
+                <div className="mt-1 text-sm font-black tabular-nums text-foreground">{cargaPorDiaSemana.mediaDiaria.toString().replace(".", ",")}</div>
+              </div>
+              <div className="rounded-md border border-border/60 bg-background/30 px-3 py-2.5">
+                <div className="text-[9px] font-bold uppercase tracking-[0.12em] text-muted-foreground">Total</div>
+                <div className="mt-1 text-sm font-black tabular-nums text-foreground">{cargaPorDiaSemana.totalAnalisado}</div>
+              </div>
+            </div>
+
+            <ul className="space-y-3">
+              {cargaPorDiaSemana.dias.map((day) => {
+                const width = day.total === 0 ? 0 : Math.max(8, day.percent);
+                return (
+                  <li key={day.key} className={`grid grid-cols-[5.25rem_1fr_2.5rem] items-center gap-3 rounded-md px-1.5 py-1 text-sm ${day.isPeak ? "bg-success/5" : ""}`}>
+                    <span className={`truncate font-bold ${day.isPeak ? "text-success" : "text-muted-foreground"}`}>{day.label}</span>
+                    <div className="h-4 overflow-hidden rounded-full bg-muted/80 shadow-inner shadow-black/20">
+                      <div
+                        className="h-full rounded-full transition-all duration-500"
+                        style={{
+                          width: `${width}%`,
+                          backgroundColor: day.isPeak ? "var(--success)" : "var(--info)",
+                          boxShadow: day.total > 0 ? "0 0 16px rgba(34,197,94,0.4)" : "none",
+                        }}
+                      />
+                    </div>
+                    <span className="text-right font-black tabular-nums text-foreground">{day.total}</span>
+                  </li>
+                );
+              })}
+            </ul>
+          </Panel></div>
+
+          <div className={`${panelFxClass} h-full`}><Panel
+            title="RANKING DE ESCRIVÃES"
+            accent="info"
+            icon={<Users className="h-4 w-4 text-info" />}
+            className="h-full"
+          >
+            <div className="rounded-lg border border-dashed border-info/35 bg-info/5 px-4 py-5">
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-[10px] font-black uppercase tracking-[0.18em] text-info">Módulo planejado</span>
+                <span className="rounded-full border border-info/35 bg-background/60 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-info">
+                  Em breve
+                </span>
+              </div>
+              <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
+                Este painel exibirá produtividade por responsável quando houver atribuição formal de escrivão/responsável.
+              </p>
+            </div>
+
+            <div className="mt-4 overflow-hidden rounded-lg border border-border/60 bg-background/25">
+              <div className="grid grid-cols-2 gap-2 border-b border-border/60 px-3 py-2 text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground sm:grid-cols-5">
+                <span>Responsável</span>
+                <span>Procedimentos</span>
+                <span>Concluídos</span>
+                <span>Pendentes</span>
+                <span>Taxa</span>
+              </div>
+              <div className="px-3 py-5 text-center text-xs text-muted-foreground">
+                Aguardando contrato oficial de produtividade individual.
+              </div>
+            </div>
+          </Panel></div>
+        </div>
+      </section>
     </AppLayout>
   );
 }
