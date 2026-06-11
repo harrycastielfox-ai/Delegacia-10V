@@ -16,15 +16,16 @@ interface Props {
   label: string;
   value: string | number;
   hint: string;
+  secondaryHint?: string;
   icon: LucideIcon;
   tone: Tone;
   onClick?: () => void;
 }
 
-export function StatCard({ label, value, hint, icon: Icon, tone, onClick }: Props) {
+export function StatCard({ label, value, hint, secondaryHint, icon: Icon, tone, onClick }: Props) {
   return (
     <div
-      className={`stat-card stat-card-border p-5 ${onClick ? "cursor-pointer hover:opacity-95 transition" : ""}`}
+      className={`stat-card stat-card-border h-full p-5 ${onClick ? "cursor-pointer" : ""}`}
       style={{ ["--stat-color" as never]: toneVar[tone] }}
       onClick={onClick}
     >
@@ -49,6 +50,7 @@ export function StatCard({ label, value, hint, icon: Icon, tone, onClick }: Prop
         {value}
       </div>
       <div className="text-xs text-muted-foreground mt-2">{hint}</div>
+      {secondaryHint ? <div className="mt-1 text-xs text-muted-foreground">{secondaryHint}</div> : null}
     </div>
   );
 }

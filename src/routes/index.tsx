@@ -372,7 +372,7 @@ function Dashboard() {
   const panelFxClass =
     "rounded-xl transition-all duration-300 border border-border/70 hover:border-success/55 hover:shadow-[0_0_0_1px_rgba(34,197,94,0.25),0_14px_28px_-22px_rgba(34,197,94,0.75)]";
   const kpiFxClass =
-    "rounded-xl transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_0_0_1px_rgba(34,197,94,0.25),0_14px_30px_-22px_rgba(34,197,94,0.85)]";
+    "h-full rounded-xl";
   const interactiveItemClass =
     "rounded-md px-1.5 py-1 transition-colors duration-200 hover:bg-success/10 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-success/50";
 
@@ -394,7 +394,7 @@ function Dashboard() {
       <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-7 gap-4 mb-6">
         <div className={kpiFxClass}><StatCard label="TOTAL" value={total} hint="Procedimentos cadastrados" icon={FileText} tone="success" onClick={() => navigate({ to: "/inqueritos" })} /></div>
         <div className={kpiFxClass}><StatCard label="EM ANDAMENTO" value={emAndamento} hint={`${total === 0 ? 0 : Math.round((emAndamento / total) * 100)}% do total`} icon={Clock} tone="info" onClick={() => goTo("/inqueritos", { situacao: "em-andamento" })} /></div>
-        <div className={kpiFxClass}><StatCard label="CONCLUÍDOS" value={finalizados} hint={`${taxaConclusao}% taxa atual`} icon={CheckCircle2} tone="primary" onClick={() => navigate({ to: "/inqueritos", search: { situacao: "concluidos" } })} /></div>
+        <div className={kpiFxClass}><StatCard label="CONCLUÍDOS" value={finalizados} hint={`${taxaConclusao}% taxa atual`} secondaryHint="Relatórios enviados" icon={CheckCircle2} tone="primary" onClick={() => navigate({ to: "/inqueritos", search: { situacao: "concluidos" } })} /></div>
         <div className={kpiFxClass}><StatCard label="PRIOR. ALTA" value={prioridadeAlta} hint="Requer atenção" icon={TrendingUp} tone="warning" onClick={() => navigate({ to: "/inqueritos", search: { prioridade: "alta" } })} /></div>
         <div className={kpiFxClass}><StatCard label="PRAZO CRÍTICO" value={prazoCritico} hint="< 3 dias" icon={AlertTriangle} tone="destructive" onClick={() => goTo("/inqueritos", { prazo: "critico" })} /></div>
         <div className={kpiFxClass}><StatCard label="RÉU PRESO" value={reuPreso} hint="Casos com prisão" icon={Shield} tone="purple" onClick={() => goTo("/inqueritos", { reuPreso: "true" })} /></div>
