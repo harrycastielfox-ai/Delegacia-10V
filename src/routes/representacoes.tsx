@@ -100,6 +100,23 @@ function Representacoes() {
     const params = new URLSearchParams(location.search);
     const operational = normalizeText(params.get("operationalFilter") ?? "todas");
     setOperationalFilter(ALLOWED_OPERATIONAL_FILTERS.has(operational) ? operational : "todas");
+    setSearchTerm(params.get("busca") ?? "");
+
+    const status = params.get("status");
+    setStatusFilter(status?.trim() ? status : "todos");
+
+    const tipo = params.get("tipo");
+    if (tipo?.trim()) {
+      setTipoFilter(isMedidaProtetivaAlias(tipo) ? TIPO_FILTER_MEDIDA_PROTETIVA : tipo);
+    } else {
+      setTipoFilter("todos");
+    }
+
+    const dataInicialParam = params.get("dataInicial");
+    const dataFinalParam = params.get("dataFinal");
+    setDataInicial(dataInicialParam && /^\d{4}-\d{2}-\d{2}$/u.test(dataInicialParam) ? dataInicialParam : "");
+    setDataFinal(dataFinalParam && /^\d{4}-\d{2}-\d{2}$/u.test(dataFinalParam) ? dataFinalParam : "");
+    setShowFilters(Boolean(status || tipo || dataInicialParam || dataFinalParam));
   }, [isRepresentacoesIndex, location.search]);
 
   const filtered = useMemo(() => {
