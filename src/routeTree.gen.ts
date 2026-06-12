@@ -16,6 +16,7 @@ import { Route as NovaRepresentacaoRouteImport } from './routes/nova-representac
 import { Route as ModulosRouteImport } from './routes/modulos'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as InqueritosRouteImport } from './routes/inqueritos'
+import { Route as CvliComparativoRouteImport } from './routes/cvli-comparativo'
 import { Route as CriarContaRouteImport } from './routes/criar-conta'
 import { Route as AuditoriaRouteImport } from './routes/auditoria'
 import { Route as AlertasRouteImport } from './routes/alertas'
@@ -62,6 +63,11 @@ const LoginRoute = LoginRouteImport.update({
 const InqueritosRoute = InqueritosRouteImport.update({
   id: '/inqueritos',
   path: '/inqueritos',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CvliComparativoRoute = CvliComparativoRouteImport.update({
+  id: '/cvli-comparativo',
+  path: '/cvli-comparativo',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CriarContaRoute = CriarContaRouteImport.update({
@@ -133,6 +139,7 @@ export interface FileRoutesByFullPath {
   '/alertas': typeof AlertasRouteWithChildren
   '/auditoria': typeof AuditoriaRoute
   '/criar-conta': typeof CriarContaRoute
+  '/cvli-comparativo': typeof CvliComparativoRoute
   '/inqueritos': typeof InqueritosRouteWithChildren
   '/login': typeof LoginRoute
   '/modulos': typeof ModulosRoute
@@ -154,6 +161,7 @@ export interface FileRoutesByTo {
   '/alertas': typeof AlertasRouteWithChildren
   '/auditoria': typeof AuditoriaRoute
   '/criar-conta': typeof CriarContaRoute
+  '/cvli-comparativo': typeof CvliComparativoRoute
   '/inqueritos': typeof InqueritosRouteWithChildren
   '/login': typeof LoginRoute
   '/modulos': typeof ModulosRoute
@@ -176,6 +184,7 @@ export interface FileRoutesById {
   '/alertas': typeof AlertasRouteWithChildren
   '/auditoria': typeof AuditoriaRoute
   '/criar-conta': typeof CriarContaRoute
+  '/cvli-comparativo': typeof CvliComparativoRoute
   '/inqueritos': typeof InqueritosRouteWithChildren
   '/login': typeof LoginRoute
   '/modulos': typeof ModulosRoute
@@ -199,6 +208,7 @@ export interface FileRouteTypes {
     | '/alertas'
     | '/auditoria'
     | '/criar-conta'
+    | '/cvli-comparativo'
     | '/inqueritos'
     | '/login'
     | '/modulos'
@@ -220,6 +230,7 @@ export interface FileRouteTypes {
     | '/alertas'
     | '/auditoria'
     | '/criar-conta'
+    | '/cvli-comparativo'
     | '/inqueritos'
     | '/login'
     | '/modulos'
@@ -241,6 +252,7 @@ export interface FileRouteTypes {
     | '/alertas'
     | '/auditoria'
     | '/criar-conta'
+    | '/cvli-comparativo'
     | '/inqueritos'
     | '/login'
     | '/modulos'
@@ -263,6 +275,7 @@ export interface RootRouteChildren {
   AlertasRoute: typeof AlertasRouteWithChildren
   AuditoriaRoute: typeof AuditoriaRoute
   CriarContaRoute: typeof CriarContaRoute
+  CvliComparativoRoute: typeof CvliComparativoRoute
   InqueritosRoute: typeof InqueritosRouteWithChildren
   LoginRoute: typeof LoginRoute
   ModulosRoute: typeof ModulosRoute
@@ -322,6 +335,13 @@ declare module '@tanstack/react-router' {
       path: '/inqueritos'
       fullPath: '/inqueritos'
       preLoaderRoute: typeof InqueritosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/cvli-comparativo': {
+      id: '/cvli-comparativo'
+      path: '/cvli-comparativo'
+      fullPath: '/cvli-comparativo'
+      preLoaderRoute: typeof CvliComparativoRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/criar-conta': {
@@ -491,6 +511,7 @@ const rootRouteChildren: RootRouteChildren = {
   AlertasRoute: AlertasRouteWithChildren,
   AuditoriaRoute: AuditoriaRoute,
   CriarContaRoute: CriarContaRoute,
+  CvliComparativoRoute: CvliComparativoRoute,
   InqueritosRoute: InqueritosRouteWithChildren,
   LoginRoute: LoginRoute,
   ModulosRoute: ModulosRoute,

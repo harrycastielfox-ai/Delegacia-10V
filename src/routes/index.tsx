@@ -16,6 +16,7 @@ import {
   CalendarDays,
   MapPin,
   Users,
+  ArrowUpRight,
 } from "lucide-react";
 import {
   PieChart,
@@ -38,6 +39,7 @@ import { Panel } from "@/components/Panel";
 import { listInqueritos, type InqueritoRecord } from "@/lib/repositories/inqueritosRepository";
 import { listRepresentacoes, type RepresentacaoRecord } from "@/lib/repositories/representacoesRepository";
 import { normalizeCaseCategory } from "@/lib/inqueritosPriority";
+import { buildCvliMonthlyComparison } from "@/lib/cvliMetrics";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -117,12 +119,6 @@ function getGravidadeType(record: InqueritoRecord) {
   return GRAVIDADE_TYPES.find((category) => category.terms.some((term) => searchable.includes(term)))?.key ?? "outros";
 }
 
-function isCvliRecord(record: InqueritoRecord) {
-  const searchable = normalizeProcedureText(
-    pickRecordText(record, "gravidade", "tipificacao", "tipo", "motivacao", "observacoes"),
-  );
-  return getGravidadeType(record) === "cvli" || ["CVLI", "HOMICIDIO", "LATROCINIO", "FEMINICIDIO"].some((term) => searchable.includes(term));
-}
 
 function Dashboard() {
   const navigate = Route.useNavigate();
@@ -177,13 +173,6 @@ function Dashboard() {
     return parseValidDate(inquerito.data_envio_relatorio) ?? parseValidDate(inquerito.updated_at);
   };
   const getOperationalEntryDate = (inquerito: InqueritoRecord) => parseValidDate(inquerito.created_at) ?? parseValidDate(inquerito.data_instauracao);
-  const getCvliReferenceDate = (inquerito: InqueritoRecord) =>
-    parseValidDate(inquerito.data_fato) ?? parseValidDate(inquerito.data_instauracao) ?? parseValidDate(inquerito.created_at);
-  const isCvliElucidado = (inquerito: InqueritoRecord) =>
-    isYesLike(inquerito.elucidado) ||
-    isYesLike(inquerito.relatorio_enviado) ||
-    Boolean(parseValidDate(inquerito.data_envio_relatorio)) ||
-    isStatus(inquerito.situacao, ["elucid", "conclu"]);
 
   useEffect(() => {
     async function loadDashboardData() {
@@ -324,26 +313,17 @@ function Dashboard() {
   );
   const maxProcedimentoCount = useMemo(() => Math.max(1, ...PROCEDIMENTOS.map((item) => item.total)), [PROCEDIMENTOS]);
   const CVLI_ANUAL = useMemo(() => {
-    const byYear = new Map<number, { ano: number; registros: number; elucidados: number; pendentes: number; taxa: number }>();
-
-    inqueritos.filter(isCvliRecord).forEach((inquerito) => {
-      const referenceDate = getCvliReferenceDate(inquerito);
-      if (!referenceDate) return;
-
-      const ano = referenceDate.getFullYear();
-      const current = byYear.get(ano) ?? { ano, registros: 0, elucidados: 0, pendentes: 0, taxa: 0 };
-      current.registros += 1;
-      if (isCvliElucidado(inquerito)) current.elucidados += 1;
-      byYear.set(ano, current);
+    const comparison = buildCvliMonthlyComparison(inqueritos);
+    return comparison.years.map((ano) => {
+      const metric = comparison.totals[ano];
+      return {
+        ano,
+        registros: metric.registros,
+        elucidados: metric.elucidados,
+        pendentes: Math.max(metric.registros - metric.elucidados, 0),
+        taxa: metric.taxa,
+      };
     });
-
-    return Array.from(byYear.values())
-      .map((row) => ({
-        ...row,
-        pendentes: Math.max(row.registros - row.elucidados, 0),
-        taxa: row.registros === 0 ? 0 : Number(((row.elucidados / row.registros) * 100).toFixed(1)),
-      }))
-      .sort((a, b) => a.ano - b.ano);
   }, [inqueritos]);
   const CVLI_TOTAL = useMemo(() => {
     const registros = CVLI_ANUAL.reduce((acc, row) => acc + row.registros, 0);
@@ -659,10 +639,18 @@ function Dashboard() {
         </Panel></div>
 
         <div className="bg-card border border-border rounded-xl overflow-hidden transition-all duration-300 hover:border-success/55 hover:shadow-[0_0_0_1px_rgba(34,197,94,0.25),0_14px_28px_-22px_rgba(34,197,94,0.75)]">
-          <div className="px-4 py-3 border-b border-border bg-muted/20">
+          <div className="flex items-center justify-between gap-3 border-b border-border bg-muted/20 px-4 py-3">
             <div className="text-[10px] tracking-[0.15em] text-info font-bold">
               CVLI — RESUMO ANUAL
             </div>
+            <button
+              type="button"
+              onClick={() => navigate({ to: "/cvli-comparativo" })}
+              className="inline-flex h-7 items-center gap-1.5 rounded-md border border-success/70 bg-success px-2.5 text-[10px] font-black uppercase tracking-[0.12em] text-background shadow-[0_0_12px_rgba(34,197,94,0.38)] transition hover:-translate-y-0.5 hover:shadow-[0_0_18px_rgba(34,197,94,0.58)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-success/60"
+            >
+              Abrir
+              <ArrowUpRight className="h-3.5 w-3.5" />
+            </button>
           </div>
           <div className="md:hidden divide-y divide-border">
             {CVLI_ANUAL.map((r) => (
