@@ -155,4 +155,17 @@
   .stat-card-border {
     border-color: color-mix(in oklab, var(--stat-color, var(--primary)) 35%, var(--border));
   }
+
+  .date-picker-neon::-webkit-calendar-picker-indicator {
+    cursor: pointer;
+    opacity: 1;
+    filter: invert(1) brightness(1.8) drop-shadow(0 0 4px rgba(255, 255, 255, 0.95))
+      drop-shadow(0 0 8px rgba(255, 255, 255, 0.45));
+  }
+
+  .date-picker-neon:hover::-webkit-calendar-picker-indicator,
+  .date-picker-neon:focus::-webkit-calendar-picker-indicator {
+    filter: invert(1) brightness(2.25) drop-shadow(0 0 5px rgba(255, 255, 255, 1))
+      drop-shadow(0 0 10px rgba(255, 255, 255, 0.7));
+  }
 }

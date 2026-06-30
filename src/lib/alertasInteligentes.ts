@@ -70,15 +70,22 @@ const isDueInCritical3Days = (date?: string | null) => {
 };
 const hasReuPreso = (item: InqueritoRecord) => boolLike(item.reu_preso);
 const hasMedidaProtetiva = (item: InqueritoRecord) => boolLike(item.medida_protetiva);
-const hasDiligenciasPendentes = (item: InqueritoRecord) => boolLike(item.diligencias_pendentes) || ["pend", "aguard"].some((w) => normalizeText(item.status_diligencias).includes(w));
+const hasDiligenciasPendentes = (item: InqueritoRecord) => {
+  const diligencia = normalizeText(item.diligencias_pendentes);
+  const status = normalizeText(item.status_diligencias);
+  const negativeValues = new Set(["", "nao", "nenhuma", "sem", "n/a", "na", "false", "0", "concluida", "concluido"]);
+  return !negativeValues.has(diligencia) || ["pend", "aguard"].some((w) => status.includes(w));
+};
 const isAltaPrioridade = (item: InqueritoRecord) => ["alta", "urg", "prioridade alta"].some((w) => normalizeText(item.prioridade).includes(w));
 const isCvliOuHomicidio = (item: InqueritoRecord) => ["homic", "cvli", "latrocin", "feminic", "grave"].some((w) => normalizeText(`${item.tipificacao} ${item.tipo} ${item.gravidade}`).includes(w));
 const isCrimeSexual = (item: InqueritoRecord) => ["estupro", "sexual", "assedio", "violacao sexual"].some((w) => normalizeText(`${item.tipificacao} ${item.tipo}`).includes(w));
 const hasRelatorioEnviado = (item: InqueritoRecord) => boolLike(item.relatorio_enviado) || hasText(item.data_envio_relatorio);
 const isRepresentacaoSigilosa = (item: RepresentacaoRecord) => boolLike(item.pedido_sigiloso);
 const isRepresentacaoPendente = (item: RepresentacaoRecord) => ["pend", "aguard", "analise"].some((w) => normalizeText(item.status).includes(w));
-const isRepresentacaoDeferida = (item: RepresentacaoRecord) => boolLike(item.observacoes_decisao) || ["deferid"].some((w) => normalizeText(`${item.status} ${item.observacoes_decisao}`).includes(w));
-const isRepresentacaoIndeferida = (item: RepresentacaoRecord) => ["indeferid", "negad"].some((w) => normalizeText(`${item.status} ${item.observacoes_decisao}`).includes(w));
+const isRepresentacaoDeferida = (item: RepresentacaoRecord) => {
+  const decision = normalizeText(`${item.status} ${item.observacoes_decisao}`);
+  return !decision.includes("indeferid") && decision.includes("deferid");
+};
 const isRepresentacaoCumprida = (item: RepresentacaoRecord) => hasText(item.data_cumprimento) || ["cumprid", "finaliz", "encerrad"].some((w) => normalizeText(item.status).includes(w));
 const isRepresentacaoVencida = (item: RepresentacaoRecord) => isOverdue(item.data_vencimento) && !isRepresentacaoCumprida(item);
 const isRepresentacaoVencendo = (item: RepresentacaoRecord) => isDueIn7Days(item.data_vencimento) && !isRepresentacaoCumprida(item);
@@ -117,7 +124,7 @@ export function buildSmartAlerts(inqueritos: InqueritoRecord[], representacoes: 
     if (isRepresentacaoVencida(r)) out.push({ id: `rep-${r.id}-vencida`, title: "Representação vencida", severity: "critico", module: "Representação", category: "prazo", entityType: "representacao", entityId: r.id, identifier, principal, typeLabel, team, dueLabel, action: "Regularizar situação judicial com urgência.", status, searchable: normalizeText(`${identifier} ${typeLabel} vencida`) });
     if (!isRepresentacaoVencida(r) && isRepresentacaoVencendo(r)) out.push({ id: `rep-${r.id}-vencendo`, title: "Representação vencendo em até 7 dias", severity: "alto", module: "Representação", category: "prazo", entityType: "representacao", entityId: r.id, identifier, principal, typeLabel, team, dueLabel, action: "Concluir cumprimento antes do vencimento.", status, searchable: normalizeText(`${identifier} ${typeLabel} vencendo`) });
     if (isRepresentacaoSigilosa(r)) out.push({ id: `rep-${r.id}-sigilosa`, title: "Representação sigilosa", severity: "alto", module: "Representação", category: "judicial", entityType: "representacao", entityId: r.id, identifier, principal: "Sigiloso", typeLabel, team, dueLabel, action: "Tratar acesso e tramitação com restrição.", status, searchable: normalizeText(`${identifier} ${typeLabel} sigilosa`) });
-    if (!hasText(r.processo_judicial) || !hasText(r.tipo) || !hasText(r.equipe_responsavel) || !hasText(r.status) || isRepresentacaoIndeferida(r)) out.push({ id: `rep-${r.id}-incompleta`, title: "Dados judiciais incompletos", severity: "baixo", module: "Representação", category: "dados_incompletos", entityType: "representacao", entityId: r.id, identifier, principal, typeLabel, team, dueLabel, action: "Completar dados e revisar decisão judicial registrada.", status, searchable: normalizeText(`${identifier} ${typeLabel} dados incompletos`) });
+    if (!hasText(r.processo_judicial) || !hasText(r.tipo) || !hasText(r.equipe_responsavel) || !hasText(r.status)) out.push({ id: `rep-${r.id}-incompleta`, title: "Dados judiciais incompletos", severity: "baixo", module: "Representação", category: "dados_incompletos", entityType: "representacao", entityId: r.id, identifier, principal, typeLabel, team, dueLabel, action: "Completar dados judiciais e responsáveis operacionais.", status, searchable: normalizeText(`${identifier} ${typeLabel} dados incompletos`) });
   });
 
   return out;

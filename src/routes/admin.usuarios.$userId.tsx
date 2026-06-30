@@ -4,18 +4,29 @@ import {
   Activity,
   ArrowLeft,
   BadgeCheck,
+  BriefcaseBusiness,
   CalendarDays,
+  Check,
   Clock3,
   FileText,
   KeyRound,
   Mail,
+  Pencil,
   Phone,
   Shield,
   ShieldAlert,
   UserCog,
+  X,
 } from "lucide-react";
 import { getCurrentProfile, getProfileAvatarPublicUrl, getSession } from "@/lib/auth";
-import { canManageUsers, type AuthorizationStatus, type UserProfile, type UserRole } from "@/lib/authz";
+import {
+  canManageUsers,
+  INSTITUTIONAL_FUNCTIONS,
+  type AuthorizationStatus,
+  type InstitutionalFunction,
+  type UserProfile,
+  type UserRole,
+} from "@/lib/authz";
 import { listAuditoriaForAdminUser, type AuditoriaEvent } from "@/lib/repositories/auditoriaRepository";
 import { supabase } from "@/lib/supabaseClient";
 
@@ -25,6 +36,15 @@ export const Route = createFileRoute("/admin/usuarios/$userId")({
 
 type AdminUserProfile = UserProfile & { telefone?: string | null };
 type IconType = ComponentType<{ className?: string }>;
+type InstitutionalFunctionDraft = InstitutionalFunction | "";
+
+const INSTITUTIONAL_FUNCTION_LABELS: Record<InstitutionalFunction, string> = {
+  juiz: "Juiz(a)",
+  delegado: "Delegado(a)",
+  escrivao: "Escrivão(ã)",
+  investigador: "Investigador(a)",
+  agente_policia: "Agente de Polícia",
+};
 
 function AdminUserProfilePage() {
   const navigate = useNavigate();
@@ -37,6 +57,13 @@ function AdminUserProfilePage() {
   const [auditoriaLoading, setAuditoriaLoading] = useState(false);
   const [auditoriaError, setAuditoriaError] = useState<string | null>(null);
   const [auditoriaEvents, setAuditoriaEvents] = useState<AuditoriaEvent[]>([]);
+  const [editingInstitutionalFunction, setEditingInstitutionalFunction] = useState(false);
+  const [institutionalFunctionDraft, setInstitutionalFunctionDraft] = useState<InstitutionalFunctionDraft>("");
+  const [savingInstitutionalFunction, setSavingInstitutionalFunction] = useState(false);
+  const [institutionalFunctionFeedback, setInstitutionalFunctionFeedback] = useState<{
+    kind: "success" | "error";
+    message: string;
+  } | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -113,6 +140,9 @@ function AdminUserProfilePage() {
         setTargetUser(null);
       } else {
         setTargetUser(found);
+        setInstitutionalFunctionDraft(found.funcao_institucional ?? "");
+        setEditingInstitutionalFunction(false);
+        setInstitutionalFunctionFeedback(null);
       }
       setLoadingUser(false);
     })();
@@ -176,6 +206,60 @@ function AdminUserProfilePage() {
   const createdAt = formatDate(targetUser?.created_at);
   const updatedAt = formatDate(targetUser?.updated_at);
 
+  const cancelInstitutionalFunctionEdit = () => {
+    setInstitutionalFunctionDraft(targetUser?.funcao_institucional ?? "");
+    setEditingInstitutionalFunction(false);
+    setInstitutionalFunctionFeedback(null);
+  };
+
+  const saveInstitutionalFunction = async () => {
+    if (!targetUser || savingInstitutionalFunction) return;
+
+    const nextFunction = institutionalFunctionDraft || null;
+    if (nextFunction === targetUser.funcao_institucional) {
+      setEditingInstitutionalFunction(false);
+      setInstitutionalFunctionFeedback(null);
+      return;
+    }
+
+    setSavingInstitutionalFunction(true);
+    setInstitutionalFunctionFeedback(null);
+    const { error } = await supabase.rpc("admin_update_user_function", {
+      target_user_id: targetUser.id,
+      new_function: nextFunction,
+    });
+
+    if (error) {
+      const code = String(error.code ?? "");
+      const normalizedMessage = String(error.message ?? "").toLowerCase();
+      const unavailable = code === "PGRST202" || normalizedMessage.includes("function") || normalizedMessage.includes("rpc");
+      const forbidden = code === "42501" || normalizedMessage.includes("permission") || normalizedMessage.includes("access_denied");
+      setInstitutionalFunctionFeedback({
+        kind: "error",
+        message: unavailable
+          ? "A função administrativa ainda não está disponível no Supabase."
+          : forbidden
+            ? "Seu perfil não tem permissão para alterar esta função."
+            : "Não foi possível salvar a função institucional.",
+      });
+      setSavingInstitutionalFunction(false);
+      return;
+    }
+
+    setTargetUser((current) =>
+      current
+        ? {
+            ...current,
+            funcao_institucional: nextFunction,
+            updated_at: new Date().toISOString(),
+          }
+        : current,
+    );
+    setEditingInstitutionalFunction(false);
+    setInstitutionalFunctionFeedback({ kind: "success", message: "Função institucional atualizada com sucesso." });
+    setSavingInstitutionalFunction(false);
+  };
+
   if (checkingAccess) {
     return (
       <PageShell>
@@ -220,7 +304,9 @@ function AdminUserProfilePage() {
         </Link>
         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary/70">Dossiê administrativo</p>
         <h1 className="mt-2 text-2xl font-bold tracking-wide">Perfil administrativo do usuário</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Visualização institucional em modo somente leitura.</p>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Dados institucionais e função profissional. Permissões de acesso continuam administradas separadamente.
+        </p>
       </section>
 
       {loadingUser ? <StateBox text="Carregando perfil do usuário..." /> : null}
@@ -267,8 +353,23 @@ function AdminUserProfilePage() {
             <InfoCard icon={CalendarDays} label="Data de criação" value={createdAt} />
           </section>
 
-          <section className="grid gap-4 md:grid-cols-2">
+          <section className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             <InfoCard icon={UserCog} label="Cargo" value={formatRole(targetUser.cargo)} tone={getRoleTone(targetUser.cargo)} />
+            <InstitutionalFunctionCard
+              value={targetUser.funcao_institucional}
+              draft={institutionalFunctionDraft}
+              editing={editingInstitutionalFunction}
+              saving={savingInstitutionalFunction}
+              feedback={institutionalFunctionFeedback}
+              onEdit={() => {
+                setInstitutionalFunctionDraft(targetUser.funcao_institucional ?? "");
+                setInstitutionalFunctionFeedback(null);
+                setEditingInstitutionalFunction(true);
+              }}
+              onChange={setInstitutionalFunctionDraft}
+              onCancel={cancelInstitutionalFunctionEdit}
+              onSave={() => void saveInstitutionalFunction()}
+            />
             <InfoCard icon={Shield} label="Status de autorização" value={formatStatus(targetUser.status_autorizacao)} tone={getStatusTone(targetUser.status_autorizacao)} />
             {targetUser.updated_at ? <InfoCard icon={Clock3} label="Atualizado em" value={updatedAt} /> : null}
           </section>
@@ -355,6 +456,97 @@ function InfoCard({
   );
 }
 
+function InstitutionalFunctionCard({
+  value,
+  draft,
+  editing,
+  saving,
+  feedback,
+  onEdit,
+  onChange,
+  onCancel,
+  onSave,
+}: {
+  value: InstitutionalFunction | null;
+  draft: InstitutionalFunctionDraft;
+  editing: boolean;
+  saving: boolean;
+  feedback: { kind: "success" | "error"; message: string } | null;
+  onEdit: () => void;
+  onChange: (value: InstitutionalFunctionDraft) => void;
+  onCancel: () => void;
+  onSave: () => void;
+}) {
+  return (
+    <div className="rounded-xl border border-primary/20 bg-card/60 p-4">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+          <BriefcaseBusiness className="h-4 w-4" />
+          Função institucional
+        </div>
+        {!editing ? (
+          <button
+            type="button"
+            onClick={onEdit}
+            className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-primary/25 bg-primary/10 text-primary transition hover:bg-primary/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+            title="Editar função institucional"
+            aria-label="Editar função institucional"
+          >
+            <Pencil className="h-3.5 w-3.5" />
+          </button>
+        ) : null}
+      </div>
+
+      {!editing ? (
+        <p className="mt-3 break-words text-sm font-semibold text-foreground">{formatInstitutionalFunction(value)}</p>
+      ) : (
+        <div className="mt-3 space-y-3">
+          <select
+            value={draft}
+            onChange={(event) => onChange(event.target.value as InstitutionalFunctionDraft)}
+            disabled={saving}
+            className="h-10 w-full rounded-lg border border-primary/25 bg-background/80 px-3 text-sm text-foreground outline-none transition focus:border-primary/60 disabled:opacity-60"
+            aria-label="Selecionar função institucional"
+          >
+            <option value="">Não definida</option>
+            {INSTITUTIONAL_FUNCTIONS.map((institutionalFunction) => (
+              <option key={institutionalFunction} value={institutionalFunction}>
+                {INSTITUTIONAL_FUNCTION_LABELS[institutionalFunction]}
+              </option>
+            ))}
+          </select>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={onSave}
+              disabled={saving}
+              className="inline-flex h-9 items-center gap-2 rounded-md border border-primary/30 bg-primary/15 px-3 text-xs font-semibold text-primary transition hover:bg-primary/25 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <Check className="h-3.5 w-3.5" />
+              {saving ? "Salvando..." : "Salvar"}
+            </button>
+            <button
+              type="button"
+              onClick={onCancel}
+              disabled={saving}
+              className="inline-flex h-9 items-center gap-2 rounded-md border border-border bg-background/60 px-3 text-xs font-semibold text-muted-foreground transition hover:bg-accent disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <X className="h-3.5 w-3.5" />
+              Cancelar
+            </button>
+          </div>
+        </div>
+      )}
+
+      {feedback ? (
+        <p className={`mt-3 text-xs ${feedback.kind === "success" ? "text-emerald-300" : "text-rose-300"}`} role="status">
+          {feedback.message}
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
 function ActivityCard({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-xl border border-primary/10 bg-background/55 p-4">
@@ -367,6 +559,8 @@ function ActivityCard({ label, value }: { label: string; value: string }) {
 function AuditEventCard({ event }: { event: AuditoriaEvent }) {
   const eventHref = getAuditEventHref(event);
   const isDeleteEvent = isDeleteAction(event.acao);
+  const canNavigate = Boolean(eventHref) && !isDeleteEvent;
+  const actionLabel = getAuditTargetActionLabel(eventHref);
   const cardBaseClassName = "rounded-2xl border border-primary/10 bg-background/60 p-4 transition-colors";
   const cardContent = (
     <>
@@ -389,22 +583,27 @@ function AuditEventCard({ event }: { event: AuditoriaEvent }) {
         </div>
       </div>
       {event.entidade_id ? (
-        <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
+        <div className={`mt-3 flex items-center gap-2 text-xs ${canNavigate ? "text-primary/90" : "text-muted-foreground"}`}>
           <FileText className="h-3.5 w-3.5" />
           <span className="truncate">ID {shortId(event.entidade_id)}</span>
+        </div>
+      ) : null}
+      {canNavigate ? (
+        <div className="mt-3 inline-flex items-center rounded-full border border-primary/25 bg-primary/10 px-3 py-1 text-xs font-semibold text-primary transition-colors group-hover:bg-primary/15">
+          {actionLabel}
         </div>
       ) : null}
     </>
   );
 
-  if (!eventHref || isDeleteEvent) return <article className={cardBaseClassName}>{cardContent}</article>;
+  if (!canNavigate) return <article className={cardBaseClassName}>{cardContent}</article>;
 
   return (
     <Link
       to={eventHref}
-      className={`${cardBaseClassName} block cursor-pointer hover:border-primary/30 hover:bg-background/80`}
-      title="Abrir item relacionado"
-      aria-label="Abrir item relacionado"
+      className={`${cardBaseClassName} group block cursor-pointer hover:border-primary/30 hover:bg-background/80`}
+      title={actionLabel}
+      aria-label={actionLabel}
     >
       {cardContent}
     </Link>
@@ -469,6 +668,10 @@ function formatRole(role: UserRole) {
   return labels[role] ?? role;
 }
 
+function formatInstitutionalFunction(value?: InstitutionalFunction | null) {
+  return value ? INSTITUTIONAL_FUNCTION_LABELS[value] : "Não definida";
+}
+
 function formatStatus(status: AuthorizationStatus) {
   const labels: Record<AuthorizationStatus, string> = {
     aguardando: "Aguardando",
@@ -507,32 +710,45 @@ function getAuditEventHref(event: AuditoriaEvent) {
   const entityId = event.entidade_id ? String(event.entidade_id).trim() : "";
   if (!entityId) return null;
 
-  const normalize = (value?: string | null) =>
-    (value || "")
-      .toLowerCase()
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .replace(/\s+/g, "_");
+  const modulo = normalizeAuditRouteToken(event.modulo);
+  const entidade = normalizeAuditRouteToken(event.entidade);
 
-  const modulo = normalize(event.modulo);
-  const entidade = normalize(event.entidade);
-  const target = `${modulo}|${entidade}`;
-
-  if (["|inqueritos", "|inquerito", "inqueritos|", "inquerito|", "inqueritos|inqueritos", "inqueritos|inquerito"].includes(target)) {
+  if (matchesAuditRoute(entidade, ["inquerito", "inqueritos"]) || matchesAuditRoute(modulo, ["inquerito", "inqueritos"])) {
     return `/inqueritos/${entityId}`;
   }
-  if (
-    ["|representacoes", "|representacao", "representacoes|", "representacao|", "representacoes|representacoes", "representacoes|representacao"].includes(
-      target,
-    )
-  ) {
+  if (matchesAuditRoute(entidade, ["representacao", "representacoes"]) || matchesAuditRoute(modulo, ["representacao", "representacoes"])) {
     return `/representacoes/${entityId}`;
   }
-  if (["|profiles", "|admin_usuarios", "admin_usuarios|", "usuarios|profiles", "administracao|profiles"].includes(target)) {
+  if (
+    matchesAuditRoute(entidade, ["profile", "profiles", "perfil", "perfis", "usuario", "usuarios", "admin_usuario", "admin_usuarios"]) ||
+    matchesAuditRoute(modulo, ["profile", "profiles", "perfil", "perfis", "usuario", "usuarios", "admin_usuario", "admin_usuarios"])
+  ) {
     return `/admin/usuarios/${entityId}`;
   }
 
   return null;
+}
+
+function normalizeAuditRouteToken(value?: string | null) {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+}
+
+function matchesAuditRoute(value: string, candidates: string[]) {
+  return candidates.some((candidate) => value === candidate || value.includes(`_${candidate}`) || value.includes(`${candidate}_`));
+}
+
+function getAuditTargetActionLabel(href: string | null) {
+  if (!href) return "Abrir item relacionado";
+  if (href.startsWith("/inqueritos/")) return "Abrir inquérito";
+  if (href.startsWith("/representacoes/")) return "Abrir representação";
+  if (href.startsWith("/admin/usuarios/")) return "Abrir perfil";
+  return "Abrir item relacionado";
 }
 
 function isDeleteAction(action?: string | null) {

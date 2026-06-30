@@ -1,5 +1,5 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowLeft, CalendarRange, CheckCircle2, FileSpreadsheet, Target } from "lucide-react";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { CalendarRange, CheckCircle2, FileSpreadsheet, Target } from "lucide-react";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { AppLayout } from "@/components/AppLayout";
 import { buildCvliMonthlyComparison, type CvliMetric } from "@/lib/cvliMetrics";
@@ -19,6 +19,7 @@ export const Route = createFileRoute("/cvli-comparativo")({
 });
 
 function CvliComparativoPage() {
+  const navigate = useNavigate();
   const [inqueritos, setInqueritos] = useState<InqueritoRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -62,18 +63,28 @@ function CvliComparativoPage() {
     return { registros, elucidados, taxa };
   }, [comparison.totals, visibleYears]);
 
+  const openCvliInqueritos = (
+    year: number,
+    monthIndex: number | null,
+    mode: "registros" | "elucidados",
+  ) => {
+    const { dataInicial, dataFinal } = getCvliPeriodRange(year, monthIndex);
+    navigate({
+      to: "/inqueritos",
+      search: {
+        categoria: "cvli",
+        dataCampo: "cvli",
+        dataInicial,
+        dataFinal,
+        ...(mode === "elucidados" ? { elucidado: "sim" } : {}),
+      },
+    });
+  };
+
   return (
     <AppLayout>
       <div className="mx-auto w-full max-w-[1600px]">
         <header className="mb-5 border-b border-border/70 pb-5">
-          <Link
-            to="/"
-            className="mb-5 inline-flex items-center gap-2 text-xs font-bold text-success transition hover:text-success/80"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Voltar ao Dashboard
-          </Link>
-
           <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div className="flex items-start gap-3">
               <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-info/40 bg-info/10 text-info shadow-[0_0_18px_rgba(14,165,233,0.12)]">
@@ -93,7 +104,12 @@ function CvliComparativoPage() {
             </div>
 
             <label className="flex w-full flex-col gap-2 text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground sm:w-52">
-              Filtrar por ano
+              <span className="flex items-center gap-2">
+                Filtrar por ano
+                <span aria-hidden="true" className="text-sm leading-none">
+                  📅
+                </span>
+              </span>
               <select
                 value={selectedYear}
                 onChange={(event) => setSelectedYear(event.target.value)}
@@ -157,7 +173,11 @@ function CvliComparativoPage() {
               Nenhum registro CVLI com data de referência foi encontrado.
             </div>
           ) : (
-            <CvliComparisonTable comparison={comparison} years={visibleYears} />
+            <CvliComparisonTable
+              comparison={comparison}
+              years={visibleYears}
+              onOpenMetric={openCvliInqueritos}
+            />
           )}
         </section>
       </div>
@@ -168,9 +188,11 @@ function CvliComparativoPage() {
 function CvliComparisonTable({
   comparison,
   years,
+  onOpenMetric,
 }: {
   comparison: ReturnType<typeof buildCvliMonthlyComparison>;
   years: number[];
+  onOpenMetric: (year: number, monthIndex: number | null, mode: "registros" | "elucidados") => void;
 }) {
   return (
     <div className="overflow-x-auto">
@@ -189,7 +211,13 @@ function CvliComparisonTable({
                 colSpan={3}
                 className="border-r border-border px-4 py-3 text-center text-sm font-black text-foreground last:border-r-0"
               >
-                {year}
+                <span className="inline-flex items-center gap-2">
+                  <span
+                    aria-hidden="true"
+                    className="h-1.5 w-1.5 rounded-full bg-success shadow-[0_0_8px_rgba(34,197,94,0.95)]"
+                  />
+                  {year}
+                </span>
               </th>
             ))}
           </tr>
@@ -226,7 +254,12 @@ function CvliComparisonTable({
                 {row.month}
               </th>
               {years.flatMap((year) =>
-                renderMetricCells(`${row.monthIndex}-${year}`, row.byYear[year]),
+                renderMetricCells(`${row.monthIndex}-${year}`, row.byYear[year], {
+                  year,
+                  monthIndex: row.monthIndex,
+                  monthLabel: row.month,
+                  onOpenMetric,
+                }),
               )}
             </tr>
           ))}
@@ -235,7 +268,13 @@ function CvliComparisonTable({
               TOTAL
             </th>
             {years.flatMap((year) =>
-              renderMetricCells(`total-${year}`, comparison.totals[year], true),
+              renderMetricCells(`total-${year}`, comparison.totals[year], {
+                year,
+                monthIndex: null,
+                monthLabel: "Todos os meses",
+                onOpenMetric,
+                emphasized: true,
+              }),
             )}
           </tr>
         </tbody>
@@ -244,15 +283,34 @@ function CvliComparisonTable({
   );
 }
 
-function renderMetricCells(key: string, metric: CvliMetric, emphasized = false) {
+function renderMetricCells(
+  key: string,
+  metric: CvliMetric,
+  options: {
+    year: number;
+    monthIndex: number | null;
+    monthLabel: string;
+    onOpenMetric: (year: number, monthIndex: number | null, mode: "registros" | "elucidados") => void;
+    emphasized?: boolean;
+  },
+) {
+  const { year, monthIndex, monthLabel, onOpenMetric, emphasized = false } = options;
   const valueClass = emphasized ? "font-black text-foreground" : "font-semibold text-foreground";
 
   return [
     <td key={`${key}-registros`} className={`px-3 py-3 text-right tabular-nums ${valueClass}`}>
-      {metric.registros}
+      <MetricLink
+        value={metric.registros}
+        title={`Abrir registros CVLI de ${monthLabel} de ${year}`}
+        onClick={() => onOpenMetric(year, monthIndex, "registros")}
+      />
     </td>,
     <td key={`${key}-elucidados`} className={`px-3 py-3 text-right tabular-nums ${valueClass}`}>
-      {metric.elucidados}
+      <MetricLink
+        value={metric.elucidados}
+        title={`Abrir CVLIs elucidados de ${monthLabel} de ${year}`}
+        onClick={() => onOpenMetric(year, monthIndex, "elucidados")}
+      />
     </td>,
     <td
       key={`${key}-taxa`}
@@ -261,6 +319,37 @@ function renderMetricCells(key: string, metric: CvliMetric, emphasized = false) 
       {formatRate(metric.taxa)}%
     </td>,
   ];
+}
+
+function MetricLink({ value, title, onClick }: { value: number; title: string; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      title={title}
+      aria-label={title}
+      onClick={onClick}
+      className="rounded-md px-2 py-1 font-inherit tabular-nums text-current underline-offset-4 transition hover:bg-success/10 hover:text-success hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-success/45"
+    >
+      {value}
+    </button>
+  );
+}
+
+function getCvliPeriodRange(year: number, monthIndex: number | null) {
+  if (monthIndex === null) {
+    return {
+      dataInicial: `${year}-01-01`,
+      dataFinal: `${year}-12-31`,
+    };
+  }
+
+  const month = String(monthIndex + 1).padStart(2, "0");
+  const lastDay = new Date(Date.UTC(year, monthIndex + 1, 0)).getUTCDate();
+
+  return {
+    dataInicial: `${year}-${month}-01`,
+    dataFinal: `${year}-${month}-${String(lastDay).padStart(2, "0")}`,
+  };
 }
 
 function SummaryMetric({

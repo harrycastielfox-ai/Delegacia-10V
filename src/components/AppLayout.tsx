@@ -14,12 +14,13 @@ export function AppLayout({ children }: { children: ReactNode }) {
     let cancelled = false;
 
     void (async () => {
-      const session = await getSession();
-      if (!session) {
-        if (!cancelled) navigate({ to: "/login", replace: true });
-        return;
-      }
       try {
+        const session = await getSession();
+        if (!session) {
+          if (!cancelled) navigate({ to: "/login", replace: true });
+          return;
+        }
+
         const profile = await getCurrentProfile();
         if (!profile) {
           if (!cancelled) navigate({ to: "/login", search: { erro: "profile_missing" } as never, replace: true });

@@ -1,11 +1,13 @@
 import { supabase } from "@/lib/supabaseClient";
-import type { UserProfile } from "@/lib/authz";
+import { INSTITUTIONAL_FUNCTIONS, type InstitutionalFunction, type UserProfile } from "@/lib/authz";
 
 export type CurrentUserProfile = UserProfile & { telefone: string | null };
 
-const PROFILE_SELECT = "id,nome,email,login,avatar_path,telefone,cargo,status_autorizacao,created_at,updated_at";
+const PROFILE_SELECT = "id,nome,email,login,avatar_path,telefone,funcao_institucional,cargo,status_autorizacao,created_at,updated_at";
+const LEGACY_PROFILE_SELECT = "id,nome,email,login,avatar_path,telefone,cargo,status_autorizacao,created_at,updated_at";
 const AVATAR_BUCKET = "profile-avatars";
 const MAX_AVATAR_BYTES = 2 * 1024 * 1024;
+const DEFAULT_AUTH_TIMEOUT_MS = 10000;
 
 export class AuthFlowError extends Error {
   code: string;
@@ -34,6 +36,10 @@ function normalizePhone(value?: string): string {
   return String(value ?? "").replace(/\D/g, "").slice(0, 11);
 }
 
+function normalizeInstitutionalFunction(value?: InstitutionalFunction | string | null): InstitutionalFunction | null {
+  return INSTITUTIONAL_FUNCTIONS.includes(value as InstitutionalFunction) ? (value as InstitutionalFunction) : null;
+}
+
 function isAuthDuplicateEmailError(error: unknown): boolean {
   const message = String((error as { message?: string } | undefined)?.message || "").toLowerCase();
   return message.includes("already registered") || message.includes("already exists");
@@ -44,8 +50,34 @@ function isRlsError(error: unknown): boolean {
   return message.includes("row-level security") || message.includes("permission denied");
 }
 
+function isMissingInstitutionalFunctionColumn(error: unknown): boolean {
+  const code = String((error as { code?: string } | undefined)?.code ?? "");
+  const message = String((error as { message?: string } | undefined)?.message ?? "").toLowerCase();
+  return (code === "42703" || code === "PGRST204") && message.includes("funcao_institucional");
+}
+
+function withAuthTimeout<T>(
+  operation: PromiseLike<T>,
+  code: string,
+  message: string,
+  timeoutMs = DEFAULT_AUTH_TIMEOUT_MS,
+): Promise<T> {
+  let timeoutId: ReturnType<typeof setTimeout>;
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timeoutId = setTimeout(() => {
+      reject(new AuthFlowError(code, message));
+    }, timeoutMs);
+  });
+
+  return Promise.race([Promise.resolve(operation), timeoutPromise]).finally(() => clearTimeout(timeoutId));
+}
+
 export async function getSession() {
-  const { data, error } = await supabase.auth.getSession();
+  const { data, error } = await withAuthTimeout(
+    supabase.auth.getSession(),
+    "AUTH_SESSION_TIMEOUT",
+    "Tempo limite ao carregar sessão.",
+  );
   if (error) throw error;
   return data.session;
 }
@@ -58,7 +90,20 @@ export async function getCurrentProfile(): Promise<CurrentUserProfile | null> {
   const session = await getSession();
   if (!session?.user) return null;
 
-  const { data, error } = await supabase.from("profiles").select(PROFILE_SELECT).eq("id", session.user.id).maybeSingle();
+  let { data, error } = await withAuthTimeout(
+    supabase.from("profiles").select(PROFILE_SELECT).eq("id", session.user.id).maybeSingle(),
+    "PROFILE_FETCH_TIMEOUT",
+    "Tempo limite ao carregar perfil.",
+  );
+  if (error && isMissingInstitutionalFunctionColumn(error)) {
+    const legacyResult = await withAuthTimeout(
+      supabase.from("profiles").select(LEGACY_PROFILE_SELECT).eq("id", session.user.id).maybeSingle(),
+      "PROFILE_FETCH_TIMEOUT",
+      "Tempo limite ao carregar perfil.",
+    );
+    data = legacyResult.data ? { ...legacyResult.data, funcao_institucional: null } : null;
+    error = legacyResult.error;
+  }
   if (error) {
     if (isRlsError(error)) {
       throw new AuthFlowError("PROFILE_RLS_DENIED", "RLS/policy bloqueou a leitura do perfil.", error);
@@ -136,13 +181,15 @@ export async function signUpUser(payload: {
   email: string;
   login: string;
   telefone?: string;
+  funcaoInstitucional?: InstitutionalFunction | null;
   password: string;
   avatarFile?: File | null;
 }) {
-  const { nome, email, login, telefone, password, avatarFile } = payload;
+  const { nome, email, login, telefone, funcaoInstitucional, password, avatarFile } = payload;
   const cleanEmail = normalizeEmail(email);
   const cleanLogin = normalizeLogin(login);
   const cleanTelefone = normalizePhone(telefone);
+  const cleanFunction = normalizeInstitutionalFunction(funcaoInstitucional);
 
   if (!cleanLogin) throw new Error("LOGIN_REQUIRED");
 
@@ -159,7 +206,7 @@ export async function signUpUser(payload: {
     email: cleanEmail,
     password,
     options: {
-      data: { nome: nome.trim(), login: cleanLogin, telefone: cleanTelefone || null },
+      data: { nome: nome.trim(), login: cleanLogin, telefone: cleanTelefone || null, funcao_institucional: cleanFunction },
     },
   });
 

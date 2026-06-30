@@ -22,7 +22,7 @@ const accentColor = {
 export function Panel({ title, icon, action, accent = "muted", children, className = "" }: Props) {
   return (
     <div
-      className={`bg-card border border-border rounded-xl overflow-hidden ${className}`}
+      className={`flex flex-col bg-card border border-border rounded-xl overflow-hidden ${className}`}
       style={{ borderColor: `color-mix(in oklab, ${accentColor[accent]} 25%, var(--border))` }}
     >
       <div className="flex items-center justify-between px-5 py-3.5 border-b border-border">
@@ -37,7 +37,7 @@ export function Panel({ title, icon, action, accent = "muted", children, classNa
         </div>
         {action}
       </div>
-      <div className="p-5">{children}</div>
+      <div className="min-h-0 flex-1 p-5">{children}</div>
     </div>
   );
 }

@@ -4,12 +4,16 @@ export type UserRole = (typeof USER_ROLES)[number];
 export const AUTHORIZATION_STATUS = ["aguardando", "autorizado", "bloqueado"] as const;
 export type AuthorizationStatus = (typeof AUTHORIZATION_STATUS)[number];
 
+export const INSTITUTIONAL_FUNCTIONS = ["juiz", "delegado", "escrivao", "investigador", "agente_policia"] as const;
+export type InstitutionalFunction = (typeof INSTITUTIONAL_FUNCTIONS)[number];
+
 export interface UserProfile {
   id: string;
   nome: string;
   email: string;
   login: string;
   avatar_path: string | null;
+  funcao_institucional: InstitutionalFunction | null;
   cargo: UserRole;
   status_autorizacao: AuthorizationStatus;
   created_at: string;

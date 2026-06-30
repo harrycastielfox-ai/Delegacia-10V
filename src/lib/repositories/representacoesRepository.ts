@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabaseClient";
+import { runSupabaseQuery } from "@/lib/repositories/supabaseQuery";
 
 export type RepresentacaoRecord = {
   id: string;
@@ -39,45 +40,78 @@ export type RepresentacaoRecord = {
 
 export type RepresentacaoPayload = Partial<Omit<RepresentacaoRecord, "id" | "created_at" | "updated_at" | "deleted_at">>;
 
-export async function listRepresentacoes() {
-  const { data, error } = await supabase.from("representacoes").select("*").is("deleted_at", null).order("created_at", { ascending: false });
-  if (error) throw error;
-  return (data ?? []) as RepresentacaoRecord[];
+const LIST_CACHE_TTL_MS = 10000;
+
+let representacoesCache: { data: RepresentacaoRecord[]; fetchedAt: number } | null = null;
+let representacoesPending: Promise<RepresentacaoRecord[]> | null = null;
+
+function invalidateRepresentacoesCache() {
+  representacoesCache = null;
+}
+
+export async function listRepresentacoes(options: { forceRefresh?: boolean } = {}) {
+  const now = Date.now();
+  if (!options.forceRefresh && representacoesCache && now - representacoesCache.fetchedAt < LIST_CACHE_TTL_MS) {
+    return representacoesCache.data;
+  }
+
+  if (!options.forceRefresh && representacoesPending) {
+    return representacoesPending;
+  }
+
+  representacoesPending = runSupabaseQuery<RepresentacaoRecord[]>(
+    "representações",
+    (signal) =>
+      supabase
+        .from("representacoes")
+        .select("*")
+        .is("deleted_at", null)
+        .order("created_at", { ascending: false })
+        .abortSignal(signal),
+  )
+    .then((data) => {
+      const rows = (data ?? []) as RepresentacaoRecord[];
+      representacoesCache = { data: rows, fetchedAt: Date.now() };
+      return rows;
+    })
+    .finally(() => {
+      representacoesPending = null;
+    });
+
+  return representacoesPending;
 }
 
 export async function getRepresentacaoById(id: string) {
-  const { data, error } = await supabase.from("representacoes").select("*").eq("id", id).is("deleted_at", null).maybeSingle();
-  if (error) throw error;
+  const data = await runSupabaseQuery<RepresentacaoRecord | null>(
+    "representação",
+    (signal) => supabase.from("representacoes").select("*").eq("id", id).is("deleted_at", null).maybeSingle().abortSignal(signal),
+  );
   return data as RepresentacaoRecord | null;
 }
 
 export async function createRepresentacao(payload: RepresentacaoPayload) {
-  const { data, error } = await supabase.from("representacoes").insert(payload).select("*").single();
-  if (error) throw error;
+  const data = await runSupabaseQuery<RepresentacaoRecord>(
+    "criação de representação",
+    (signal) => supabase.from("representacoes").insert(payload).select("*").single().abortSignal(signal),
+  );
+  invalidateRepresentacoesCache();
   return data as RepresentacaoRecord;
 }
 
 export async function updateRepresentacao(id: string, payload: RepresentacaoPayload) {
-  const { data, error } = await supabase.from("representacoes").update(payload).eq("id", id).is("deleted_at", null).select("*").maybeSingle();
+  const data = await runSupabaseQuery<RepresentacaoRecord | null>(
+    "atualização de representação",
+    (signal) => supabase.from("representacoes").update(payload).eq("id", id).is("deleted_at", null).select("*").maybeSingle().abortSignal(signal),
+  );
 
   if (import.meta.env.DEV) {
     console.debug("[representacoes:update] request", {
       id,
       payloadKeys: Object.keys(payload),
-      error: error
-        ? {
-            message: error.message,
-            code: error.code,
-            details: error.details,
-            hint: error.hint,
-            status: error.status,
-          }
-        : null,
       rowReturned: Boolean(data),
     });
   }
 
-  if (error) throw error;
   if (!data) {
     throw {
       code: "REPRESENTACAO_UPDATE_EMPTY",
@@ -86,10 +120,14 @@ export async function updateRepresentacao(id: string, payload: RepresentacaoPayl
       status: 406,
     };
   }
+  invalidateRepresentacoesCache();
   return data as RepresentacaoRecord;
 }
 
 export async function softDeleteRepresentacao(id: string) {
-  const { error } = await supabase.from("representacoes").update({ deleted_at: new Date().toISOString() }).eq("id", id).is("deleted_at", null);
-  if (error) throw error;
+  await runSupabaseQuery<null>(
+    "exclusão de representação",
+    (signal) => supabase.from("representacoes").update({ deleted_at: new Date().toISOString() }).eq("id", id).is("deleted_at", null).abortSignal(signal),
+  );
+  invalidateRepresentacoesCache();
 }

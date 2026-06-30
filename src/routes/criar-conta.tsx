@@ -1,15 +1,23 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useRef, useState, type DragEvent, type FormEvent } from "react";
-import { AlertCircle, Camera, Lock, Mail, Phone, ShieldCheck, Upload, User, UserRound } from "lucide-react";
+import { AlertCircle, BriefcaseBusiness, Camera, Lock, Mail, Phone, ShieldCheck, Upload, User, UserRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { signUpUser } from "@/lib/auth";
+import type { InstitutionalFunction } from "@/lib/authz";
 
 const MAX_AVATAR_MB = 2;
 const MAX_AVATAR_BYTES = MAX_AVATAR_MB * 1024 * 1024;
 const MAX_PHONE_DIGITS = 11;
 const POST_SIGNUP_LOGIN_KEY = "sipi:post-signup-login";
+const INSTITUTIONAL_FUNCTION_OPTIONS: Array<{ value: InstitutionalFunction; label: string }> = [
+  { value: "juiz", label: "Juiz(a)" },
+  { value: "delegado", label: "Delegado(a)" },
+  { value: "escrivao", label: "Escrivão(ã)" },
+  { value: "investigador", label: "Investigador(a)" },
+  { value: "agente_policia", label: "Agente de Polícia" },
+];
 
 export const Route = createFileRoute("/criar-conta")({ component: CreateAccountPage });
 
@@ -17,6 +25,7 @@ function CreateAccountPage() {
   const navigate = useNavigate();
   const [nome, setNome] = useState("");
   const [telefone, setTelefone] = useState("");
+  const [funcaoInstitucional, setFuncaoInstitucional] = useState<InstitutionalFunction | "">("");
   const [email, setEmail] = useState("");
   const [login, setLogin] = useState("");
   const [senha, setSenha] = useState("");
@@ -49,11 +58,23 @@ function CreateAccountPage() {
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
+    if (!funcaoInstitucional) {
+      setError("Selecione sua função institucional.");
+      return;
+    }
     setLoading(true);
     try {
       const cleanLogin = login.trim().toLowerCase();
       setLogin(cleanLogin);
-      const result = await signUpUser({ nome, email, login: cleanLogin, telefone, password: senha, avatarFile });
+      const result = await signUpUser({
+        nome,
+        email,
+        login: cleanLogin,
+        telefone,
+        funcaoInstitucional,
+        password: senha,
+        avatarFile,
+      });
       const message = result.avatarUploadWarning
         ? result.avatarUploadWarningReason === "NO_ACTIVE_SESSION"
           ? "Conta criada com sucesso. Aguarde autorização de um administrador para acessar o SIPI. A foto não foi salva agora porque não houve sessão ativa após o cadastro; você poderá adicionar a foto depois no perfil."
@@ -119,6 +140,7 @@ function CreateAccountPage() {
           <section className="space-y-4">
             <SectionHeader icon={UserRound} label="Identificação" />
             <Field label="Nome completo" value={nome} onChange={setNome} icon={UserRound} autoComplete="name" />
+            <InstitutionalFunctionSelect value={funcaoInstitucional} onChange={setFuncaoInstitucional} />
             <Field
               label="Telefone institucional (opcional)"
               value={formatPhone(telefone)}
@@ -204,6 +226,44 @@ function SectionHeader({ icon: Icon, label }: { icon: typeof ShieldCheck; label:
         <Icon className="h-4 w-4" aria-hidden="true" />
       </div>
       <p className="text-[11px] font-black uppercase tracking-[0.18em] text-muted-foreground">{label}</p>
+    </div>
+  );
+}
+
+function InstitutionalFunctionSelect({
+  value,
+  onChange,
+}: {
+  value: InstitutionalFunction | "";
+  onChange: (value: InstitutionalFunction | "") => void;
+}) {
+  return (
+    <div className="space-y-1.5">
+      <Label>Função institucional</Label>
+      <div className="relative">
+        <BriefcaseBusiness
+          className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+          aria-hidden="true"
+        />
+        <select
+          value={value}
+          onChange={(event) => onChange(event.target.value as InstitutionalFunction | "")}
+          required
+          className="h-11 w-full rounded-md border border-border bg-background/60 pl-9 pr-3 text-sm font-medium text-foreground shadow-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/30"
+        >
+          <option value="" disabled>
+            Selecione sua função
+          </option>
+          {INSTITUTIONAL_FUNCTION_OPTIONS.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+      </div>
+      <p className="text-xs text-muted-foreground">
+        Usada para identificação operacional. Admin ou Delegado pode ajustar depois no perfil administrativo.
+      </p>
     </div>
   );
 }

@@ -119,7 +119,7 @@ function AlertasModulo() {
             {detailedAlerts.length === 0 ? (
               <div className="rounded-lg border border-border bg-background/30 p-5 text-center text-sm text-muted-foreground">Nenhum alerta encontrado neste módulo.</div>
             ) : (
-              <div className="space-y-2">
+              <div className="relative space-y-2 before:absolute before:-left-[0.45rem] before:bottom-4 before:top-4 before:w-px before:bg-gradient-to-b before:from-transparent before:via-emerald-400/25 before:to-transparent">
                 {detailedAlerts.map((a) => {
                   const hasEntityId = Boolean(a.entityId);
                   const canOpenInquerito = Boolean(profile);
@@ -127,7 +127,7 @@ function AlertasModulo() {
                   const isSigilosaAlert = selectedModule === "sigilosas" && a.entityType === "representacao";
                   const canOpenByPermission = a.entityType === "inquerito" ? canOpenInquerito : canOpenRepresentacao && (!isSigilosaAlert || canOpenSigilosas);
                   const isOpenable = hasEntityId && canOpenByPermission;
-                  const cardClassName = `block rounded-lg border bg-background/40 p-3 transition-all duration-200 ${
+                  const cardClassName = `relative ml-3 block rounded-lg border bg-background/40 p-3 transition-all duration-200 before:absolute before:-left-[0.93rem] before:top-1/2 before:h-1.5 before:w-1.5 before:-translate-y-1/2 before:rounded-full before:bg-emerald-400 before:shadow-[0_0_10px_rgba(52,211,153,0.9),0_0_22px_rgba(52,211,153,0.38)] before:content-[''] ${
                     isOpenable
                       ? "cursor-pointer border-border hover:border-emerald-500/60 hover:bg-emerald-500/10 hover:shadow-[0_0_0_1px_rgba(16,185,129,0.2),0_0_20px_rgba(16,185,129,0.08)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40"
                       : "border-border"

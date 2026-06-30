@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabaseClient";
+import { runSupabaseQuery } from "@/lib/repositories/supabaseQuery";
 
 export type InqueritoRecord = {
   id: string;
@@ -45,34 +46,79 @@ export type InqueritoRecord = {
 
 export type InqueritoPayload = Partial<Omit<InqueritoRecord, "id" | "created_at" | "updated_at" | "deleted_at">>;
 
-export async function listInqueritos() {
-  const { data, error } = await supabase.from("inqueritos").select("*").is("deleted_at", null).order("created_at", { ascending: false });
-  if (error) throw error;
-  return (data ?? []) as InqueritoRecord[];
+const LIST_CACHE_TTL_MS = 10000;
+
+let inqueritosCache: { data: InqueritoRecord[]; fetchedAt: number } | null = null;
+let inqueritosPending: Promise<InqueritoRecord[]> | null = null;
+
+function invalidateInqueritosCache() {
+  inqueritosCache = null;
+}
+
+export async function listInqueritos(options: { forceRefresh?: boolean } = {}) {
+  const now = Date.now();
+  if (!options.forceRefresh && inqueritosCache && now - inqueritosCache.fetchedAt < LIST_CACHE_TTL_MS) {
+    return inqueritosCache.data;
+  }
+
+  if (!options.forceRefresh && inqueritosPending) {
+    return inqueritosPending;
+  }
+
+  inqueritosPending = runSupabaseQuery<InqueritoRecord[]>(
+    "inquéritos",
+    (signal) =>
+      supabase
+        .from("inqueritos")
+        .select("*")
+        .is("deleted_at", null)
+        .order("created_at", { ascending: false })
+        .abortSignal(signal),
+  )
+    .then((data) => {
+      const rows = (data ?? []) as InqueritoRecord[];
+      inqueritosCache = { data: rows, fetchedAt: Date.now() };
+      return rows;
+    })
+    .finally(() => {
+      inqueritosPending = null;
+    });
+
+  return inqueritosPending;
 }
 
 export async function getInqueritoById(id: string) {
-  const { data, error } = await supabase.from("inqueritos").select("*").eq("id", id).is("deleted_at", null).maybeSingle();
-  if (error) throw error;
+  const data = await runSupabaseQuery<InqueritoRecord | null>(
+    "inquérito",
+    (signal) => supabase.from("inqueritos").select("*").eq("id", id).is("deleted_at", null).maybeSingle().abortSignal(signal),
+  );
   return data as InqueritoRecord | null;
 }
 
 export async function createInquerito(payload: InqueritoPayload) {
-  const { data, error } = await supabase.from("inqueritos").insert(payload).select("*").single();
-  if (error) throw error;
+  const data = await runSupabaseQuery<InqueritoRecord>(
+    "criação de inquérito",
+    (signal) => supabase.from("inqueritos").insert(payload).select("*").single().abortSignal(signal),
+  );
+  invalidateInqueritosCache();
   return data as InqueritoRecord;
 }
 
 export async function updateInquerito(id: string, payload: InqueritoPayload) {
-  const { data, error } = await supabase.from("inqueritos").update(payload).eq("id", id).is("deleted_at", null).select("*").single();
-  if (error) throw error;
+  const data = await runSupabaseQuery<InqueritoRecord>(
+    "atualização de inquérito",
+    (signal) => supabase.from("inqueritos").update(payload).eq("id", id).is("deleted_at", null).select("*").single().abortSignal(signal),
+  );
+  invalidateInqueritosCache();
   return data as InqueritoRecord;
 }
 
 export async function softDeleteInquerito(id: string) {
   const deletedAt = new Date().toISOString();
-  const { error } = await supabase.from("inqueritos").update({ deleted_at: deletedAt }).eq("id", id).is("deleted_at", null);
-
-  if (error) throw error;
+  await runSupabaseQuery<null>(
+    "exclusão de inquérito",
+    (signal) => supabase.from("inqueritos").update({ deleted_at: deletedAt }).eq("id", id).is("deleted_at", null).abortSignal(signal),
+  );
+  invalidateInqueritosCache();
   return true;
 }

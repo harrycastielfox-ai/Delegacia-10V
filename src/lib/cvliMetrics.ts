@@ -1,4 +1,5 @@
 import { normalizeCaseCategory } from "@/lib/inqueritosPriority";
+import { isYesLike } from "@/lib/operationalMetrics";
 import type { InqueritoRecord } from "@/lib/repositories/inqueritosRepository";
 
 export const CVLI_MONTHS = [
@@ -48,15 +49,6 @@ function parseValidDate(value: unknown) {
   return Number.isNaN(date.getTime()) ? null : date;
 }
 
-function isYesLike(value: unknown) {
-  return ["TRUE", "T", "1", "SIM", "S", "YES", "Y"].includes(normalizeText(value));
-}
-
-function includesStatus(value: unknown, terms: string[]) {
-  const normalized = normalizeText(value);
-  return terms.some((term) => normalized.includes(normalizeText(term)));
-}
-
 function pickRecordText(record: InqueritoRecord, ...keys: string[]) {
   const source = record as unknown as Record<string, unknown>;
   return keys
@@ -100,12 +92,7 @@ export function getCvliReferenceDate(record: InqueritoRecord) {
 }
 
 export function isCvliElucidado(record: InqueritoRecord) {
-  return (
-    isYesLike(record.elucidado) ||
-    isYesLike(record.relatorio_enviado) ||
-    Boolean(parseValidDate(record.data_envio_relatorio)) ||
-    includesStatus(record.situacao, ["elucid", "conclu"])
-  );
+  return isYesLike(record.elucidado);
 }
 
 function calculateRate(registros: number, elucidados: number) {

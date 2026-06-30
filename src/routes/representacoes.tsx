@@ -141,11 +141,11 @@ function Representacoes() {
         if (tipoFilter === TIPO_FILTER_MEDIDA_PROTETIVA && !normalizeText(r.tipo).includes("protetiv")) return false;
         if (!["todos", TIPO_FILTER_NAO_INFORMADO, TIPO_FILTER_MEDIDA_PROTETIVA].includes(tipoFilter) && normalizeText(r.tipo) !== normalizeText(tipoFilter)) return false;
 
-        const recordDate = parseDateUtc(r.data_representacao);
+        const recordDate = parseDateUtc(r.data_representacao) ?? parseDateUtc(r.created_at) ?? parseDateUtc(r.data_envio_judiciario);
         if (startDate !== null && (recordDate === null || recordDate < startDate)) return false;
         if (endDate !== null && (recordDate === null || recordDate > endDate)) return false;
 
-        if (operationalFilter === "pendentes" && state.isCumprida) return false;
+        if (operationalFilter === "pendentes" && !state.pendingJudicial) return false;
         if (operationalFilter === "deferidas" && !(normalizeText(r.status).includes("defer") && !normalizeText(r.status).includes("indefer"))) return false;
         if (operationalFilter === "indeferidas" && !normalizeText(r.status).includes("indefer")) return false;
         if (operationalFilter === "cumpridas" && !state.isCumprida) return false;
