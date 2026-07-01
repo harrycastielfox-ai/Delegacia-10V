@@ -66,7 +66,10 @@ export async function runSupabaseQuery<T>(
 
   for (let attempt = 0; attempt <= retries; attempt += 1) {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(buildTimeoutError(label, timeoutMs)), timeoutMs);
+    const timeoutId = setTimeout(
+      () => controller.abort(buildTimeoutError(label, timeoutMs)),
+      timeoutMs,
+    );
 
     try {
       const { data, error } = await execute(controller.signal);
@@ -80,7 +83,10 @@ export async function runSupabaseQuery<T>(
       }
 
       if (import.meta.env.DEV) {
-        console.warn(`[supabase:${label}] tentativa ${attempt + 1} falhou; tentando novamente`, lastError);
+        console.warn(
+          `[supabase:${label}] tentativa ${attempt + 1} falhou; tentando novamente`,
+          lastError,
+        );
       }
 
       await delay(DEFAULT_RETRY_DELAY_MS);

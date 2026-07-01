@@ -1,6 +1,17 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useRef, useState, type DragEvent, type FormEvent } from "react";
-import { AlertCircle, BriefcaseBusiness, Camera, Lock, Mail, Phone, ShieldCheck, Upload, User, UserRound } from "lucide-react";
+import {
+  AlertCircle,
+  BriefcaseBusiness,
+  Camera,
+  Lock,
+  Mail,
+  Phone,
+  ShieldCheck,
+  Upload,
+  User,
+  UserRound,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -81,17 +92,27 @@ function CreateAccountPage() {
           : "Conta criada com sucesso. Aguarde autorização de um administrador para acessar o SIPI. Não foi possível salvar a foto de perfil neste momento; você poderá adicionar a foto depois no perfil."
         : "Conta criada com sucesso. Aguarde autorização de um administrador para acessar o SIPI.";
 
-      sessionStorage.setItem(POST_SIGNUP_LOGIN_KEY, JSON.stringify({ login: cleanLogin, password: senha, message }));
+      sessionStorage.setItem(
+        POST_SIGNUP_LOGIN_KEY,
+        JSON.stringify({ login: cleanLogin, password: senha, message }),
+      );
       navigate({ to: "/login", replace: true });
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const errorMessage = String((err as { message?: string }).message ?? "");
       console.error("[CreateAccountPage] Erro ao criar conta", err);
-      if (err?.message === "LOGIN_ALREADY_EXISTS") setError("Este login já está em uso.");
-      else if (err?.message === "EMAIL_ALREADY_EXISTS") setError("Este e-mail já está em uso.");
-      else if (err?.message === "LOGIN_REQUIRED") setError("Informe um login válido.");
-      else if (err?.message === "AVATAR_INVALID_TYPE") setError("A foto precisa ser um arquivo de imagem válido.");
-      else if (err?.message === "AVATAR_TOO_LARGE") setError(`A foto deve ter no máximo ${MAX_AVATAR_MB}MB.`);
-      else if ((err?.message || "").toLowerCase().includes("already registered")) setError("Este e-mail já está em uso.");
-      else if ((err?.message || "").toLowerCase().includes("database error saving new user")) setError("Não foi possível concluir o cadastro. Verifique se login/e-mail já existem ou se o trigger de perfil está configurado.");
+      if (errorMessage === "LOGIN_ALREADY_EXISTS") setError("Este login já está em uso.");
+      else if (errorMessage === "EMAIL_ALREADY_EXISTS") setError("Este e-mail já está em uso.");
+      else if (errorMessage === "LOGIN_REQUIRED") setError("Informe um login válido.");
+      else if (errorMessage === "AVATAR_INVALID_TYPE")
+        setError("A foto precisa ser um arquivo de imagem válido.");
+      else if (errorMessage === "AVATAR_TOO_LARGE")
+        setError(`A foto deve ter no máximo ${MAX_AVATAR_MB}MB.`);
+      else if ((errorMessage || "").toLowerCase().includes("already registered"))
+        setError("Este e-mail já está em uso.");
+      else if ((errorMessage || "").toLowerCase().includes("database error saving new user"))
+        setError(
+          "Não foi possível concluir o cadastro. Verifique se login/e-mail já existem ou se o trigger de perfil está configurado.",
+        );
       else setError("Não foi possível criar a conta. Tente novamente em instantes.");
     } finally {
       setLoading(false);
@@ -103,10 +124,17 @@ function CreateAccountPage() {
       <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(145deg,rgba(34,197,94,0.08),transparent_34%,rgba(255,255,255,0.025)_68%,transparent)]" />
       <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/35 to-transparent" />
 
-      <form onSubmit={handleSubmit} className="relative w-full max-w-2xl overflow-hidden rounded-2xl border border-border bg-card/90 shadow-2xl shadow-black/35">
+      <form
+        onSubmit={handleSubmit}
+        className="relative w-full max-w-2xl overflow-hidden rounded-2xl border border-border bg-card/90 shadow-2xl shadow-black/35"
+      >
         <header className="border-b border-border bg-gradient-to-b from-primary/8 to-transparent px-6 pb-5 pt-6 text-center sm:px-8">
           <div className="mx-auto mb-3 flex h-[86px] w-[86px] items-center justify-center overflow-hidden rounded-xl border border-primary/25 bg-primary/10 p-2 shadow-[0_0_16px_rgba(34,197,94,0.16)]">
-            <img src="/sipi-logo.png" alt="Logo SIPI" className="h-[96px] w-[96px] max-w-none scale-[1.28] object-contain" />
+            <img
+              src="/sipi-logo.png"
+              alt="Logo SIPI"
+              className="h-[96px] w-[96px] max-w-none scale-[1.28] object-contain"
+            />
           </div>
           <div className="mb-2 flex items-center justify-center gap-2 text-[10px] font-bold uppercase tracking-[0.24em] text-primary/80">
             <span className="h-px w-8 bg-primary/35" />
@@ -121,7 +149,14 @@ function CreateAccountPage() {
           <section className="space-y-4">
             <SectionHeader icon={ShieldCheck} label="Dados de acesso" />
             <div className="grid gap-4 sm:grid-cols-2">
-              <Field label="E-mail" value={email} onChange={setEmail} type="email" icon={Mail} autoComplete="email" />
+              <Field
+                label="E-mail"
+                value={email}
+                onChange={setEmail}
+                type="email"
+                icon={Mail}
+                autoComplete="email"
+              />
               <Field
                 label="Login"
                 value={login}
@@ -132,15 +167,31 @@ function CreateAccountPage() {
                 helper="Será utilizado para acessar o sistema."
               />
               <div className="sm:col-span-2">
-                <Field label="Senha" value={senha} onChange={setSenha} type="password" icon={Lock} autoComplete="new-password" />
+                <Field
+                  label="Senha"
+                  value={senha}
+                  onChange={setSenha}
+                  type="password"
+                  icon={Lock}
+                  autoComplete="new-password"
+                />
               </div>
             </div>
           </section>
 
           <section className="space-y-4">
             <SectionHeader icon={UserRound} label="Identificação" />
-            <Field label="Nome completo" value={nome} onChange={setNome} icon={UserRound} autoComplete="name" />
-            <InstitutionalFunctionSelect value={funcaoInstitucional} onChange={setFuncaoInstitucional} />
+            <Field
+              label="Nome completo"
+              value={nome}
+              onChange={setNome}
+              icon={UserRound}
+              autoComplete="name"
+            />
+            <InstitutionalFunctionSelect
+              value={funcaoInstitucional}
+              onChange={setFuncaoInstitucional}
+            />
             <Field
               label="Telefone institucional (opcional)"
               value={formatPhone(telefone)}
@@ -162,7 +213,11 @@ function CreateAccountPage() {
               >
                 <div className="relative mx-auto h-20 w-20 shrink-0 overflow-hidden rounded-full border border-primary/35 bg-primary/10 shadow-[0_12px_28px_rgba(0,0,0,0.22)] sm:mx-0">
                   {avatarPreview ? (
-                    <img src={avatarPreview} alt="Pré-visualização do avatar" className="h-full w-full object-cover" />
+                    <img
+                      src={avatarPreview}
+                      alt="Pré-visualização do avatar"
+                      className="h-full w-full object-cover"
+                    />
                   ) : (
                     <div className="flex h-full w-full items-center justify-center text-primary">
                       <Camera className="h-7 w-7" aria-hidden="true" />
@@ -172,8 +227,15 @@ function CreateAccountPage() {
 
                 <div className="min-w-0 flex-1 space-y-2 text-center sm:text-left">
                   <div className="space-y-1">
-                    <p className="truncate text-sm font-semibold text-foreground" title={avatarFile?.name}>{avatarFile ? avatarFile.name : "Adicionar foto institucional"}</p>
-                    <p className="text-xs text-muted-foreground">Opcional. Pode ser alterada depois. Imagem até {MAX_AVATAR_MB}MB.</p>
+                    <p
+                      className="truncate text-sm font-semibold text-foreground"
+                      title={avatarFile?.name}
+                    >
+                      {avatarFile ? avatarFile.name : "Adicionar foto institucional"}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Opcional. Pode ser alterada depois. Imagem até {MAX_AVATAR_MB}MB.
+                    </p>
                   </div>
                   <button
                     type="button"
@@ -206,11 +268,17 @@ function CreateAccountPage() {
             </div>
           ) : null}
           <div className="space-y-3">
-            <Button className="h-11 w-full bg-primary text-xs font-bold uppercase tracking-[0.16em] text-primary-foreground hover:bg-primary/90" disabled={loading}>
+            <Button
+              className="h-11 w-full bg-primary text-xs font-bold uppercase tracking-[0.16em] text-primary-foreground hover:bg-primary/90"
+              disabled={loading}
+            >
               {loading ? "Criando..." : "Criar conta"}
             </Button>
             <p className="text-center text-xs text-muted-foreground">
-              Já possui acesso? <Link to="/login" className="font-semibold text-primary underline underline-offset-4">Voltar para login</Link>
+              Já possui acesso?{" "}
+              <Link to="/login" className="font-semibold text-primary underline underline-offset-4">
+                Voltar para login
+              </Link>
             </p>
           </div>
         </div>
@@ -225,7 +293,9 @@ function SectionHeader({ icon: Icon, label }: { icon: typeof ShieldCheck; label:
       <div className="rounded-lg border border-primary/25 bg-primary/10 p-1.5 text-primary">
         <Icon className="h-4 w-4" aria-hidden="true" />
       </div>
-      <p className="text-[11px] font-black uppercase tracking-[0.18em] text-muted-foreground">{label}</p>
+      <p className="text-[11px] font-black uppercase tracking-[0.18em] text-muted-foreground">
+        {label}
+      </p>
     </div>
   );
 }
@@ -262,7 +332,8 @@ function InstitutionalFunctionSelect({
         </select>
       </div>
       <p className="text-xs text-muted-foreground">
-        Usada para identificação operacional. Admin ou Delegado pode ajustar depois no perfil administrativo.
+        Usada para identificação operacional. Admin ou Delegado pode ajustar depois no perfil
+        administrativo.
       </p>
     </div>
   );
@@ -295,7 +366,12 @@ function Field({
     <div className="space-y-1.5">
       <Label>{label}</Label>
       <div className="relative">
-        {Icon ? <Icon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" /> : null}
+        {Icon ? (
+          <Icon
+            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+            aria-hidden="true"
+          />
+        ) : null}
         <Input
           value={value}
           onChange={(e) => onChange(e.target.value)}
@@ -304,7 +380,11 @@ function Field({
           required={required}
           autoComplete={autoComplete}
           inputMode={inputMode}
-          className={Icon ? "h-11 border-border bg-background/60 pl-9 focus-visible:ring-primary" : "h-11 border-border bg-background/60 focus-visible:ring-primary"}
+          className={
+            Icon
+              ? "h-11 border-border bg-background/60 pl-9 focus-visible:ring-primary"
+              : "h-11 border-border bg-background/60 focus-visible:ring-primary"
+          }
         />
       </div>
       {helper ? <p className="text-xs text-muted-foreground">{helper}</p> : null}

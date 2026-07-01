@@ -1,7 +1,12 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
 import { AppLayout } from "@/components/AppLayout";
-import { getCurrentProfile, getProfileAvatarPublicUrl, updateOwnAvatar, updateOwnPhone } from "@/lib/auth";
+import {
+  getCurrentProfile,
+  getProfileAvatarPublicUrl,
+  updateOwnAvatar,
+  updateOwnPhone,
+} from "@/lib/auth";
 
 export const Route = createFileRoute("/perfil")({
   head: () => ({
@@ -39,12 +44,17 @@ function PerfilPage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isSavingAvatar, setIsSavingAvatar] = useState(false);
-  const [feedback, setFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
+  const [feedback, setFeedback] = useState<{ type: "success" | "error"; message: string } | null>(
+    null,
+  );
   const [phoneDigits, setPhoneDigits] = useState(getPhoneDigits(profile?.telefone ?? ""));
   const [phoneDraft, setPhoneDraft] = useState(getPhoneDigits(profile?.telefone ?? ""));
   const [isEditingPhone, setIsEditingPhone] = useState(false);
   const [isSavingPhone, setIsSavingPhone] = useState(false);
-  const [phoneFeedback, setPhoneFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
+  const [phoneFeedback, setPhoneFeedback] = useState<{
+    type: "success" | "error";
+    message: string;
+  } | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -179,7 +189,9 @@ function PerfilPage() {
       if (!profile) throw new Error("PROFILE_NOT_FOUND");
       const newAvatarPath = await updateOwnAvatar(profile.id, selectedFile);
       setAvatarPath(newAvatarPath);
-      window.dispatchEvent(new CustomEvent("profile-avatar-updated", { detail: { avatarPath: newAvatarPath } }));
+      window.dispatchEvent(
+        new CustomEvent("profile-avatar-updated", { detail: { avatarPath: newAvatarPath } }),
+      );
       resetPendingAvatar();
       setFeedback({ type: "success", message: "Foto de perfil atualizada com sucesso." });
     } catch (error) {
@@ -198,8 +210,6 @@ function PerfilPage() {
       setIsSavingAvatar(false);
     }
   };
-
-
 
   if (profileMissing) {
     return (
@@ -227,7 +237,9 @@ function PerfilPage() {
       <div className="mx-auto w-full max-w-4xl space-y-5">
         <div className="rounded-xl border border-primary/30 bg-card/80 p-5">
           <h1 className="text-xl font-bold tracking-wide text-foreground">Meu Perfil</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Dados institucionais da sua conta no SIPI.</p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Dados institucionais da sua conta no SIPI.
+          </p>
         </div>
 
         <div className="rounded-xl border border-primary/25 bg-card/70 p-6">
@@ -239,9 +251,15 @@ function PerfilPage() {
               aria-label="Alterar foto de perfil"
             >
               {avatarUrl ? (
-                <img src={avatarUrl} alt={`Avatar de ${profile.nome}`} className="h-full w-full object-cover" />
+                <img
+                  src={avatarUrl}
+                  alt={`Avatar de ${profile.nome}`}
+                  className="h-full w-full object-cover"
+                />
               ) : (
-                <div className="flex h-full w-full items-center justify-center bg-primary/15 text-2xl font-bold text-primary">{initial}</div>
+                <div className="flex h-full w-full items-center justify-center bg-primary/15 text-2xl font-bold text-primary">
+                  {initial}
+                </div>
               )}
               <span className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/0 text-[11px] font-medium text-white/0 transition group-hover:bg-black/30 group-hover:text-white/95 group-focus-visible:bg-black/30 group-focus-visible:text-white/95">
                 Alterar foto
@@ -291,7 +309,9 @@ function PerfilPage() {
               ) : null}
 
               {feedback ? (
-                <p className={`text-xs ${feedback.type === "success" ? "text-emerald-400" : "text-rose-400"}`}>
+                <p
+                  className={`text-xs ${feedback.type === "success" ? "text-emerald-400" : "text-rose-400"}`}
+                >
                   {feedback.message}
                 </p>
               ) : null}
@@ -324,7 +344,9 @@ function PerfilPage() {
 function InfoCard({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-xl border border-primary/20 bg-card/60 p-4">
-      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">{label}</p>
+      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+        {label}
+      </p>
       <p className="mt-2 text-sm font-medium text-foreground break-words">{value}</p>
     </div>
   );
@@ -355,8 +377,12 @@ function PhoneInfoCard({
     <div className="rounded-xl border border-primary/20 bg-card/60 p-4">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Telefone institucional</p>
-          {!editing ? <p className="mt-2 text-sm font-medium text-foreground break-words">{value}</p> : null}
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+            Telefone institucional
+          </p>
+          {!editing ? (
+            <p className="mt-2 text-sm font-medium text-foreground break-words">{value}</p>
+          ) : null}
         </div>
         {!editing ? (
           <button
@@ -401,7 +427,9 @@ function PhoneInfoCard({
       ) : null}
 
       {feedback ? (
-        <p className={`mt-3 text-xs ${feedback.type === "success" ? "text-emerald-400" : "text-rose-400"}`}>
+        <p
+          className={`mt-3 text-xs ${feedback.type === "success" ? "text-emerald-400" : "text-rose-400"}`}
+        >
           {feedback.message}
         </p>
       ) : null}

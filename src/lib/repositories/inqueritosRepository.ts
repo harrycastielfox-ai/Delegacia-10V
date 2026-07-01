@@ -44,7 +44,9 @@ export type InqueritoRecord = {
   deleted_at: string | null;
 };
 
-export type InqueritoPayload = Partial<Omit<InqueritoRecord, "id" | "created_at" | "updated_at" | "deleted_at">>;
+export type InqueritoPayload = Partial<
+  Omit<InqueritoRecord, "id" | "created_at" | "updated_at" | "deleted_at">
+>;
 
 const LIST_CACHE_TTL_MS = 10000;
 
@@ -57,7 +59,11 @@ function invalidateInqueritosCache() {
 
 export async function listInqueritos(options: { forceRefresh?: boolean } = {}) {
   const now = Date.now();
-  if (!options.forceRefresh && inqueritosCache && now - inqueritosCache.fetchedAt < LIST_CACHE_TTL_MS) {
+  if (
+    !options.forceRefresh &&
+    inqueritosCache &&
+    now - inqueritosCache.fetchedAt < LIST_CACHE_TTL_MS
+  ) {
     return inqueritosCache.data;
   }
 
@@ -65,15 +71,13 @@ export async function listInqueritos(options: { forceRefresh?: boolean } = {}) {
     return inqueritosPending;
   }
 
-  inqueritosPending = runSupabaseQuery<InqueritoRecord[]>(
-    "inquéritos",
-    (signal) =>
-      supabase
-        .from("inqueritos")
-        .select("*")
-        .is("deleted_at", null)
-        .order("created_at", { ascending: false })
-        .abortSignal(signal),
+  inqueritosPending = runSupabaseQuery<InqueritoRecord[]>("inquéritos", (signal) =>
+    supabase
+      .from("inqueritos")
+      .select("*")
+      .is("deleted_at", null)
+      .order("created_at", { ascending: false })
+      .abortSignal(signal),
   )
     .then((data) => {
       const rows = (data ?? []) as InqueritoRecord[];
@@ -88,26 +92,36 @@ export async function listInqueritos(options: { forceRefresh?: boolean } = {}) {
 }
 
 export async function getInqueritoById(id: string) {
-  const data = await runSupabaseQuery<InqueritoRecord | null>(
-    "inquérito",
-    (signal) => supabase.from("inqueritos").select("*").eq("id", id).is("deleted_at", null).maybeSingle().abortSignal(signal),
+  const data = await runSupabaseQuery<InqueritoRecord | null>("inquérito", (signal) =>
+    supabase
+      .from("inqueritos")
+      .select("*")
+      .eq("id", id)
+      .is("deleted_at", null)
+      .maybeSingle()
+      .abortSignal(signal),
   );
   return data as InqueritoRecord | null;
 }
 
 export async function createInquerito(payload: InqueritoPayload) {
-  const data = await runSupabaseQuery<InqueritoRecord>(
-    "criação de inquérito",
-    (signal) => supabase.from("inqueritos").insert(payload).select("*").single().abortSignal(signal),
+  const data = await runSupabaseQuery<InqueritoRecord>("criação de inquérito", (signal) =>
+    supabase.from("inqueritos").insert(payload).select("*").single().abortSignal(signal),
   );
   invalidateInqueritosCache();
   return data as InqueritoRecord;
 }
 
 export async function updateInquerito(id: string, payload: InqueritoPayload) {
-  const data = await runSupabaseQuery<InqueritoRecord>(
-    "atualização de inquérito",
-    (signal) => supabase.from("inqueritos").update(payload).eq("id", id).is("deleted_at", null).select("*").single().abortSignal(signal),
+  const data = await runSupabaseQuery<InqueritoRecord>("atualização de inquérito", (signal) =>
+    supabase
+      .from("inqueritos")
+      .update(payload)
+      .eq("id", id)
+      .is("deleted_at", null)
+      .select("*")
+      .single()
+      .abortSignal(signal),
   );
   invalidateInqueritosCache();
   return data as InqueritoRecord;
@@ -115,9 +129,13 @@ export async function updateInquerito(id: string, payload: InqueritoPayload) {
 
 export async function softDeleteInquerito(id: string) {
   const deletedAt = new Date().toISOString();
-  await runSupabaseQuery<null>(
-    "exclusão de inquérito",
-    (signal) => supabase.from("inqueritos").update({ deleted_at: deletedAt }).eq("id", id).is("deleted_at", null).abortSignal(signal),
+  await runSupabaseQuery<null>("exclusão de inquérito", (signal) =>
+    supabase
+      .from("inqueritos")
+      .update({ deleted_at: deletedAt })
+      .eq("id", id)
+      .is("deleted_at", null)
+      .abortSignal(signal),
   );
   invalidateInqueritosCache();
   return true;

@@ -417,4 +417,3 @@ Valores recomendados:
 A Central Operacional de Pendencias pode continuar exibindo indicadores aproximados e heuristicos enquanto eles estiverem claramente documentados.
 
 Esses indicadores devem ser tratados como apoio operacional, nao como estatistica oficial definitiva, ate que o banco possua campos normalizados suficientes para sustentar cada calculo.
-

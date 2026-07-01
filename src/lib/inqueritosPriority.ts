@@ -23,7 +23,9 @@ export const CASE_CATEGORY_OPTIONS = [
   "Outro",
 ] as const;
 
-const CASE_CATEGORY_BY_NORMALIZED = new Map(CASE_CATEGORY_OPTIONS.map((category) => [normalizeText(category), category]));
+const CASE_CATEGORY_BY_NORMALIZED = new Map(
+  CASE_CATEGORY_OPTIONS.map((category) => [normalizeText(category), category]),
+);
 
 export function normalizeCaseCategory(value: string | null | undefined, fallback = FALLBACK) {
   const normalized = normalizeText(value ?? "");
@@ -85,16 +87,38 @@ function normalizeManualPriority(value: string) {
 function hasReuPreso(record: PrioritySource) {
   const preso = normalizeText(pick(record, "reu_preso", "reuPreso"));
   const custodia = normalizeText(pick(record, "custodia", "situacao_custodia"));
-  return isTruthyLike(preso) || ["preso", "reu preso", "custodiado"].includes(preso) || custodia.includes("pres");
+  return (
+    isTruthyLike(preso) ||
+    ["preso", "reu preso", "custodiado"].includes(preso) ||
+    custodia.includes("pres")
+  );
 }
 
 function hasMedidaProtetiva(record: PrioritySource) {
-  const direct = normalizeText(pick(record, "medida_protetiva", "medidaProtetiva", "medidas_protetivas", "medidasProtetivas", "protetiva"));
+  const direct = normalizeText(
+    pick(
+      record,
+      "medida_protetiva",
+      "medidaProtetiva",
+      "medidas_protetivas",
+      "medidasProtetivas",
+      "protetiva",
+    ),
+  );
   if (isTruthyLike(direct) || ["ativa", "ativo"].includes(direct)) return true;
   const protetivaTexto = [
     pick(record, "tipo", "tipificacao", "classificacao", "tipo_penal"),
-    pick(record, "medida_protetiva", "medidaProtetiva", "medidas_protetivas", "medidasProtetivas", "protetiva"),
-  ].map(normalizeText).join(" ");
+    pick(
+      record,
+      "medida_protetiva",
+      "medidaProtetiva",
+      "medidas_protetivas",
+      "medidasProtetivas",
+      "protetiva",
+    ),
+  ]
+    .map(normalizeText)
+    .join(" ");
   return protetivaTexto.includes("protetiv");
 }
 
@@ -102,10 +126,14 @@ function categoryMatches(categoria: string, categories: string[]) {
   return categories.some((option) => categoria === option || categoria.includes(option));
 }
 
-export function calculateInqueritoOperationalPriorityDetails(record: PrioritySource): InqueritoOperationalPriorityDetails {
+export function calculateInqueritoOperationalPriorityDetails(
+  record: PrioritySource,
+): InqueritoOperationalPriorityDetails {
   const prazo = pick(record, "prazo", "data_prazo");
   const prazoDias = daysUntilPrazo(prazo);
-  const categoria = normalizeText(normalizeCaseCategory(pick(record, "categoria_caso", "categoriaCaso", "gravidade")));
+  const categoria = normalizeText(
+    normalizeCaseCategory(pick(record, "categoria_caso", "categoriaCaso", "gravidade")),
+  );
   const manual = normalizeManualPriority(pick(record, "prioridade"));
   const highCategories = ["cvli", "miae", "crimes sexuais", "violencia domestica", "violento"];
   const mediumCategories = [
@@ -121,11 +149,15 @@ export function calculateInqueritoOperationalPriorityDetails(record: PrioritySou
 
   if (hasReuPreso(record)) return { priority: "ALTA", reason: "Alta por réu preso" };
   if (hasMedidaProtetiva(record)) return { priority: "ALTA", reason: "Alta por medida protetiva" };
-  if (categoryMatches(categoria, highCategories)) return { priority: "ALTA", reason: "Alta por categoria crítica" };
-  if (prazoDias !== null && prazoDias < 0) return { priority: "ALTA", reason: "Alta por prazo vencido" };
+  if (categoryMatches(categoria, highCategories))
+    return { priority: "ALTA", reason: "Alta por categoria crítica" };
+  if (prazoDias !== null && prazoDias < 0)
+    return { priority: "ALTA", reason: "Alta por prazo vencido" };
 
-  if (prazoDias !== null && prazoDias <= 7) return { priority: "MÉDIA", reason: "Média por prazo próximo" };
-  if (categoryMatches(categoria, mediumCategories)) return { priority: "MÉDIA", reason: "Média por categoria intermediária" };
+  if (prazoDias !== null && prazoDias <= 7)
+    return { priority: "MÉDIA", reason: "Média por prazo próximo" };
+  if (categoryMatches(categoria, mediumCategories))
+    return { priority: "MÉDIA", reason: "Média por categoria intermediária" };
   if (manual === "MÉDIA") return { priority: "MÉDIA", reason: "Média por prioridade manual" };
   if (manual === "BAIXA") return { priority: "BAIXA", reason: "Baixa por prioridade manual" };
 

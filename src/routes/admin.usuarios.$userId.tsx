@@ -27,7 +27,10 @@ import {
   type UserProfile,
   type UserRole,
 } from "@/lib/authz";
-import { listAuditoriaForAdminUser, type AuditoriaEvent } from "@/lib/repositories/auditoriaRepository";
+import {
+  listAuditoriaForAdminUser,
+  type AuditoriaEvent,
+} from "@/lib/repositories/auditoriaRepository";
 import { supabase } from "@/lib/supabaseClient";
 
 export const Route = createFileRoute("/admin/usuarios/$userId")({
@@ -53,12 +56,15 @@ function AdminUserProfilePage() {
   const [hasAccess, setHasAccess] = useState(false);
   const [loadingUser, setLoadingUser] = useState(false);
   const [targetUser, setTargetUser] = useState<AdminUserProfile | null>(null);
-  const [requestState, setRequestState] = useState<"idle" | "not_found" | "forbidden" | "rpc_unavailable" | "error">("idle");
+  const [requestState, setRequestState] = useState<
+    "idle" | "not_found" | "forbidden" | "rpc_unavailable" | "error"
+  >("idle");
   const [auditoriaLoading, setAuditoriaLoading] = useState(false);
   const [auditoriaError, setAuditoriaError] = useState<string | null>(null);
   const [auditoriaEvents, setAuditoriaEvents] = useState<AuditoriaEvent[]>([]);
   const [editingInstitutionalFunction, setEditingInstitutionalFunction] = useState(false);
-  const [institutionalFunctionDraft, setInstitutionalFunctionDraft] = useState<InstitutionalFunctionDraft>("");
+  const [institutionalFunctionDraft, setInstitutionalFunctionDraft] =
+    useState<InstitutionalFunctionDraft>("");
   const [savingInstitutionalFunction, setSavingInstitutionalFunction] = useState(false);
   const [institutionalFunctionFeedback, setInstitutionalFunctionFeedback] = useState<{
     kind: "success" | "error";
@@ -115,7 +121,11 @@ function AdminUserProfilePage() {
         }
         if (code === "42501" || normalized.includes("permission")) {
           setRequestState("forbidden");
-        } else if (code === "PGRST202" || normalized.includes("function") || normalized.includes("rpc")) {
+        } else if (
+          code === "PGRST202" ||
+          normalized.includes("function") ||
+          normalized.includes("rpc")
+        ) {
           setRequestState("rpc_unavailable");
         } else {
           setRequestState("error");
@@ -128,10 +138,13 @@ function AdminUserProfilePage() {
       const users = (data ?? []) as AdminUserProfile[];
       if (!Array.isArray(data)) {
         if (import.meta.env.DEV) {
-          console.warn("[admin][usuarios][$userId] list_profiles_for_admin retornou payload não-lista", {
-            payloadType: typeof data,
-            userId,
-          });
+          console.warn(
+            "[admin][usuarios][$userId] list_profiles_for_admin retornou payload não-lista",
+            {
+              payloadType: typeof data,
+              userId,
+            },
+          );
         }
       }
       const found = users.find((profile) => String(profile.id) === String(userId)) ?? null;
@@ -172,12 +185,22 @@ function AdminUserProfilePage() {
 
         const normalized = result.error.message.toLowerCase();
         const code = (result.error.code ?? "").toLowerCase();
-        if (normalized.includes("insufficient_privilege") || normalized.includes("permission") || code === "42501") {
+        if (
+          normalized.includes("insufficient_privilege") ||
+          normalized.includes("permission") ||
+          code === "42501"
+        ) {
           setAuditoriaError("Sem permissão para visualizar os eventos de auditoria deste usuário.");
-        } else if (code === "pgrst202" || normalized.includes("function") || normalized.includes("rpc")) {
+        } else if (
+          code === "pgrst202" ||
+          normalized.includes("function") ||
+          normalized.includes("rpc")
+        ) {
           setAuditoriaError("Função RPC não encontrada no Supabase para auditoria individual.");
         } else if (normalized.includes("invalid_user_id_format") || code === "client_validation") {
-          setAuditoriaError("Identificador de usuário inválido para consulta de auditoria individual.");
+          setAuditoriaError(
+            "Identificador de usuário inválido para consulta de auditoria individual.",
+          );
         } else {
           setAuditoriaError("Não foi possível carregar a auditoria individual no momento.");
         }
@@ -193,10 +216,14 @@ function AdminUserProfilePage() {
   }, [hasAccess, userId]);
 
   const statusMessage = useMemo(() => {
-    if (requestState === "not_found") return "Perfil não encontrado para o identificador informado.";
-    if (requestState === "forbidden") return "Você não tem permissão para visualizar este perfil nesta operação administrativa.";
-    if (requestState === "rpc_unavailable") return "Não foi possível consultar o perfil agora: RPC administrativa indisponível no Supabase.";
-    if (requestState === "error") return "Falha ao carregar o perfil administrativo no momento. Tente novamente.";
+    if (requestState === "not_found")
+      return "Perfil não encontrado para o identificador informado.";
+    if (requestState === "forbidden")
+      return "Você não tem permissão para visualizar este perfil nesta operação administrativa.";
+    if (requestState === "rpc_unavailable")
+      return "Não foi possível consultar o perfil agora: RPC administrativa indisponível no Supabase.";
+    if (requestState === "error")
+      return "Falha ao carregar o perfil administrativo no momento. Tente novamente.";
     return null;
   }, [requestState]);
 
@@ -232,8 +259,14 @@ function AdminUserProfilePage() {
     if (error) {
       const code = String(error.code ?? "");
       const normalizedMessage = String(error.message ?? "").toLowerCase();
-      const unavailable = code === "PGRST202" || normalizedMessage.includes("function") || normalizedMessage.includes("rpc");
-      const forbidden = code === "42501" || normalizedMessage.includes("permission") || normalizedMessage.includes("access_denied");
+      const unavailable =
+        code === "PGRST202" ||
+        normalizedMessage.includes("function") ||
+        normalizedMessage.includes("rpc");
+      const forbidden =
+        code === "42501" ||
+        normalizedMessage.includes("permission") ||
+        normalizedMessage.includes("access_denied");
       setInstitutionalFunctionFeedback({
         kind: "error",
         message: unavailable
@@ -256,7 +289,10 @@ function AdminUserProfilePage() {
         : current,
     );
     setEditingInstitutionalFunction(false);
-    setInstitutionalFunctionFeedback({ kind: "success", message: "Função institucional atualizada com sucesso." });
+    setInstitutionalFunctionFeedback({
+      kind: "success",
+      message: "Função institucional atualizada com sucesso.",
+    });
     setSavingInstitutionalFunction(false);
   };
 
@@ -302,10 +338,13 @@ function AdminUserProfilePage() {
           <ArrowLeft className="h-4 w-4" />
           Voltar para usuários
         </Link>
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary/70">Dossiê administrativo</p>
+        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary/70">
+          Dossiê administrativo
+        </p>
         <h1 className="mt-2 text-2xl font-bold tracking-wide">Perfil administrativo do usuário</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Dados institucionais e função profissional. Permissões de acesso continuam administradas separadamente.
+          Dados institucionais e função profissional. Permissões de acesso continuam administradas
+          separadamente.
         </p>
       </section>
 
@@ -341,7 +380,9 @@ function AdminUserProfilePage() {
                 </div>
               </div>
               <div className="rounded-xl border border-primary/15 bg-background/55 px-4 py-3 text-sm">
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Criado em</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+                  Criado em
+                </p>
                 <p className="mt-1 font-semibold text-foreground">{createdAt}</p>
               </div>
             </div>
@@ -349,12 +390,21 @@ function AdminUserProfilePage() {
 
           <section className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             <InfoCard icon={KeyRound} label="Login" value={targetUser.login} />
-            <InfoCard icon={Phone} label="Telefone institucional" value={formatPhone(targetUser.telefone) || "Não informado"} />
+            <InfoCard
+              icon={Phone}
+              label="Telefone institucional"
+              value={formatPhone(targetUser.telefone) || "Não informado"}
+            />
             <InfoCard icon={CalendarDays} label="Data de criação" value={createdAt} />
           </section>
 
           <section className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            <InfoCard icon={UserCog} label="Cargo" value={formatRole(targetUser.cargo)} tone={getRoleTone(targetUser.cargo)} />
+            <InfoCard
+              icon={UserCog}
+              label="Cargo"
+              value={formatRole(targetUser.cargo)}
+              tone={getRoleTone(targetUser.cargo)}
+            />
             <InstitutionalFunctionCard
               value={targetUser.funcao_institucional}
               draft={institutionalFunctionDraft}
@@ -370,15 +420,24 @@ function AdminUserProfilePage() {
               onCancel={cancelInstitutionalFunctionEdit}
               onSave={() => void saveInstitutionalFunction()}
             />
-            <InfoCard icon={Shield} label="Status de autorização" value={formatStatus(targetUser.status_autorizacao)} tone={getStatusTone(targetUser.status_autorizacao)} />
-            {targetUser.updated_at ? <InfoCard icon={Clock3} label="Atualizado em" value={updatedAt} /> : null}
+            <InfoCard
+              icon={Shield}
+              label="Status de autorização"
+              value={formatStatus(targetUser.status_autorizacao)}
+              tone={getStatusTone(targetUser.status_autorizacao)}
+            />
+            {targetUser.updated_at ? (
+              <InfoCard icon={Clock3} label="Atualizado em" value={updatedAt} />
+            ) : null}
           </section>
 
           <section className="rounded-2xl border border-primary/15 bg-card/70 p-5">
             <div className="mb-4 flex items-center justify-between gap-3">
               <div>
                 <h2 className="text-lg font-semibold">Resumo de atividade</h2>
-                <p className="mt-1 text-sm text-muted-foreground">Derivado dos eventos de auditoria já carregados para este usuário.</p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Derivado dos eventos de auditoria já carregados para este usuário.
+                </p>
               </div>
               <Activity className="h-5 w-5 text-primary/70" />
             </div>
@@ -397,15 +456,25 @@ function AdminUserProfilePage() {
             <div className="mb-5 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
               <div>
                 <h2 className="text-lg font-semibold">Auditoria individual</h2>
-                <p className="mt-1 text-sm text-muted-foreground">Histórico operacional vinculado ao usuário selecionado.</p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Histórico operacional vinculado ao usuário selecionado.
+                </p>
               </div>
-              <span className="text-xs font-medium text-muted-foreground">{auditoriaEvents.length} evento(s)</span>
+              <span className="text-xs font-medium text-muted-foreground">
+                {auditoriaEvents.length} evento(s)
+              </span>
             </div>
 
-            {auditoriaLoading ? <p className="text-sm text-muted-foreground">Carregando eventos de auditoria...</p> : null}
-            {!auditoriaLoading && auditoriaError ? <p className="text-sm text-warning">{auditoriaError}</p> : null}
+            {auditoriaLoading ? (
+              <p className="text-sm text-muted-foreground">Carregando eventos de auditoria...</p>
+            ) : null}
+            {!auditoriaLoading && auditoriaError ? (
+              <p className="text-sm text-warning">{auditoriaError}</p>
+            ) : null}
             {!auditoriaLoading && !auditoriaError && auditoriaEvents.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Nenhum evento de auditoria registrado para este usuário.</p>
+              <p className="text-sm text-muted-foreground">
+                Nenhum evento de auditoria registrado para este usuário.
+              </p>
             ) : null}
 
             {!auditoriaLoading && !auditoriaError && auditoriaEvents.length > 0 ? (
@@ -431,7 +500,11 @@ function PageShell({ children }: { children: ReactNode }) {
 }
 
 function StateBox({ text }: { text: string }) {
-  return <section className="rounded-2xl border border-border bg-card/80 p-6 text-sm text-muted-foreground">{text}</section>;
+  return (
+    <section className="rounded-2xl border border-border bg-card/80 p-6 text-sm text-muted-foreground">
+      {text}
+    </section>
+  );
 }
 
 function InfoCard({
@@ -451,7 +524,9 @@ function InfoCard({
         <Icon className="h-4 w-4" />
         {label}
       </div>
-      <p className={`mt-3 break-words text-sm font-semibold ${tone ?? "text-foreground"}`}>{value}</p>
+      <p className={`mt-3 break-words text-sm font-semibold ${tone ?? "text-foreground"}`}>
+        {value}
+      </p>
     </div>
   );
 }
@@ -498,7 +573,9 @@ function InstitutionalFunctionCard({
       </div>
 
       {!editing ? (
-        <p className="mt-3 break-words text-sm font-semibold text-foreground">{formatInstitutionalFunction(value)}</p>
+        <p className="mt-3 break-words text-sm font-semibold text-foreground">
+          {formatInstitutionalFunction(value)}
+        </p>
       ) : (
         <div className="mt-3 space-y-3">
           <select
@@ -539,7 +616,10 @@ function InstitutionalFunctionCard({
       )}
 
       {feedback ? (
-        <p className={`mt-3 text-xs ${feedback.kind === "success" ? "text-emerald-300" : "text-rose-300"}`} role="status">
+        <p
+          className={`mt-3 text-xs ${feedback.kind === "success" ? "text-emerald-300" : "text-rose-300"}`}
+          role="status"
+        >
           {feedback.message}
         </p>
       ) : null}
@@ -550,7 +630,9 @@ function InstitutionalFunctionCard({
 function ActivityCard({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-xl border border-primary/10 bg-background/55 p-4">
-      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">{label}</p>
+      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+        {label}
+      </p>
       <p className="mt-2 line-clamp-2 text-sm font-semibold text-foreground">{value}</p>
     </div>
   );
@@ -561,7 +643,8 @@ function AuditEventCard({ event }: { event: AuditoriaEvent }) {
   const isDeleteEvent = isDeleteAction(event.acao);
   const canNavigate = Boolean(eventHref) && !isDeleteEvent;
   const actionLabel = getAuditTargetActionLabel(eventHref);
-  const cardBaseClassName = "rounded-2xl border border-primary/10 bg-background/60 p-4 transition-colors";
+  const cardBaseClassName =
+    "rounded-2xl border border-primary/10 bg-background/60 p-4 transition-colors";
   const cardContent = (
     <>
       <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
@@ -574,8 +657,14 @@ function AuditEventCard({ event }: { event: AuditoriaEvent }) {
               {event.entidade || "registro"}
             </span>
           </div>
-          <p className="text-sm font-semibold text-foreground">{formatFriendlyAction(event.acao)}</p>
-          {event.descricao ? <p className="mt-2 break-words text-sm leading-6 text-muted-foreground">{event.descricao}</p> : null}
+          <p className="text-sm font-semibold text-foreground">
+            {formatFriendlyAction(event.acao)}
+          </p>
+          {event.descricao ? (
+            <p className="mt-2 break-words text-sm leading-6 text-muted-foreground">
+              {event.descricao}
+            </p>
+          ) : null}
         </div>
         <div className="flex shrink-0 items-center gap-2 rounded-lg border border-primary/10 bg-card/50 px-3 py-2 text-xs text-muted-foreground">
           <Clock3 className="h-3.5 w-3.5" />
@@ -583,7 +672,9 @@ function AuditEventCard({ event }: { event: AuditoriaEvent }) {
         </div>
       </div>
       {event.entidade_id ? (
-        <div className={`mt-3 flex items-center gap-2 text-xs ${canNavigate ? "text-primary/90" : "text-muted-foreground"}`}>
+        <div
+          className={`mt-3 flex items-center gap-2 text-xs ${canNavigate ? "text-primary/90" : "text-muted-foreground"}`}
+        >
           <FileText className="h-3.5 w-3.5" />
           <span className="truncate">ID {shortId(event.entidade_id)}</span>
         </div>
@@ -612,7 +703,9 @@ function AuditEventCard({ event }: { event: AuditoriaEvent }) {
 
 function StatusBadge({ status }: { status: AuthorizationStatus }) {
   return (
-    <span className={`rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] ${getStatusBadgeClass(status)}`}>
+    <span
+      className={`rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] ${getStatusBadgeClass(status)}`}
+    >
       {formatStatus(status)}
     </span>
   );
@@ -650,7 +743,9 @@ function getActivitySummary(events: AuditoriaEvent[]) {
 }
 
 function formatPhone(value?: string | null) {
-  const digits = String(value ?? "").replace(/\D/g, "").slice(0, 11);
+  const digits = String(value ?? "")
+    .replace(/\D/g, "")
+    .slice(0, 11);
   if (!digits) return "";
   if (digits.length <= 2) return `(${digits}`;
   if (digits.length <= 7) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
@@ -713,15 +808,39 @@ function getAuditEventHref(event: AuditoriaEvent) {
   const modulo = normalizeAuditRouteToken(event.modulo);
   const entidade = normalizeAuditRouteToken(event.entidade);
 
-  if (matchesAuditRoute(entidade, ["inquerito", "inqueritos"]) || matchesAuditRoute(modulo, ["inquerito", "inqueritos"])) {
+  if (
+    matchesAuditRoute(entidade, ["inquerito", "inqueritos"]) ||
+    matchesAuditRoute(modulo, ["inquerito", "inqueritos"])
+  ) {
     return `/inqueritos/${entityId}`;
   }
-  if (matchesAuditRoute(entidade, ["representacao", "representacoes"]) || matchesAuditRoute(modulo, ["representacao", "representacoes"])) {
+  if (
+    matchesAuditRoute(entidade, ["representacao", "representacoes"]) ||
+    matchesAuditRoute(modulo, ["representacao", "representacoes"])
+  ) {
     return `/representacoes/${entityId}`;
   }
   if (
-    matchesAuditRoute(entidade, ["profile", "profiles", "perfil", "perfis", "usuario", "usuarios", "admin_usuario", "admin_usuarios"]) ||
-    matchesAuditRoute(modulo, ["profile", "profiles", "perfil", "perfis", "usuario", "usuarios", "admin_usuario", "admin_usuarios"])
+    matchesAuditRoute(entidade, [
+      "profile",
+      "profiles",
+      "perfil",
+      "perfis",
+      "usuario",
+      "usuarios",
+      "admin_usuario",
+      "admin_usuarios",
+    ]) ||
+    matchesAuditRoute(modulo, [
+      "profile",
+      "profiles",
+      "perfil",
+      "perfis",
+      "usuario",
+      "usuarios",
+      "admin_usuario",
+      "admin_usuarios",
+    ])
   ) {
     return `/admin/usuarios/${entityId}`;
   }
@@ -740,7 +859,10 @@ function normalizeAuditRouteToken(value?: string | null) {
 }
 
 function matchesAuditRoute(value: string, candidates: string[]) {
-  return candidates.some((candidate) => value === candidate || value.includes(`_${candidate}`) || value.includes(`${candidate}_`));
+  return candidates.some(
+    (candidate) =>
+      value === candidate || value.includes(`_${candidate}`) || value.includes(`${candidate}_`),
+  );
 }
 
 function getAuditTargetActionLabel(href: string | null) {

@@ -290,7 +290,11 @@ function renderMetricCells(
     year: number;
     monthIndex: number | null;
     monthLabel: string;
-    onOpenMetric: (year: number, monthIndex: number | null, mode: "registros" | "elucidados") => void;
+    onOpenMetric: (
+      year: number,
+      monthIndex: number | null,
+      mode: "registros" | "elucidados",
+    ) => void;
     emphasized?: boolean;
   },
 ) {
@@ -321,7 +325,15 @@ function renderMetricCells(
   ];
 }
 
-function MetricLink({ value, title, onClick }: { value: number; title: string; onClick: () => void }) {
+function MetricLink({
+  value,
+  title,
+  onClick,
+}: {
+  value: number;
+  title: string;
+  onClick: () => void;
+}) {
   return (
     <button
       type="button"

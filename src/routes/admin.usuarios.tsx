@@ -50,7 +50,8 @@ const STATUS_OPTIONS: Array<{ value: AuthorizationStatus; label: string }> = [
 function AdminUsuariosPage() {
   const navigate = useNavigate();
   const currentPath = useRouterState({ select: (state) => state.location.pathname });
-  const showingUserDetail = currentPath !== "/admin/usuarios" && currentPath.startsWith("/admin/usuarios/");
+  const showingUserDetail =
+    currentPath !== "/admin/usuarios" && currentPath.startsWith("/admin/usuarios/");
   const [checkingAccess, setCheckingAccess] = useState(true);
   const [hasAccess, setHasAccess] = useState(false);
   const [loadingUsers, setLoadingUsers] = useState(true);
@@ -59,12 +60,19 @@ function AdminUsuariosPage() {
   const [usuarios, setUsuarios] = useState<AdminUserProfile[]>([]);
   const [formState, setFormState] = useState<Record<string, EditableUserState>>({});
   const [loadingByUser, setLoadingByUser] = useState<Record<string, string | null>>({});
-  const [feedbackByUser, setFeedbackByUser] = useState<Record<string, { kind: "success" | "error"; message: string }>>({});
+  const [feedbackByUser, setFeedbackByUser] = useState<
+    Record<string, { kind: "success" | "error"; message: string }>
+  >({});
 
   const getSupabaseErrorMessage = (issue: unknown, fallback: string) => {
-    const code = typeof issue === "object" && issue !== null && "code" in issue ? String((issue as { code?: string }).code ?? "") : "";
+    const code =
+      typeof issue === "object" && issue !== null && "code" in issue
+        ? String((issue as { code?: string }).code ?? "")
+        : "";
     const message =
-      typeof issue === "object" && issue !== null && "message" in issue ? String((issue as { message?: string }).message ?? "") : "";
+      typeof issue === "object" && issue !== null && "message" in issue
+        ? String((issue as { message?: string }).message ?? "")
+        : "";
     const normalized = message.toLowerCase();
     if (code === "PGRST202" || normalized.includes("rpc") || normalized.includes("function")) {
       return `${fallback}. RPC ausente ou indisponível no Supabase.`;
@@ -119,7 +127,10 @@ function AdminUsuariosPage() {
       try {
         const { data, error: listError } = await supabase.rpc("list_profiles_for_admin");
         if (listError) throw listError;
-        const normalizedUsers = (data ?? []).map((user) => ({ ...user, updated_at: user.created_at })) as AdminUserProfile[];
+        const normalizedUsers = (data ?? []).map((user) => ({
+          ...user,
+          updated_at: user.created_at,
+        })) as AdminUserProfile[];
         if (cancelled) return;
         setUsuarios(normalizedUsers);
         setFormState((current) => {
@@ -134,7 +145,10 @@ function AdminUsuariosPage() {
         });
       } catch (fetchError) {
         console.error("[AdminUsuariosPage] Erro ao listar usuários", fetchError);
-        if (!cancelled) setError(getSupabaseErrorMessage(fetchError, "Não foi possível carregar os usuários no momento"));
+        if (!cancelled)
+          setError(
+            getSupabaseErrorMessage(fetchError, "Não foi possível carregar os usuários no momento"),
+          );
       } finally {
         if (!cancelled) setLoadingUsers(false);
       }
@@ -144,16 +158,25 @@ function AdminUsuariosPage() {
     };
   }, [hasAccess]);
 
-  const canEditTarget = (target: UserProfile, nextRole?: UserRole) => canEditUserAccess(currentProfile, target, nextRole);
+  const canEditTarget = (target: UserProfile, nextRole?: UserRole) =>
+    canEditUserAccess(currentProfile, target, nextRole);
   const allowedRolesForRequester = (target: UserProfile) => {
     if (currentProfile?.cargo !== "atlas_access") return ROLE_OPTIONS;
     if (!canEditTarget(target)) return [];
     return ROLE_OPTIONS.filter((opt) => canAtlasAssignRole(opt.value));
   };
 
-  const updateUser = async (user: AdminUserProfile, role: UserRole, status: AuthorizationStatus, actionLabel: string) => {
+  const updateUser = async (
+    user: AdminUserProfile,
+    role: UserRole,
+    status: AuthorizationStatus,
+    actionLabel: string,
+  ) => {
     if (!canEditTarget(user, role)) {
-      setFeedbackByUser((current) => ({ ...current, [user.id]: { kind: "error", message: "Ação restrita a Delegado/Admin." } }));
+      setFeedbackByUser((current) => ({
+        ...current,
+        [user.id]: { kind: "error", message: "Ação restrita a Delegado/Admin." },
+      }));
       return;
     }
     setLoadingByUser((current) => ({ ...current, [user.id]: actionLabel }));
@@ -166,18 +189,34 @@ function AdminUsuariosPage() {
     if (updateError) {
       setFeedbackByUser((current) => ({
         ...current,
-        [user.id]: { kind: "error", message: getSupabaseErrorMessage(updateError, "Não foi possível salvar a alteração. Tente novamente") },
+        [user.id]: {
+          kind: "error",
+          message: getSupabaseErrorMessage(
+            updateError,
+            "Não foi possível salvar a alteração. Tente novamente",
+          ),
+        },
       }));
       setLoadingByUser((current) => ({ ...current, [user.id]: null }));
       return;
     }
     setUsuarios((current) =>
       current.map((entry) =>
-        entry.id === user.id ? { ...entry, cargo: role, status_autorizacao: status, updated_at: new Date().toISOString() } : entry,
+        entry.id === user.id
+          ? {
+              ...entry,
+              cargo: role,
+              status_autorizacao: status,
+              updated_at: new Date().toISOString(),
+            }
+          : entry,
       ),
     );
     setFormState((current) => ({ ...current, [user.id]: { cargo: role, status } }));
-    setFeedbackByUser((current) => ({ ...current, [user.id]: { kind: "success", message: "Alterações salvas com sucesso." } }));
+    setFeedbackByUser((current) => ({
+      ...current,
+      [user.id]: { kind: "success", message: "Alterações salvas com sucesso." },
+    }));
     try {
       const auditResult = await logAuditoria({
         acao: "admin_update",
@@ -202,10 +241,22 @@ function AdminUsuariosPage() {
     setLoadingByUser((current) => ({ ...current, [user.id]: null }));
   };
 
-  const pendentes = useMemo(() => usuarios.filter((user) => user.status_autorizacao === "aguardando"), [usuarios]);
-  const autorizados = useMemo(() => usuarios.filter((user) => user.status_autorizacao === "autorizado").length, [usuarios]);
-  const bloqueados = useMemo(() => usuarios.filter((user) => user.status_autorizacao === "bloqueado").length, [usuarios]);
-  const administradores = useMemo(() => usuarios.filter((user) => user.cargo === "admin").length, [usuarios]);
+  const pendentes = useMemo(
+    () => usuarios.filter((user) => user.status_autorizacao === "aguardando"),
+    [usuarios],
+  );
+  const autorizados = useMemo(
+    () => usuarios.filter((user) => user.status_autorizacao === "autorizado").length,
+    [usuarios],
+  );
+  const bloqueados = useMemo(
+    () => usuarios.filter((user) => user.status_autorizacao === "bloqueado").length,
+    [usuarios],
+  );
+  const administradores = useMemo(
+    () => usuarios.filter((user) => user.cargo === "admin").length,
+    [usuarios],
+  );
 
   if (showingUserDetail) return <Outlet />;
 
@@ -221,8 +272,8 @@ function AdminUsuariosPage() {
             <h1 className="text-2xl font-bold">Acesso restrito</h1>
           </div>
           <p className="text-sm text-muted-foreground">
-            Esta área exige perfil administrativo. Admin e Delegado possuem gestão completa; Atlas Access possui gestão limitada conforme
-            as regras de acesso.
+            Esta área exige perfil administrativo. Admin e Delegado possuem gestão completa; Atlas
+            Access possui gestão limitada conforme as regras de acesso.
           </p>
           <Link
             to="/modulos"
@@ -251,9 +302,13 @@ function AdminUsuariosPage() {
         <header className="rounded-2xl border border-primary/25 bg-card/80 p-6 shadow-[0_0_30px_rgba(34,197,94,0.07)]">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary/70">Painel administrativo</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary/70">
+                Painel administrativo
+              </p>
               <h1 className="mt-2 text-2xl font-bold tracking-wide">Administração de Usuários</h1>
-              <p className="mt-1 text-sm text-muted-foreground">Controle institucional de acesso, cargos e autorizações do SIPI.</p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Controle institucional de acesso, cargos e autorizações do SIPI.
+              </p>
             </div>
             <div className="rounded-full border border-primary/20 bg-primary/10 px-4 py-2 text-xs font-medium text-primary/85">
               {usuarios.length} perfil(is) carregado(s)
@@ -266,7 +321,12 @@ function AdminUsuariosPage() {
           <SummaryCard icon={Clock3} label="Aguardando" value={pendentes.length} tone="warning" />
           <SummaryCard icon={UserCheck} label="Autorizados" value={autorizados} tone="success" />
           <SummaryCard icon={UserMinus} label="Bloqueados" value={bloqueados} tone="danger" />
-          <SummaryCard icon={UserCog} label="Administradores" value={administradores} tone="neutral" />
+          <SummaryCard
+            icon={UserCog}
+            label="Administradores"
+            value={administradores}
+            tone="neutral"
+          />
         </section>
 
         <UsersSection
@@ -280,14 +340,31 @@ function AdminUsuariosPage() {
           loadingByUser={loadingByUser}
           feedbackByUser={feedbackByUser}
           onRoleChange={(userId, role) =>
-            setFormState((cur) => ({ ...cur, [userId]: { cargo: role, status: cur[userId]?.status ?? "aguardando" } }))
+            setFormState((cur) => ({
+              ...cur,
+              [userId]: { cargo: role, status: cur[userId]?.status ?? "aguardando" },
+            }))
           }
           onStatusChange={(userId, status) =>
-            setFormState((cur) => ({ ...cur, [userId]: { cargo: cur[userId]?.cargo ?? "membro", status } }))
+            setFormState((cur) => ({
+              ...cur,
+              [userId]: { cargo: cur[userId]?.cargo ?? "membro", status },
+            }))
           }
-          onAuthorize={(user) => updateUser(user, formState[user.id]?.cargo ?? "membro", "autorizado", "authorize")}
-          onBlock={(user) => updateUser(user, formState[user.id]?.cargo ?? "membro", "bloqueado", "block")}
-          onSave={(user) => updateUser(user, formState[user.id]?.cargo ?? user.cargo, formState[user.id]?.status ?? user.status_autorizacao, "save")}
+          onAuthorize={(user) =>
+            updateUser(user, formState[user.id]?.cargo ?? "membro", "autorizado", "authorize")
+          }
+          onBlock={(user) =>
+            updateUser(user, formState[user.id]?.cargo ?? "membro", "bloqueado", "block")
+          }
+          onSave={(user) =>
+            updateUser(
+              user,
+              formState[user.id]?.cargo ?? user.cargo,
+              formState[user.id]?.status ?? user.status_autorizacao,
+              "save",
+            )
+          }
           currentProfile={currentProfile}
           canEditTarget={canEditTarget}
           allowedRolesForRequester={allowedRolesForRequester}
@@ -304,14 +381,31 @@ function AdminUsuariosPage() {
           loadingByUser={loadingByUser}
           feedbackByUser={feedbackByUser}
           onRoleChange={(userId, role) =>
-            setFormState((cur) => ({ ...cur, [userId]: { cargo: role, status: cur[userId]?.status ?? "aguardando" } }))
+            setFormState((cur) => ({
+              ...cur,
+              [userId]: { cargo: role, status: cur[userId]?.status ?? "aguardando" },
+            }))
           }
           onStatusChange={(userId, status) =>
-            setFormState((cur) => ({ ...cur, [userId]: { cargo: cur[userId]?.cargo ?? "membro", status } }))
+            setFormState((cur) => ({
+              ...cur,
+              [userId]: { cargo: cur[userId]?.cargo ?? "membro", status },
+            }))
           }
-          onAuthorize={(user) => updateUser(user, formState[user.id]?.cargo ?? "membro", "autorizado", "authorize")}
-          onBlock={(user) => updateUser(user, formState[user.id]?.cargo ?? "membro", "bloqueado", "block")}
-          onSave={(user) => updateUser(user, formState[user.id]?.cargo ?? user.cargo, formState[user.id]?.status ?? user.status_autorizacao, "save")}
+          onAuthorize={(user) =>
+            updateUser(user, formState[user.id]?.cargo ?? "membro", "autorizado", "authorize")
+          }
+          onBlock={(user) =>
+            updateUser(user, formState[user.id]?.cargo ?? "membro", "bloqueado", "block")
+          }
+          onSave={(user) =>
+            updateUser(
+              user,
+              formState[user.id]?.cargo ?? user.cargo,
+              formState[user.id]?.status ?? user.status_autorizacao,
+              "save",
+            )
+          }
           currentProfile={currentProfile}
           canEditTarget={canEditTarget}
           allowedRolesForRequester={allowedRolesForRequester}
@@ -343,7 +437,9 @@ function SummaryCard({
   return (
     <article className="rounded-xl border border-primary/15 bg-card/75 p-4 shadow-[0_12px_30px_rgba(0,0,0,0.16)]">
       <div className="mb-3 flex items-center justify-between gap-3">
-        <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">{label}</span>
+        <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+          {label}
+        </span>
         <span className={`rounded-lg border p-2 ${toneClass}`}>
           <Icon className="h-4 w-4" />
         </span>
@@ -397,12 +493,16 @@ function UsersSection({
           <h2 className="text-lg font-semibold">{title}</h2>
           <p className="mt-1 text-sm text-muted-foreground">{description}</p>
         </div>
-        <span className="text-xs font-medium text-muted-foreground">{users.length} registro(s)</span>
+        <span className="text-xs font-medium text-muted-foreground">
+          {users.length} registro(s)
+        </span>
       </div>
 
       {loading ? <PageState title="Carregando usuários..." /> : null}
       {!loading && error ? <PageError message={error} /> : null}
-      {!loading && !error && users.length === 0 ? <PageState title="Nenhum usuário encontrado nesta seção." /> : null}
+      {!loading && !error && users.length === 0 ? (
+        <PageState title="Nenhum usuário encontrado nesta seção." />
+      ) : null}
 
       {!loading && !error && users.length > 0 ? (
         <div className="space-y-3">
@@ -476,8 +576,17 @@ function UserAdminCard({
         <UserIdentity profile={user} />
 
         <div className="grid gap-3 sm:grid-cols-2">
-          <UserMeta icon={BadgeCheck} label="Cargo" value={formatRole(user.cargo)} accent={getRoleTone(user.cargo)} />
-          <UserMeta icon={CalendarDays} label="Criado em" value={formatShortDate(user.created_at)} />
+          <UserMeta
+            icon={BadgeCheck}
+            label="Cargo"
+            value={formatRole(user.cargo)}
+            accent={getRoleTone(user.cargo)}
+          />
+          <UserMeta
+            icon={CalendarDays}
+            label="Criado em"
+            value={formatShortDate(user.created_at)}
+          />
         </div>
 
         <div className="flex flex-col gap-3 lg:min-w-[280px]">
@@ -510,7 +619,9 @@ function UserAdminCard({
             {mode === "all" ? (
               <select
                 value={selectedStatus}
-                onChange={(event) => onStatusChange(user.id, event.target.value as AuthorizationStatus)}
+                onChange={(event) =>
+                  onStatusChange(user.id, event.target.value as AuthorizationStatus)
+                }
                 disabled={isLoading || !canEditUser}
                 className="h-9 rounded-lg border border-primary/15 bg-card/70 px-2 text-xs text-foreground outline-none transition focus:border-primary/40 disabled:cursor-not-allowed disabled:opacity-60"
                 aria-label={`Status de ${user.nome}`}
@@ -557,10 +668,20 @@ function UserAdminCard({
             )}
           </div>
 
-          {showAtlasRestriction ? <p className="text-right text-[11px] text-muted-foreground">Ação restrita a Delegado/Admin.</p> : null}
-          {isLoading ? <p className="text-right text-xs text-muted-foreground">Salvando...</p> : null}
+          {showAtlasRestriction ? (
+            <p className="text-right text-[11px] text-muted-foreground">
+              Ação restrita a Delegado/Admin.
+            </p>
+          ) : null}
+          {isLoading ? (
+            <p className="text-right text-xs text-muted-foreground">Salvando...</p>
+          ) : null}
           {feedback?.message ? (
-            <p className={`text-right text-xs ${feedback.kind === "error" ? "text-destructive" : "text-emerald-400"}`}>{feedback.message}</p>
+            <p
+              className={`text-right text-xs ${feedback.kind === "error" ? "text-destructive" : "text-emerald-400"}`}
+            >
+              {feedback.message}
+            </p>
           ) : null}
         </div>
       </div>
@@ -574,7 +695,11 @@ function UserIdentity({ profile }: { profile: AdminUserProfile }) {
   return (
     <div className="flex min-w-0 items-center gap-4">
       {avatarUrl ? (
-        <img src={avatarUrl} alt={`Avatar de ${profile.nome}`} className="h-16 w-16 rounded-full border border-primary/35 object-cover shadow-lg" />
+        <img
+          src={avatarUrl}
+          alt={`Avatar de ${profile.nome}`}
+          className="h-16 w-16 rounded-full border border-primary/35 object-cover shadow-lg"
+        />
       ) : (
         <div className="flex h-16 w-16 items-center justify-center rounded-full border border-primary/40 bg-primary/15 text-xl font-bold text-primary">
           {initial}
@@ -608,7 +733,10 @@ function UserMeta({
         <Icon className="h-3.5 w-3.5" />
         {label}
       </div>
-      <p className={`mt-1 truncate text-sm font-semibold ${accent ?? "text-foreground"}`} title={value}>
+      <p
+        className={`mt-1 truncate text-sm font-semibold ${accent ?? "text-foreground"}`}
+        title={value}
+      >
         {value}
       </p>
     </div>
@@ -623,14 +751,20 @@ function StatusBadge({ status }: { status: AuthorizationStatus }) {
   }[status];
 
   return (
-    <span className={`rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] ${className}`}>
+    <span
+      className={`rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] ${className}`}
+    >
       {formatStatus(status)}
     </span>
   );
 }
 
 function PageState({ title }: { title: string }) {
-  return <div className="rounded-lg border border-border/70 bg-background/70 p-4 text-sm text-muted-foreground">{title}</div>;
+  return (
+    <div className="rounded-lg border border-border/70 bg-background/70 p-4 text-sm text-muted-foreground">
+      {title}
+    </div>
+  );
 }
 
 function PageError({ message }: { message: string }) {

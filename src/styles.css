@@ -134,7 +134,9 @@
     );
     opacity: 0.75;
     pointer-events: none;
-    transition: opacity 220ms ease, background 220ms ease;
+    transition:
+      opacity 220ms ease,
+      background 220ms ease;
   }
   .stat-card:hover {
     border-color: color-mix(in oklab, var(--stat-color, var(--primary)) 88%, white 8%);

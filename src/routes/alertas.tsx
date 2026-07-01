@@ -13,8 +13,16 @@ import {
 import { AppLayout } from "@/components/AppLayout";
 import { PageHeader } from "@/components/PageHeader";
 import { listInqueritos, type InqueritoRecord } from "@/lib/repositories/inqueritosRepository";
-import { listRepresentacoes, type RepresentacaoRecord } from "@/lib/repositories/representacoesRepository";
-import { buildModuleAlerts, buildSmartAlerts, moduleMeta, type ModuleKey } from "@/lib/alertasInteligentes";
+import {
+  listRepresentacoes,
+  type RepresentacaoRecord,
+} from "@/lib/repositories/representacoesRepository";
+import {
+  buildModuleAlerts,
+  buildSmartAlerts,
+  moduleMeta,
+  type ModuleKey,
+} from "@/lib/alertasInteligentes";
 
 export const Route = createFileRoute("/alertas")({
   component: Alertas,
@@ -30,7 +38,19 @@ const icons: Record<ModuleKey, typeof AlertTriangle> = {
   sigilosas: ShieldAlert,
 };
 
-const moduleTone: Record<ModuleKey, { icon: string; badge: string; cta: string; hover: string; surface: string; glow: string; rail: string; count: string }> = {
+const moduleTone: Record<
+  ModuleKey,
+  {
+    icon: string;
+    badge: string;
+    cta: string;
+    hover: string;
+    surface: string;
+    glow: string;
+    rail: string;
+    count: string;
+  }
+> = {
   criticos: {
     icon: "border-red-500/30 bg-red-500/10 text-red-300/90",
     badge: "border-red-500/30 bg-red-500/10 text-red-200",
@@ -200,7 +220,9 @@ function isInqueritoSemRelatorio(record: InqueritoRecord) {
 
 function isCvli(record: InqueritoRecord) {
   return ["cvli", "homic", "latrocin", "feminic"].some((term) =>
-    normalizeText(`${record.gravidade} ${record.tipificacao} ${record.tipo} ${record.motivacao}`).includes(term),
+    normalizeText(
+      `${record.gravidade} ${record.tipificacao} ${record.tipo} ${record.motivacao}`,
+    ).includes(term),
   );
 }
 
@@ -241,14 +263,25 @@ function isRelatadoNaoEnviado(record: InqueritoRecord) {
 }
 
 function getInqueritoDate(record: InqueritoRecord) {
-  return parseDate(record.data_instauracao) ?? parseDate(record.created_at) ?? parseDate(record.data_fato);
+  return (
+    parseDate(record.data_instauracao) ??
+    parseDate(record.created_at) ??
+    parseDate(record.data_fato)
+  );
 }
 
 function getRepresentacaoDate(record: RepresentacaoRecord) {
-  return parseDate(record.data_representacao) ?? parseDate(record.created_at) ?? parseDate(record.data_envio_judiciario);
+  return (
+    parseDate(record.data_representacao) ??
+    parseDate(record.created_at) ??
+    parseDate(record.data_envio_judiciario)
+  );
 }
 
-function toProcedureRows(inqueritos: InqueritoRecord[], representacoes: RepresentacaoRecord[]): ProcedureRow[] {
+function toProcedureRows(
+  inqueritos: InqueritoRecord[],
+  representacoes: RepresentacaoRecord[],
+): ProcedureRow[] {
   const inqueritoRows: ProcedureRow[] = inqueritos.map((record) => ({
     entityType: "inquerito",
     referenceDate: getInqueritoDate(record),
@@ -261,7 +294,9 @@ function toProcedureRows(inqueritos: InqueritoRecord[], representacoes: Represen
     raw: record,
   }));
 
-  return [...inqueritoRows, ...representacaoRows].sort((a, b) => (b.referenceDate?.getTime() ?? 0) - (a.referenceDate?.getTime() ?? 0));
+  return [...inqueritoRows, ...representacaoRows].sort(
+    (a, b) => (b.referenceDate?.getTime() ?? 0) - (a.referenceDate?.getTime() ?? 0),
+  );
 }
 
 function formatPercent(value: number) {
@@ -294,72 +329,285 @@ function Alertas() {
     })();
   }, []);
 
-  const smartAlerts = useMemo(() => buildSmartAlerts(inqueritos, representacoes), [inqueritos, representacoes]);
+  const smartAlerts = useMemo(
+    () => buildSmartAlerts(inqueritos, representacoes),
+    [inqueritos, representacoes],
+  );
   const moduleAlerts = useMemo(() => buildModuleAlerts(smartAlerts), [smartAlerts]);
-  const allRows = useMemo(() => toProcedureRows(inqueritos, representacoes), [inqueritos, representacoes]);
-  const filteredRows = useMemo(() => allRows.filter((row) => inDateRange(row.referenceDate, dataInicial, dataFinal)), [allRows, dataFinal, dataInicial]);
+  const allRows = useMemo(
+    () => toProcedureRows(inqueritos, representacoes),
+    [inqueritos, representacoes],
+  );
+  const filteredRows = useMemo(
+    () => allRows.filter((row) => inDateRange(row.referenceDate, dataInicial, dataFinal)),
+    [allRows, dataFinal, dataInicial],
+  );
 
   const filteredInqueritos = useMemo(
-    () => filteredRows.filter((row) => row.entityType === "inquerito").map((row) => row.raw as InqueritoRecord),
+    () =>
+      filteredRows
+        .filter((row) => row.entityType === "inquerito")
+        .map((row) => row.raw as InqueritoRecord),
     [filteredRows],
   );
   const filteredRepresentacoes = useMemo(
-    () => filteredRows.filter((row) => row.entityType === "representacao").map((row) => row.raw as RepresentacaoRecord),
+    () =>
+      filteredRows
+        .filter((row) => row.entityType === "representacao")
+        .map((row) => row.raw as RepresentacaoRecord),
     [filteredRows],
   );
 
   const panorama = useMemo(() => {
-    const periodSearch = { ...(dataInicial ? { dataInicial } : {}), ...(dataFinal ? { dataFinal } : {}), ...(dataInicial || dataFinal ? { dataCampo: "entrada" } : {}) };
+    const periodSearch = {
+      ...(dataInicial ? { dataInicial } : {}),
+      ...(dataFinal ? { dataFinal } : {}),
+      ...(dataInicial || dataFinal ? { dataCampo: "entrada" } : {}),
+    };
     const ip = filteredInqueritos.filter((item) => getProcedureType(item.tipo) === "IP");
     const apf = filteredInqueritos.filter((item) => getProcedureType(item.tipo) === "APF");
     const tco = filteredInqueritos.filter((item) => getProcedureType(item.tipo) === "TCO");
     const boc = filteredInqueritos.filter((item) => getProcedureType(item.tipo) === "BOC");
     const aiai = filteredInqueritos.filter((item) => getProcedureType(item.tipo) === "AIAI");
     const concluidos = filteredInqueritos.filter(isConcluido).length;
-    const taxaConclusao = filteredInqueritos.length === 0 ? 0 : (concluidos / filteredInqueritos.length) * 100;
+    const taxaConclusao =
+      filteredInqueritos.length === 0 ? 0 : (concluidos / filteredInqueritos.length) * 100;
 
     return [
-      { label: "Total de Procedimentos", value: filteredInqueritos.length, desc: "InquÃ©ritos cadastrados ativos", target: { to: "/inqueritos", search: periodSearch } },
-      { label: "InquÃ©ritos Policiais (IP)", value: ip.length, desc: "Procedimentos do tipo IP", target: { to: "/inqueritos", search: { ...periodSearch, tipo: "IP" } } },
-      { label: "IP sem Relatar", value: ip.filter(isInqueritoSemRelatorio).length, desc: "IP pendentes de relatÃ³rio", target: { to: "/inqueritos", search: { ...periodSearch, tipo: "IP", relatorio: "sem_relatar" } } },
-      { label: "IP CVLI sem Relatar", value: ip.filter((item) => isCvli(item) && isInqueritoSemRelatorio(item)).length, desc: "CVLI pendentes de relatÃ³rio", target: { to: "/inqueritos", search: { ...periodSearch, tipo: "IP", relatorio: "sem_relatar", categoria: "cvli" } } },
-      { label: "IP Patrimoniais sem Relatar", value: ip.filter((item) => isPatrimonial(item) && isInqueritoSemRelatorio(item)).length, desc: "Patrimoniais pendentes", target: { to: "/inqueritos", search: { ...periodSearch, tipo: "IP", relatorio: "sem_relatar", categoria: "patrimonial" } } },
-      { label: "IP ViolÃªncia DomÃ©stica sem Relatar", value: ip.filter((item) => isViolenciaDomestica(item) && isInqueritoSemRelatorio(item)).length, desc: "Maria da Penha pendentes", target: { to: "/inqueritos", search: { ...periodSearch, tipo: "IP", relatorio: "sem_relatar", categoria: "violencia_domestica" } } },
-      { label: "IP Sexuais sem Relatar", value: ip.filter((item) => isSexual(item) && isInqueritoSemRelatorio(item)).length, desc: "Crimes sexuais pendentes", target: { to: "/inqueritos", search: { ...periodSearch, tipo: "IP", relatorio: "sem_relatar", categoria: "sexual" } } },
-      { label: "Auto de PrisÃ£o em Flagrante (APF)", value: apf.length, desc: "Flagrantes cadastrados", target: { to: "/inqueritos", search: { ...periodSearch, tipo: "APF" } } },
-      { label: "APF sem Relatar", value: apf.filter(isInqueritoSemRelatorio).length, desc: "Flagrantes nÃ£o relatados", target: { to: "/inqueritos", search: { ...periodSearch, tipo: "APF", relatorio: "sem_relatar" } } },
-      { label: "Termo Circunstanciado (TCO)", value: tco.length, desc: "Termos circunstanciados", target: { to: "/inqueritos", search: { ...periodSearch, tipo: "TCO" } } },
-      { label: "Boletim de OcorrÃªncia Circunstanciado (BOC)", value: boc.length, desc: "ComunicaÃ§Ãµes ao MP", target: { to: "/inqueritos", search: { ...periodSearch, tipo: "BOC" } } },
-      { label: "Ato de InvestigaÃ§Ã£o de Ato Infracional (AIAI)", value: aiai.length, desc: "Atos infracionais", target: { to: "/inqueritos", search: { ...periodSearch, tipo: "AIAI" } } },
-      { label: "RelatÃ³rios Enviados", value: concluidos, desc: "Procedimentos finalizados", target: { to: "/inqueritos", search: { ...periodSearch, relatorio: "enviado" } } },
-      { label: "Taxa de ConclusÃ£o", value: formatPercent(taxaConclusao), desc: "Percentual concluÃ­do", disabledReason: "Indicador percentual; filtro de registros ainda nÃ£o disponÃ­vel." },
-      { label: "Procedimentos Em Andamento", value: filteredInqueritos.filter(isEmAndamento).length, desc: "Procedimentos ainda ativos", target: { to: "/inqueritos", search: { ...periodSearch, status: "em_andamento" } } },
-      { label: "Relatados e não enviados", value: filteredInqueritos.filter(isRelatadoNaoEnviado).length, desc: "Revisar envio formal", target: { to: "/inqueritos", search: { ...periodSearch, relatorio: "relatado_nao_enviado" } } },
+      {
+        label: "Total de Procedimentos",
+        value: filteredInqueritos.length,
+        desc: "InquÃ©ritos cadastrados ativos",
+        target: { to: "/inqueritos", search: periodSearch },
+      },
+      {
+        label: "InquÃ©ritos Policiais (IP)",
+        value: ip.length,
+        desc: "Procedimentos do tipo IP",
+        target: { to: "/inqueritos", search: { ...periodSearch, tipo: "IP" } },
+      },
+      {
+        label: "IP sem Relatar",
+        value: ip.filter(isInqueritoSemRelatorio).length,
+        desc: "IP pendentes de relatÃ³rio",
+        target: {
+          to: "/inqueritos",
+          search: { ...periodSearch, tipo: "IP", relatorio: "sem_relatar" },
+        },
+      },
+      {
+        label: "IP CVLI sem Relatar",
+        value: ip.filter((item) => isCvli(item) && isInqueritoSemRelatorio(item)).length,
+        desc: "CVLI pendentes de relatÃ³rio",
+        target: {
+          to: "/inqueritos",
+          search: { ...periodSearch, tipo: "IP", relatorio: "sem_relatar", categoria: "cvli" },
+        },
+      },
+      {
+        label: "IP Patrimoniais sem Relatar",
+        value: ip.filter((item) => isPatrimonial(item) && isInqueritoSemRelatorio(item)).length,
+        desc: "Patrimoniais pendentes",
+        target: {
+          to: "/inqueritos",
+          search: {
+            ...periodSearch,
+            tipo: "IP",
+            relatorio: "sem_relatar",
+            categoria: "patrimonial",
+          },
+        },
+      },
+      {
+        label: "IP ViolÃªncia DomÃ©stica sem Relatar",
+        value: ip.filter((item) => isViolenciaDomestica(item) && isInqueritoSemRelatorio(item))
+          .length,
+        desc: "Maria da Penha pendentes",
+        target: {
+          to: "/inqueritos",
+          search: {
+            ...periodSearch,
+            tipo: "IP",
+            relatorio: "sem_relatar",
+            categoria: "violencia_domestica",
+          },
+        },
+      },
+      {
+        label: "IP Sexuais sem Relatar",
+        value: ip.filter((item) => isSexual(item) && isInqueritoSemRelatorio(item)).length,
+        desc: "Crimes sexuais pendentes",
+        target: {
+          to: "/inqueritos",
+          search: { ...periodSearch, tipo: "IP", relatorio: "sem_relatar", categoria: "sexual" },
+        },
+      },
+      {
+        label: "Auto de PrisÃ£o em Flagrante (APF)",
+        value: apf.length,
+        desc: "Flagrantes cadastrados",
+        target: { to: "/inqueritos", search: { ...periodSearch, tipo: "APF" } },
+      },
+      {
+        label: "APF sem Relatar",
+        value: apf.filter(isInqueritoSemRelatorio).length,
+        desc: "Flagrantes nÃ£o relatados",
+        target: {
+          to: "/inqueritos",
+          search: { ...periodSearch, tipo: "APF", relatorio: "sem_relatar" },
+        },
+      },
+      {
+        label: "Termo Circunstanciado (TCO)",
+        value: tco.length,
+        desc: "Termos circunstanciados",
+        target: { to: "/inqueritos", search: { ...periodSearch, tipo: "TCO" } },
+      },
+      {
+        label: "Boletim de OcorrÃªncia Circunstanciado (BOC)",
+        value: boc.length,
+        desc: "ComunicaÃ§Ãµes ao MP",
+        target: { to: "/inqueritos", search: { ...periodSearch, tipo: "BOC" } },
+      },
+      {
+        label: "Ato de InvestigaÃ§Ã£o de Ato Infracional (AIAI)",
+        value: aiai.length,
+        desc: "Atos infracionais",
+        target: { to: "/inqueritos", search: { ...periodSearch, tipo: "AIAI" } },
+      },
+      {
+        label: "RelatÃ³rios Enviados",
+        value: concluidos,
+        desc: "Procedimentos finalizados",
+        target: { to: "/inqueritos", search: { ...periodSearch, relatorio: "enviado" } },
+      },
+      {
+        label: "Taxa de ConclusÃ£o",
+        value: formatPercent(taxaConclusao),
+        desc: "Percentual concluÃ­do",
+        disabledReason: "Indicador percentual; filtro de registros ainda nÃ£o disponÃ­vel.",
+      },
+      {
+        label: "Procedimentos Em Andamento",
+        value: filteredInqueritos.filter(isEmAndamento).length,
+        desc: "Procedimentos ainda ativos",
+        target: { to: "/inqueritos", search: { ...periodSearch, status: "em_andamento" } },
+      },
+      {
+        label: "Relatados e não enviados",
+        value: filteredInqueritos.filter(isRelatadoNaoEnviado).length,
+        desc: "Revisar envio formal",
+        target: {
+          to: "/inqueritos",
+          search: { ...periodSearch, relatorio: "relatado_nao_enviado" },
+        },
+      },
     ] satisfies OperationalRow[];
   }, [dataFinal, dataInicial, filteredInqueritos]);
 
   const periodStats = useMemo(() => {
-    const relatoriosEnviados = inqueritos.filter((item) => hasText(item.data_envio_relatorio) && inDateRange(parseDate(item.data_envio_relatorio), dataInicial, dataFinal)).length;
+    const relatoriosEnviados = inqueritos.filter(
+      (item) =>
+        hasText(item.data_envio_relatorio) &&
+        inDateRange(parseDate(item.data_envio_relatorio), dataInicial, dataFinal),
+    ).length;
     const apf = filteredInqueritos.filter((item) => getProcedureType(item.tipo) === "APF").length;
-    const mpu = filteredRepresentacoes.filter((item) => normalizeText(item.tipo).includes("protetiva")).length;
+    const mpu = filteredRepresentacoes.filter((item) =>
+      normalizeText(item.tipo).includes("protetiva"),
+    ).length;
     const tco = filteredInqueritos.filter((item) => getProcedureType(item.tipo) === "TCO").length;
     const cvli = filteredInqueritos.filter(isCvli);
     const cvliElucidados = cvli.filter((item) => isYesLike(item.elucidado)).length;
-    const periodSearch = { ...(dataInicial ? { dataInicial } : {}), ...(dataFinal ? { dataFinal } : {}) };
+    const periodSearch = {
+      ...(dataInicial ? { dataInicial } : {}),
+      ...(dataFinal ? { dataFinal } : {}),
+    };
 
     return [
-      { label: "InquÃ©ritos instaurados no perÃ­odo", value: filteredInqueritos.length, desc: "Data de instauraÃ§Ã£o ou criaÃ§Ã£o dentro do filtro", target: { to: "/inqueritos", search: periodSearch } },
-      { label: "RelatÃ³rios enviados no perÃ­odo", value: relatoriosEnviados, desc: "Data de envio entre as datas filtradas", target: { to: "/inqueritos", search: { ...periodSearch, relatorio: "enviado", dataCampo: "relatorio" } } },
-      { label: "APF lavrados no perÃ­odo", value: apf, desc: "Flagrantes cadastrados no perÃ­odo", target: { to: "/inqueritos", search: { ...periodSearch, tipo: "APF" } } },
-      { label: "MPU representadas no perÃ­odo", value: mpu, desc: "RepresentaÃ§Ãµes de medida protetiva", target: { to: "/representacoes", search: { ...periodSearch, operationalFilter: "todas", tipo: "medida_protetiva" } } },
-      { label: "TCO remetidos no perÃ­odo", value: tco, desc: "TCO cadastrados no perÃ­odo", target: { to: "/inqueritos", search: { ...periodSearch, tipo: "TCO" } } },
-      { label: "CVLI no perÃ­odo", value: cvli.length, desc: "CVLI/HomicÃ­dios filtrados", target: { to: "/inqueritos", search: { ...periodSearch, categoria: "cvli" } } },
-      { label: "CVLI elucidados", value: cvliElucidados, desc: "CVLI com elucidação registrada", target: { to: "/inqueritos", search: { ...periodSearch, categoria: "cvli", elucidado: "sim" } } },
-      { label: "ViolÃªncia domÃ©stica no perÃ­odo", value: filteredInqueritos.filter(isViolenciaDomestica).length, desc: "Casos Maria da Penha", target: { to: "/inqueritos", search: { ...periodSearch, categoria: "violencia_domestica" } } },
-      { label: "Crimes sexuais no perÃ­odo", value: filteredInqueritos.filter(isSexual).length, desc: "TipificaÃ§Ã£o sexual", target: { to: "/inqueritos", search: { ...periodSearch, categoria: "sexual" } } },
-      { label: "Crimes de trÃ¢nsito no perÃ­odo", value: filteredInqueritos.filter(isTransito).length, desc: "Casos de trÃ¢nsito", target: { to: "/inqueritos", search: { ...periodSearch, categoria: "transito" } } },
-      { label: "Crimes contra o patrimÃ´nio", value: filteredInqueritos.filter(isPatrimonial).length, desc: "Patrimoniais no perÃ­odo", target: { to: "/inqueritos", search: { ...periodSearch, categoria: "patrimonial" } } },
-      { label: "PrisÃµes vinculadas no perÃ­odo", value: filteredInqueritos.filter((item) => isYesLike(item.reu_preso)).length, desc: "Registros com rÃ©u preso", target: { to: "/inqueritos", search: { ...periodSearch, reu_preso: "sim" } } },
+      {
+        label: "InquÃ©ritos instaurados no perÃ­odo",
+        value: filteredInqueritos.length,
+        desc: "Data de instauraÃ§Ã£o ou criaÃ§Ã£o dentro do filtro",
+        target: { to: "/inqueritos", search: periodSearch },
+      },
+      {
+        label: "RelatÃ³rios enviados no perÃ­odo",
+        value: relatoriosEnviados,
+        desc: "Data de envio entre as datas filtradas",
+        target: {
+          to: "/inqueritos",
+          search: { ...periodSearch, relatorio: "enviado", dataCampo: "relatorio" },
+        },
+      },
+      {
+        label: "APF lavrados no perÃ­odo",
+        value: apf,
+        desc: "Flagrantes cadastrados no perÃ­odo",
+        target: { to: "/inqueritos", search: { ...periodSearch, tipo: "APF" } },
+      },
+      {
+        label: "MPU representadas no perÃ­odo",
+        value: mpu,
+        desc: "RepresentaÃ§Ãµes de medida protetiva",
+        target: {
+          to: "/representacoes",
+          search: { ...periodSearch, operationalFilter: "todas", tipo: "medida_protetiva" },
+        },
+      },
+      {
+        label: "TCO remetidos no perÃ­odo",
+        value: tco,
+        desc: "TCO cadastrados no perÃ­odo",
+        target: { to: "/inqueritos", search: { ...periodSearch, tipo: "TCO" } },
+      },
+      {
+        label: "CVLI no perÃ­odo",
+        value: cvli.length,
+        desc: "CVLI/HomicÃ­dios filtrados",
+        target: { to: "/inqueritos", search: { ...periodSearch, categoria: "cvli" } },
+      },
+      {
+        label: "CVLI elucidados",
+        value: cvliElucidados,
+        desc: "CVLI com elucidação registrada",
+        target: {
+          to: "/inqueritos",
+          search: { ...periodSearch, categoria: "cvli", elucidado: "sim" },
+        },
+      },
+      {
+        label: "ViolÃªncia domÃ©stica no perÃ­odo",
+        value: filteredInqueritos.filter(isViolenciaDomestica).length,
+        desc: "Casos Maria da Penha",
+        target: {
+          to: "/inqueritos",
+          search: { ...periodSearch, categoria: "violencia_domestica" },
+        },
+      },
+      {
+        label: "Crimes sexuais no perÃ­odo",
+        value: filteredInqueritos.filter(isSexual).length,
+        desc: "TipificaÃ§Ã£o sexual",
+        target: { to: "/inqueritos", search: { ...periodSearch, categoria: "sexual" } },
+      },
+      {
+        label: "Crimes de trÃ¢nsito no perÃ­odo",
+        value: filteredInqueritos.filter(isTransito).length,
+        desc: "Casos de trÃ¢nsito",
+        target: { to: "/inqueritos", search: { ...periodSearch, categoria: "transito" } },
+      },
+      {
+        label: "Crimes contra o patrimÃ´nio",
+        value: filteredInqueritos.filter(isPatrimonial).length,
+        desc: "Patrimoniais no perÃ­odo",
+        target: { to: "/inqueritos", search: { ...periodSearch, categoria: "patrimonial" } },
+      },
+      {
+        label: "PrisÃµes vinculadas no perÃ­odo",
+        value: filteredInqueritos.filter((item) => isYesLike(item.reu_preso)).length,
+        desc: "Registros com rÃ©u preso",
+        target: { to: "/inqueritos", search: { ...periodSearch, reu_preso: "sim" } },
+      },
     ] satisfies OperationalRow[];
   }, [dataFinal, dataInicial, filteredInqueritos, filteredRepresentacoes, inqueritos]);
 
@@ -399,7 +647,9 @@ function Alertas() {
         <section className="rounded-2xl border border-border/70 bg-[#020607] p-4 shadow-[0_18px_52px_rgba(0,0,0,0.18)]">
           <div className="mb-4 flex flex-col gap-2 border-b border-border/60 pb-4 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <h2 className="text-sm font-black uppercase tracking-[0.18em] text-primary">CENTRAL ODP</h2>
+              <h2 className="text-sm font-black uppercase tracking-[0.18em] text-primary">
+                CENTRAL ODP
+              </h2>
             </div>
             <span className="w-fit rounded-full border border-primary/25 bg-primary/10 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.12em] text-primary">
               {smartAlerts.length} pendÃªncia(s) ativas
@@ -413,36 +663,55 @@ function Alertas() {
               const count = moduleAlerts[key].length;
               const tone = moduleTone[key];
               return (
-              <Link
-                key={key}
-                to="/alertas/$modulo"
-                params={{ modulo: key }}
-                className={`group relative min-h-[164px] overflow-hidden rounded-2xl border border-border/70 bg-gradient-to-br ${tone.surface} p-4 text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.02),0_12px_30px_rgba(0,0,0,0.16)] transition-all duration-200 cursor-pointer ${tone.hover}`}
-              >
-                <span className={`absolute left-0 top-5 h-16 w-1 rounded-r-full ${tone.rail}`} />
-                <span className={`pointer-events-none absolute -right-12 -top-12 h-36 w-36 rounded-full blur-3xl ${tone.glow} opacity-45 transition-opacity duration-200 group-hover:opacity-70`} />
-                <span className="pointer-events-none absolute inset-x-4 bottom-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+                <Link
+                  key={key}
+                  to="/alertas/$modulo"
+                  params={{ modulo: key }}
+                  className={`group relative min-h-[164px] overflow-hidden rounded-2xl border border-border/70 bg-gradient-to-br ${tone.surface} p-4 text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.02),0_12px_30px_rgba(0,0,0,0.16)] transition-all duration-200 cursor-pointer ${tone.hover}`}
+                >
+                  <span className={`absolute left-0 top-5 h-16 w-1 rounded-r-full ${tone.rail}`} />
+                  <span
+                    className={`pointer-events-none absolute -right-12 -top-12 h-36 w-36 rounded-full blur-3xl ${tone.glow} opacity-45 transition-opacity duration-200 group-hover:opacity-70`}
+                  />
+                  <span className="pointer-events-none absolute inset-x-4 bottom-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
 
-                <div className="relative mb-4 flex items-center justify-between">
-                  <span className={`rounded-xl border p-2.5 shadow-[0_0_24px_rgba(0,0,0,0.2)] ${tone.icon}`}>
-                    <Icon className="h-5 w-5" />
-                  </span>
-                  <span className={`rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.1em] ${tone.badge}`}>
-                    {meta.badge}
-                  </span>
-                </div>
-                <h3 className="relative text-base font-black tracking-tight text-foreground">{meta.title}</h3>
-                <p className="relative mt-1 min-h-[38px] text-xs leading-5 text-muted-foreground">{meta.desc}</p>
-                <div className="relative mt-4 flex items-end justify-between gap-3">
-                  <div>
-                    <p className="text-[10px] font-black uppercase tracking-[0.16em] text-muted-foreground">Alertas</p>
-                    <p className={`mt-0.5 text-3xl font-black leading-none tabular-nums ${tone.count}`}>{count}</p>
+                  <div className="relative mb-4 flex items-center justify-between">
+                    <span
+                      className={`rounded-xl border p-2.5 shadow-[0_0_24px_rgba(0,0,0,0.2)] ${tone.icon}`}
+                    >
+                      <Icon className="h-5 w-5" />
+                    </span>
+                    <span
+                      className={`rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.1em] ${tone.badge}`}
+                    >
+                      {meta.badge}
+                    </span>
                   </div>
-                  <span className={`inline-flex items-center gap-1.5 rounded-full border border-current/25 bg-background/35 px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.08em] transition-colors ${tone.cta}`}>
-                    Abrir <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
-                  </span>
-                </div>
-              </Link>
+                  <h3 className="relative text-base font-black tracking-tight text-foreground">
+                    {meta.title}
+                  </h3>
+                  <p className="relative mt-1 min-h-[38px] text-xs leading-5 text-muted-foreground">
+                    {meta.desc}
+                  </p>
+                  <div className="relative mt-4 flex items-end justify-between gap-3">
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-[0.16em] text-muted-foreground">
+                        Alertas
+                      </p>
+                      <p
+                        className={`mt-0.5 text-3xl font-black leading-none tabular-nums ${tone.count}`}
+                      >
+                        {count}
+                      </p>
+                    </div>
+                    <span
+                      className={`inline-flex items-center gap-1.5 rounded-full border border-current/25 bg-background/35 px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.08em] transition-colors ${tone.cta}`}
+                    >
+                      Abrir{" "}
+                      <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+                    </span>
+                  </div>
+                </Link>
               );
             })}
           </div>
@@ -453,20 +722,36 @@ function Alertas() {
             <div>
               <div className="flex items-center gap-2">
                 <SlidersHorizontal className="h-4 w-4 text-primary" />
-                <h2 className="text-sm font-black uppercase tracking-[0.16em] text-foreground">Filtro por perÃ­odo</h2>
+                <h2 className="text-sm font-black uppercase tracking-[0.16em] text-foreground">
+                  Filtro por perÃ­odo
+                </h2>
               </div>
-              <p className="mt-1 text-xs text-muted-foreground">Informe uma data Ãºnica ou um intervalo para atualizar os nÃºmeros abaixo.</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Informe uma data Ãºnica ou um intervalo para atualizar os nÃºmeros abaixo.
+              </p>
             </div>
 
             <div className="flex flex-wrap gap-2">
-              <button type="button" onClick={() => applyPreset(7)} className="rounded-full border border-border bg-background/60 px-3 py-1.5 text-xs font-semibold transition hover:border-primary/40 hover:text-primary">
+              <button
+                type="button"
+                onClick={() => applyPreset(7)}
+                className="rounded-full border border-border bg-background/60 px-3 py-1.5 text-xs font-semibold transition hover:border-primary/40 hover:text-primary"
+              >
                 Ãšltimos 7 dias
               </button>
-              <button type="button" onClick={() => applyPreset(30)} className="rounded-full border border-border bg-background/60 px-3 py-1.5 text-xs font-semibold transition hover:border-primary/40 hover:text-primary">
+              <button
+                type="button"
+                onClick={() => applyPreset(30)}
+                className="rounded-full border border-border bg-background/60 px-3 py-1.5 text-xs font-semibold transition hover:border-primary/40 hover:text-primary"
+              >
                 Ãšltimos 30 dias
               </button>
               {hasActiveFilters ? (
-                <button type="button" onClick={clearFilters} className="rounded-full border border-primary/30 bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary transition hover:bg-primary/15">
+                <button
+                  type="button"
+                  onClick={clearFilters}
+                  className="rounded-full border border-primary/30 bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary transition hover:bg-primary/15"
+                >
                   Limpar perÃ­odo
                 </button>
               ) : null}
@@ -491,13 +776,31 @@ function Alertas() {
           </div>
         </section>
 
-        {loading ? <div className="rounded-lg border border-border bg-card p-4 text-sm text-muted-foreground">Carregando central operacional...</div> : null}
-        {!loading && error ? <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive">{error}</div> : null}
+        {loading ? (
+          <div className="rounded-lg border border-border bg-card p-4 text-sm text-muted-foreground">
+            Carregando central operacional...
+          </div>
+        ) : null}
+        {!loading && error ? (
+          <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive">
+            {error}
+          </div>
+        ) : null}
 
         {!loading && !error ? (
           <div className="grid gap-5 xl:grid-cols-[1.15fr_0.85fr]">
-            <OperationalTable title="Panorama System Geral" accent="info" rows={panorama} onOpen={openTableTarget} />
-            <OperationalTable title="EstatÃ­sticas do PerÃ­odo" accent="warning" rows={periodStats} onOpen={openTableTarget} />
+            <OperationalTable
+              title="Panorama System Geral"
+              accent="info"
+              rows={panorama}
+              onOpen={openTableTarget}
+            />
+            <OperationalTable
+              title="EstatÃ­sticas do PerÃ­odo"
+              accent="warning"
+              rows={periodStats}
+              onOpen={openTableTarget}
+            />
           </div>
         ) : null}
       </div>
@@ -552,7 +855,9 @@ function OperationalTable({
                   }}
                 >
                   <td className="px-4 py-2.5 font-semibold text-foreground">{row.label}</td>
-                  <td className="px-4 py-2.5 text-right text-lg font-black tabular-nums text-primary">{row.value}</td>
+                  <td className="px-4 py-2.5 text-right text-lg font-black tabular-nums text-primary">
+                    {row.value}
+                  </td>
                   <td className="px-4 py-2.5 text-xs italic text-muted-foreground">{row.desc}</td>
                 </tr>
               );

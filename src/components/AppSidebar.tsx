@@ -1,9 +1,28 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { LayoutDashboard, FileText, FilePlus2, Bell, LogOut, Gavel, Users, ClipboardList } from "lucide-react";
+import {
+  LayoutDashboard,
+  FileText,
+  FilePlus2,
+  Bell,
+  LogOut,
+  Gavel,
+  Users,
+  ClipboardList,
+} from "lucide-react";
 import { getProfileAvatarPublicUrl, logout } from "@/lib/auth";
-import { canCreateCases, canManageUsers, canViewAuditoria, canViewRepresentacoes, type UserProfile } from "@/lib/authz";
-import { buildModuleAlerts, buildSmartAlerts, countModuleAlertsTotal } from "@/lib/alertasInteligentes";
+import {
+  canCreateCases,
+  canManageUsers,
+  canViewAuditoria,
+  canViewRepresentacoes,
+  type UserProfile,
+} from "@/lib/authz";
+import {
+  buildModuleAlerts,
+  buildSmartAlerts,
+  countModuleAlertsTotal,
+} from "@/lib/alertasInteligentes";
 import { listInqueritos } from "@/lib/repositories/inqueritosRepository";
 import { listRepresentacoes } from "@/lib/repositories/representacoesRepository";
 
@@ -26,9 +45,14 @@ export function AppSidebar({ profile }: { profile: UserProfile }) {
 
     (async () => {
       try {
-        const [inqueritos, representacoes] = await Promise.all([listInqueritos(), listRepresentacoes()]);
+        const [inqueritos, representacoes] = await Promise.all([
+          listInqueritos(),
+          listRepresentacoes(),
+        ]);
         if (!cancelled) {
-          setAlertasBadge(countModuleAlertsTotal(buildModuleAlerts(buildSmartAlerts(inqueritos, representacoes))));
+          setAlertasBadge(
+            countModuleAlertsTotal(buildModuleAlerts(buildSmartAlerts(inqueritos, representacoes))),
+          );
         }
       } catch {
         if (!cancelled) {
@@ -112,14 +136,20 @@ export function AppSidebar({ profile }: { profile: UserProfile }) {
           title="Acessar meu perfil"
         >
           {avatarUrl ? (
-            <img src={avatarUrl} alt={`Avatar de ${profile.nome}`} className="h-9 w-9 rounded-full border border-primary/40 object-cover" />
+            <img
+              src={avatarUrl}
+              alt={`Avatar de ${profile.nome}`}
+              className="h-9 w-9 rounded-full border border-primary/40 object-cover"
+            />
           ) : (
             <div className="h-9 w-9 rounded-full bg-primary/20 border border-primary/40 flex items-center justify-center text-xs font-bold text-primary">
               {initial}
             </div>
           )}
           <div className="flex-1 min-w-0">
-            <div className="text-xs font-semibold text-sidebar-foreground truncate">{profile.nome}</div>
+            <div className="text-xs font-semibold text-sidebar-foreground truncate">
+              {profile.nome}
+            </div>
             <div className="text-[10px] text-muted-foreground truncate">{profile.cargo}</div>
           </div>
         </Link>
@@ -132,7 +162,9 @@ export function AppSidebar({ profile }: { profile: UserProfile }) {
           <LogOut className="h-4 w-4" />
         </button>
       </div>
-      <div className="shrink-0 px-4 pb-3 text-[10px] text-muted-foreground">v2.0.0 · SIPI © 2026</div>
+      <div className="shrink-0 px-4 pb-3 text-[10px] text-muted-foreground">
+        v2.0.0 · SIPI © 2026
+      </div>
     </aside>
   );
 }

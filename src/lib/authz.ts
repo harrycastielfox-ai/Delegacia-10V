@@ -4,7 +4,13 @@ export type UserRole = (typeof USER_ROLES)[number];
 export const AUTHORIZATION_STATUS = ["aguardando", "autorizado", "bloqueado"] as const;
 export type AuthorizationStatus = (typeof AUTHORIZATION_STATUS)[number];
 
-export const INSTITUTIONAL_FUNCTIONS = ["juiz", "delegado", "escrivao", "investigador", "agente_policia"] as const;
+export const INSTITUTIONAL_FUNCTIONS = [
+  "juiz",
+  "delegado",
+  "escrivao",
+  "investigador",
+  "agente_policia",
+] as const;
 export type InstitutionalFunction = (typeof INSTITUTIONAL_FUNCTIONS)[number];
 
 export interface UserProfile {
@@ -48,43 +54,60 @@ export function canOnlyViewPublicCases(profile: Pick<UserProfile, "cargo"> | nul
   return !canViewPrivateCases(profile);
 }
 
-export function canCreateCases(profile: Pick<UserProfile, "cargo" | "status_autorizacao"> | null): boolean {
+export function canCreateCases(
+  profile: Pick<UserProfile, "cargo" | "status_autorizacao"> | null,
+): boolean {
   if (!isAuthorized(profile)) return false;
   return profile.cargo !== "membro";
 }
 
-export function canEditCases(profile: Pick<UserProfile, "cargo" | "status_autorizacao"> | null): boolean {
+export function canEditCases(
+  profile: Pick<UserProfile, "cargo" | "status_autorizacao"> | null,
+): boolean {
   return canCreateCases(profile);
 }
 
-export function canDeleteCases(profile: Pick<UserProfile, "cargo" | "status_autorizacao"> | null): boolean {
+export function canDeleteCases(
+  profile: Pick<UserProfile, "cargo" | "status_autorizacao"> | null,
+): boolean {
   return canCreateCases(profile);
 }
 
-export function canManageCases(profile: Pick<UserProfile, "cargo" | "status_autorizacao"> | null): boolean {
+export function canManageCases(
+  profile: Pick<UserProfile, "cargo" | "status_autorizacao"> | null,
+): boolean {
   return canCreateCases(profile) || canEditCases(profile) || canDeleteCases(profile);
 }
 
-
-export function canViewRepresentacoes(profile: Pick<UserProfile, "cargo" | "status_autorizacao"> | null): boolean {
+export function canViewRepresentacoes(
+  profile: Pick<UserProfile, "cargo" | "status_autorizacao"> | null,
+): boolean {
   if (!isAuthorized(profile)) return false;
   return profile.cargo !== "membro";
 }
 
-export function canViewAuditoria(profile: Pick<UserProfile, "cargo" | "status_autorizacao"> | null): boolean {
+export function canViewAuditoria(
+  profile: Pick<UserProfile, "cargo" | "status_autorizacao"> | null,
+): boolean {
   if (!isAuthorized(profile)) return false;
   return profile.cargo === "admin" || profile.cargo === "delegado";
 }
 
-export function canCreateRepresentacoes(profile: Pick<UserProfile, "cargo" | "status_autorizacao"> | null): boolean {
+export function canCreateRepresentacoes(
+  profile: Pick<UserProfile, "cargo" | "status_autorizacao"> | null,
+): boolean {
   return canViewRepresentacoes(profile);
 }
 
-export function canEditRepresentacoes(profile: Pick<UserProfile, "cargo" | "status_autorizacao"> | null): boolean {
+export function canEditRepresentacoes(
+  profile: Pick<UserProfile, "cargo" | "status_autorizacao"> | null,
+): boolean {
   return canViewRepresentacoes(profile);
 }
 
-export function canDeleteRepresentacoes(profile: Pick<UserProfile, "cargo" | "status_autorizacao"> | null): boolean {
+export function canDeleteRepresentacoes(
+  profile: Pick<UserProfile, "cargo" | "status_autorizacao"> | null,
+): boolean {
   return canViewRepresentacoes(profile);
 }
 
@@ -92,7 +115,6 @@ export const canSeePrivateRecords = canViewPrivateCases;
 export const canCreateRecords = canCreateCases;
 export const canEditRecords = canEditCases;
 export const canDeleteRecords = canDeleteCases;
-
 
 const ATLAS_BLOCKED_ROLES: UserRole[] = ["admin", "delegado", "atlas_access"];
 const ATLAS_ALLOWED_TARGET_ROLES: UserRole[] = ["membro", "sipi_access"];

@@ -1,12 +1,39 @@
-import { createFileRoute, Link, Outlet, useLocation, useNavigate, useRouterState } from "@tanstack/react-router";
+import {
+  createFileRoute,
+  Link,
+  Outlet,
+  useLocation,
+  useNavigate,
+  useRouterState,
+} from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { AppLayout } from "@/components/AppLayout";
-import { getInqueritoById, softDeleteInquerito, type InqueritoRecord } from "@/lib/repositories/inqueritosRepository";
+import {
+  getInqueritoById,
+  softDeleteInquerito,
+  type InqueritoRecord,
+} from "@/lib/repositories/inqueritosRepository";
 import { logAuditoria } from "@/lib/repositories/auditoriaRepository";
 import { getCurrentProfile } from "@/lib/auth";
-import { canDeleteCases, canEditCases, canOnlyViewPublicCases, type UserProfile } from "@/lib/authz";
-import { calculateInqueritoOperationalPriorityDetails, normalizeCaseCategory } from "@/lib/inqueritosPriority";
-import { BookOpen, FileSearch, Scale, UserRound, ShieldCheck, NotebookPen, CalendarClock } from "lucide-react";
+import {
+  canDeleteCases,
+  canEditCases,
+  canOnlyViewPublicCases,
+  type UserProfile,
+} from "@/lib/authz";
+import {
+  calculateInqueritoOperationalPriorityDetails,
+  normalizeCaseCategory,
+} from "@/lib/inqueritosPriority";
+import {
+  BookOpen,
+  FileSearch,
+  Scale,
+  UserRound,
+  ShieldCheck,
+  NotebookPen,
+  CalendarClock,
+} from "lucide-react";
 
 export const Route = createFileRoute("/inqueritos/$caseId")({ component: InqueritoDetalhes });
 
@@ -170,7 +197,10 @@ function InqueritoDetalhes() {
     (async () => {
       try {
         setErro("");
-        const [currentProfile, inquerito] = await Promise.all([getCurrentProfile(), getInqueritoById(caseId)]);
+        const [currentProfile, inquerito] = await Promise.all([
+          getCurrentProfile(),
+          getInqueritoById(caseId),
+        ]);
         setProfile(currentProfile);
         if (!inquerito) {
           setRestricted(false);
@@ -178,7 +208,9 @@ function InqueritoDetalhes() {
           return;
         }
         const raw = inquerito as unknown as Record<string, unknown>;
-        const visibility = String(raw.visibilidade ?? raw.visibility ?? raw.publico_privado ?? "publico").toLowerCase();
+        const visibility = String(
+          raw.visibilidade ?? raw.visibility ?? raw.publico_privado ?? "publico",
+        ).toLowerCase();
         const isPrivate = visibility.includes("priv") || visibility.includes("sig");
         if (isPrivate && canOnlyViewPublicCases(currentProfile)) {
           setRestricted(true);
@@ -188,9 +220,13 @@ function InqueritoDetalhes() {
         setRestricted(false);
         setCaso(inquerito);
       } catch (error) {
-        const message = typeof error === "object" && error !== null && "message" in error && typeof error.message === "string"
-          ? error.message
-          : "Erro desconhecido";
+        const message =
+          typeof error === "object" &&
+          error !== null &&
+          "message" in error &&
+          typeof error.message === "string"
+            ? error.message
+            : "Erro desconhecido";
         setErro(`Falha ao carregar detalhe do inquérito (${message})`);
       } finally {
         setLoading(false);
@@ -204,10 +240,53 @@ function InqueritoDetalhes() {
 
   if (isEditingChildRoute) return <Outlet />;
 
-  if (loading) return <AppLayout><div className="text-sm text-muted-foreground">Carregando…</div></AppLayout>;
-  if (erro) return <AppLayout><div className="space-y-4"><p className="rounded-lg border border-destructive/50 bg-destructive/10 px-4 py-2 text-sm text-destructive">{erro}</p><Link to="/inqueritos" className="px-4 py-2 border border-border rounded-lg inline-block">Voltar</Link></div></AppLayout>;
-  if (restricted) return <AppLayout><div className="space-y-4"><h1 className="text-xl font-bold">Acesso restrito</h1><p className="text-sm text-muted-foreground">Você não tem permissão para visualizar este inquérito.</p><Link to="/inqueritos" className="px-4 py-2 border border-border rounded-lg inline-block">Voltar</Link></div></AppLayout>;
-  if (!caso || !detalhe) return <AppLayout><div className="space-y-4"><h1 className="text-xl font-bold">Inquérito não encontrado ou removido</h1><p className="text-sm text-muted-foreground">Este inquérito não está mais disponível para visualização.</p><Link to="/inqueritos" className="px-4 py-2 border border-border rounded-lg inline-block">Voltar</Link></div></AppLayout>;
+  if (loading)
+    return (
+      <AppLayout>
+        <div className="text-sm text-muted-foreground">Carregando…</div>
+      </AppLayout>
+    );
+  if (erro)
+    return (
+      <AppLayout>
+        <div className="space-y-4">
+          <p className="rounded-lg border border-destructive/50 bg-destructive/10 px-4 py-2 text-sm text-destructive">
+            {erro}
+          </p>
+          <Link to="/inqueritos" className="px-4 py-2 border border-border rounded-lg inline-block">
+            Voltar
+          </Link>
+        </div>
+      </AppLayout>
+    );
+  if (restricted)
+    return (
+      <AppLayout>
+        <div className="space-y-4">
+          <h1 className="text-xl font-bold">Acesso restrito</h1>
+          <p className="text-sm text-muted-foreground">
+            Você não tem permissão para visualizar este inquérito.
+          </p>
+          <Link to="/inqueritos" className="px-4 py-2 border border-border rounded-lg inline-block">
+            Voltar
+          </Link>
+        </div>
+      </AppLayout>
+    );
+  if (!caso || !detalhe)
+    return (
+      <AppLayout>
+        <div className="space-y-4">
+          <h1 className="text-xl font-bold">Inquérito não encontrado ou removido</h1>
+          <p className="text-sm text-muted-foreground">
+            Este inquérito não está mais disponível para visualização.
+          </p>
+          <Link to="/inqueritos" className="px-4 py-2 border border-border rounded-lg inline-block">
+            Voltar
+          </Link>
+        </div>
+      </AppLayout>
+    );
 
   const remove = async () => {
     if (!caso || deleting || !canDeleteCases(profile)) return;
@@ -235,16 +314,42 @@ function InqueritoDetalhes() {
       setShowDeleteModal(false);
       navigate({ to: "/inqueritos" });
     } catch (error) {
-      const message = typeof error === "object" && error !== null && "message" in error && typeof error.message === "string"
-        ? error.message
-        : "Erro desconhecido";
-      const code = typeof error === "object" && error !== null && "code" in error && typeof error.code === "string" ? error.code : "";
-      const details = typeof error === "object" && error !== null && "details" in error && typeof error.details === "string" ? error.details : "";
-      const hint = typeof error === "object" && error !== null && "hint" in error && typeof error.hint === "string" ? error.hint : "";
+      const message =
+        typeof error === "object" &&
+        error !== null &&
+        "message" in error &&
+        typeof error.message === "string"
+          ? error.message
+          : "Erro desconhecido";
+      const code =
+        typeof error === "object" &&
+        error !== null &&
+        "code" in error &&
+        typeof error.code === "string"
+          ? error.code
+          : "";
+      const details =
+        typeof error === "object" &&
+        error !== null &&
+        "details" in error &&
+        typeof error.details === "string"
+          ? error.details
+          : "";
+      const hint =
+        typeof error === "object" &&
+        error !== null &&
+        "hint" in error &&
+        typeof error.hint === "string"
+          ? error.hint
+          : "";
       if (code === "42501") {
-        setDeleteError("Sem permissão para excluir este inquérito. Verifique a policy de UPDATE/DELETE (soft delete) no Supabase.");
+        setDeleteError(
+          "Sem permissão para excluir este inquérito. Verifique a policy de UPDATE/DELETE (soft delete) no Supabase.",
+        );
       } else {
-        setDeleteError(`Falha ao excluir inquérito (${message}${code ? ` | code: ${code}` : ""}${details ? ` | details: ${details}` : ""}${hint ? ` | hint: ${hint}` : ""})`);
+        setDeleteError(
+          `Falha ao excluir inquérito (${message}${code ? ` | code: ${code}` : ""}${details ? ` | details: ${details}` : ""}${hint ? ` | hint: ${hint}` : ""})`,
+        );
       }
     } finally {
       setDeleting(false);
@@ -270,98 +375,257 @@ function InqueritoDetalhes() {
     Elucidado: "border-emerald-500/35 bg-emerald-500/15 text-emerald-200",
   };
 
-  return <AppLayout><div className="mx-auto w-full max-w-[1480px] space-y-4 px-1 lg:px-2">
-    <header className="rounded-xl border border-border/70 bg-card/65 p-4 lg:p-5">
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-        <div className="min-w-0 flex-1 space-y-1.5">
-          <Link to="/inqueritos" className="inline-flex w-fit items-center gap-1 rounded-md border border-border/80 bg-background/70 px-2.5 py-1 text-xs text-muted-foreground hover:bg-accent">← Voltar</Link>
-          <h1 className="text-3xl font-extrabold tracking-tight text-foreground break-words">{detalhe.numeroPpe}</h1>
-          <p className="max-w-5xl text-sm leading-6 text-muted-foreground break-words">{detalhe.tipificacao}</p>
-          {detalhe.ultimaEdicao !== FALLBACK && <p className="inline-flex items-center gap-1 text-xs text-muted-foreground"><CalendarClock className="h-3.5 w-3.5" /> Última edição em {formatDateTime(detalhe.ultimaEdicao)}</p>}
-        </div>
-        <div className="flex w-full flex-wrap items-center justify-start gap-2 sm:justify-end lg:w-auto lg:flex-nowrap">
-          <button onClick={() => window.print()} className="px-3.5 py-2 text-xs rounded-md border border-border bg-card hover:bg-accent">Gerar PDF</button>
-          {canEditCases(profile) ? <button onClick={() => navigate({ to: "/inqueritos/$caseId/editar", params: { caseId: caso.id } })} className="px-3.5 py-2 text-xs rounded-md bg-primary text-primary-foreground font-semibold">Editar</button> : null}
-          {canDeleteCases(profile) ? <button onClick={() => { setDeleteError(null); setShowDeleteModal(true); }} disabled={deleting} className="px-3.5 py-2 text-xs rounded-md border border-destructive/30 bg-destructive/10 text-destructive disabled:cursor-not-allowed disabled:opacity-70">{deleting ? "Excluindo..." : "Excluir"}</button> : null}
-        </div>
-      </div>
-      <div className="mt-3 flex flex-wrap gap-2.5">
-        {badges.map(([label, value]) => (
-          <span key={label} className={`inline-flex items-center rounded-md border px-2.5 py-1 text-[10px] font-semibold ${badgeTone[label] ?? "border-border/70 bg-muted/30 text-foreground"}`}>
-            {label}: {value || FALLBACK}
-          </span>
-        ))}
-        {isPrazoVencido(detalhe.prazo) && <span className="rounded-md border border-red-500/40 bg-red-500/15 px-2.5 py-1 text-[10px] font-semibold text-red-200">Vencido</span>}
-      </div>
-      {deleteError && <p className="mt-3 rounded-lg border border-destructive/50 bg-destructive/10 px-3 py-1.5 text-xs text-destructive">{deleteError}</p>}
-    </header>
-
-    <section className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-      <div className="space-y-4">
-        <InfoCard title="Dados Gerais" icon={<BookOpen className="h-4 w-4 text-primary" />} items={[["Nº PPE", detalhe.numeroPpe], ["Nº físico", detalhe.numeroFisico], ["Nº BO", detalhe.numeroBo], ["Data do fato", detalhe.dataFato], ["Data de instauração", detalhe.dataInstauracao], ["Prazo", detalhe.prazo], ["Data limite", detalhe.prazo], ["Dias corridos", detalhe.diasDecorridos]]} />
-        <InfoCard title="Pessoas Envolvidas" icon={<UserRound className="h-4 w-4 text-primary" />} items={[["Vítima", detalhe.vitima], ["Autor / Investigado", detalhe.investigado], ["Autoria determinada ou indeterminada", detalhe.autoriaDeterminada], ["Réu preso", detalhe.reuPreso], ["Motivação", detalhe.motivacao]]} />
-        <InfoCard title="Relatório e Jurídico" icon={<Scale className="h-4 w-4 text-primary" />} items={[["Relatório enviado?", detalhe.relatorioEnviado], ["Data envio relatório", detalhe.dataEnvioRelatorio], ["Medida protetiva?", detalhe.medidaProtetiva], ["Nº processo medida", detalhe.numeroProcessoMedida], ["Qtd. representações", detalhe.representacoesLegais]]} />
-        <InfoCard title="Diligências Pendentes" icon={<NotebookPen className="h-4 w-4 text-primary" />} items={[["Diligências pendentes", detalhe.diligenciasPendentes]]} stacked preWrapValues />
-      </div>
-      <div className="space-y-4">
-        <InfoCard title="Classificação" icon={<FileSearch className="h-4 w-4 text-primary" />} items={[["Tipificação", detalhe.tipificacao], ["Prioridade operacional", detalhe.prioridade], ["Motivo da prioridade", detalhe.prioridadeMotivo], ["Categoria do Caso", detalhe.gravidade], ["Tipo de Procedimento", detalhe.tipo], ["Situação", detalhe.situacao], ["Elucidado", detalhe.elucidado], ["Houve arma de fogo?", detalhe.houveArmaFogo], ["Arma utilizada", detalhe.armaUtilizada], ["Vinculado à facção?", detalhe.vinculadoFaccao], ["Nome da facção", detalhe.nomeFaccao]]} highlightFirst />
-        <InfoCard title="Dados Operacionais" icon={<ShieldCheck className="h-4 w-4 text-primary" />} items={[["Delegado responsável", detalhe.delegadoResponsavel], ["Equipe", detalhe.equipe], ["Escrivão", detalhe.escrivao], ["Bairro", detalhe.bairro], ["Distrito", detalhe.distrito], ["Status diligências", detalhe.statusDiligencias], ["Última atualização", formatDateTime(detalhe.ultimaEdicao)]]} />
-        <InfoCard title="Observações" icon={<NotebookPen className="h-4 w-4 text-primary" />} items={[["Observações", detalhe.observacoes]]} stacked preWrapValues />
-      </div>
-    </section>
-    {showDeleteModal && canDeleteCases(profile) && (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
-        <div className="w-full max-w-md rounded-xl border border-border bg-card p-5 shadow-2xl">
-          <h2 className="text-lg font-bold text-foreground">Excluir inquérito</h2>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Deseja remover este inquérito? Esta ação utiliza exclusão lógica e poderá ser auditada no sistema.
-          </p>
-          <div className="mt-5 flex justify-end gap-2">
-            <button
-              type="button"
-              onClick={() => setShowDeleteModal(false)}
-              disabled={deleting}
-              className="rounded-md border border-border px-3 py-1.5 text-xs hover:bg-accent/40 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              Cancelar
-            </button>
-            <button
-              type="button"
-              onClick={remove}
-              disabled={deleting}
-              className="rounded-md border border-destructive/30 bg-destructive px-3 py-1.5 text-xs font-semibold text-destructive-foreground disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {deleting ? "Excluindo..." : "Excluir"}
-            </button>
+  return (
+    <AppLayout>
+      <div className="mx-auto w-full max-w-[1480px] space-y-4 px-1 lg:px-2">
+        <header className="rounded-xl border border-border/70 bg-card/65 p-4 lg:p-5">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+            <div className="min-w-0 flex-1 space-y-1.5">
+              <Link
+                to="/inqueritos"
+                className="inline-flex w-fit items-center gap-1 rounded-md border border-border/80 bg-background/70 px-2.5 py-1 text-xs text-muted-foreground hover:bg-accent"
+              >
+                ← Voltar
+              </Link>
+              <h1 className="text-3xl font-extrabold tracking-tight text-foreground break-words">
+                {detalhe.numeroPpe}
+              </h1>
+              <p className="max-w-5xl text-sm leading-6 text-muted-foreground break-words">
+                {detalhe.tipificacao}
+              </p>
+              {detalhe.ultimaEdicao !== FALLBACK && (
+                <p className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                  <CalendarClock className="h-3.5 w-3.5" /> Última edição em{" "}
+                  {formatDateTime(detalhe.ultimaEdicao)}
+                </p>
+              )}
+            </div>
+            <div className="flex w-full flex-wrap items-center justify-start gap-2 sm:justify-end lg:w-auto lg:flex-nowrap">
+              <button
+                onClick={() => window.print()}
+                className="px-3.5 py-2 text-xs rounded-md border border-border bg-card hover:bg-accent"
+              >
+                Gerar PDF
+              </button>
+              {canEditCases(profile) ? (
+                <button
+                  onClick={() =>
+                    navigate({ to: "/inqueritos/$caseId/editar", params: { caseId: caso.id } })
+                  }
+                  className="px-3.5 py-2 text-xs rounded-md bg-primary text-primary-foreground font-semibold"
+                >
+                  Editar
+                </button>
+              ) : null}
+              {canDeleteCases(profile) ? (
+                <button
+                  onClick={() => {
+                    setDeleteError(null);
+                    setShowDeleteModal(true);
+                  }}
+                  disabled={deleting}
+                  className="px-3.5 py-2 text-xs rounded-md border border-destructive/30 bg-destructive/10 text-destructive disabled:cursor-not-allowed disabled:opacity-70"
+                >
+                  {deleting ? "Excluindo..." : "Excluir"}
+                </button>
+              ) : null}
+            </div>
           </div>
-        </div>
+          <div className="mt-3 flex flex-wrap gap-2.5">
+            {badges.map(([label, value]) => (
+              <span
+                key={label}
+                className={`inline-flex items-center rounded-md border px-2.5 py-1 text-[10px] font-semibold ${badgeTone[label] ?? "border-border/70 bg-muted/30 text-foreground"}`}
+              >
+                {label}: {value || FALLBACK}
+              </span>
+            ))}
+            {isPrazoVencido(detalhe.prazo) && (
+              <span className="rounded-md border border-red-500/40 bg-red-500/15 px-2.5 py-1 text-[10px] font-semibold text-red-200">
+                Vencido
+              </span>
+            )}
+          </div>
+          {deleteError && (
+            <p className="mt-3 rounded-lg border border-destructive/50 bg-destructive/10 px-3 py-1.5 text-xs text-destructive">
+              {deleteError}
+            </p>
+          )}
+        </header>
+
+        <section className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+          <div className="space-y-4">
+            <InfoCard
+              title="Dados Gerais"
+              icon={<BookOpen className="h-4 w-4 text-primary" />}
+              items={[
+                ["Nº PPE", detalhe.numeroPpe],
+                ["Nº físico", detalhe.numeroFisico],
+                ["Nº BO", detalhe.numeroBo],
+                ["Data do fato", detalhe.dataFato],
+                ["Data de instauração", detalhe.dataInstauracao],
+                ["Prazo", detalhe.prazo],
+                ["Data limite", detalhe.prazo],
+                ["Dias corridos", detalhe.diasDecorridos],
+              ]}
+            />
+            <InfoCard
+              title="Pessoas Envolvidas"
+              icon={<UserRound className="h-4 w-4 text-primary" />}
+              items={[
+                ["Vítima", detalhe.vitima],
+                ["Autor / Investigado", detalhe.investigado],
+                ["Autoria determinada ou indeterminada", detalhe.autoriaDeterminada],
+                ["Réu preso", detalhe.reuPreso],
+                ["Motivação", detalhe.motivacao],
+              ]}
+            />
+            <InfoCard
+              title="Relatório e Jurídico"
+              icon={<Scale className="h-4 w-4 text-primary" />}
+              items={[
+                ["Relatório enviado?", detalhe.relatorioEnviado],
+                ["Data envio relatório", detalhe.dataEnvioRelatorio],
+                ["Medida protetiva?", detalhe.medidaProtetiva],
+                ["Nº processo medida", detalhe.numeroProcessoMedida],
+                ["Qtd. representações", detalhe.representacoesLegais],
+              ]}
+            />
+            <InfoCard
+              title="Diligências Pendentes"
+              icon={<NotebookPen className="h-4 w-4 text-primary" />}
+              items={[["Diligências pendentes", detalhe.diligenciasPendentes]]}
+              stacked
+              preWrapValues
+            />
+          </div>
+          <div className="space-y-4">
+            <InfoCard
+              title="Classificação"
+              icon={<FileSearch className="h-4 w-4 text-primary" />}
+              items={[
+                ["Tipificação", detalhe.tipificacao],
+                ["Prioridade operacional", detalhe.prioridade],
+                ["Motivo da prioridade", detalhe.prioridadeMotivo],
+                ["Categoria do Caso", detalhe.gravidade],
+                ["Tipo de Procedimento", detalhe.tipo],
+                ["Situação", detalhe.situacao],
+                ["Elucidado", detalhe.elucidado],
+                ["Houve arma de fogo?", detalhe.houveArmaFogo],
+                ["Arma utilizada", detalhe.armaUtilizada],
+                ["Vinculado à facção?", detalhe.vinculadoFaccao],
+                ["Nome da facção", detalhe.nomeFaccao],
+              ]}
+              highlightFirst
+            />
+            <InfoCard
+              title="Dados Operacionais"
+              icon={<ShieldCheck className="h-4 w-4 text-primary" />}
+              items={[
+                ["Delegado responsável", detalhe.delegadoResponsavel],
+                ["Equipe", detalhe.equipe],
+                ["Escrivão", detalhe.escrivao],
+                ["Bairro", detalhe.bairro],
+                ["Distrito", detalhe.distrito],
+                ["Status diligências", detalhe.statusDiligencias],
+                ["Última atualização", formatDateTime(detalhe.ultimaEdicao)],
+              ]}
+            />
+            <InfoCard
+              title="Observações"
+              icon={<NotebookPen className="h-4 w-4 text-primary" />}
+              items={[["Observações", detalhe.observacoes]]}
+              stacked
+              preWrapValues
+            />
+          </div>
+        </section>
+        {showDeleteModal && canDeleteCases(profile) && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
+            <div className="w-full max-w-md rounded-xl border border-border bg-card p-5 shadow-2xl">
+              <h2 className="text-lg font-bold text-foreground">Excluir inquérito</h2>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Deseja remover este inquérito? Esta ação utiliza exclusão lógica e poderá ser
+                auditada no sistema.
+              </p>
+              <div className="mt-5 flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowDeleteModal(false)}
+                  disabled={deleting}
+                  className="rounded-md border border-border px-3 py-1.5 text-xs hover:bg-accent/40 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={remove}
+                  disabled={deleting}
+                  className="rounded-md border border-destructive/30 bg-destructive px-3 py-1.5 text-xs font-semibold text-destructive-foreground disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {deleting ? "Excluindo..." : "Excluir"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
-    )}
-  </div></AppLayout>;
+    </AppLayout>
+  );
 }
 
-function InfoCard({ title, items, icon, className = "", stacked = false, highlightFirst = false, preWrapValues = false }: { title: string; items: [string, string][]; icon?: React.ReactNode; className?: string; stacked?: boolean; highlightFirst?: boolean; preWrapValues?: boolean }) {
-  return <article className={`self-start rounded-xl border border-border/60 bg-card/80 p-4 lg:p-5 ${className}`}>
-    <div className="flex items-center gap-2 pb-2">
-      {icon}
-      <h2 className="text-xs font-extrabold uppercase tracking-[0.16em] text-primary">{title}</h2>
-    </div>
-    <div className="mb-3 h-px w-full bg-border/70" />
-    <div className={`grid grid-cols-1 gap-3 ${stacked ? "" : "md:grid-cols-2"}`}>
-      {items.map(([k, v], idx) => (
-        <div key={k} className={`min-w-0 space-y-1 ${highlightFirst && idx === 0 ? "md:col-span-2 rounded-lg border border-border/60 bg-background/30 p-3" : ""}`}>
-          <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">{k}</p>
-          <p className={`text-sm text-foreground break-words ${preWrapValues ? "whitespace-pre-wrap" : ""} ${highlightFirst && idx === 0 ? "text-base font-semibold leading-7" : "leading-5"}`}>{v || FALLBACK}</p>
-        </div>
-      ))}
-    </div>
-  </article>;
+function InfoCard({
+  title,
+  items,
+  icon,
+  className = "",
+  stacked = false,
+  highlightFirst = false,
+  preWrapValues = false,
+}: {
+  title: string;
+  items: [string, string][];
+  icon?: React.ReactNode;
+  className?: string;
+  stacked?: boolean;
+  highlightFirst?: boolean;
+  preWrapValues?: boolean;
+}) {
+  return (
+    <article
+      className={`self-start rounded-xl border border-border/60 bg-card/80 p-4 lg:p-5 ${className}`}
+    >
+      <div className="flex items-center gap-2 pb-2">
+        {icon}
+        <h2 className="text-xs font-extrabold uppercase tracking-[0.16em] text-primary">{title}</h2>
+      </div>
+      <div className="mb-3 h-px w-full bg-border/70" />
+      <div className={`grid grid-cols-1 gap-3 ${stacked ? "" : "md:grid-cols-2"}`}>
+        {items.map(([k, v], idx) => (
+          <div
+            key={k}
+            className={`min-w-0 space-y-1 ${highlightFirst && idx === 0 ? "md:col-span-2 rounded-lg border border-border/60 bg-background/30 p-3" : ""}`}
+          >
+            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
+              {k}
+            </p>
+            <p
+              className={`text-sm text-foreground break-words ${preWrapValues ? "whitespace-pre-wrap" : ""} ${highlightFirst && idx === 0 ? "text-base font-semibold leading-7" : "leading-5"}`}
+            >
+              {v || FALLBACK}
+            </p>
+          </div>
+        ))}
+      </div>
+    </article>
+  );
 }
-
 
 function formatDateTime(value: string) {
   if (!value || value === FALLBACK) return FALLBACK;
   const parsed = new Date(value);
   if (Number.isNaN(parsed.getTime())) return value;
-  return new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short" }).format(parsed);
+  return new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short" }).format(
+    parsed,
+  );
 }

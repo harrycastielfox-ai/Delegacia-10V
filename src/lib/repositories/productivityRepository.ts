@@ -20,9 +20,7 @@ export async function listEscrivaoProductivity(
   const data = await runSupabaseQuery<EscrivaoProductivityRow[]>(
     "produtividade dos escrivães",
     (signal) =>
-      supabase
-        .rpc("list_escrivao_productivity", { p_days: safeDays })
-        .abortSignal(signal),
+      supabase.rpc("list_escrivao_productivity", { p_days: safeDays }).abortSignal(signal),
   );
 
   return (data ?? []).map((row) => ({

@@ -23,12 +23,14 @@ export function AppLayout({ children }: { children: ReactNode }) {
 
         const profile = await getCurrentProfile();
         if (!profile) {
-          if (!cancelled) navigate({ to: "/login", search: { erro: "profile_missing" } as never, replace: true });
+          if (!cancelled)
+            navigate({ to: "/login", search: { erro: "profile_missing" } as never, replace: true });
           return;
         }
         if (profile.status_autorizacao === "bloqueado") {
           await logout();
-          if (!cancelled) navigate({ to: "/login", search: { erro: "access_blocked" } as never, replace: true });
+          if (!cancelled)
+            navigate({ to: "/login", search: { erro: "access_blocked" } as never, replace: true });
           return;
         }
         if (!isAuthorized(profile)) {
@@ -42,7 +44,11 @@ export function AppLayout({ children }: { children: ReactNode }) {
       } catch (error) {
         console.error("[AppLayout] Falha ao carregar profile", error);
         if (!cancelled) {
-          navigate({ to: "/login", search: { erro: "profile_load_failed" } as never, replace: true });
+          navigate({
+            to: "/login",
+            search: { erro: "profile_load_failed" } as never,
+            replace: true,
+          });
         }
       }
     })();

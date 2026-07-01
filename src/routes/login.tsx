@@ -4,11 +4,18 @@ import { User, Lock, Eye, EyeOff, LogIn, AlertCircle, CheckCircle2 } from "lucid
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { authenticateWithLoginOrEmail, AuthFlowError, getCurrentProfile, getSession, logout } from "@/lib/auth";
+import {
+  authenticateWithLoginOrEmail,
+  AuthFlowError,
+  getCurrentProfile,
+  getSession,
+  logout,
+} from "@/lib/auth";
 import { isAuthorized } from "@/lib/authz";
 
 const POST_SIGNUP_LOGIN_KEY = "sipi:post-signup-login";
-const POST_SIGNUP_MESSAGE = "Conta criada com sucesso. Aguarde autorização de um administrador para acessar o SIPI.";
+const POST_SIGNUP_MESSAGE =
+  "Conta criada com sucesso. Aguarde autorização de um administrador para acessar o SIPI.";
 
 export const Route = createFileRoute("/login")({
   head: () => ({
@@ -21,16 +28,21 @@ export const Route = createFileRoute("/login")({
 });
 
 function getFriendlyLoginError(err: unknown): string {
-  const anyErr = err as any;
-  const msg = String(anyErr?.message || anyErr?.cause?.message || "").toLowerCase();
+  const errorLike = err as { message?: string; cause?: { message?: string } };
+  const msg = String(errorLike.message || errorLike.cause?.message || "").toLowerCase();
 
-  if (anyErr instanceof AuthFlowError) {
-    if (anyErr.code === "LOGIN_NOT_FOUND") return "Login inexistente. Verifique o usuário informado.";
-    if (anyErr.code === "PROFILE_NOT_FOUND") return "Autenticação concluída, mas o perfil não foi encontrado.";
-    if (anyErr.code === "PROFILE_RLS_DENIED") return "Seu perfil existe, mas a policy (RLS) bloqueou a leitura.";
-    if (anyErr.code === "PROFILE_FETCH_FAILED") return "Autenticação concluída, mas houve falha ao carregar o perfil.";
-    if (anyErr.code === "LOGIN_RESOLVE_FAILED") return "Falha ao validar login. Tente novamente em instantes.";
-    if (anyErr.code === "AUTH_INVALID_CREDENTIALS") return "Credenciais inválidas. Confira usuário/e-mail e senha.";
+  if (err instanceof AuthFlowError) {
+    if (err.code === "LOGIN_NOT_FOUND") return "Login inexistente. Verifique o usuário informado.";
+    if (err.code === "PROFILE_NOT_FOUND")
+      return "Autenticação concluída, mas o perfil não foi encontrado.";
+    if (err.code === "PROFILE_RLS_DENIED")
+      return "Seu perfil existe, mas a policy (RLS) bloqueou a leitura.";
+    if (err.code === "PROFILE_FETCH_FAILED")
+      return "Autenticação concluída, mas houve falha ao carregar o perfil.";
+    if (err.code === "LOGIN_RESOLVE_FAILED")
+      return "Falha ao validar login. Tente novamente em instantes.";
+    if (err.code === "AUTH_INVALID_CREDENTIALS")
+      return "Credenciais inválidas. Confira usuário/e-mail e senha.";
   }
 
   if (msg.includes("email not confirmed") || msg.includes("not confirmed")) {
@@ -41,7 +53,11 @@ function getFriendlyLoginError(err: unknown): string {
     return "Muitas tentativas de login. Aguarde alguns minutos e tente novamente.";
   }
 
-  if (msg.includes("invalid login credentials") || msg.includes("invalid grant") || msg.includes("invalid login")) {
+  if (
+    msg.includes("invalid login credentials") ||
+    msg.includes("invalid grant") ||
+    msg.includes("invalid login")
+  ) {
     return "Credenciais inválidas. Confira usuário/e-mail e senha.";
   }
 
@@ -57,7 +73,10 @@ function readPostSignupLogin() {
     return {
       login: typeof parsed.login === "string" ? parsed.login : "",
       password: typeof parsed.password === "string" ? parsed.password : "",
-      message: typeof parsed.message === "string" && parsed.message.trim() ? parsed.message : POST_SIGNUP_MESSAGE,
+      message:
+        typeof parsed.message === "string" && parsed.message.trim()
+          ? parsed.message
+          : POST_SIGNUP_MESSAGE,
     };
   } catch (error) {
     console.warn("[LoginPage] Não foi possível ler dados temporários pós-cadastro", error);
@@ -111,7 +130,9 @@ function LoginPage() {
   useEffect(() => {
     const erroCode = new URLSearchParams(window.location.search).get("erro");
     if (erroCode === "profile_load_failed" || erroCode === "profile_missing") {
-      setErro("Login autenticado, mas não foi possível carregar o perfil. Verifique RLS/policies da tabela profiles.");
+      setErro(
+        "Login autenticado, mas não foi possível carregar o perfil. Verifique RLS/policies da tabela profiles.",
+      );
     } else if (erroCode === "access_blocked") {
       setErro("Seu acesso está bloqueado. Procure um administrador do sistema.");
     }
@@ -201,7 +222,11 @@ function LoginPage() {
         <div className="bg-card border border-border rounded-2xl shadow-2xl shadow-black/40">
           <div className="px-8 pt-8 pb-6 text-center border-b border-border bg-gradient-to-b from-primary/5 to-transparent">
             <div className="relative mx-auto h-[88px] w-[88px] rounded-lg bg-primary/12 border border-primary/25 shadow-[0_0_12px_rgba(34,197,94,0.16)] flex items-center justify-center mb-3 p-2 overflow-hidden">
-              <img src="/sipi-logo.png" alt="Logo SIPI" className="mx-auto h-[100px] w-[100px] max-w-none scale-[1.35] object-contain" />
+              <img
+                src="/sipi-logo.png"
+                alt="Logo SIPI"
+                className="mx-auto h-[100px] w-[100px] max-w-none scale-[1.35] object-contain"
+              />
               <span
                 aria-hidden="true"
                 className="sipi-logo-sheen pointer-events-none absolute inset-y-[-20%] left-[-35%] w-[48%] bg-gradient-to-r from-transparent via-primary/45 to-transparent blur-[1px]"
@@ -209,24 +234,58 @@ function LoginPage() {
             </div>
             <h1 className="text-2xl font-bold tracking-wide text-foreground">SIPI</h1>
             <p className="text-xs text-muted-foreground mt-1">Sistema de Inquéritos Policiais</p>
-            <p className="text-[10px] text-muted-foreground/80 mt-1 tracking-wider uppercase">DT Itabela · 23ª COORPIN</p>
+            <p className="text-[10px] text-muted-foreground/80 mt-1 tracking-wider uppercase">
+              DT Itabela · 23ª COORPIN
+            </p>
           </div>
 
           <form onSubmit={handleSubmit} className="px-8 py-7 space-y-5">
             <div className="space-y-2">
-              <Label htmlFor="usuario" className="text-xs tracking-wider uppercase text-muted-foreground font-semibold">E-mail ou login</Label>
+              <Label
+                htmlFor="usuario"
+                className="text-xs tracking-wider uppercase text-muted-foreground font-semibold"
+              >
+                E-mail ou login
+              </Label>
               <div className="relative">
                 <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input id="usuario" autoComplete="username" value={usuario} onChange={(e) => setUsuario(e.target.value)} placeholder="Digite seu e-mail ou login" className="pl-9 h-11 bg-background/60 border-border focus-visible:ring-primary" required />
+                <Input
+                  id="usuario"
+                  autoComplete="username"
+                  value={usuario}
+                  onChange={(e) => setUsuario(e.target.value)}
+                  placeholder="Digite seu e-mail ou login"
+                  className="pl-9 h-11 bg-background/60 border-border focus-visible:ring-primary"
+                  required
+                />
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="senha" className="text-xs tracking-wider uppercase text-muted-foreground font-semibold">Senha</Label>
+              <Label
+                htmlFor="senha"
+                className="text-xs tracking-wider uppercase text-muted-foreground font-semibold"
+              >
+                Senha
+              </Label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input id="senha" type={showSenha ? "text" : "password"} autoComplete="current-password" value={senha} onChange={(e) => setSenha(e.target.value)} placeholder="Digite sua senha" className="pl-9 pr-10 h-11 bg-background/60 border-border focus-visible:ring-primary" required />
-                <button type="button" onClick={() => setShowSenha((v) => !v)} className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-muted-foreground hover:text-foreground rounded transition-colors" aria-label={showSenha ? "Ocultar senha" : "Mostrar senha"}>
+                <Input
+                  id="senha"
+                  type={showSenha ? "text" : "password"}
+                  autoComplete="current-password"
+                  value={senha}
+                  onChange={(e) => setSenha(e.target.value)}
+                  placeholder="Digite sua senha"
+                  className="pl-9 pr-10 h-11 bg-background/60 border-border focus-visible:ring-primary"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowSenha((v) => !v)}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-muted-foreground hover:text-foreground rounded transition-colors"
+                  aria-label={showSenha ? "Ocultar senha" : "Mostrar senha"}
+                >
                   {showSenha ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
@@ -246,8 +305,18 @@ function LoginPage() {
               </div>
             )}
 
-            <Button type="submit" disabled={loading} className="w-full h-11 bg-primary text-primary-foreground hover:bg-primary/90 font-bold tracking-[0.15em] uppercase text-xs">
-              {loading ? "Verificando…" : <><LogIn className="h-4 w-4 mr-2" /> Entrar</>}
+            <Button
+              type="submit"
+              disabled={loading}
+              className="w-full h-11 bg-primary text-primary-foreground hover:bg-primary/90 font-bold tracking-[0.15em] uppercase text-xs"
+            >
+              {loading ? (
+                "Verificando…"
+              ) : (
+                <>
+                  <LogIn className="h-4 w-4 mr-2" /> Entrar
+                </>
+              )}
             </Button>
 
             <p className="text-center text-[10px] text-muted-foreground leading-relaxed">
@@ -256,10 +325,17 @@ function LoginPage() {
               Acessos são monitorados e registrados em auditoria.
             </p>
 
-            <p className="text-xs text-center">Não tem conta? <Link to="/criar-conta" className="underline">Criar conta</Link></p>
+            <p className="text-xs text-center">
+              Não tem conta?{" "}
+              <Link to="/criar-conta" className="underline">
+                Criar conta
+              </Link>
+            </p>
           </form>
 
-          <div className="px-8 py-3 border-t border-border bg-muted/20 text-center text-[10px] text-muted-foreground tracking-wider">© 2026 Polícia Civil — Uso restrito a agentes autorizados</div>
+          <div className="px-8 py-3 border-t border-border bg-muted/20 text-center text-[10px] text-muted-foreground tracking-wider">
+            © 2026 Polícia Civil — Uso restrito a agentes autorizados
+          </div>
         </div>
       </div>
     </div>

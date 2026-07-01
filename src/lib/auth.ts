@@ -3,8 +3,10 @@ import { INSTITUTIONAL_FUNCTIONS, type InstitutionalFunction, type UserProfile }
 
 export type CurrentUserProfile = UserProfile & { telefone: string | null };
 
-const PROFILE_SELECT = "id,nome,email,login,avatar_path,telefone,funcao_institucional,cargo,status_autorizacao,created_at,updated_at";
-const LEGACY_PROFILE_SELECT = "id,nome,email,login,avatar_path,telefone,cargo,status_autorizacao,created_at,updated_at";
+const PROFILE_SELECT =
+  "id,nome,email,login,avatar_path,telefone,funcao_institucional,cargo,status_autorizacao,created_at,updated_at";
+const LEGACY_PROFILE_SELECT =
+  "id,nome,email,login,avatar_path,telefone,cargo,status_autorizacao,created_at,updated_at";
 const AVATAR_BUCKET = "profile-avatars";
 const MAX_AVATAR_BYTES = 2 * 1024 * 1024;
 const DEFAULT_AUTH_TIMEOUT_MS = 10000;
@@ -33,11 +35,17 @@ function normalizeLogin(value: string): string {
 }
 
 function normalizePhone(value?: string): string {
-  return String(value ?? "").replace(/\D/g, "").slice(0, 11);
+  return String(value ?? "")
+    .replace(/\D/g, "")
+    .slice(0, 11);
 }
 
-function normalizeInstitutionalFunction(value?: InstitutionalFunction | string | null): InstitutionalFunction | null {
-  return INSTITUTIONAL_FUNCTIONS.includes(value as InstitutionalFunction) ? (value as InstitutionalFunction) : null;
+function normalizeInstitutionalFunction(
+  value?: InstitutionalFunction | string | null,
+): InstitutionalFunction | null {
+  return INSTITUTIONAL_FUNCTIONS.includes(value as InstitutionalFunction)
+    ? (value as InstitutionalFunction)
+    : null;
 }
 
 function isAuthDuplicateEmailError(error: unknown): boolean {
@@ -69,7 +77,9 @@ function withAuthTimeout<T>(
     }, timeoutMs);
   });
 
-  return Promise.race([Promise.resolve(operation), timeoutPromise]).finally(() => clearTimeout(timeoutId));
+  return Promise.race([Promise.resolve(operation), timeoutPromise]).finally(() =>
+    clearTimeout(timeoutId),
+  );
 }
 
 export async function getSession() {
@@ -97,7 +107,11 @@ export async function getCurrentProfile(): Promise<CurrentUserProfile | null> {
   );
   if (error && isMissingInstitutionalFunctionColumn(error)) {
     const legacyResult = await withAuthTimeout(
-      supabase.from("profiles").select(LEGACY_PROFILE_SELECT).eq("id", session.user.id).maybeSingle(),
+      supabase
+        .from("profiles")
+        .select(LEGACY_PROFILE_SELECT)
+        .eq("id", session.user.id)
+        .maybeSingle(),
       "PROFILE_FETCH_TIMEOUT",
       "Tempo limite ao carregar perfil.",
     );
@@ -106,13 +120,20 @@ export async function getCurrentProfile(): Promise<CurrentUserProfile | null> {
   }
   if (error) {
     if (isRlsError(error)) {
-      throw new AuthFlowError("PROFILE_RLS_DENIED", "RLS/policy bloqueou a leitura do perfil.", error);
+      throw new AuthFlowError(
+        "PROFILE_RLS_DENIED",
+        "RLS/policy bloqueou a leitura do perfil.",
+        error,
+      );
     }
     throw new AuthFlowError("PROFILE_FETCH_FAILED", "Falha ao carregar perfil.", error);
   }
 
   if (!data) {
-    throw new AuthFlowError("PROFILE_NOT_FOUND", "Perfil não encontrado para o usuário autenticado.");
+    throw new AuthFlowError(
+      "PROFILE_NOT_FOUND",
+      "Perfil não encontrado para o usuário autenticado.",
+    );
   }
 
   return data as CurrentUserProfile;
@@ -126,7 +147,8 @@ export async function resolveEmailFromLoginOrEmail(loginOrEmail: string): Promis
     input_login: normalizeLogin(input),
   });
 
-  if (error) throw new AuthFlowError("LOGIN_RESOLVE_FAILED", "Falha ao resolver login para e-mail.", error);
+  if (error)
+    throw new AuthFlowError("LOGIN_RESOLVE_FAILED", "Falha ao resolver login para e-mail.", error);
   if (!data) throw new AuthFlowError("LOGIN_NOT_FOUND", "Login não encontrado.");
   return normalizeEmail(String(data));
 }
@@ -149,7 +171,9 @@ export async function updateOwnAvatar(userId: string, avatarFile: File): Promise
 
   const ext = avatarFile.name.split(".").pop()?.toLowerCase() || "jpg";
   const path = `${userId}/avatar.${ext}`;
-  const { error } = await supabase.storage.from(AVATAR_BUCKET).upload(path, avatarFile, { upsert: true });
+  const { error } = await supabase.storage
+    .from(AVATAR_BUCKET)
+    .upload(path, avatarFile, { upsert: true });
   if (error) {
     throw new AuthFlowError("AVATAR_UPLOAD_FAILED", "Falha no upload do avatar.", error);
   }
@@ -158,7 +182,11 @@ export async function updateOwnAvatar(userId: string, avatarFile: File): Promise
     input_avatar_path: path,
   });
   if (avatarUpdateError) {
-    throw new AuthFlowError("AVATAR_RPC_UPDATE_FAILED", "Falha ao atualizar avatar_path no perfil.", avatarUpdateError);
+    throw new AuthFlowError(
+      "AVATAR_RPC_UPDATE_FAILED",
+      "Falha ao atualizar avatar_path no perfil.",
+      avatarUpdateError,
+    );
   }
 
   return path;
@@ -170,7 +198,11 @@ export async function updateOwnPhone(telefone: string): Promise<string | null> {
     p_telefone: cleanTelefone || null,
   });
   if (error) {
-    throw new AuthFlowError("PHONE_RPC_UPDATE_FAILED", "Falha ao atualizar telefone no perfil.", error);
+    throw new AuthFlowError(
+      "PHONE_RPC_UPDATE_FAILED",
+      "Falha ao atualizar telefone no perfil.",
+      error,
+    );
   }
 
   return cleanTelefone || null;
@@ -193,9 +225,12 @@ export async function signUpUser(payload: {
 
   if (!cleanLogin) throw new Error("LOGIN_REQUIRED");
 
-  const { data: existingLogin, error: loginCheckError } = await supabase.rpc("resolve_login_to_email", {
-    input_login: cleanLogin,
-  });
+  const { data: existingLogin, error: loginCheckError } = await supabase.rpc(
+    "resolve_login_to_email",
+    {
+      input_login: cleanLogin,
+    },
+  );
   if (loginCheckError) {
     console.error("[signUpUser] Falha ao verificar login", loginCheckError);
     throw loginCheckError;
@@ -206,7 +241,12 @@ export async function signUpUser(payload: {
     email: cleanEmail,
     password,
     options: {
-      data: { nome: nome.trim(), login: cleanLogin, telefone: cleanTelefone || null, funcao_institucional: cleanFunction },
+      data: {
+        nome: nome.trim(),
+        login: cleanLogin,
+        telefone: cleanTelefone || null,
+        funcao_institucional: cleanFunction,
+      },
     },
   });
 

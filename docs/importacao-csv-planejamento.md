@@ -3,7 +3,9 @@
 > Nesta etapa, **a importação CSV não será implementada**. Este documento define apenas o mapeamento esperado.
 
 ## Inquéritos (tabela `public.inqueritos`)
+
 Colunas recomendadas no CSV:
+
 - codigo_interno
 - numero_ppe
 - numero_fisico
@@ -35,7 +37,9 @@ Colunas recomendadas no CSV:
 - observacoes
 
 ## Representações (tabela `public.representacoes`)
+
 Colunas recomendadas no CSV:
+
 - codigo_interno
 - inquerito_id
 - numero_ppe
@@ -63,6 +67,7 @@ Colunas recomendadas no CSV:
 - observacoes_internas
 
 ## Relação CSV -> tabelas
+
 - Cada coluna deve ter o mesmo nome do campo destino para facilitar importação em lote.
 - Datas devem vir no formato `YYYY-MM-DD`.
 - Registros com `deleted_at` não serão importados por CSV (campo controlado internamente).

@@ -7,14 +7,24 @@ import { canViewRepresentacoes, type UserProfile } from "@/lib/authz";
 import { canAccessSigilosa } from "@/lib/representacoesSigilo";
 import { listInqueritos } from "@/lib/repositories/inqueritosRepository";
 import { listRepresentacoes } from "@/lib/repositories/representacoesRepository";
-import { buildModuleAlerts, buildSmartAlerts, isValidModulo, moduleMeta } from "@/lib/alertasInteligentes";
+import {
+  buildModuleAlerts,
+  buildSmartAlerts,
+  isValidModulo,
+  moduleMeta,
+} from "@/lib/alertasInteligentes";
 
 export const Route = createFileRoute("/alertas/$modulo")({
   component: AlertasModulo,
   head: () => ({ meta: [{ title: "Módulo de Alertas - SIPI" }] }),
 });
 
-const sevTone = { critico: "var(--destructive)", alto: "var(--warning)", medio: "#d7b24f", baixo: "var(--info)" } as const;
+const sevTone = {
+  critico: "var(--destructive)",
+  alto: "var(--warning)",
+  medio: "#d7b24f",
+  baixo: "var(--info)",
+} as const;
 
 function parseAlertDueDate(value: string) {
   const raw = value.trim();
@@ -36,8 +46,18 @@ function getDueDeltaInfo(value: string) {
 
   const today = new Date();
   const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 12, 0, 0, 0);
-  const dueStart = new Date(dueDate.getFullYear(), dueDate.getMonth(), dueDate.getDate(), 12, 0, 0, 0);
-  const daysUntilDue = Math.round((dueStart.getTime() - todayStart.getTime()) / (1000 * 60 * 60 * 24));
+  const dueStart = new Date(
+    dueDate.getFullYear(),
+    dueDate.getMonth(),
+    dueDate.getDate(),
+    12,
+    0,
+    0,
+    0,
+  );
+  const daysUntilDue = Math.round(
+    (dueStart.getTime() - todayStart.getTime()) / (1000 * 60 * 60 * 24),
+  );
 
   if (daysUntilDue < 0) {
     const daysOverdue = Math.abs(daysUntilDue);
@@ -69,7 +89,11 @@ function AlertasModulo() {
     (async () => {
       try {
         setLoading(true);
-        const [currentProfile, inq, rep] = await Promise.all([getCurrentProfile(), listInqueritos(), listRepresentacoes()]);
+        const [currentProfile, inq, rep] = await Promise.all([
+          getCurrentProfile(),
+          listInqueritos(),
+          listRepresentacoes(),
+        ]);
         setProfile(currentProfile);
         setCanOpenSigilosas(canAccessSigilosa(currentProfile));
         setModuleAlerts(buildModuleAlerts(buildSmartAlerts(inq, rep)));
@@ -89,7 +113,10 @@ function AlertasModulo() {
     <AppLayout>
       <div className="space-y-4">
         <div>
-          <Link to="/alertas" className="inline-flex items-center gap-2 text-xs font-medium text-emerald-300 hover:underline">
+          <Link
+            to="/alertas"
+            className="inline-flex items-center gap-2 text-xs font-medium text-emerald-300 hover:underline"
+          >
             <span
               aria-hidden="true"
               className="inline-block h-2 w-2 rounded-[2px] border border-emerald-300/60 bg-emerald-400/90 shadow-[0_0_8px_rgba(52,211,153,0.35)]"
@@ -101,31 +128,50 @@ function AlertasModulo() {
         {!selectedModule ? (
           <section className="rounded-xl border border-border bg-card p-4">
             <h2 className="text-lg font-semibold">Módulo inválido</h2>
-            <p className="mt-1 text-sm text-muted-foreground">O módulo informado não existe. Use os cards da Central de Alertas para abrir um módulo válido.</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              O módulo informado não existe. Use os cards da Central de Alertas para abrir um módulo
+              válido.
+            </p>
           </section>
         ) : (
           <section className="rounded-xl border border-border bg-card p-4">
             <h2 className="text-lg font-semibold">{meta?.title}</h2>
             <p className="mt-1 text-xs text-muted-foreground">{meta?.desc}</p>
-            <p className="mt-2 text-sm font-medium">Total de alertas do módulo: {detailedAlerts.length}</p>
+            <p className="mt-2 text-sm font-medium">
+              Total de alertas do módulo: {detailedAlerts.length}
+            </p>
           </section>
         )}
 
-        {loading ? <div className="rounded-lg border border-border bg-card p-4 text-sm text-muted-foreground">Carregando alertas...</div> : null}
-        {!loading && error ? <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive">{error}</div> : null}
+        {loading ? (
+          <div className="rounded-lg border border-border bg-card p-4 text-sm text-muted-foreground">
+            Carregando alertas...
+          </div>
+        ) : null}
+        {!loading && error ? (
+          <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive">
+            {error}
+          </div>
+        ) : null}
 
         {!loading && !error && selectedModule ? (
           <section className="rounded-xl border border-border bg-card p-4">
             {detailedAlerts.length === 0 ? (
-              <div className="rounded-lg border border-border bg-background/30 p-5 text-center text-sm text-muted-foreground">Nenhum alerta encontrado neste módulo.</div>
+              <div className="rounded-lg border border-border bg-background/30 p-5 text-center text-sm text-muted-foreground">
+                Nenhum alerta encontrado neste módulo.
+              </div>
             ) : (
               <div className="relative space-y-2 before:absolute before:-left-[0.45rem] before:bottom-4 before:top-4 before:w-px before:bg-gradient-to-b before:from-transparent before:via-emerald-400/25 before:to-transparent">
                 {detailedAlerts.map((a) => {
                   const hasEntityId = Boolean(a.entityId);
                   const canOpenInquerito = Boolean(profile);
                   const canOpenRepresentacao = canViewRepresentacoes(profile);
-                  const isSigilosaAlert = selectedModule === "sigilosas" && a.entityType === "representacao";
-                  const canOpenByPermission = a.entityType === "inquerito" ? canOpenInquerito : canOpenRepresentacao && (!isSigilosaAlert || canOpenSigilosas);
+                  const isSigilosaAlert =
+                    selectedModule === "sigilosas" && a.entityType === "representacao";
+                  const canOpenByPermission =
+                    a.entityType === "inquerito"
+                      ? canOpenInquerito
+                      : canOpenRepresentacao && (!isSigilosaAlert || canOpenSigilosas);
                   const isOpenable = hasEntityId && canOpenByPermission;
                   const cardClassName = `relative ml-3 block rounded-lg border bg-background/40 p-3 transition-all duration-200 before:absolute before:-left-[0.93rem] before:top-1/2 before:h-1.5 before:w-1.5 before:-translate-y-1/2 before:rounded-full before:bg-emerald-400 before:shadow-[0_0_10px_rgba(52,211,153,0.9),0_0_22px_rgba(52,211,153,0.38)] before:content-[''] ${
                     isOpenable
@@ -140,7 +186,10 @@ function AlertasModulo() {
                         <p className="text-sm font-semibold">{a.title}</p>
                         <span
                           className="rounded px-2 py-0.5 text-[11px]"
-                          style={{ color: sevTone[a.severity], border: `1px solid color-mix(in oklab, ${sevTone[a.severity]} 45%, var(--border))` }}
+                          style={{
+                            color: sevTone[a.severity],
+                            border: `1px solid color-mix(in oklab, ${sevTone[a.severity]} 45%, var(--border))`,
+                          }}
                         >
                           {a.severity.toUpperCase()}
                         </span>
@@ -171,19 +220,53 @@ function AlertasModulo() {
                             <Clock3 className="mr-1 inline h-3.5 w-3.5" />
                             Prazo/Data: {a.dueLabel}
                           </p>
-                          {dueDelta ? <p className={`font-semibold ${dueDelta.className}`}>{dueDelta.label}</p> : null}
+                          {dueDelta ? (
+                            <p className={`font-semibold ${dueDelta.className}`}>
+                              {dueDelta.label}
+                            </p>
+                          ) : null}
                         </div>
                       </div>
 
                       <p className="mt-3 text-xs font-medium text-emerald-400">
-                        {!hasEntityId ? "ID indisponível para abertura." : !canOpenByPermission ? "Acesso restrito ao perfil autorizado." : a.entityType === "inquerito" ? "Abrir inquérito" : "Abrir representação"}
+                        {!hasEntityId
+                          ? "ID indisponível para abertura."
+                          : !canOpenByPermission
+                            ? "Acesso restrito ao perfil autorizado."
+                            : a.entityType === "inquerito"
+                              ? "Abrir inquérito"
+                              : "Abrir representação"}
                       </p>
                     </>
                   );
 
-                  if (!isOpenable) return <article key={a.id} className={cardClassName}>{content}</article>;
-                  if (a.entityType === "inquerito") return <Link key={a.id} to="/inqueritos/$caseId" params={{ caseId: a.entityId }} className={cardClassName}>{content}</Link>;
-                  return <Link key={a.id} to="/representacoes/$representacaoId" params={{ representacaoId: a.entityId }} className={cardClassName}>{content}</Link>;
+                  if (!isOpenable)
+                    return (
+                      <article key={a.id} className={cardClassName}>
+                        {content}
+                      </article>
+                    );
+                  if (a.entityType === "inquerito")
+                    return (
+                      <Link
+                        key={a.id}
+                        to="/inqueritos/$caseId"
+                        params={{ caseId: a.entityId }}
+                        className={cardClassName}
+                      >
+                        {content}
+                      </Link>
+                    );
+                  return (
+                    <Link
+                      key={a.id}
+                      to="/representacoes/$representacaoId"
+                      params={{ representacaoId: a.entityId }}
+                      className={cardClassName}
+                    >
+                      {content}
+                    </Link>
+                  );
                 })}
               </div>
             )}

@@ -1,5 +1,15 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Activity, ChevronRight, Clock3, Database, FileSearch, Filter, Search, ShieldCheck, UserCog } from "lucide-react";
+import {
+  Activity,
+  ChevronRight,
+  Clock3,
+  Database,
+  FileSearch,
+  Filter,
+  Search,
+  ShieldCheck,
+  UserCog,
+} from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { AppLayout } from "@/components/AppLayout";
 import { getCurrentProfile, getProfileAvatarPublicUrl } from "@/lib/auth";
@@ -48,7 +58,8 @@ function Auditoria() {
       if (result.error) {
         const msg = result.error.message.toLowerCase();
         const code = (result.error.code ?? "").toLowerCase();
-        const isPermissionError = msg.includes("insufficient_privilege") || msg.includes("permission") || code === "42501";
+        const isPermissionError =
+          msg.includes("insufficient_privilege") || msg.includes("permission") || code === "42501";
         const isRpcMissing = code === "pgrst202" || msg.includes("function") || msg.includes("rpc");
         if (import.meta.env.DEV) {
           console.warn("[auditoria][visual] Falha ao listar auditoria", {
@@ -70,10 +81,15 @@ function Auditoria() {
       }
       setLoading(false);
     })();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
-  const filteredEvents = useMemo(() => filterAuditEvents(events, searchTerm, moduleFilter), [events, moduleFilter, searchTerm]);
+  const filteredEvents = useMemo(
+    () => filterAuditEvents(events, searchTerm, moduleFilter),
+    [events, moduleFilter, searchTerm],
+  );
   const loadedEvents = events;
   const summaryCards = useMemo(() => getSummaryCards(loadedEvents), [loadedEvents]);
   const loadedEventCount = summaryCards[0]?.value ?? loadedEvents.length;
@@ -84,8 +100,15 @@ function Auditoria() {
       <AppLayout>
         <div className="space-y-4 rounded-2xl border border-destructive/25 bg-card/70 p-5">
           <h1 className="text-xl font-bold">Acesso restrito</h1>
-          <p className="text-sm text-muted-foreground">Seu perfil não possui permissão para acessar Auditoria.</p>
-          <Link to="/modulos" className="inline-block rounded-lg border border-border px-4 py-2 text-sm transition hover:bg-muted/20">Voltar</Link>
+          <p className="text-sm text-muted-foreground">
+            Seu perfil não possui permissão para acessar Auditoria.
+          </p>
+          <Link
+            to="/modulos"
+            className="inline-block rounded-lg border border-border px-4 py-2 text-sm transition hover:bg-muted/20"
+          >
+            Voltar
+          </Link>
         </div>
       </AppLayout>
     );
@@ -110,15 +133,25 @@ function Auditoria() {
           </div>
         </header>
 
-        <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5" aria-label="Resumo da auditoria carregada">
+        <section
+          className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5"
+          aria-label="Resumo da auditoria carregada"
+        >
           {summaryCards.map((card) => {
             const Icon = card.icon;
             return (
-              <article key={card.label} className="rounded-xl border border-border/55 bg-card/45 p-4 shadow-[0_12px_30px_rgba(0,0,0,0.08)]">
+              <article
+                key={card.label}
+                className="rounded-xl border border-border/55 bg-card/45 p-4 shadow-[0_12px_30px_rgba(0,0,0,0.08)]"
+              >
                 <div className="flex items-start justify-between gap-3">
                   <div className="space-y-1">
-                    <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">{card.label}</p>
-                    <p className={`text-2xl font-black tabular-nums ${card.valueClassName}`}>{card.value}</p>
+                    <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+                      {card.label}
+                    </p>
+                    <p className={`text-2xl font-black tabular-nums ${card.valueClassName}`}>
+                      {card.value}
+                    </p>
                   </div>
                   <div className={`rounded-xl border p-2 ${card.iconClassName}`}>
                     <Icon className="h-4 w-4" aria-hidden="true" />
@@ -133,7 +166,10 @@ function Auditoria() {
         <section className="rounded-2xl border border-border/55 bg-card/45 p-4 shadow-[0_12px_35px_rgba(0,0,0,0.1)]">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <label className="relative block flex-1">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
+              <Search
+                className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+                aria-hidden="true"
+              />
               <input
                 value={searchTerm}
                 onChange={(event) => setSearchTerm(event.target.value)}
@@ -159,19 +195,48 @@ function Auditoria() {
           </div>
           {!loading && !error ? (
             <p className="mt-3 text-xs text-muted-foreground">
-              Exibindo <span className="font-semibold text-foreground">{visibleEventCount}</span> de <span className="font-semibold text-foreground">{loadedEventCount}</span> evento(s) carregados.
+              Exibindo <span className="font-semibold text-foreground">{visibleEventCount}</span> de{" "}
+              <span className="font-semibold text-foreground">{loadedEventCount}</span> evento(s)
+              carregados.
             </p>
           ) : null}
         </section>
 
         <section className="rounded-2xl border border-border/50 bg-[#070b0e]/55 p-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.02)] sm:p-3">
-          {loading ? <AuditState icon={Activity} title="Carregando eventos..." description="Consultando a listagem atual de auditoria." /> : null}
-          {!loading && error ? <AuditState icon={ShieldCheck} title="Não foi possível carregar auditoria" description={error} tone="warning" /> : null}
-          {!loading && !error && loadedEventCount === 0 ? <AuditState icon={Database} title="Nenhum evento de auditoria encontrado." description="Não há registros carregados para exibir neste momento." /> : null}
-          {!loading && !error && loadedEventCount > 0 && visibleEventCount === 0 ? <AuditState icon={Search} title="Nenhum evento de auditoria encontrado." description="Ajuste a busca ou os filtros locais para ver outros eventos carregados." /> : null}
+          {loading ? (
+            <AuditState
+              icon={Activity}
+              title="Carregando eventos..."
+              description="Consultando a listagem atual de auditoria."
+            />
+          ) : null}
+          {!loading && error ? (
+            <AuditState
+              icon={ShieldCheck}
+              title="Não foi possível carregar auditoria"
+              description={error}
+              tone="warning"
+            />
+          ) : null}
+          {!loading && !error && loadedEventCount === 0 ? (
+            <AuditState
+              icon={Database}
+              title="Nenhum evento de auditoria encontrado."
+              description="Não há registros carregados para exibir neste momento."
+            />
+          ) : null}
+          {!loading && !error && loadedEventCount > 0 && visibleEventCount === 0 ? (
+            <AuditState
+              icon={Search}
+              title="Nenhum evento de auditoria encontrado."
+              description="Ajuste a busca ou os filtros locais para ver outros eventos carregados."
+            />
+          ) : null}
           {!loading && !error && visibleEventCount > 0 ? (
             <div className="divide-y divide-border/45">
-              {filteredEvents.map((event) => <AuditEventCard key={event.id} event={event} />)}
+              {filteredEvents.map((event) => (
+                <AuditEventCard key={event.id} event={event} />
+              ))}
             </div>
           ) : null}
         </section>
@@ -188,7 +253,10 @@ function AuditEventCard({ event }: { event: AuditoriaEvent }) {
   const executorAvatarUrl = getExecutorAvatarUrl(event);
   const [avatarFailed, setAvatarFailed] = useState(false);
   const shouldShowAvatar = Boolean(executorAvatarUrl) && !avatarFailed;
-  const executorRole = "executor_cargo" in event && typeof event.executor_cargo === "string" ? event.executor_cargo : null;
+  const executorRole =
+    "executor_cargo" in event && typeof event.executor_cargo === "string"
+      ? event.executor_cargo
+      : null;
   const action = getFriendlyAction(event.acao);
   const moduleInfo = getModuleInfo(event);
   const target = getReadableTarget(event);
@@ -201,12 +269,16 @@ function AuditEventCard({ event }: { event: AuditoriaEvent }) {
   const shouldShowDescription = normalizeText(description) !== normalizeText(eventTitle);
   const isNavigable = Boolean(eventHref) && !isDeleteEvent;
 
-  const cardBaseClassName = "group relative block rounded-xl border border-transparent bg-transparent transition-colors";
+  const cardBaseClassName =
+    "group relative block rounded-xl border border-transparent bg-transparent transition-colors";
   const cardContent = (
     <div className="relative grid gap-3 px-3 py-4 sm:px-4 lg:grid-cols-[minmax(170px,205px)_minmax(0,1fr)] lg:items-start">
       <div className="flex min-w-0 items-center gap-3 lg:self-center">
         <div className="relative shrink-0">
-          <span className="absolute -left-3 top-1/2 hidden h-2.5 w-2.5 -translate-y-1/2 rounded-full border border-primary/55 bg-[#070b0e] shadow-[0_0_0_5px_rgba(34,197,94,0.08)] sm:block" aria-hidden="true" />
+          <span
+            className="absolute -left-3 top-1/2 hidden h-2.5 w-2.5 -translate-y-1/2 rounded-full border border-primary/55 bg-[#070b0e] shadow-[0_0_0_5px_rgba(34,197,94,0.08)] sm:block"
+            aria-hidden="true"
+          />
           {shouldShowAvatar ? (
             <img
               src={executorAvatarUrl ?? undefined}
@@ -221,28 +293,53 @@ function AuditEventCard({ event }: { event: AuditoriaEvent }) {
           )}
         </div>
         <div className="min-w-0">
-          <p className="truncate text-sm font-bold text-foreground" title={executorName}>{executorName}</p>
-          <p className="truncate text-xs text-muted-foreground" title={executorEmail}>{executorEmail}</p>
-          {executorRole ? <p className="mt-1 truncate text-[10px] font-bold uppercase tracking-[0.14em] text-primary/70" title={executorRole}>{executorRole}</p> : null}
+          <p className="truncate text-sm font-bold text-foreground" title={executorName}>
+            {executorName}
+          </p>
+          <p className="truncate text-xs text-muted-foreground" title={executorEmail}>
+            {executorEmail}
+          </p>
+          {executorRole ? (
+            <p
+              className="mt-1 truncate text-[10px] font-bold uppercase tracking-[0.14em] text-primary/70"
+              title={executorRole}
+            >
+              {executorRole}
+            </p>
+          ) : null}
         </div>
       </div>
 
       <div className="min-w-0 space-y-2.5">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
           <div className="flex min-w-0 flex-wrap items-center gap-2">
-            <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.08em] ${moduleInfo.className}`}>{moduleInfo.label}</span>
+            <span
+              className={`inline-flex items-center rounded-full border px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.08em] ${moduleInfo.className}`}
+            >
+              {moduleInfo.label}
+            </span>
           </div>
           <div className="flex shrink-0 items-center gap-2 text-xs text-muted-foreground sm:justify-end">
-            <time className="inline-flex items-center gap-1.5 whitespace-nowrap tabular-nums" dateTime={event.created_at}>
+            <time
+              className="inline-flex items-center gap-1.5 whitespace-nowrap tabular-nums"
+              dateTime={event.created_at}
+            >
               <Clock3 className="h-3.5 w-3.5 text-primary/70" aria-hidden="true" /> {timestamp}
             </time>
-            {isNavigable ? <ChevronRight className="h-4 w-4 text-muted-foreground/55 transition group-hover:translate-x-0.5 group-hover:text-primary" aria-hidden="true" /> : null}
+            {isNavigable ? (
+              <ChevronRight
+                className="h-4 w-4 text-muted-foreground/55 transition group-hover:translate-x-0.5 group-hover:text-primary"
+                aria-hidden="true"
+              />
+            ) : null}
           </div>
         </div>
 
         {changeSummary ? (
           <div className="inline-flex max-w-full flex-wrap items-center gap-x-2 gap-y-1 rounded-full border border-border/35 bg-background/25 px-2.5 py-1 text-[11px] text-muted-foreground">
-            <span className="font-bold uppercase tracking-[0.12em] text-muted-foreground/75">Última alteração</span>
+            <span className="font-bold uppercase tracking-[0.12em] text-muted-foreground/75">
+              Última alteração
+            </span>
             <span className="font-semibold text-foreground/80">{changeSummary.field}</span>
             <span aria-hidden="true">→</span>
             <span className="font-semibold text-primary/85">{changeSummary.value}</span>
@@ -250,15 +347,30 @@ function AuditEventCard({ event }: { event: AuditoriaEvent }) {
         ) : null}
 
         <div className="space-y-1">
-          <p className="break-words text-sm font-semibold leading-6 text-foreground/90">{eventTitle}</p>
-          {shouldShowDescription ? <p className="break-words text-xs leading-5 text-muted-foreground">{description}</p> : null}
+          <p className="break-words text-sm font-semibold leading-6 text-foreground/90">
+            {eventTitle}
+          </p>
+          {shouldShowDescription ? (
+            <p className="break-words text-xs leading-5 text-muted-foreground">{description}</p>
+          ) : null}
         </div>
 
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
-          <span className="font-bold uppercase tracking-[0.12em] text-muted-foreground/70">Alvo</span>
-          <span className="font-semibold text-foreground/85" title={target.fullLabel}>{target.label}</span>
+          <span className="font-bold uppercase tracking-[0.12em] text-muted-foreground/70">
+            Alvo
+          </span>
+          <span className="font-semibold text-foreground/85" title={target.fullLabel}>
+            {target.label}
+          </span>
           {target.identifier ? (
-            <span className={target.identifier.isFallback ? "font-mono text-muted-foreground" : "font-semibold text-primary/85"} title={target.identifier.fullValue}>
+            <span
+              className={
+                target.identifier.isFallback
+                  ? "font-mono text-muted-foreground"
+                  : "font-semibold text-primary/85"
+              }
+              title={target.identifier.fullValue}
+            >
               {target.identifier.label} {target.identifier.value}
             </span>
           ) : (
@@ -284,7 +396,8 @@ function AuditEventCard({ event }: { event: AuditoriaEvent }) {
     </div>
   );
 
-  if (!eventHref || isDeleteEvent) return <article className={cardBaseClassName}>{cardContent}</article>;
+  if (!eventHref || isDeleteEvent)
+    return <article className={cardBaseClassName}>{cardContent}</article>;
 
   return (
     <Link
@@ -298,15 +411,29 @@ function AuditEventCard({ event }: { event: AuditoriaEvent }) {
   );
 }
 
-function AuditState({ icon: Icon, title, description, tone = "default" }: { icon: typeof Activity; title: string; description: string; tone?: "default" | "warning" }) {
+function AuditState({
+  icon: Icon,
+  title,
+  description,
+  tone = "default",
+}: {
+  icon: typeof Activity;
+  title: string;
+  description: string;
+  tone?: "default" | "warning";
+}) {
   return (
     <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-border/80 bg-background/35 px-4 py-10 text-center">
-      <div className={`rounded-2xl border p-3 ${tone === "warning" ? "border-warning/30 bg-warning/10 text-warning" : "border-primary/25 bg-primary/10 text-primary"}`}>
+      <div
+        className={`rounded-2xl border p-3 ${tone === "warning" ? "border-warning/30 bg-warning/10 text-warning" : "border-primary/25 bg-primary/10 text-primary"}`}
+      >
         <Icon className="h-6 w-6" aria-hidden="true" />
       </div>
       <div className="space-y-1">
         <p className="font-bold text-foreground">{title}</p>
-        <p className={`text-sm ${tone === "warning" ? "text-warning" : "text-muted-foreground"}`}>{description}</p>
+        <p className={`text-sm ${tone === "warning" ? "text-warning" : "text-muted-foreground"}`}>
+          {description}
+        </p>
       </div>
     </div>
   );
@@ -314,20 +441,63 @@ function AuditState({ icon: Icon, title, description, tone = "default" }: { icon
 
 function getSummaryCards(events: AuditoriaEvent[]) {
   const inqueritos = events.filter((event) => getModuleCategory(event) === "inqueritos").length;
-  const representacoes = events.filter((event) => getModuleCategory(event) === "representacoes").length;
+  const representacoes = events.filter(
+    (event) => getModuleCategory(event) === "representacoes",
+  ).length;
   const updates = events.filter((event) => isUpdateAction(event.acao)).length;
-  const createDelete = events.filter((event) => isCreateAction(event.acao) || isDeleteAction(event.acao)).length;
+  const createDelete = events.filter(
+    (event) => isCreateAction(event.acao) || isDeleteAction(event.acao),
+  ).length;
 
   return [
-    { label: "Total carregado", value: events.length, caption: "Eventos retornados pela listagem atual", icon: Database, valueClassName: "text-primary", iconClassName: "border-primary/25 bg-primary/10 text-primary" },
-    { label: "Inquéritos", value: inqueritos, caption: "Ações ligadas a inquéritos", icon: FileSearch, valueClassName: "text-info", iconClassName: "border-info/25 bg-info/10 text-info" },
-    { label: "Representações", value: representacoes, caption: "Ações ligadas a representações", icon: FileSearch, valueClassName: "text-purple-300", iconClassName: "border-purple-400/25 bg-purple-500/10 text-purple-300" },
-    { label: "Edições", value: updates, caption: "Atualizações/alterações registradas", icon: Activity, valueClassName: "text-warning", iconClassName: "border-warning/25 bg-warning/10 text-warning" },
-    { label: "Criação/Exclusão", value: createDelete, caption: "Criações ou exclusões carregadas", icon: UserCog, valueClassName: "text-foreground", iconClassName: "border-border bg-muted/20 text-muted-foreground" },
+    {
+      label: "Total carregado",
+      value: events.length,
+      caption: "Eventos retornados pela listagem atual",
+      icon: Database,
+      valueClassName: "text-primary",
+      iconClassName: "border-primary/25 bg-primary/10 text-primary",
+    },
+    {
+      label: "Inquéritos",
+      value: inqueritos,
+      caption: "Ações ligadas a inquéritos",
+      icon: FileSearch,
+      valueClassName: "text-info",
+      iconClassName: "border-info/25 bg-info/10 text-info",
+    },
+    {
+      label: "Representações",
+      value: representacoes,
+      caption: "Ações ligadas a representações",
+      icon: FileSearch,
+      valueClassName: "text-purple-300",
+      iconClassName: "border-purple-400/25 bg-purple-500/10 text-purple-300",
+    },
+    {
+      label: "Edições",
+      value: updates,
+      caption: "Atualizações/alterações registradas",
+      icon: Activity,
+      valueClassName: "text-warning",
+      iconClassName: "border-warning/25 bg-warning/10 text-warning",
+    },
+    {
+      label: "Criação/Exclusão",
+      value: createDelete,
+      caption: "Criações ou exclusões carregadas",
+      icon: UserCog,
+      valueClassName: "text-foreground",
+      iconClassName: "border-border bg-muted/20 text-muted-foreground",
+    },
   ];
 }
 
-function filterAuditEvents(events: AuditoriaEvent[], searchTerm: string, moduleFilter: ModuleFilter) {
+function filterAuditEvents(
+  events: AuditoriaEvent[],
+  searchTerm: string,
+  moduleFilter: ModuleFilter,
+) {
   const normalizedSearch = normalizeText(searchTerm);
   return events.filter((event) => {
     const matchesModule = moduleFilter === "todos" || getModuleCategory(event) === moduleFilter;
@@ -338,19 +508,23 @@ function filterAuditEvents(events: AuditoriaEvent[], searchTerm: string, moduleF
 }
 
 function getSearchableText(event: AuditoriaEvent) {
-  return normalizeText([
-    event.executor_nome,
-    event.executor_email,
-    event.executor_login,
-    event.executor_user_id,
-    event.acao,
-    getFriendlyAction(event.acao).label,
-    event.modulo,
-    event.entidade,
-    event.entidade_id,
-    event.descricao,
-    formatDateTime(event.created_at),
-  ].filter(Boolean).join(" "));
+  return normalizeText(
+    [
+      event.executor_nome,
+      event.executor_email,
+      event.executor_login,
+      event.executor_user_id,
+      event.acao,
+      getFriendlyAction(event.acao).label,
+      event.modulo,
+      event.entidade,
+      event.entidade_id,
+      event.descricao,
+      formatDateTime(event.created_at),
+    ]
+      .filter(Boolean)
+      .join(" "),
+  );
 }
 
 function normalizeText(value?: string | null) {
@@ -363,12 +537,50 @@ function normalizeText(value?: string | null) {
 
 function getFriendlyAction(action?: string | null) {
   const normalized = normalizeText(action).replace(/\s+/g, "_");
-  if (normalized === "create" || normalized === "insert" || normalized === "criar") return { label: "Criou", sentence: "criou", className: "border-primary/30 bg-primary/15 text-primary" };
-  if (normalized === "update" || normalized === "edit" || normalized === "editar" || normalized.includes("update")) return { label: "Editou", sentence: "editou", className: "border-info/30 bg-info/15 text-info" };
-  if (normalized === "delete" || normalized === "soft_delete" || normalized.includes("delete") || normalized.includes("exclu")) return { label: "Excluiu", sentence: "excluiu", className: "border-destructive/30 bg-destructive/15 text-destructive" };
-  if (normalized === "login" || normalized.includes("login") || normalized.includes("acesso")) return { label: "Acessou", sentence: "acessou", className: "border-cyan-400/30 bg-cyan-500/10 text-cyan-300" };
-  const fallback = String(action || "").replaceAll("_", " ").trim().toLowerCase() || "ação";
-  return { label: capitalize(fallback), sentence: fallback, className: "border-border/80 bg-muted/20 text-muted-foreground" };
+  if (normalized === "create" || normalized === "insert" || normalized === "criar")
+    return {
+      label: "Criou",
+      sentence: "criou",
+      className: "border-primary/30 bg-primary/15 text-primary",
+    };
+  if (
+    normalized === "update" ||
+    normalized === "edit" ||
+    normalized === "editar" ||
+    normalized.includes("update")
+  )
+    return {
+      label: "Editou",
+      sentence: "editou",
+      className: "border-info/30 bg-info/15 text-info",
+    };
+  if (
+    normalized === "delete" ||
+    normalized === "soft_delete" ||
+    normalized.includes("delete") ||
+    normalized.includes("exclu")
+  )
+    return {
+      label: "Excluiu",
+      sentence: "excluiu",
+      className: "border-destructive/30 bg-destructive/15 text-destructive",
+    };
+  if (normalized === "login" || normalized.includes("login") || normalized.includes("acesso"))
+    return {
+      label: "Acessou",
+      sentence: "acessou",
+      className: "border-cyan-400/30 bg-cyan-500/10 text-cyan-300",
+    };
+  const fallback =
+    String(action || "")
+      .replaceAll("_", " ")
+      .trim()
+      .toLowerCase() || "ação";
+  return {
+    label: capitalize(fallback),
+    sentence: fallback,
+    className: "border-border/80 bg-muted/20 text-muted-foreground",
+  };
 }
 
 function getAuditEventTitle(
@@ -377,7 +589,8 @@ function getAuditEventTitle(
   target: ReturnType<typeof getReadableTarget>,
   changeSummary: { field: string; value: string } | null,
 ) {
-  if (changeSummary) return `${getChangeTitleVerb(changeSummary.field)} ${lowercaseFirst(changeSummary.field)}`;
+  if (changeSummary)
+    return `${getChangeTitleVerb(changeSummary.field)} ${lowercaseFirst(changeSummary.field)}`;
 
   const descriptionTitle = getDescriptionTitle(event.descricao);
   if (descriptionTitle) return descriptionTitle;
@@ -416,19 +629,30 @@ function isCreateAction(action?: string | null) {
 
 function isUpdateAction(action?: string | null) {
   const normalized = normalizeText(action);
-  return normalized === "update" || normalized === "edit" || normalized.includes("update") || normalized.includes("edit");
+  return (
+    normalized === "update" ||
+    normalized === "edit" ||
+    normalized.includes("update") ||
+    normalized.includes("edit")
+  );
 }
 
 function isDeleteAction(action?: string | null) {
   const normalized = normalizeText(action);
-  return normalized === "delete" || normalized === "soft_delete" || normalized.endsWith("_delete") || normalized.includes("exclu");
+  return (
+    normalized === "delete" ||
+    normalized === "soft_delete" ||
+    normalized.endsWith("_delete") ||
+    normalized.includes("exclu")
+  );
 }
 
 function getModuleCategory(event: AuditoriaEvent): ModuleCategory {
   const target = `${normalizeText(event.modulo)}|${normalizeText(event.entidade)}`;
   if (target.includes("inquerito")) return "inqueritos";
   if (target.includes("representacao")) return "representacoes";
-  if (target.includes("usuario") || target.includes("admin") || target.includes("profile")) return "usuarios_admin";
+  if (target.includes("usuario") || target.includes("admin") || target.includes("profile"))
+    return "usuarios_admin";
   return "outros";
 }
 
@@ -436,16 +660,28 @@ function getModuleInfo(event: AuditoriaEvent) {
   const category = getModuleCategory(event);
   const labels: Record<ModuleCategory, { label: string; className: string }> = {
     inqueritos: { label: "Inquéritos", className: "border-info/30 bg-info/15 text-info" },
-    representacoes: { label: "Representações", className: "border-purple-400/30 bg-purple-500/10 text-purple-300" },
-    usuarios_admin: { label: "Usuários/Admin", className: "border-warning/30 bg-warning/10 text-warning" },
-    outros: { label: event.modulo ? capitalize(String(event.modulo).replaceAll("_", " ")) : "Outros", className: "border-border/80 bg-muted/20 text-muted-foreground" },
+    representacoes: {
+      label: "Representações",
+      className: "border-purple-400/30 bg-purple-500/10 text-purple-300",
+    },
+    usuarios_admin: {
+      label: "Usuários/Admin",
+      className: "border-warning/30 bg-warning/10 text-warning",
+    },
+    outros: {
+      label: event.modulo ? capitalize(String(event.modulo).replaceAll("_", " ")) : "Outros",
+      className: "border-border/80 bg-muted/20 text-muted-foreground",
+    },
   };
   return labels[category];
 }
 
 const TARGET_IDENTIFIER_CANDIDATES = [
   { label: "PPE", keys: ["ppe", "numero_ppe"] },
-  { label: "Processo", keys: ["numero_processo", "processo_judicial", "numero_processo_medida", "processo"] },
+  {
+    label: "Processo",
+    keys: ["numero_processo", "processo_judicial", "numero_processo_medida", "processo"],
+  },
   { label: "Número", keys: ["numero_bo", "numero_fisico", "codigo_interno"] },
   { label: "Usuário", keys: ["target_login", "target_email", "target_nome"] },
 ];
@@ -458,7 +694,11 @@ function getReadableTarget(event: AuditoriaEvent) {
   return {
     label,
     fullId,
-    fullLabel: identifier ? `${label} ${identifier.label} ${identifier.fullValue}` : fullId ? `${label} ${fullId}` : label,
+    fullLabel: identifier
+      ? `${label} ${identifier.label} ${identifier.fullValue}`
+      : fullId
+        ? `${label} ${fullId}`
+        : label,
     identifier,
     metadataKeys: identifier?.metadataKeys ?? [],
     secondaryId: identifier && !identifier.isFallback && fullId ? shortenId(fullId) : null,
@@ -466,7 +706,10 @@ function getReadableTarget(event: AuditoriaEvent) {
   };
 }
 
-function getTargetIdentifier(metadata: Record<string, unknown> | null | undefined, fullId: string | null) {
+function getTargetIdentifier(
+  metadata: Record<string, unknown> | null | undefined,
+  fullId: string | null,
+) {
   if (metadata && typeof metadata === "object") {
     for (const candidate of TARGET_IDENTIFIER_CANDIDATES) {
       for (const key of candidate.keys) {
@@ -504,8 +747,10 @@ function getMetadataDisplayValue(metadata: Record<string, unknown>, key: string)
 function getEntityLabel(normalizedEntity: string, rawEntity?: string | null) {
   if (normalizedEntity.includes("inquerito")) return "Inquérito";
   if (normalizedEntity.includes("representacao")) return "Representação";
-  if (normalizedEntity.includes("admin") && normalizedEntity.includes("usuario")) return "Usuário/Admin";
-  if (normalizedEntity.includes("profile") || normalizedEntity.includes("usuario")) return "Usuário";
+  if (normalizedEntity.includes("admin") && normalizedEntity.includes("usuario"))
+    return "Usuário/Admin";
+  if (normalizedEntity.includes("profile") || normalizedEntity.includes("usuario"))
+    return "Usuário";
   return rawEntity ? capitalize(String(rawEntity).replaceAll("_", " ")) : "Alvo não informado";
 }
 
@@ -514,7 +759,16 @@ function shortenId(value: string) {
   return `${value.slice(0, 8)}...${value.slice(-4)}`;
 }
 
-const METADATA_PREVIEW_PRIORITY = ["ppe", "numero_ppe", "tipo", "status", "situacao", "status_diligencias", "numero_processo", "prioridade"];
+const METADATA_PREVIEW_PRIORITY = [
+  "ppe",
+  "numero_ppe",
+  "tipo",
+  "status",
+  "situacao",
+  "status_diligencias",
+  "numero_processo",
+  "prioridade",
+];
 const METADATA_LABELS: Record<string, string> = {
   ppe: "PPE",
   numero_ppe: "PPE",
@@ -534,7 +788,10 @@ const METADATA_LABELS: Record<string, string> = {
   target_nome: "Usuário",
 };
 
-function getMetadataPreview(metadata: Record<string, unknown> | null | undefined, excludedKeys: string[] = []) {
+function getMetadataPreview(
+  metadata: Record<string, unknown> | null | undefined,
+  excludedKeys: string[] = [],
+) {
   if (!metadata || typeof metadata !== "object") return [];
   const excluded = new Set(excludedKeys.map((key) => key.toLowerCase()));
   return Object.entries(metadata)
@@ -543,7 +800,12 @@ function getMetadataPreview(metadata: Record<string, unknown> | null | undefined
     .filter(([, value]) => formatMetadataFullValue(value) !== FALLBACK)
     .sort(([leftKey], [rightKey]) => getMetadataPriority(leftKey) - getMetadataPriority(rightKey))
     .slice(0, 3)
-    .map(([key, value]) => ({ id: key, key: formatMetadataLabel(key), value: formatMetadataValue(value), fullValue: formatMetadataFullValue(value) }));
+    .map(([key, value]) => ({
+      id: key,
+      key: formatMetadataLabel(key),
+      value: formatMetadataValue(value),
+      fullValue: formatMetadataFullValue(value),
+    }));
 }
 
 function getMetadataPriority(key: string) {
@@ -551,12 +813,25 @@ function getMetadataPriority(key: string) {
   return index === -1 ? METADATA_PREVIEW_PRIORITY.length : index;
 }
 
-function getChangeSummary(metadata: Record<string, unknown> | null | undefined): { field: string; value: string } | null {
+function getChangeSummary(
+  metadata: Record<string, unknown> | null | undefined,
+): { field: string; value: string } | null {
   if (!metadata || typeof metadata !== "object") return null;
 
-  const explicitField = getFirstMetadataString(metadata, ["campo", "field", "field_name", "campo_alterado"]);
-  const explicitValue = getFirstMetadataString(metadata, ["novo_valor", "new_value", "valor_novo", "value"]);
-  if (explicitField && explicitValue) return { field: formatMetadataLabel(explicitField), value: explicitValue };
+  const explicitField = getFirstMetadataString(metadata, [
+    "campo",
+    "field",
+    "field_name",
+    "campo_alterado",
+  ]);
+  const explicitValue = getFirstMetadataString(metadata, [
+    "novo_valor",
+    "new_value",
+    "valor_novo",
+    "value",
+  ]);
+  if (explicitField && explicitValue)
+    return { field: formatMetadataLabel(explicitField), value: explicitValue };
 
   for (const [oldKey, oldValue] of Object.entries(metadata)) {
     if (!oldKey.startsWith("old_") || !isPrimitiveMetadata(oldValue)) continue;
@@ -564,7 +839,8 @@ function getChangeSummary(metadata: Record<string, unknown> | null | undefined):
     const newValue = metadata[`new_${suffix}`];
     if (!isPrimitiveMetadata(newValue)) continue;
     const formattedNewValue = formatMetadataValue(newValue);
-    if (formattedNewValue === FALLBACK || formatMetadataValue(oldValue) === formattedNewValue) continue;
+    if (formattedNewValue === FALLBACK || formatMetadataValue(oldValue) === formattedNewValue)
+      continue;
     return { field: formatMetadataLabel(suffix), value: formattedNewValue };
   }
 
@@ -601,7 +877,13 @@ function formatMetadataValue(value: unknown) {
 }
 
 function getExecutorName(event: AuditoriaEvent) {
-  return String(event.executor_nome || event.executor_login || event.executor_email || event.executor_user_id || FALLBACK).trim();
+  return String(
+    event.executor_nome ||
+      event.executor_login ||
+      event.executor_email ||
+      event.executor_user_id ||
+      FALLBACK,
+  ).trim();
 }
 
 function getExecutorEmail(event: AuditoriaEvent) {
@@ -661,13 +943,39 @@ function getAuditEventHref(event: AuditoriaEvent) {
   const entidade = normalizeText(event.entidade).replace(/\s+/g, "_");
   const target = `${modulo}|${entidade}`;
 
-  if (["|inqueritos", "|inquerito", "inqueritos|", "inquerito|", "inqueritos|inqueritos", "inqueritos|inquerito"].includes(target)) {
+  if (
+    [
+      "|inqueritos",
+      "|inquerito",
+      "inqueritos|",
+      "inquerito|",
+      "inqueritos|inqueritos",
+      "inqueritos|inquerito",
+    ].includes(target)
+  ) {
     return `/inqueritos/${entityId}`;
   }
-  if (["|representacoes", "|representacao", "representacoes|", "representacao|", "representacoes|representacoes", "representacoes|representacao"].includes(target)) {
+  if (
+    [
+      "|representacoes",
+      "|representacao",
+      "representacoes|",
+      "representacao|",
+      "representacoes|representacoes",
+      "representacoes|representacao",
+    ].includes(target)
+  ) {
     return `/representacoes/${entityId}`;
   }
-  if (["|profiles", "|admin_usuarios", "admin_usuarios|", "usuarios|profiles", "administracao|profiles"].includes(target)) {
+  if (
+    [
+      "|profiles",
+      "|admin_usuarios",
+      "admin_usuarios|",
+      "usuarios|profiles",
+      "administracao|profiles",
+    ].includes(target)
+  ) {
     return `/admin/usuarios/${entityId}`;
   }
 

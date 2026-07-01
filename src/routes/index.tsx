@@ -272,12 +272,15 @@ function Dashboard() {
   const normalizeText = normalizeOperationalText;
   const isStatus = (value: unknown, terms: string[]) =>
     terms.some((t) => normalizeText(value).includes(t));
-  const isWithinLastDays = useCallback((value: unknown, days: number) => {
-    const date = parseOperationalDate(value);
-    if (!date || nowTs === null) return false;
-    const diff = (nowTs - date.getTime()) / DAY_MS;
-    return diff >= 0 && diff <= days;
-  }, [nowTs]);
+  const isWithinLastDays = useCallback(
+    (value: unknown, days: number) => {
+      const date = parseOperationalDate(value);
+      if (!date || nowTs === null) return false;
+      const diff = (nowTs - date.getTime()) / DAY_MS;
+      return diff >= 0 && diff <= days;
+    },
+    [nowTs],
+  );
   const getConclusaoDate = (inquerito: InqueritoRecord) => {
     if (!hasRelatorioEnviado(inquerito)) return null;
     return parseOperationalDate(inquerito.data_envio_relatorio);
@@ -1554,78 +1557,78 @@ function Dashboard() {
             >
               <div className="flex h-full min-h-[300px] flex-col">
                 <div className="grid grid-cols-2 gap-3">
-                <div className="rounded-lg border border-border/55 bg-background/25 px-3.5 py-3">
-                  <div className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
-                    Novos (7d)
+                  <div className="rounded-lg border border-border/55 bg-background/25 px-3.5 py-3">
+                    <div className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
+                      Novos (7d)
+                    </div>
+                    <div className="mt-1.5 text-2xl font-black tabular-nums text-info">
+                      {produtividade.novos7}
+                    </div>
                   </div>
-                  <div className="mt-1.5 text-2xl font-black tabular-nums text-info">
-                    {produtividade.novos7}
+                  <div className="rounded-lg border border-border/55 bg-background/25 px-3.5 py-3">
+                    <div className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
+                      Concluídos (7d)
+                    </div>
+                    <div className="mt-1.5 text-2xl font-black tabular-nums text-success">
+                      {produtividade.concluidos7}
+                    </div>
+                  </div>
+                  <div className="rounded-lg border border-border/55 bg-background/25 px-3.5 py-3">
+                    <div className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
+                      Novos (30d)
+                    </div>
+                    <div className="mt-1.5 text-2xl font-black tabular-nums text-info">
+                      {produtividade.novos30}
+                    </div>
+                  </div>
+                  <div className="rounded-lg border border-border/55 bg-background/25 px-3.5 py-3">
+                    <div className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
+                      Concluídos (30d)
+                    </div>
+                    <div className="mt-1.5 text-2xl font-black tabular-nums text-success">
+                      {produtividade.concluidos30}
+                    </div>
                   </div>
                 </div>
-                <div className="rounded-lg border border-border/55 bg-background/25 px-3.5 py-3">
-                  <div className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
-                    Concluídos (7d)
-                  </div>
-                  <div className="mt-1.5 text-2xl font-black tabular-nums text-success">
-                    {produtividade.concluidos7}
-                  </div>
-                </div>
-                <div className="rounded-lg border border-border/55 bg-background/25 px-3.5 py-3">
-                  <div className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
-                    Novos (30d)
-                  </div>
-                  <div className="mt-1.5 text-2xl font-black tabular-nums text-info">
-                    {produtividade.novos30}
-                  </div>
-                </div>
-                <div className="rounded-lg border border-border/55 bg-background/25 px-3.5 py-3">
-                  <div className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
-                    Concluídos (30d)
-                  </div>
-                  <div className="mt-1.5 text-2xl font-black tabular-nums text-success">
-                    {produtividade.concluidos30}
-                  </div>
-                </div>
-              </div>
 
                 <div className="mt-auto rounded-lg border border-border/60 bg-background/25 px-3.5 py-3.5">
-                <div className="flex items-center justify-between gap-3">
-                  <span className="text-xs font-black text-foreground">Taxa de conclusão</span>
-                  <span className="text-sm font-black tabular-nums text-success">
-                    {produtividade.taxaConclusao30}%
-                  </span>
-                </div>
-                <div className="mt-2 h-2 overflow-hidden rounded-full bg-muted/80 shadow-inner shadow-black/20">
-                  <div
-                    className="h-full rounded-full bg-success transition-all duration-500"
-                    style={{
-                      width: `${Math.min(100, produtividade.taxaConclusao30)}%`,
-                      boxShadow:
-                        produtividade.taxaConclusao30 > 0
-                          ? "0 0 18px rgba(34,197,94,0.45)"
-                          : "none",
-                    }}
-                  />
-                </div>
-                <div className="mt-2 flex flex-wrap items-center justify-between gap-x-4 gap-y-1 text-xs text-muted-foreground">
-                  <span>
-                    Backlog gerado:{" "}
-                    <strong
-                      className="font-black tabular-nums"
-                      style={{ color: backlogGeradoColor }}
-                    >
-                      {produtividade.backlogGerado > 0
-                        ? `+${produtividade.backlogGerado}`
-                        : produtividade.backlogGerado}
-                    </strong>
-                  </span>
-                  <span>
-                    Situação:{" "}
-                    <strong className="font-black" style={{ color: situacaoOperacionalColor }}>
-                      {produtividade.situacaoOperacional}
-                    </strong>
-                  </span>
-                </div>
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-xs font-black text-foreground">Taxa de conclusão</span>
+                    <span className="text-sm font-black tabular-nums text-success">
+                      {produtividade.taxaConclusao30}%
+                    </span>
+                  </div>
+                  <div className="mt-2 h-2 overflow-hidden rounded-full bg-muted/80 shadow-inner shadow-black/20">
+                    <div
+                      className="h-full rounded-full bg-success transition-all duration-500"
+                      style={{
+                        width: `${Math.min(100, produtividade.taxaConclusao30)}%`,
+                        boxShadow:
+                          produtividade.taxaConclusao30 > 0
+                            ? "0 0 18px rgba(34,197,94,0.45)"
+                            : "none",
+                      }}
+                    />
+                  </div>
+                  <div className="mt-2 flex flex-wrap items-center justify-between gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                    <span>
+                      Backlog gerado:{" "}
+                      <strong
+                        className="font-black tabular-nums"
+                        style={{ color: backlogGeradoColor }}
+                      >
+                        {produtividade.backlogGerado > 0
+                          ? `+${produtividade.backlogGerado}`
+                          : produtividade.backlogGerado}
+                      </strong>
+                    </span>
+                    <span>
+                      Situação:{" "}
+                      <strong className="font-black" style={{ color: situacaoOperacionalColor }}>
+                        {produtividade.situacaoOperacional}
+                      </strong>
+                    </span>
+                  </div>
                 </div>
               </div>
             </Panel>

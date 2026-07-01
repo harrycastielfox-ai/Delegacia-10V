@@ -30,10 +30,7 @@ export function StatCard({ label, value, hint, secondaryHint, icon: Icon, tone, 
       onClick={onClick}
     >
       <div className="flex items-start justify-between mb-4">
-        <span
-          className="text-[10px] font-bold tracking-[0.15em]"
-          style={{ color: toneVar[tone] }}
-        >
+        <span className="text-[10px] font-bold tracking-[0.15em]" style={{ color: toneVar[tone] }}>
           {label}
         </span>
         <div
@@ -50,7 +47,9 @@ export function StatCard({ label, value, hint, secondaryHint, icon: Icon, tone, 
         {value}
       </div>
       <div className="text-xs text-muted-foreground mt-2">{hint}</div>
-      {secondaryHint ? <div className="mt-1 text-xs text-muted-foreground">{secondaryHint}</div> : null}
+      {secondaryHint ? (
+        <div className="mt-1 text-xs text-muted-foreground">{secondaryHint}</div>
+      ) : null}
     </div>
   );
 }

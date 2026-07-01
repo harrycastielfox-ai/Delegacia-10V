@@ -12,9 +12,7 @@ export function normalizeOperationalText(value: unknown) {
 }
 
 export function isYesLike(value: unknown) {
-  return ["true", "t", "1", "sim", "s", "yes", "y", "ok"].includes(
-    normalizeOperationalText(value),
-  );
+  return ["true", "t", "1", "sim", "s", "yes", "y", "ok"].includes(normalizeOperationalText(value));
 }
 
 export function parseOperationalDate(value: unknown) {
@@ -44,12 +42,7 @@ export function daysUntilOperationalDate(value: unknown, now = Date.now()) {
   const date = parseOperationalDate(value);
   if (!date) return null;
 
-  const dateAtUtcNoon = Date.UTC(
-    date.getUTCFullYear(),
-    date.getUTCMonth(),
-    date.getUTCDate(),
-    12,
-  );
+  const dateAtUtcNoon = Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(), 12);
   return Math.round((dateAtUtcNoon - todayAtUtcNoon(now)) / DAY_MS);
 }
 
@@ -64,7 +57,10 @@ export function isOperationalDateDueWithin(value: unknown, limitDays: number, no
 }
 
 export function hasRelatorioEnviado(inquerito: InqueritoRecord) {
-  return isYesLike(inquerito.relatorio_enviado) || Boolean(parseOperationalDate(inquerito.data_envio_relatorio));
+  return (
+    isYesLike(inquerito.relatorio_enviado) ||
+    Boolean(parseOperationalDate(inquerito.data_envio_relatorio))
+  );
 }
 
 export function isInqueritoEmAndamento(inquerito: InqueritoRecord) {

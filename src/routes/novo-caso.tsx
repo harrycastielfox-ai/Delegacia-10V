@@ -56,7 +56,6 @@ function NovoCaso() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [checkingAccess, setCheckingAccess] = useState(true);
 
-
   useEffect(() => {
     let isMounted = true;
 
@@ -175,31 +174,95 @@ function NovoCaso() {
     }
   };
 
-  if (checkingAccess) return <AppLayout><p className="text-sm text-muted-foreground">Verificando permissões...</p></AppLayout>;
+  if (checkingAccess)
+    return (
+      <AppLayout>
+        <p className="text-sm text-muted-foreground">Verificando permissões...</p>
+      </AppLayout>
+    );
 
-  if (!canCreateCases(profile)) return <AppLayout><div className="space-y-3"><h1 className="text-xl font-bold">Acesso restrito</h1><p className="text-sm text-muted-foreground">Seu perfil não possui permissão para criar inquéritos.</p></div></AppLayout>;
+  if (!canCreateCases(profile))
+    return (
+      <AppLayout>
+        <div className="space-y-3">
+          <h1 className="text-xl font-bold">Acesso restrito</h1>
+          <p className="text-sm text-muted-foreground">
+            Seu perfil não possui permissão para criar inquéritos.
+          </p>
+        </div>
+      </AppLayout>
+    );
 
   return (
     <AppLayout>
-      <PageHeader title="Novo Inquérito" subtitle="Cadastre um novo inquérito policial" showActions={false} />
+      <PageHeader
+        title="Novo Inquérito"
+        subtitle="Cadastre um novo inquérito policial"
+        showActions={false}
+      />
 
       <form className="space-y-5 max-w-6xl pb-6" onSubmit={handleSubmit}>
         <SectionCard title="Identificação do Procedimento">
-          <Field label="PPE" placeholder="Ex.: 001/2026-DPPC" value={ppe} onChange={(e) => setPpe(e.target.value)} />
-          <Field label="Nº do B.O." placeholder="Ex.: 2026.000001" value={numeroBo} onChange={(e) => setNumeroBo(e.target.value)} />
-          <Field label="Nº Físico" placeholder="Ex.: 2026.001.0001" value={numeroFisico} onChange={(e) => setNumeroFisico(e.target.value)} />
-          <Select label="Tipo de Procedimento" value={tipo} onChange={setTipo} options={["Inquérito Policial", "TCO", "Verificação Preliminar", "Outros"]} />
-          <Select label="Visibilidade" options={["Público", "Privado"]} value={visibilidade} onChange={setVisibilidade} />
+          <Field
+            label="PPE"
+            placeholder="Ex.: 001/2026-DPPC"
+            value={ppe}
+            onChange={(e) => setPpe(e.target.value)}
+          />
+          <Field
+            label="Nº do B.O."
+            placeholder="Ex.: 2026.000001"
+            value={numeroBo}
+            onChange={(e) => setNumeroBo(e.target.value)}
+          />
+          <Field
+            label="Nº Físico"
+            placeholder="Ex.: 2026.001.0001"
+            value={numeroFisico}
+            onChange={(e) => setNumeroFisico(e.target.value)}
+          />
+          <Select
+            label="Tipo de Procedimento"
+            value={tipo}
+            onChange={setTipo}
+            options={["Inquérito Policial", "TCO", "Verificação Preliminar", "Outros"]}
+          />
+          <Select
+            label="Visibilidade"
+            options={["Público", "Privado"]}
+            value={visibilidade}
+            onChange={setVisibilidade}
+          />
         </SectionCard>
 
         <SectionCard title="Datas">
-          <Field label="Data do Fato" type="date" value={dataFato} onChange={(e) => setDataFato(e.target.value)} />
-          <Field label="Data de Instauração" type="date" value={dataInstauracao} onChange={(e) => setDataInstauracao(e.target.value)} />
-          <Field label="Prazo" type="date" value={prazo} onChange={(e) => setPrazo(e.target.value)} />
+          <Field
+            label="Data do Fato"
+            type="date"
+            value={dataFato}
+            onChange={(e) => setDataFato(e.target.value)}
+          />
+          <Field
+            label="Data de Instauração"
+            type="date"
+            value={dataInstauracao}
+            onChange={(e) => setDataInstauracao(e.target.value)}
+          />
+          <Field
+            label="Prazo"
+            type="date"
+            value={prazo}
+            onChange={(e) => setPrazo(e.target.value)}
+          />
         </SectionCard>
 
         <SectionCard title="Classificação do Caso">
-          <Field label="Tipificação" placeholder="Ex.: Homicídio Qualificado" value={tipificacao} onChange={(e) => setTipificacao(e.target.value)} />
+          <Field
+            label="Tipificação"
+            placeholder="Ex.: Homicídio Qualificado"
+            value={tipificacao}
+            onChange={(e) => setTipificacao(e.target.value)}
+          />
           <Select
             label="Categoria do Caso"
             options={[...CASE_CATEGORY_OPTIONS]}
@@ -207,7 +270,9 @@ function NovoCaso() {
             onChange={setGravidade}
           />
           <Select
-            label="Situação" value={situacao} onChange={setSituacao}
+            label="Situação"
+            value={situacao}
+            onChange={setSituacao}
             options={[
               "Instaurado",
               "Em Andamento",
@@ -220,29 +285,108 @@ function NovoCaso() {
               "Arquivado",
             ]}
           />
-          <Select label="Elucidado" options={["Sim", "Não"]} value={elucidado} onChange={setElucidado} />
-          <Select label="Houve arma de fogo?" options={["Sim", "Não"]} value={houveArmaDeFogo} onChange={handleHouveArmaDeFogoChange} />
-          {houveArmaDeFogo === "Sim" && <Field label="Arma Utilizada" placeholder="Ex: revólver calibre .38" value={armaUtilizada} onChange={(e) => setArmaUtilizada(e.target.value)} />}
+          <Select
+            label="Elucidado"
+            options={["Sim", "Não"]}
+            value={elucidado}
+            onChange={setElucidado}
+          />
+          <Select
+            label="Houve arma de fogo?"
+            options={["Sim", "Não"]}
+            value={houveArmaDeFogo}
+            onChange={handleHouveArmaDeFogoChange}
+          />
+          {houveArmaDeFogo === "Sim" && (
+            <Field
+              label="Arma Utilizada"
+              placeholder="Ex: revólver calibre .38"
+              value={armaUtilizada}
+              onChange={(e) => setArmaUtilizada(e.target.value)}
+            />
+          )}
         </SectionCard>
 
         <SectionCard title="Pessoas Envolvidas">
-          <Field label="Vítima" placeholder="Nome completo da vítima" value={vitima} onChange={(e) => setVitima(e.target.value)} />
-          <Field label="Autor / Investigado" placeholder="Nome ou 'Desconhecido'" value={investigado} onChange={(e) => setInvestigado(e.target.value)} />
-          <Select label="Autoria Determinada ou Indeterminada" options={["Determinada", "Indeterminada", "Desconhecida", "Sem Autoria"]} value={autoria} onChange={setAutoria} />
-          <Select label="Réu Preso" options={["Sim", "Não"]} value={reuPreso} onChange={setReuPreso} />
+          <Field
+            label="Vítima"
+            placeholder="Nome completo da vítima"
+            value={vitima}
+            onChange={(e) => setVitima(e.target.value)}
+          />
+          <Field
+            label="Autor / Investigado"
+            placeholder="Nome ou 'Desconhecido'"
+            value={investigado}
+            onChange={(e) => setInvestigado(e.target.value)}
+          />
+          <Select
+            label="Autoria Determinada ou Indeterminada"
+            options={["Determinada", "Indeterminada", "Desconhecida", "Sem Autoria"]}
+            value={autoria}
+            onChange={setAutoria}
+          />
+          <Select
+            label="Réu Preso"
+            options={["Sim", "Não"]}
+            value={reuPreso}
+            onChange={setReuPreso}
+          />
         </SectionCard>
 
         <SectionCard title="Dados Operacionais">
-          <Field label="Delegado Responsável" placeholder="Del. Nome Completo" value={delegadoResponsavel} onChange={(e) => setDelegadoResponsavel(e.target.value)} />
-          <Field label="Equipe Responsável" placeholder="Ex.: DHPP - Equipe Alpha" value={equipe} onChange={(e) => setEquipe(e.target.value)} />
-          <Field label="Escrivão" placeholder="Nome completo" value={escrivao} onChange={(e) => setEscrivao(e.target.value)} />
-          <Field label="Bairro" placeholder="Informe o bairro" value={bairro} onChange={(e) => setBairro(e.target.value)} />
-          <Field label="Distrito" placeholder="Ex.: 1º DP" value={distrito} onChange={(e) => setDistrito(e.target.value)} />
-          <Field label="Motivação" placeholder="Motivação principal" value={motivacao} onChange={(e) => setMotivacao(e.target.value)} />
-          <Select label="Vinculado a Facção" options={["Sim", "Não", "A definir"]} value={vinculadoFaccao} onChange={setVinculadoFaccao} />
-          <Field label="Nome da Facção" placeholder="Informe se houver" value={nomeFaccao} onChange={(e) => setNomeFaccao(e.target.value)} />
+          <Field
+            label="Delegado Responsável"
+            placeholder="Del. Nome Completo"
+            value={delegadoResponsavel}
+            onChange={(e) => setDelegadoResponsavel(e.target.value)}
+          />
+          <Field
+            label="Equipe Responsável"
+            placeholder="Ex.: DHPP - Equipe Alpha"
+            value={equipe}
+            onChange={(e) => setEquipe(e.target.value)}
+          />
+          <Field
+            label="Escrivão"
+            placeholder="Nome completo"
+            value={escrivao}
+            onChange={(e) => setEscrivao(e.target.value)}
+          />
+          <Field
+            label="Bairro"
+            placeholder="Informe o bairro"
+            value={bairro}
+            onChange={(e) => setBairro(e.target.value)}
+          />
+          <Field
+            label="Distrito"
+            placeholder="Ex.: 1º DP"
+            value={distrito}
+            onChange={(e) => setDistrito(e.target.value)}
+          />
+          <Field
+            label="Motivação"
+            placeholder="Motivação principal"
+            value={motivacao}
+            onChange={(e) => setMotivacao(e.target.value)}
+          />
           <Select
-            label="Status de Diligências" value={statusDiligencias} onChange={setStatusDiligencias}
+            label="Vinculado a Facção"
+            options={["Sim", "Não", "A definir"]}
+            value={vinculadoFaccao}
+            onChange={setVinculadoFaccao}
+          />
+          <Field
+            label="Nome da Facção"
+            placeholder="Informe se houver"
+            value={nomeFaccao}
+            onChange={(e) => setNomeFaccao(e.target.value)}
+          />
+          <Select
+            label="Status de Diligências"
+            value={statusDiligencias}
+            onChange={setStatusDiligencias}
             options={[
               "Pendente",
               "Em Andamento",
@@ -251,27 +395,76 @@ function NovoCaso() {
               "Aguardando Aprovação/Revisão",
             ]}
           />
-          <TextArea label="Diligências Pendentes" rows={4} placeholder="Descreva as diligências pendentes..." value={diligenciasPendentes} onChange={(e) => setDiligenciasPendentes(e.target.value)} />
-          <TextArea label="Observações" rows={5} placeholder="Informações complementares..." value={observacoes} onChange={(e) => setObservacoes(e.target.value)} />
+          <TextArea
+            label="Diligências Pendentes"
+            rows={4}
+            placeholder="Descreva as diligências pendentes..."
+            value={diligenciasPendentes}
+            onChange={(e) => setDiligenciasPendentes(e.target.value)}
+          />
+          <TextArea
+            label="Observações"
+            rows={5}
+            placeholder="Informações complementares..."
+            value={observacoes}
+            onChange={(e) => setObservacoes(e.target.value)}
+          />
         </SectionCard>
 
         <SectionCard title="Relatório e Jurídico">
-          <Select label="Medida Protetiva" options={["Sim", "Não"]} value={medidaProtetiva} onChange={setMedidaProtetiva} />
-          <Field label="Nº Processo da Medida" placeholder="0001234-55.2025.8.17.0001" value={numeroProcessoMedida} onChange={(e) => setNumeroProcessoMedida(e.target.value)} />
-          <Select label="Relatório Enviado" options={["Sim", "Não"]} value={relatorioEnviado} onChange={setRelatorioEnviado} />
-          <Field label="Data de Envio do Relatório" type="date" value={dataEnvioRelatorio} onChange={(e) => setDataEnvioRelatorio(e.target.value)} />
-          <Field label="Representações Legais" type="number" placeholder="0" value={representacoesLegais} onChange={(e) => setRepresentacoesLegais(e.target.value)} />
+          <Select
+            label="Medida Protetiva"
+            options={["Sim", "Não"]}
+            value={medidaProtetiva}
+            onChange={setMedidaProtetiva}
+          />
+          <Field
+            label="Nº Processo da Medida"
+            placeholder="0001234-55.2025.8.17.0001"
+            value={numeroProcessoMedida}
+            onChange={(e) => setNumeroProcessoMedida(e.target.value)}
+          />
+          <Select
+            label="Relatório Enviado"
+            options={["Sim", "Não"]}
+            value={relatorioEnviado}
+            onChange={setRelatorioEnviado}
+          />
+          <Field
+            label="Data de Envio do Relatório"
+            type="date"
+            value={dataEnvioRelatorio}
+            onChange={(e) => setDataEnvioRelatorio(e.target.value)}
+          />
+          <Field
+            label="Representações Legais"
+            type="number"
+            placeholder="0"
+            value={representacoesLegais}
+            onChange={(e) => setRepresentacoesLegais(e.target.value)}
+          />
         </SectionCard>
 
         {(erro || feedback) && (
           <div className="space-y-2">
-            {erro && <p className="rounded-lg border border-destructive/50 bg-destructive/10 px-4 py-2 text-sm text-destructive">{erro}</p>}
-            {feedback && <p className="rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-4 py-2 text-sm text-emerald-400">{feedback}</p>}
+            {erro && (
+              <p className="rounded-lg border border-destructive/50 bg-destructive/10 px-4 py-2 text-sm text-destructive">
+                {erro}
+              </p>
+            )}
+            {feedback && (
+              <p className="rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-4 py-2 text-sm text-emerald-400">
+                {feedback}
+              </p>
+            )}
           </div>
         )}
 
         <div className="flex gap-3 justify-end">
-          <button type="button" className="px-5 py-2.5 rounded-lg text-sm border border-border hover:bg-accent">
+          <button
+            type="button"
+            className="px-5 py-2.5 rounded-lg text-sm border border-border hover:bg-accent"
+          >
             Cancelar
           </button>
           <button
@@ -296,19 +489,33 @@ function SectionCard({ title, children }: { title: string; children: React.React
   );
 }
 
-function Field({ label, ...props }: { label: string } & React.InputHTMLAttributes<HTMLInputElement>) {
+function Field({
+  label,
+  ...props
+}: { label: string } & React.InputHTMLAttributes<HTMLInputElement>) {
   return (
     <div>
-      <label className="block text-xs font-bold tracking-wider text-muted-foreground mb-2">{label.toUpperCase()}</label>
-      <input {...props} className="w-full bg-card border border-border rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-primary" />
+      <label className="block text-xs font-bold tracking-wider text-muted-foreground mb-2">
+        {label.toUpperCase()}
+      </label>
+      <input
+        {...props}
+        className="w-full bg-card border border-border rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-primary"
+      />
     </div>
   );
 }
 
-function TextArea({ label, rows = 4, ...props }: { label: string; rows?: number } & React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
+function TextArea({
+  label,
+  rows = 4,
+  ...props
+}: { label: string; rows?: number } & React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
   return (
     <div className="md:col-span-2 lg:col-span-3">
-      <label className="block text-xs font-bold tracking-wider text-muted-foreground mb-2">{label.toUpperCase()}</label>
+      <label className="block text-xs font-bold tracking-wider text-muted-foreground mb-2">
+        {label.toUpperCase()}
+      </label>
       <textarea
         rows={rows}
         {...props}
@@ -331,7 +538,9 @@ function Select({
 }) {
   return (
     <div>
-      <label className="block text-xs font-bold tracking-wider text-muted-foreground mb-2">{label.toUpperCase()}</label>
+      <label className="block text-xs font-bold tracking-wider text-muted-foreground mb-2">
+        {label.toUpperCase()}
+      </label>
       <select
         value={value}
         onChange={(e) => onChange?.(e.target.value)}

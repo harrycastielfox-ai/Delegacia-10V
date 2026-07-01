@@ -38,7 +38,9 @@ export type RepresentacaoRecord = {
   deleted_at: string | null;
 };
 
-export type RepresentacaoPayload = Partial<Omit<RepresentacaoRecord, "id" | "created_at" | "updated_at" | "deleted_at">>;
+export type RepresentacaoPayload = Partial<
+  Omit<RepresentacaoRecord, "id" | "created_at" | "updated_at" | "deleted_at">
+>;
 
 const LIST_CACHE_TTL_MS = 10000;
 
@@ -51,7 +53,11 @@ function invalidateRepresentacoesCache() {
 
 export async function listRepresentacoes(options: { forceRefresh?: boolean } = {}) {
   const now = Date.now();
-  if (!options.forceRefresh && representacoesCache && now - representacoesCache.fetchedAt < LIST_CACHE_TTL_MS) {
+  if (
+    !options.forceRefresh &&
+    representacoesCache &&
+    now - representacoesCache.fetchedAt < LIST_CACHE_TTL_MS
+  ) {
     return representacoesCache.data;
   }
 
@@ -59,15 +65,13 @@ export async function listRepresentacoes(options: { forceRefresh?: boolean } = {
     return representacoesPending;
   }
 
-  representacoesPending = runSupabaseQuery<RepresentacaoRecord[]>(
-    "representações",
-    (signal) =>
-      supabase
-        .from("representacoes")
-        .select("*")
-        .is("deleted_at", null)
-        .order("created_at", { ascending: false })
-        .abortSignal(signal),
+  representacoesPending = runSupabaseQuery<RepresentacaoRecord[]>("representações", (signal) =>
+    supabase
+      .from("representacoes")
+      .select("*")
+      .is("deleted_at", null)
+      .order("created_at", { ascending: false })
+      .abortSignal(signal),
   )
     .then((data) => {
       const rows = (data ?? []) as RepresentacaoRecord[];
@@ -82,17 +86,21 @@ export async function listRepresentacoes(options: { forceRefresh?: boolean } = {
 }
 
 export async function getRepresentacaoById(id: string) {
-  const data = await runSupabaseQuery<RepresentacaoRecord | null>(
-    "representação",
-    (signal) => supabase.from("representacoes").select("*").eq("id", id).is("deleted_at", null).maybeSingle().abortSignal(signal),
+  const data = await runSupabaseQuery<RepresentacaoRecord | null>("representação", (signal) =>
+    supabase
+      .from("representacoes")
+      .select("*")
+      .eq("id", id)
+      .is("deleted_at", null)
+      .maybeSingle()
+      .abortSignal(signal),
   );
   return data as RepresentacaoRecord | null;
 }
 
 export async function createRepresentacao(payload: RepresentacaoPayload) {
-  const data = await runSupabaseQuery<RepresentacaoRecord>(
-    "criação de representação",
-    (signal) => supabase.from("representacoes").insert(payload).select("*").single().abortSignal(signal),
+  const data = await runSupabaseQuery<RepresentacaoRecord>("criação de representação", (signal) =>
+    supabase.from("representacoes").insert(payload).select("*").single().abortSignal(signal),
   );
   invalidateRepresentacoesCache();
   return data as RepresentacaoRecord;
@@ -101,7 +109,15 @@ export async function createRepresentacao(payload: RepresentacaoPayload) {
 export async function updateRepresentacao(id: string, payload: RepresentacaoPayload) {
   const data = await runSupabaseQuery<RepresentacaoRecord | null>(
     "atualização de representação",
-    (signal) => supabase.from("representacoes").update(payload).eq("id", id).is("deleted_at", null).select("*").maybeSingle().abortSignal(signal),
+    (signal) =>
+      supabase
+        .from("representacoes")
+        .update(payload)
+        .eq("id", id)
+        .is("deleted_at", null)
+        .select("*")
+        .maybeSingle()
+        .abortSignal(signal),
   );
 
   if (import.meta.env.DEV) {
@@ -125,9 +141,13 @@ export async function updateRepresentacao(id: string, payload: RepresentacaoPayl
 }
 
 export async function softDeleteRepresentacao(id: string) {
-  await runSupabaseQuery<null>(
-    "exclusão de representação",
-    (signal) => supabase.from("representacoes").update({ deleted_at: new Date().toISOString() }).eq("id", id).is("deleted_at", null).abortSignal(signal),
+  await runSupabaseQuery<null>("exclusão de representação", (signal) =>
+    supabase
+      .from("representacoes")
+      .update({ deleted_at: new Date().toISOString() })
+      .eq("id", id)
+      .is("deleted_at", null)
+      .abortSignal(signal),
   );
   invalidateRepresentacoesCache();
 }
