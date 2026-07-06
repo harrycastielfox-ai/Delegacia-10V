@@ -602,6 +602,10 @@ Campos recomendados para consolidar indicadores:
 - `escrivao_responsavel_id`
 - `funcao_institucional`
 
+Proposta SQL revisavel relacionada:
+
+- `docs/proposta-padronizacao-campos-operacionais.sql`
+
 ## Ordem segura de implementacao
 
 ### Fase 1 - Relatorios
