@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { ArrowUpRight, FileText, MapPin, Search } from "lucide-react";
+import { ArrowUpRight, FileText, MapPin, Search, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { AppLayout } from "@/components/AppLayout";
 import { isCvliRecord } from "@/lib/cvliMetrics";
@@ -33,6 +33,7 @@ function LocalidadesPage() {
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedLocalidade, setSelectedLocalidade] = useState("todas");
+  const [openLocalidade, setOpenLocalidade] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -54,29 +55,39 @@ function LocalidadesPage() {
   }, []);
 
   const stats = useMemo(() => buildLocalidadeStats(inqueritos), [inqueritos]);
-  const filteredInqueritos = useMemo(() => {
+  const visibleStats = useMemo(() => {
     const normalizedSearch = normalizeText(searchTerm);
 
-    return inqueritos.filter((inquerito) => {
-      const localidade = getLocalidade(inquerito);
-      const matchesLocalidade = selectedLocalidade === "todas" || localidade === selectedLocalidade;
-      const searchable = normalizeText(
-        [
-          inquerito.numero_ppe,
-          inquerito.tipo,
-          inquerito.situacao,
-          inquerito.gravidade,
-          inquerito.bairro,
-          inquerito.distrito,
-          inquerito.vitima,
-          inquerito.investigado,
-          inquerito.equipe,
-        ].join(" "),
-      );
+    return stats.filter((item) => {
+      const matchesLocalidade =
+        selectedLocalidade === "todas" || item.localidade === selectedLocalidade;
+      if (!matchesLocalidade) return false;
+      if (!normalizedSearch) return true;
 
-      return matchesLocalidade && (!normalizedSearch || searchable.includes(normalizedSearch));
+      return inqueritos
+        .filter((inquerito) => getLocalidade(inquerito) === item.localidade)
+        .some((inquerito) =>
+          normalizeText(
+            [
+              item.localidade,
+              inquerito.numero_ppe,
+              inquerito.tipo,
+              inquerito.situacao,
+              inquerito.gravidade,
+              inquerito.bairro,
+              inquerito.distrito,
+              inquerito.vitima,
+              inquerito.investigado,
+              inquerito.equipe,
+            ].join(" "),
+          ).includes(normalizedSearch),
+        );
     });
-  }, [inqueritos, searchTerm, selectedLocalidade]);
+  }, [inqueritos, searchTerm, selectedLocalidade, stats]);
+  const modalInqueritos = useMemo(() => {
+    if (!openLocalidade) return [];
+    return inqueritos.filter((inquerito) => getLocalidade(inquerito) === openLocalidade);
+  }, [inqueritos, openLocalidade]);
   const selectedStats = useMemo(() => {
     if (selectedLocalidade === "todas") {
       return {
@@ -153,11 +164,11 @@ function LocalidadesPage() {
                 Localidades
               </h2>
               <p className="mt-1 text-xs text-muted-foreground">
-                Clique em uma linha para filtrar a lista abaixo.
+                Clique em uma localidade para ver os B.O. vinculados em uma janela operacional.
               </p>
             </div>
             <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
-              {stats.length} localidade(s)
+              {visibleStats.length} localidade(s)
             </span>
           </div>
 
@@ -172,7 +183,7 @@ function LocalidadesPage() {
                 </tr>
               </thead>
               <tbody>
-                {stats.length === 0 ? (
+                {visibleStats.length === 0 ? (
                   <tr>
                     <td
                       colSpan={4}
@@ -182,10 +193,10 @@ function LocalidadesPage() {
                     </td>
                   </tr>
                 ) : (
-                  stats.map((item) => (
+                  visibleStats.map((item) => (
                     <tr
                       key={item.localidade}
-                      onClick={() => setSelectedLocalidade(item.localidade)}
+                      onClick={() => setOpenLocalidade(item.localidade)}
                       className="cursor-pointer border-b border-border/60 transition hover:bg-warning/[0.06]"
                     >
                       <td className="px-5 py-3 font-black text-foreground">
@@ -207,64 +218,21 @@ function LocalidadesPage() {
           </div>
         </section>
 
-        <section className="overflow-hidden rounded-xl border border-border bg-card">
-          <div className="flex flex-col gap-2 border-b border-border bg-muted/20 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h2 className="text-xs font-black uppercase tracking-[0.16em] text-success">
-                Lista de Procedimentos
-              </h2>
-              <p className="mt-1 text-xs text-muted-foreground">
-                {filteredInqueritos.length} registro(s) encontrados na seleção atual.
-              </p>
-            </div>
-          </div>
-
-          {loading ? (
-            <div className="p-12 text-center text-sm text-muted-foreground">
-              Carregando procedimentos...
-            </div>
-          ) : error ? (
-            <div className="p-12 text-center text-sm text-destructive">{error}</div>
-          ) : (
-            <div className="divide-y divide-border/60">
-              {filteredInqueritos.length === 0 ? (
-                <div className="p-12 text-center text-sm text-muted-foreground">
-                  Nenhum procedimento encontrado para o filtro atual.
-                </div>
-              ) : (
-                filteredInqueritos.map((inquerito) => (
-                  <button
-                    key={inquerito.id}
-                    type="button"
-                    onClick={() =>
-                      navigate({
-                        to: "/inqueritos/$caseId",
-                        params: { caseId: inquerito.id },
-                      })
-                    }
-                    className="grid w-full grid-cols-1 gap-3 px-5 py-4 text-left transition hover:bg-success/[0.045] md:grid-cols-[1.2fr_1fr_1fr_0.8fr_auto]"
-                  >
-                    <div>
-                      <div className="flex items-center gap-2 font-black text-foreground">
-                        <FileText className="h-4 w-4 text-success" />
-                        {inquerito.numero_ppe || inquerito.codigo_interno || "Sem PPE"}
-                      </div>
-                      <div className="mt-1 text-xs text-muted-foreground">
-                        {getLocalidade(inquerito)}
-                      </div>
-                    </div>
-                    <ListField label="Tipo" value={inquerito.tipo || "Não informado"} />
-                    <ListField label="Status" value={inquerito.situacao || "Sem status"} />
-                    <ListField label="Equipe" value={inquerito.equipe || "Sem equipe"} />
-                    <div className="flex items-center justify-end text-success">
-                      <ArrowUpRight className="h-4 w-4" />
-                    </div>
-                  </button>
-                ))
-              )}
-            </div>
-          )}
-        </section>
+        {openLocalidade ? (
+          <LocalidadeModal
+            localidade={openLocalidade}
+            inqueritos={modalInqueritos}
+            loading={loading}
+            error={error}
+            onClose={() => setOpenLocalidade(null)}
+            onOpenInquerito={(caseId) =>
+              navigate({
+                to: "/inqueritos/$caseId",
+                params: { caseId },
+              })
+            }
+          />
+        ) : null}
       </div>
     </AppLayout>
   );
@@ -340,6 +308,90 @@ function ListField({ label, value }: { label: string; value: string }) {
         {label}
       </div>
       <div className="mt-1 truncate text-sm font-semibold text-foreground">{value}</div>
+    </div>
+  );
+}
+
+function LocalidadeModal({
+  localidade,
+  inqueritos,
+  loading,
+  error,
+  onClose,
+  onOpenInquerito,
+}: {
+  localidade: string;
+  inqueritos: InqueritoRecord[];
+  loading: boolean;
+  error: string | null;
+  onClose: () => void;
+  onOpenInquerito: (caseId: string) => void;
+}) {
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-background/85 p-4 backdrop-blur-sm"
+      role="dialog"
+      aria-modal="true"
+      aria-label={`B.O. da localidade ${localidade}`}
+    >
+      <div className="max-h-[86vh] w-full max-w-5xl overflow-hidden rounded-2xl border border-warning/35 bg-card shadow-[0_24px_80px_rgba(0,0,0,0.55)]">
+        <div className="flex flex-col gap-3 border-b border-border bg-muted/20 px-5 py-4 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-warning">
+              Localidade selecionada
+            </p>
+            <h3 className="mt-1 text-xl font-black text-foreground">{localidade}</h3>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {inqueritos.length} B.O./procedimento(s) encontrados nesta localidade.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-border bg-background/60 text-muted-foreground transition hover:border-warning/45 hover:text-warning"
+            aria-label="Fechar janela"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        {loading ? (
+          <div className="p-12 text-center text-sm text-muted-foreground">
+            Carregando procedimentos...
+          </div>
+        ) : error ? (
+          <div className="p-12 text-center text-sm text-destructive">{error}</div>
+        ) : inqueritos.length === 0 ? (
+          <div className="p-12 text-center text-sm text-muted-foreground">
+            Nenhum procedimento encontrado para esta localidade.
+          </div>
+        ) : (
+          <div className="max-h-[62vh] divide-y divide-border/60 overflow-y-auto">
+            {inqueritos.map((inquerito) => (
+              <button
+                key={inquerito.id}
+                type="button"
+                onClick={() => onOpenInquerito(inquerito.id)}
+                className="grid w-full grid-cols-1 gap-3 px-5 py-4 text-left transition hover:bg-warning/[0.055] md:grid-cols-[1.2fr_1fr_1fr_0.8fr_auto]"
+              >
+                <div>
+                  <div className="flex items-center gap-2 font-black text-foreground">
+                    <FileText className="h-4 w-4 text-warning" />
+                    {inquerito.numero_ppe || inquerito.codigo_interno || "Sem PPE"}
+                  </div>
+                  <div className="mt-1 text-xs text-muted-foreground">{localidade}</div>
+                </div>
+                <ListField label="Tipo" value={inquerito.tipo || "NÃ£o informado"} />
+                <ListField label="Status" value={inquerito.situacao || "Sem status"} />
+                <ListField label="Equipe" value={inquerito.equipe || "Sem equipe"} />
+                <div className="flex items-center justify-end text-warning">
+                  <ArrowUpRight className="h-4 w-4" />
+                </div>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
