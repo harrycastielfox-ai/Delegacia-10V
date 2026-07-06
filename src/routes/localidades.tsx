@@ -26,6 +26,8 @@ type LocalidadeStats = {
   alta: number;
 };
 
+const PAGE_SIZE = 20;
+
 function LocalidadesPage() {
   const navigate = Route.useNavigate();
   const [inqueritos, setInqueritos] = useState<InqueritoRecord[]>([]);
@@ -34,6 +36,7 @@ function LocalidadesPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedLocalidade, setSelectedLocalidade] = useState("todas");
   const [openLocalidade, setOpenLocalidade] = useState<string | null>(null);
+  const [localidadePage, setLocalidadePage] = useState(1);
 
   useEffect(() => {
     let cancelled = false;
@@ -84,6 +87,15 @@ function LocalidadesPage() {
         );
     });
   }, [inqueritos, searchTerm, selectedLocalidade, stats]);
+  useEffect(() => {
+    setLocalidadePage(1);
+  }, [searchTerm, selectedLocalidade]);
+  const totalLocalidadePages = Math.max(1, Math.ceil(visibleStats.length / PAGE_SIZE));
+  const safeLocalidadePage = Math.min(localidadePage, totalLocalidadePages);
+  const paginatedStats = useMemo(() => {
+    const start = (safeLocalidadePage - 1) * PAGE_SIZE;
+    return visibleStats.slice(start, start + PAGE_SIZE);
+  }, [safeLocalidadePage, visibleStats]);
   const modalInqueritos = useMemo(() => {
     if (!openLocalidade) return [];
     return inqueritos.filter((inquerito) => getLocalidade(inquerito) === openLocalidade);
@@ -169,6 +181,7 @@ function LocalidadesPage() {
             </div>
             <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
               {visibleStats.length} localidade(s)
+              {visibleStats.length > PAGE_SIZE ? ` - pagina ${safeLocalidadePage}/${totalLocalidadePages}` : ""}
             </span>
           </div>
 
@@ -193,7 +206,7 @@ function LocalidadesPage() {
                     </td>
                   </tr>
                 ) : (
-                  visibleStats.map((item) => (
+                  paginatedStats.map((item) => (
                     <tr
                       key={item.localidade}
                       onClick={() => setOpenLocalidade(item.localidade)}
@@ -216,6 +229,13 @@ function LocalidadesPage() {
               </tbody>
             </table>
           </div>
+          {visibleStats.length > PAGE_SIZE ? (
+            <Pagination
+              page={safeLocalidadePage}
+              totalPages={totalLocalidadePages}
+              onPageChange={setLocalidadePage}
+            />
+          ) : null}
         </section>
 
         {openLocalidade ? (
@@ -270,6 +290,11 @@ function isHighPriority(inquerito: InqueritoRecord) {
   return calculateInqueritoOperationalPriority(inquerito) === "ALTA";
 }
 
+function isConcluidoInquerito(inquerito: InqueritoRecord) {
+  return ["sim", "s", "true", "1", "yes", "y"].includes(normalizeText(inquerito.relatorio_enviado)) ||
+    Boolean(normalizeText(inquerito.data_envio_relatorio));
+}
+
 function normalizeText(value: unknown) {
   return String(value ?? "")
     .normalize("NFD")
@@ -312,6 +337,51 @@ function ListField({ label, value }: { label: string; value: string }) {
   );
 }
 
+function Pagination({
+  page,
+  totalPages,
+  onPageChange,
+}: {
+  page: number;
+  totalPages: number;
+  onPageChange: (page: number) => void;
+}) {
+  return (
+    <div className="flex flex-wrap items-center justify-end gap-2 border-t border-border bg-muted/10 px-5 py-3">
+      <button
+        type="button"
+        onClick={() => onPageChange(Math.max(1, page - 1))}
+        disabled={page === 1}
+        className="rounded-lg border border-border px-3 py-1.5 text-xs font-black uppercase tracking-[0.12em] text-muted-foreground transition hover:border-warning/40 hover:text-warning disabled:cursor-not-allowed disabled:opacity-40"
+      >
+        Anterior
+      </button>
+      {Array.from({ length: totalPages }, (_, index) => index + 1).map((item) => (
+        <button
+          key={item}
+          type="button"
+          onClick={() => onPageChange(item)}
+          className={`h-8 min-w-8 rounded-lg border px-2 text-xs font-black tabular-nums transition ${
+            item === page
+              ? "border-warning/55 bg-warning/15 text-warning shadow-[0_0_14px_rgba(245,158,11,0.16)]"
+              : "border-border text-muted-foreground hover:border-warning/35 hover:text-warning"
+          }`}
+        >
+          {item}
+        </button>
+      ))}
+      <button
+        type="button"
+        onClick={() => onPageChange(Math.min(totalPages, page + 1))}
+        disabled={page === totalPages}
+        className="rounded-lg border border-border px-3 py-1.5 text-xs font-black uppercase tracking-[0.12em] text-muted-foreground transition hover:border-warning/40 hover:text-warning disabled:cursor-not-allowed disabled:opacity-40"
+      >
+        Proxima
+      </button>
+    </div>
+  );
+}
+
 function LocalidadeModal({
   localidade,
   inqueritos,
@@ -327,6 +397,43 @@ function LocalidadeModal({
   onClose: () => void;
   onOpenInquerito: (caseId: string) => void;
 }) {
+  const [modalSearch, setModalSearch] = useState("");
+  const [modalFilter, setModalFilter] = useState("todos");
+  const [modalPage, setModalPage] = useState(1);
+  const filteredInqueritos = useMemo(() => {
+    const query = normalizeText(modalSearch);
+
+    return inqueritos.filter((inquerito) => {
+      if (modalFilter === "cvli" && !isCvliRecord(inquerito)) return false;
+      if (modalFilter === "alta" && !isHighPriority(inquerito)) return false;
+      if (modalFilter === "andamento" && isConcluidoInquerito(inquerito)) return false;
+      if (modalFilter === "concluidos" && !isConcluidoInquerito(inquerito)) return false;
+      if (!query) return true;
+
+      return normalizeText(
+        [
+          inquerito.numero_ppe,
+          inquerito.codigo_interno,
+          inquerito.tipo,
+          inquerito.situacao,
+          inquerito.gravidade,
+          inquerito.vitima,
+          inquerito.investigado,
+          inquerito.equipe,
+        ].join(" "),
+      ).includes(query);
+    });
+  }, [inqueritos, modalFilter, modalSearch]);
+  useEffect(() => {
+    setModalPage(1);
+  }, [modalFilter, modalSearch, localidade]);
+  const totalModalPages = Math.max(1, Math.ceil(filteredInqueritos.length / PAGE_SIZE));
+  const safeModalPage = Math.min(modalPage, totalModalPages);
+  const paginatedInqueritos = useMemo(() => {
+    const start = (safeModalPage - 1) * PAGE_SIZE;
+    return filteredInqueritos.slice(start, start + PAGE_SIZE);
+  }, [filteredInqueritos, safeModalPage]);
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-background/85 p-4 backdrop-blur-sm"
@@ -342,7 +449,7 @@ function LocalidadeModal({
             </p>
             <h3 className="mt-1 text-xl font-black text-foreground">{localidade}</h3>
             <p className="mt-1 text-sm text-muted-foreground">
-              {inqueritos.length} B.O./procedimento(s) encontrados nesta localidade.
+              {filteredInqueritos.length} de {inqueritos.length} B.O./procedimento(s) nesta localidade.
             </p>
           </div>
           <button
@@ -355,19 +462,53 @@ function LocalidadeModal({
           </button>
         </div>
 
+        <div className="grid gap-3 border-b border-border bg-background/25 px-5 py-3 lg:grid-cols-[1fr_auto]">
+          <label className="relative block">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <input
+              value={modalSearch}
+              onChange={(event) => setModalSearch(event.target.value)}
+              placeholder="Buscar nesta localidade por PPE, vitima, investigado, tipo ou equipe..."
+              className="h-10 w-full rounded-lg border border-border bg-card pl-10 pr-3 text-sm font-semibold text-foreground outline-none transition placeholder:text-muted-foreground focus:border-warning/60 focus:ring-2 focus:ring-warning/15"
+            />
+          </label>
+          <div className="flex flex-wrap gap-2">
+            {[
+              ["todos", "Todos"],
+              ["cvli", "CVLI"],
+              ["alta", "Alta"],
+              ["andamento", "Em andamento"],
+              ["concluidos", "Concluidos"],
+            ].map(([key, label]) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => setModalFilter(key)}
+                className={`rounded-full border px-3 py-1.5 text-xs font-black uppercase tracking-[0.1em] transition ${
+                  modalFilter === key
+                    ? "border-warning/55 bg-warning/15 text-warning"
+                    : "border-border text-muted-foreground hover:border-warning/35 hover:text-warning"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+
         {loading ? (
           <div className="p-12 text-center text-sm text-muted-foreground">
             Carregando procedimentos...
           </div>
         ) : error ? (
           <div className="p-12 text-center text-sm text-destructive">{error}</div>
-        ) : inqueritos.length === 0 ? (
+        ) : filteredInqueritos.length === 0 ? (
           <div className="p-12 text-center text-sm text-muted-foreground">
-            Nenhum procedimento encontrado para esta localidade.
+            Nenhum procedimento encontrado para os filtros atuais.
           </div>
         ) : (
           <div className="max-h-[62vh] divide-y divide-border/60 overflow-y-auto">
-            {inqueritos.map((inquerito) => (
+            {paginatedInqueritos.map((inquerito) => (
               <button
                 key={inquerito.id}
                 type="button"
@@ -381,7 +522,7 @@ function LocalidadeModal({
                   </div>
                   <div className="mt-1 text-xs text-muted-foreground">{localidade}</div>
                 </div>
-                <ListField label="Tipo" value={inquerito.tipo || "NÃ£o informado"} />
+                <ListField label="Tipo" value={inquerito.tipo || "Nao informado"} />
                 <ListField label="Status" value={inquerito.situacao || "Sem status"} />
                 <ListField label="Equipe" value={inquerito.equipe || "Sem equipe"} />
                 <div className="flex items-center justify-end text-warning">
@@ -391,6 +532,13 @@ function LocalidadeModal({
             ))}
           </div>
         )}
+        {filteredInqueritos.length > PAGE_SIZE ? (
+          <Pagination
+            page={safeModalPage}
+            totalPages={totalModalPages}
+            onPageChange={setModalPage}
+          />
+        ) : null}
       </div>
     </div>
   );
