@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { AppLayout } from "@/components/AppLayout";
 import { PageHeader } from "@/components/PageHeader";
+import { isCvliElucidado, isCvliRecord } from "@/lib/cvliMetrics";
 import { listInqueritos, type InqueritoRecord } from "@/lib/repositories/inqueritosRepository";
 import {
   listRepresentacoes,
@@ -219,11 +220,7 @@ function isInqueritoSemRelatorio(record: InqueritoRecord) {
 }
 
 function isCvli(record: InqueritoRecord) {
-  return ["cvli", "homic", "latrocin", "feminic"].some((term) =>
-    normalizeText(
-      `${record.gravidade} ${record.tipificacao} ${record.tipo} ${record.motivacao}`,
-    ).includes(term),
-  );
+  return isCvliRecord(record);
 }
 
 function isPatrimonial(record: InqueritoRecord) {
@@ -517,7 +514,7 @@ function Alertas() {
     ).length;
     const tco = filteredInqueritos.filter((item) => getProcedureType(item.tipo) === "TCO").length;
     const cvli = filteredInqueritos.filter(isCvli);
-    const cvliElucidados = cvli.filter((item) => isYesLike(item.elucidado)).length;
+    const cvliElucidados = cvli.filter(isCvliElucidado).length;
     const periodSearch = {
       ...(dataInicial ? { dataInicial } : {}),
       ...(dataFinal ? { dataFinal } : {}),
