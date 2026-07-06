@@ -9,6 +9,7 @@ export type EscrivaoProductivityRow = {
   cadastros: number;
   atualizacoes: number;
   relatorios_enviados: number;
+  conclusoes: number;
   ultima_atividade: string | null;
 };
 
@@ -29,5 +30,6 @@ export async function listEscrivaoProductivity(
     cadastros: Number(row.cadastros ?? 0),
     atualizacoes: Number(row.atualizacoes ?? 0),
     relatorios_enviados: Number(row.relatorios_enviados ?? 0),
+    conclusoes: Number(row.conclusoes ?? 0),
   }));
 }

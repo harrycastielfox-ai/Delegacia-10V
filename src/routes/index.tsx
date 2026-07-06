@@ -577,6 +577,7 @@ function Dashboard() {
         .sort(
           (a, b) =>
             b.pontos - a.pontos ||
+            b.conclusoes - a.conclusoes ||
             b.relatorios_enviados - a.relatorios_enviados ||
             b.cadastros - a.cadastros ||
             a.nome.localeCompare(b.nome, "pt-BR"),
@@ -1709,11 +1710,12 @@ function Dashboard() {
               className="h-full"
             >
               <div className="min-w-0">
-                <div className="grid grid-cols-[minmax(0,1.6fr)_0.7fr_0.62fr_0.7fr_0.7fr] gap-2 border-b border-border/70 px-1 pb-2.5 text-[9px] font-bold uppercase tracking-[0.08em] text-muted-foreground">
+                <div className="grid grid-cols-[minmax(0,1.5fr)_0.62fr_0.58fr_0.58fr_0.58fr_0.58fr] gap-2 border-b border-border/70 px-1 pb-2.5 text-[9px] font-bold uppercase tracking-[0.08em] text-muted-foreground">
                   <span>Escrivão</span>
                   <span className="text-right">Pontos</span>
                   <span className="text-right">Cad.</span>
                   <span className="text-right">Relat.</span>
+                  <span className="text-right">Conc.</span>
                   <span className="text-right">Atual.</span>
                 </div>
                 {escrivaoProductivityError ? (
@@ -1729,7 +1731,7 @@ function Dashboard() {
                     {RANKING_ESCRIVAES.map((row, index) => (
                       <div
                         key={row.user_id}
-                        className="grid w-full grid-cols-[minmax(0,1.6fr)_0.7fr_0.62fr_0.7fr_0.7fr] items-center gap-2 border-b border-border/35 px-1 py-2 text-left text-xs last:border-b-0"
+                        className="grid w-full grid-cols-[minmax(0,1.5fr)_0.62fr_0.58fr_0.58fr_0.58fr_0.58fr] items-center gap-2 border-b border-border/35 px-1 py-2 text-left text-xs last:border-b-0"
                         title={
                           row.ultima_atividade
                             ? `Última atividade: ${new Date(row.ultima_atividade).toLocaleString("pt-BR")}`
@@ -1760,6 +1762,9 @@ function Dashboard() {
                         </span>
                         <span className="text-right font-black tabular-nums text-success">
                           {row.relatorios_enviados}
+                        </span>
+                        <span className="text-right font-black tabular-nums text-emerald-300">
+                          {row.conclusoes}
                         </span>
                         <span className="text-right font-black tabular-nums text-warning">
                           {row.atualizacoes}

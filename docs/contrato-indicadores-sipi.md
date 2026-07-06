@@ -517,7 +517,7 @@ Definicao de produto:
 Regra atual:
 
 - usar RPC `list_escrivao_productivity(p_days)`;
-- exibir pontos, cadastros, atualizacoes e relatorios enviados retornados pela RPC.
+- exibir pontos, cadastros, atualizacoes, relatorios enviados e conclusoes retornados pela RPC.
 
 Campos/fontes atuais:
 
@@ -540,7 +540,8 @@ Pontuacao recomendada:
 
 - cadastro validado de procedimento: 1 ponto;
 - atualizacao operacional relevante: 1 ponto;
-- relatorio enviado: 1 ponto;
+- relatorio enviado: 2 pontos;
+- conclusao de inquerito ou representacao: 2 pontos;
 - eventos devem ter data, executor, modulo, entidade e entidade_id.
 
 O que nao fazer:
