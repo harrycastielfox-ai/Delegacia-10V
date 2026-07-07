@@ -1,9 +1,11 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { CalendarRange, CheckCircle2, FileSpreadsheet, Target } from "lucide-react";
+import { BarChart3, CheckCircle2, FileSpreadsheet, Target, Trophy } from "lucide-react";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { AppLayout } from "@/components/AppLayout";
 import { buildCvliMonthlyComparison, type CvliMetric } from "@/lib/cvliMetrics";
 import { listInqueritos, type InqueritoRecord } from "@/lib/repositories/inqueritosRepository";
+
+const YEAR_PAGE_SIZE = 6;
 
 export const Route = createFileRoute("/cvli-comparativo")({
   head: () => ({
@@ -23,7 +25,7 @@ function CvliComparativoPage() {
   const [inqueritos, setInqueritos] = useState<InqueritoRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedYear, setSelectedYear] = useState("todos");
+  const [yearPage, setYearPage] = useState(1);
 
   useEffect(() => {
     let cancelled = false;
@@ -47,21 +49,67 @@ function CvliComparativoPage() {
   }, []);
 
   const comparison = useMemo(() => buildCvliMonthlyComparison(inqueritos), [inqueritos]);
+  useEffect(() => {
+    setYearPage((current) =>
+      Math.min(current, Math.max(1, Math.ceil(comparison.years.length / YEAR_PAGE_SIZE))),
+    );
+  }, [comparison.years.length]);
+  const selectedYears = comparison.years;
+  const totalYearPages = Math.max(1, Math.ceil(selectedYears.length / YEAR_PAGE_SIZE));
+  const safeYearPage = Math.min(yearPage, totalYearPages);
   const visibleYears = useMemo(
-    () =>
-      selectedYear === "todos"
-        ? comparison.years
-        : comparison.years.filter((year) => String(year) === selectedYear),
-    [comparison.years, selectedYear],
+    () => selectedYears.slice((safeYearPage - 1) * YEAR_PAGE_SIZE, safeYearPage * YEAR_PAGE_SIZE),
+    [safeYearPage, selectedYears],
   );
   const summary = useMemo(() => {
-    const metrics = visibleYears.map((year) => comparison.totals[year]).filter(Boolean);
-    const registros = metrics.reduce((total, metric) => total + metric.registros, 0);
-    const elucidados = metrics.reduce((total, metric) => total + metric.elucidados, 0);
+    const metrics = visibleYears
+      .map((year) => ({ year, metric: comparison.totals[year] }))
+      .filter((item): item is { year: number; metric: CvliMetric } => Boolean(item.metric));
+    const registros = metrics.reduce((total, item) => total + item.metric.registros, 0);
+    const elucidados = metrics.reduce((total, item) => total + item.metric.elucidados, 0);
     const taxa = registros === 0 ? 0 : Number(((elucidados / registros) * 100).toFixed(1));
+    const topYear = metrics.reduce(
+      (best, item) =>
+        item.metric.registros > best.registros
+          ? { year: item.year, registros: item.metric.registros }
+          : best,
+      { year: visibleYears[0] ?? 0, registros: 0 },
+    );
+    const bestYear = metrics.reduce(
+      (best, item) => {
+        if (item.metric.elucidados > best.elucidados) {
+          return {
+            year: item.year,
+            elucidados: item.metric.elucidados,
+            taxa: item.metric.taxa,
+          };
+        }
 
-    return { registros, elucidados, taxa };
+        if (
+          item.metric.elucidados === best.elucidados &&
+          (item.metric.taxa > best.taxa ||
+            (item.metric.taxa === best.taxa && item.year > best.year))
+        ) {
+          return {
+            year: item.year,
+            elucidados: item.metric.elucidados,
+            taxa: item.metric.taxa,
+          };
+        }
+
+        return best;
+      },
+      { year: visibleYears[0] ?? 0, elucidados: 0, taxa: 0 },
+    );
+
+    return { registros, elucidados, taxa, topYear, bestYear };
   }, [comparison.totals, visibleYears]);
+  const yearRangeLabel =
+    visibleYears.length > 1
+      ? `${visibleYears[0]} – ${visibleYears[visibleYears.length - 1]}`
+      : visibleYears[0]
+        ? String(visibleYears[0])
+        : "Sem anos";
 
   const openCvliInqueritos = (
     year: number,
@@ -84,82 +132,97 @@ function CvliComparativoPage() {
   return (
     <AppLayout>
       <div className="mx-auto w-full max-w-[1600px]">
-        <header className="mb-5 border-b border-border/70 pb-5">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-            <div className="flex items-start gap-3">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-info/40 bg-info/10 text-info shadow-[0_0_18px_rgba(14,165,233,0.12)]">
-                <FileSpreadsheet className="h-5 w-5" />
+        <header className="mb-5 flex flex-col gap-4 border-b border-border/70 pb-5 lg:flex-row lg:items-start lg:justify-between">
+          <div>
+            <h1 className="text-2xl font-black tracking-normal text-foreground">
+              <span className="text-info">CVLI</span> — Comparativo Mensal
+            </h1>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Fonte: inquéritos ativos acessíveis ao usuário atual.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-3">
+            {selectedYears.length > YEAR_PAGE_SIZE ? (
+              <button
+                type="button"
+                onClick={() => setYearPage((current) => Math.max(1, current - 1))}
+                disabled={safeYearPage === 1}
+                className="h-9 rounded-md border border-info/70 px-4 text-[10px] font-black uppercase tracking-[0.14em] text-muted-foreground shadow-[0_0_10px_rgba(14,165,233,0.14)] transition hover:border-info hover:text-info disabled:cursor-not-allowed disabled:border-info/45 disabled:opacity-40"
+              >
+                ← Anos anteriores
+              </button>
+            ) : null}
+            <div className="min-w-36 text-center">
+              <div className="text-2xl font-black tabular-nums text-foreground/80">
+                {yearRangeLabel}
               </div>
-              <div>
-                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-info">
-                  Inteligência operacional
-                </p>
-                <h1 className="mt-1 text-2xl font-black tracking-normal text-foreground">
-                  CVLI — Comparativo Mensal
-                </h1>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Registros e elucidações organizados por mês e ano.
-                </p>
+              <div className="text-[10px] font-black uppercase tracking-[0.14em] text-muted-foreground/75">
+                {visibleYears.length} de {selectedYears.length} ano(s)
               </div>
             </div>
-
-            <label className="flex w-full flex-col gap-2 text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground sm:w-52">
-              <span className="flex items-center gap-2">
-                Filtrar por ano
-                <span aria-hidden="true" className="text-sm leading-none">
-                  📅
-                </span>
-              </span>
-              <select
-                value={selectedYear}
-                onChange={(event) => setSelectedYear(event.target.value)}
-                className="h-10 rounded-lg border border-border bg-background px-3 text-sm font-semibold normal-case tracking-normal text-foreground outline-none transition focus:border-success/60 focus:ring-2 focus:ring-success/15"
+            {selectedYears.length > YEAR_PAGE_SIZE ? (
+              <button
+                type="button"
+                onClick={() => setYearPage((current) => Math.min(totalYearPages, current + 1))}
+                disabled={safeYearPage === totalYearPages}
+                className="h-9 rounded-md border border-info/70 px-4 text-[10px] font-black uppercase tracking-[0.14em] text-muted-foreground shadow-[0_0_10px_rgba(14,165,233,0.14)] transition hover:border-info hover:text-info disabled:cursor-not-allowed disabled:border-info/45 disabled:opacity-40"
               >
-                <option value="todos">Todos os anos</option>
-                {comparison.years.map((year) => (
-                  <option key={year} value={year}>
-                    {year}
-                  </option>
-                ))}
-              </select>
-            </label>
+                Próximos anos →
+              </button>
+            ) : null}
           </div>
         </header>
 
-        <section className="mb-5 grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <section className="mb-5 grid grid-cols-1 gap-4 md:grid-cols-5">
           <SummaryMetric
-            label="Registros"
+            label="Total de registros"
             value={summary.registros}
-            icon={<CalendarRange className="h-4 w-4" />}
+            hint="No período selecionado"
+            icon={<FileSpreadsheet className="h-7 w-7" />}
             tone="info"
           />
           <SummaryMetric
-            label="Elucidados"
+            label="Total elucidados"
             value={summary.elucidados}
-            icon={<CheckCircle2 className="h-4 w-4" />}
+            hint="No período selecionado"
+            icon={<CheckCircle2 className="h-7 w-7" />}
             tone="success"
           />
           <SummaryMetric
-            label="Taxa de elucidação"
+            label="Taxa geral de elucidação"
             value={`${formatRate(summary.taxa)}%`}
-            icon={<Target className="h-4 w-4" />}
+            hint="No período selecionado"
+            icon={<Target className="h-7 w-7" />}
             tone={getRateTone(summary.taxa)}
+          />
+          <SummaryMetric
+            label="Ano com mais registros"
+            value={summary.topYear.year || "—"}
+            hint={`${summary.topYear.registros} registros`}
+            icon={<BarChart3 className="h-7 w-7" />}
+            tone="info"
+          />
+          <SummaryMetric
+            label="Melhor desempenho"
+            value={summary.bestYear.elucidados > 0 ? summary.bestYear.year : "—"}
+            hint={
+              summary.bestYear.elucidados > 0
+                ? `${summary.bestYear.elucidados} eluc. · ${formatRate(summary.bestYear.taxa)}%`
+                : "Sem elucidações"
+            }
+            icon={<Trophy className="h-7 w-7" />}
+            tone="success"
           />
         </section>
 
-        <section className="overflow-hidden rounded-lg border border-border bg-card">
-          <div className="flex flex-col gap-2 border-b border-border bg-muted/20 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h2 className="text-xs font-black uppercase tracking-[0.16em] text-info">
-                CVLI — Comparativo Mensal
-              </h2>
-              <p className="mt-1 text-xs text-muted-foreground">
-                Fonte: inquéritos ativos acessíveis ao usuário atual.
-              </p>
+        <section className="overflow-hidden rounded-xl border border-info/25 bg-[#080d10] shadow-[0_0_28px_rgba(14,165,233,0.06)]">
+          <div className="flex justify-end border-b border-border bg-muted/20 px-5 py-3">
+            <div className="flex flex-wrap gap-4 rounded-md border border-border bg-background/70 px-4 py-2 text-xs">
+              <LegendDot color="bg-success" label="100%" />
+              <LegendDot color="bg-warning" label="50% a 99%" />
+              <LegendDot color="bg-destructive" label="Abaixo de 50%" />
+              <LegendDot color="bg-muted-foreground" label="Sem registro" />
             </div>
-            <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
-              {visibleYears.length} ano(s) exibido(s)
-            </span>
           </div>
 
           {loading ? (
@@ -196,12 +259,12 @@ function CvliComparisonTable({
 }) {
   return (
     <div className="overflow-x-auto">
-      <table className="w-full min-w-[820px] border-collapse text-sm">
+      <table className="w-full min-w-[820px] border-collapse bg-[#080d10] text-sm">
         <thead>
-          <tr className="border-b border-border bg-background/45">
+          <tr className="border-b border-info/25 bg-[#0a1014]">
             <th
               rowSpan={2}
-              className="sticky left-0 z-10 w-44 border-r border-border bg-card px-4 py-3 text-left text-[10px] font-black uppercase tracking-[0.16em] text-muted-foreground"
+              className="sticky left-0 z-10 w-44 border-r border-info/20 bg-[#0a1014] px-4 py-3 text-left text-[10px] font-black uppercase tracking-[0.16em] text-muted-foreground"
             >
               Mês
             </th>
@@ -209,7 +272,7 @@ function CvliComparisonTable({
               <th
                 key={year}
                 colSpan={3}
-                className="border-r border-border px-4 py-3 text-center text-sm font-black text-foreground last:border-r-0"
+                className="border-x border-info/20 bg-[#0a1014] px-4 py-3 text-center text-sm font-black text-foreground first:border-l-0 last:border-r-0"
               >
                 <span className="inline-flex items-center gap-2">
                   <span
@@ -221,23 +284,23 @@ function CvliComparisonTable({
               </th>
             ))}
           </tr>
-          <tr className="border-b border-border bg-muted/25">
+          <tr className="border-b border-info/25 bg-[#080d10]">
             {years.flatMap((year) => [
               <th
                 key={`${year}-registros`}
-                className="px-3 py-2 text-right text-[9px] font-bold uppercase tracking-[0.12em] text-muted-foreground"
+                className="border-r border-info/10 px-3 py-2 text-center text-[9px] font-bold uppercase tracking-[0.12em] text-info"
               >
                 Registros
               </th>,
               <th
                 key={`${year}-elucidados`}
-                className="px-3 py-2 text-right text-[9px] font-bold uppercase tracking-[0.12em] text-muted-foreground"
+                className="border-r border-info/10 px-3 py-2 text-center text-[9px] font-bold uppercase tracking-[0.12em] text-success"
               >
                 Elucidados
               </th>,
               <th
                 key={`${year}-taxa`}
-                className="border-r border-border px-3 py-2 text-right text-[9px] font-bold uppercase tracking-[0.12em] text-muted-foreground last:border-r-0"
+                className="border-r border-info/20 px-3 py-2 text-center text-[9px] font-bold uppercase tracking-[0.12em] text-muted-foreground last:border-r-0"
               >
                 %
               </th>,
@@ -248,9 +311,9 @@ function CvliComparisonTable({
           {comparison.rows.map((row) => (
             <tr
               key={row.monthIndex}
-              className="border-b border-border/60 transition-colors hover:bg-success/[0.035]"
+              className="border-b border-info/20 bg-[#080d10] transition-colors hover:bg-[#0b1418]"
             >
-              <th className="sticky left-0 z-10 border-r border-border bg-card px-4 py-3 text-left font-semibold text-foreground">
+              <th className="sticky left-0 z-10 border-r border-info/20 bg-[#080d10] px-4 py-3 text-left font-semibold text-foreground">
                 {row.month}
               </th>
               {years.flatMap((year) =>
@@ -263,8 +326,8 @@ function CvliComparisonTable({
               )}
             </tr>
           ))}
-          <tr className="border-t-2 border-success/45 bg-success/[0.07] font-black">
-            <th className="sticky left-0 z-10 border-r border-success/30 bg-[color-mix(in_oklab,var(--card)_92%,var(--success))] px-4 py-4 text-left text-success">
+          <tr className="border-t border-success/70 bg-[#090f12] font-black shadow-[inset_0_1px_0_rgba(34,197,94,0.45)]">
+            <th className="sticky left-0 z-10 border-r border-info/20 bg-[#090f12] px-4 py-4 text-left text-success">
               TOTAL
             </th>
             {years.flatMap((year) =>
@@ -299,48 +362,64 @@ function renderMetricCells(
   },
 ) {
   const { year, monthIndex, monthLabel, onOpenMetric, emphasized = false } = options;
-  const valueClass = emphasized ? "font-black text-foreground" : "font-semibold text-foreground";
+  const valueClass = emphasized ? "font-black" : "font-semibold";
+  const hasRecord = metric.registros > 0;
 
   return [
-    <td key={`${key}-registros`} className={`px-3 py-3 text-right tabular-nums ${valueClass}`}>
+    <td
+      key={`${key}-registros`}
+      className={`border-r border-info/10 px-3 py-3 text-center tabular-nums ${valueClass}`}
+    >
       <MetricLink
         value={metric.registros}
+        tone="info"
         title={`Abrir registros CVLI de ${monthLabel} de ${year}`}
         onClick={() => onOpenMetric(year, monthIndex, "registros")}
       />
     </td>,
-    <td key={`${key}-elucidados`} className={`px-3 py-3 text-right tabular-nums ${valueClass}`}>
+    <td
+      key={`${key}-elucidados`}
+      className={`border-r border-info/10 px-3 py-3 text-center tabular-nums ${valueClass}`}
+    >
       <MetricLink
         value={metric.elucidados}
+        tone="success"
         title={`Abrir CVLIs elucidados de ${monthLabel} de ${year}`}
         onClick={() => onOpenMetric(year, monthIndex, "elucidados")}
       />
     </td>,
     <td
       key={`${key}-taxa`}
-      className={`border-r border-border px-3 py-3 text-right font-black tabular-nums last:border-r-0 ${getRateTextClass(metric.taxa)}`}
+      className={`border-r border-info/20 px-3 py-3 text-center font-black tabular-nums last:border-r-0 ${
+        hasRecord ? getRateTextClass(metric.taxa) : "text-muted-foreground/55"
+      }`}
     >
-      {formatRate(metric.taxa)}%
+      {hasRecord ? `${formatRate(metric.taxa)}%` : "—"}
     </td>,
   ];
 }
 
 function MetricLink({
   value,
+  tone,
   title,
   onClick,
 }: {
   value: number;
+  tone: "info" | "success";
   title: string;
   onClick: () => void;
 }) {
+  const colorClass =
+    value === 0 ? "text-muted-foreground/55" : tone === "info" ? "text-info" : "text-success";
+
   return (
     <button
       type="button"
       title={title}
       aria-label={title}
       onClick={onClick}
-      className="rounded-md px-2 py-1 font-inherit tabular-nums text-current underline-offset-4 transition hover:bg-success/10 hover:text-success hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-success/45"
+      className={`rounded-md px-2 py-1 font-inherit tabular-nums underline-offset-4 transition hover:bg-success/10 hover:text-success hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-success/45 ${colorClass}`}
     >
       {value}
     </button>
@@ -367,29 +446,71 @@ function getCvliPeriodRange(year: number, monthIndex: number | null) {
 function SummaryMetric({
   label,
   value,
+  hint,
   icon,
   tone,
 }: {
   label: string;
   value: number | string;
+  hint: string;
   icon: ReactNode;
   tone: "success" | "warning" | "destructive" | "info";
 }) {
   const tones = {
-    success: "border-success/30 text-success bg-success/[0.055]",
-    warning: "border-warning/30 text-warning bg-warning/[0.055]",
-    destructive: "border-destructive/30 text-destructive bg-destructive/[0.055]",
-    info: "border-info/30 text-info bg-info/[0.055]",
+    success: {
+      card: "border-success/25 bg-success/[0.045]",
+      icon: "text-success shadow-[0_0_18px_rgba(34,197,94,0.22)]",
+      value: "text-success",
+    },
+    warning: {
+      card: "border-warning/25 bg-warning/[0.045]",
+      icon: "text-warning shadow-[0_0_18px_rgba(245,158,11,0.22)]",
+      value: "text-warning",
+    },
+    destructive: {
+      card: "border-destructive/25 bg-destructive/[0.045]",
+      icon: "text-destructive shadow-[0_0_18px_rgba(239,68,68,0.22)]",
+      value: "text-destructive",
+    },
+    info: {
+      card: "border-info/25 bg-info/[0.045]",
+      icon: "text-info shadow-[0_0_18px_rgba(14,165,233,0.22)]",
+      value: "text-info",
+    },
   };
+  const selectedTone = tones[tone];
 
   return (
-    <div className={`rounded-lg border px-4 py-3 ${tones[tone]}`}>
-      <div className="flex items-center justify-between gap-3">
-        <span className="text-[10px] font-black uppercase tracking-[0.14em]">{label}</span>
-        {icon}
+    <div className={`rounded-lg border px-4 py-4 ${selectedTone.card}`}>
+      <div className="flex items-center gap-4">
+        <div
+          className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-background/65 ${selectedTone.icon}`}
+        >
+          {icon}
+        </div>
+        <div className="min-w-0">
+          <span className="block text-[10px] font-black uppercase tracking-[0.14em] text-muted-foreground">
+            {label}
+          </span>
+          <div className={`mt-1 truncate text-2xl font-black tabular-nums ${selectedTone.value}`}>
+            {value}
+          </div>
+          <p className="mt-1 truncate text-xs text-muted-foreground">{hint}</p>
+        </div>
       </div>
-      <div className="mt-2 text-2xl font-black tabular-nums text-foreground">{value}</div>
     </div>
+  );
+}
+
+function LegendDot({ color, label }: { color: string; label: string }) {
+  return (
+    <span className="inline-flex items-center gap-2 whitespace-nowrap text-muted-foreground">
+      <span
+        aria-hidden="true"
+        className={`h-2.5 w-2.5 rounded-full ${color} shadow-[0_0_10px_currentColor]`}
+      />
+      <span className="font-semibold">{label}</span>
+    </span>
   );
 }
 

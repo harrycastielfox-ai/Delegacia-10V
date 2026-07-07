@@ -137,6 +137,7 @@ const isCrimeSexual = (item: InqueritoRecord) =>
   );
 const hasRelatorioEnviado = (item: InqueritoRecord) =>
   boolLike(item.relatorio_enviado) || hasText(item.data_envio_relatorio);
+const isInqueritoEmFluxo = (item: InqueritoRecord) => !hasRelatorioEnviado(item);
 const isRepresentacaoSigilosa = (item: RepresentacaoRecord) => boolLike(item.pedido_sigiloso);
 const isRepresentacaoPendente = (item: RepresentacaoRecord) =>
   ["pend", "aguard", "analise"].some((w) => normalizeText(item.status).includes(w));
@@ -164,8 +165,9 @@ export function buildSmartAlerts(
     const team = display(i.equipe);
     const status = display(i.situacao || i.status_diligencias);
     const dueLabel = display(i.prazo, "Sem data limite");
+    const isActive = isInqueritoEmFluxo(i);
 
-    if (isOverdue(i.prazo))
+    if (isActive && isOverdue(i.prazo))
       out.push({
         id: `inq-${i.id}-vencido`,
         title: "Prazo vencido",
@@ -183,7 +185,7 @@ export function buildSmartAlerts(
         status,
         searchable: normalizeText(`${identifier} ${principal} ${typeLabel}`),
       });
-    if (isDueInCritical3Days(i.prazo))
+    if (isActive && isDueInCritical3Days(i.prazo))
       out.push({
         id: `inq-${i.id}-critico`,
         title: "Prazo crítico (0-3 dias)",
@@ -201,7 +203,7 @@ export function buildSmartAlerts(
         status,
         searchable: normalizeText(`${identifier} ${principal} ${typeLabel}`),
       });
-    if (!isDueInCritical3Days(i.prazo) && isDueIn7Days(i.prazo))
+    if (isActive && !isDueInCritical3Days(i.prazo) && isDueIn7Days(i.prazo))
       out.push({
         id: `inq-${i.id}-7dias`,
         title: "Vencendo em até 7 dias",
@@ -219,7 +221,7 @@ export function buildSmartAlerts(
         status,
         searchable: normalizeText(`${identifier} ${principal} ${typeLabel}`),
       });
-    if (hasReuPreso(i))
+    if (isActive && hasReuPreso(i))
       out.push({
         id: `inq-${i.id}-preso`,
         title: "Réu preso",
@@ -237,7 +239,7 @@ export function buildSmartAlerts(
         status,
         searchable: normalizeText(`${identifier} ${principal} reu preso`),
       });
-    if (hasMedidaProtetiva(i))
+    if (isActive && hasMedidaProtetiva(i))
       out.push({
         id: `inq-${i.id}-medida`,
         title: "Medida protetiva ativa",
@@ -255,7 +257,7 @@ export function buildSmartAlerts(
         status,
         searchable: normalizeText(`${identifier} ${principal} medida`),
       });
-    if (hasDiligenciasPendentes(i))
+    if (isActive && hasDiligenciasPendentes(i))
       out.push({
         id: `inq-${i.id}-diligencias`,
         title: "Diligências pendentes",
@@ -310,12 +312,13 @@ export function buildSmartAlerts(
         searchable: normalizeText(`${identifier} ${principal} crime sexual`),
       });
     if (
-      !hasText(i.numero_ppe) ||
-      !hasText(i.tipificacao || i.tipo) ||
-      !hasText(i.vitima) ||
-      !hasText(i.investigado) ||
-      !hasText(i.equipe) ||
-      (!hasText(i.data_fato) && !hasText(i.data_instauracao))
+      isActive &&
+      (!hasText(i.numero_ppe) ||
+        !hasText(i.tipificacao || i.tipo) ||
+        !hasText(i.vitima) ||
+        !hasText(i.investigado) ||
+        !hasText(i.equipe) ||
+        (!hasText(i.data_fato) && !hasText(i.data_instauracao)))
     )
       out.push({
         id: `inq-${i.id}-incompleto`,
@@ -479,6 +482,10 @@ export const buildModuleAlerts = (alerts: SmartAlert[]) => ({
 export type ModuleAlerts = ReturnType<typeof buildModuleAlerts>;
 
 export const countModuleAlertsTotal = (moduleAlerts: ModuleAlerts) =>
-  Object.values(moduleAlerts).flat().length;
+  new Set(
+    Object.values(moduleAlerts)
+      .flat()
+      .map((alert) => alert.id),
+  ).size;
 
 export const isValidModulo = (modulo: string): modulo is ModuleKey => modulo in moduleMeta;

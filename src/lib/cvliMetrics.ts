@@ -91,8 +91,21 @@ export function getCvliReferenceDate(record: InqueritoRecord) {
   );
 }
 
+function isDeterminedAuthorship(value: unknown) {
+  const normalized = normalizeText(value);
+  if (!normalized) return false;
+  if (normalized.includes("INDETERMIN")) return false;
+  return normalized.includes("DETERMIN") || normalized.includes("ELUCID");
+}
+
 export function isCvliElucidado(record: InqueritoRecord) {
-  return isYesLike(record.elucidado);
+  const source = record as unknown as Record<string, unknown>;
+  return (
+    isYesLike(record.elucidado) ||
+    isDeterminedAuthorship(record.elucidado) ||
+    isYesLike(source.autoria_determinada) ||
+    isDeterminedAuthorship(source.autoria_determinada)
+  );
 }
 
 function calculateRate(registros: number, elucidados: number) {

@@ -27,7 +27,7 @@ import {
 
 export const Route = createFileRoute("/alertas")({
   component: Alertas,
-  head: () => ({ meta: [{ title: "Central Operacional de PendÃªncias - SIPI" }] }),
+  head: () => ({ meta: [{ title: "Central Operacional de Pendências - SIPI" }] }),
 });
 
 const icons: Record<ModuleKey, typeof AlertTriangle> = {
@@ -262,8 +262,8 @@ function isRelatadoNaoEnviado(record: InqueritoRecord) {
 function getInqueritoDate(record: InqueritoRecord) {
   return (
     parseDate(record.data_instauracao) ??
-    parseDate(record.created_at) ??
-    parseDate(record.data_fato)
+    parseDate(record.data_fato) ??
+    parseDate(record.created_at)
   );
 }
 
@@ -319,7 +319,7 @@ function Alertas() {
         setInqueritos(inq);
         setRepresentacoes(rep);
       } catch {
-        setError("NÃ£o foi possÃ­vel carregar a central operacional de pendÃªncias.");
+        setError("Não foi possível carregar a central operacional de pendências.");
       } finally {
         setLoading(false);
       }
@@ -374,11 +374,11 @@ function Alertas() {
       {
         label: "Total de Procedimentos",
         value: filteredInqueritos.length,
-        desc: "InquÃ©ritos cadastrados ativos",
+        desc: "Inquéritos cadastrados ativos",
         target: { to: "/inqueritos", search: periodSearch },
       },
       {
-        label: "InquÃ©ritos Policiais (IP)",
+        label: "Inquéritos Policiais (IP)",
         value: ip.length,
         desc: "Procedimentos do tipo IP",
         target: { to: "/inqueritos", search: { ...periodSearch, tipo: "IP" } },
@@ -386,7 +386,7 @@ function Alertas() {
       {
         label: "IP sem Relatar",
         value: ip.filter(isInqueritoSemRelatorio).length,
-        desc: "IP pendentes de relatÃ³rio",
+        desc: "IP pendentes de relatório",
         target: {
           to: "/inqueritos",
           search: { ...periodSearch, tipo: "IP", relatorio: "sem_relatar" },
@@ -395,7 +395,7 @@ function Alertas() {
       {
         label: "IP CVLI sem Relatar",
         value: ip.filter((item) => isCvli(item) && isInqueritoSemRelatorio(item)).length,
-        desc: "CVLI pendentes de relatÃ³rio",
+        desc: "CVLI pendentes de relatório",
         target: {
           to: "/inqueritos",
           search: { ...periodSearch, tipo: "IP", relatorio: "sem_relatar", categoria: "cvli" },
@@ -416,7 +416,7 @@ function Alertas() {
         },
       },
       {
-        label: "IP ViolÃªncia DomÃ©stica sem Relatar",
+        label: "IP Violência Doméstica sem Relatar",
         value: ip.filter((item) => isViolenciaDomestica(item) && isInqueritoSemRelatorio(item))
           .length,
         desc: "Maria da Penha pendentes",
@@ -440,7 +440,7 @@ function Alertas() {
         },
       },
       {
-        label: "Auto de PrisÃ£o em Flagrante (APF)",
+        label: "Auto de Prisão em Flagrante (APF)",
         value: apf.length,
         desc: "Flagrantes cadastrados",
         target: { to: "/inqueritos", search: { ...periodSearch, tipo: "APF" } },
@@ -448,7 +448,7 @@ function Alertas() {
       {
         label: "APF sem Relatar",
         value: apf.filter(isInqueritoSemRelatorio).length,
-        desc: "Flagrantes nÃ£o relatados",
+        desc: "Flagrantes não relatados",
         target: {
           to: "/inqueritos",
           search: { ...periodSearch, tipo: "APF", relatorio: "sem_relatar" },
@@ -461,28 +461,28 @@ function Alertas() {
         target: { to: "/inqueritos", search: { ...periodSearch, tipo: "TCO" } },
       },
       {
-        label: "Boletim de OcorrÃªncia Circunstanciado (BOC)",
+        label: "Boletim de Ocorrência Circunstanciado (BOC)",
         value: boc.length,
-        desc: "ComunicaÃ§Ãµes ao MP",
+        desc: "Comunicações ao MP",
         target: { to: "/inqueritos", search: { ...periodSearch, tipo: "BOC" } },
       },
       {
-        label: "Ato de InvestigaÃ§Ã£o de Ato Infracional (AIAI)",
+        label: "Ato de Investigação de Ato Infracional (AIAI)",
         value: aiai.length,
         desc: "Atos infracionais",
         target: { to: "/inqueritos", search: { ...periodSearch, tipo: "AIAI" } },
       },
       {
-        label: "RelatÃ³rios Enviados",
+        label: "Relatórios Enviados",
         value: concluidos,
         desc: "Procedimentos finalizados",
         target: { to: "/inqueritos", search: { ...periodSearch, relatorio: "enviado" } },
       },
       {
-        label: "Taxa de ConclusÃ£o",
+        label: "Taxa de Conclusão",
         value: formatPercent(taxaConclusao),
-        desc: "Percentual concluÃ­do",
-        disabledReason: "Indicador percentual; filtro de registros ainda nÃ£o disponÃ­vel.",
+        desc: "Percentual concluído",
+        disabledReason: "Indicador percentual; filtro de registros ainda não disponível.",
       },
       {
         label: "Procedimentos Em Andamento",
@@ -522,13 +522,13 @@ function Alertas() {
 
     return [
       {
-        label: "InquÃ©ritos instaurados no perÃ­odo",
+        label: "Inquéritos instaurados no período",
         value: filteredInqueritos.length,
-        desc: "Data de instauraÃ§Ã£o ou criaÃ§Ã£o dentro do filtro",
+        desc: "Data de instauração ou criação dentro do filtro",
         target: { to: "/inqueritos", search: periodSearch },
       },
       {
-        label: "RelatÃ³rios enviados no perÃ­odo",
+        label: "Relatórios enviados no período",
         value: relatoriosEnviados,
         desc: "Data de envio entre as datas filtradas",
         target: {
@@ -537,30 +537,30 @@ function Alertas() {
         },
       },
       {
-        label: "APF lavrados no perÃ­odo",
+        label: "APF lavrados no período",
         value: apf,
-        desc: "Flagrantes cadastrados no perÃ­odo",
+        desc: "Flagrantes cadastrados no período",
         target: { to: "/inqueritos", search: { ...periodSearch, tipo: "APF" } },
       },
       {
-        label: "MPU representadas no perÃ­odo",
+        label: "MPU representadas no período",
         value: mpu,
-        desc: "RepresentaÃ§Ãµes de medida protetiva",
+        desc: "Representações de medida protetiva",
         target: {
           to: "/representacoes",
           search: { ...periodSearch, operationalFilter: "todas", tipo: "medida_protetiva" },
         },
       },
       {
-        label: "TCO remetidos no perÃ­odo",
+        label: "TCO remetidos no período",
         value: tco,
-        desc: "TCO cadastrados no perÃ­odo",
+        desc: "TCO cadastrados no período",
         target: { to: "/inqueritos", search: { ...periodSearch, tipo: "TCO" } },
       },
       {
-        label: "CVLI no perÃ­odo",
+        label: "CVLI no período",
         value: cvli.length,
-        desc: "CVLI/HomicÃ­dios filtrados",
+        desc: "CVLI/Homicídios filtrados",
         target: { to: "/inqueritos", search: { ...periodSearch, categoria: "cvli" } },
       },
       {
@@ -573,7 +573,7 @@ function Alertas() {
         },
       },
       {
-        label: "ViolÃªncia domÃ©stica no perÃ­odo",
+        label: "Violência doméstica no período",
         value: filteredInqueritos.filter(isViolenciaDomestica).length,
         desc: "Casos Maria da Penha",
         target: {
@@ -582,27 +582,27 @@ function Alertas() {
         },
       },
       {
-        label: "Crimes sexuais no perÃ­odo",
+        label: "Crimes sexuais no período",
         value: filteredInqueritos.filter(isSexual).length,
-        desc: "TipificaÃ§Ã£o sexual",
+        desc: "Tipificação sexual",
         target: { to: "/inqueritos", search: { ...periodSearch, categoria: "sexual" } },
       },
       {
-        label: "Crimes de trÃ¢nsito no perÃ­odo",
+        label: "Crimes de trânsito no período",
         value: filteredInqueritos.filter(isTransito).length,
-        desc: "Casos de trÃ¢nsito",
+        desc: "Casos de trânsito",
         target: { to: "/inqueritos", search: { ...periodSearch, categoria: "transito" } },
       },
       {
-        label: "Crimes contra o patrimÃ´nio",
+        label: "Crimes contra o patrimônio",
         value: filteredInqueritos.filter(isPatrimonial).length,
-        desc: "Patrimoniais no perÃ­odo",
+        desc: "Patrimoniais no período",
         target: { to: "/inqueritos", search: { ...periodSearch, categoria: "patrimonial" } },
       },
       {
-        label: "PrisÃµes vinculadas no perÃ­odo",
+        label: "Prisões vinculadas no período",
         value: filteredInqueritos.filter((item) => isYesLike(item.reu_preso)).length,
-        desc: "Registros com rÃ©u preso",
+        desc: "Registros com réu preso",
         target: { to: "/inqueritos", search: { ...periodSearch, reu_preso: "sim" } },
       },
     ] satisfies OperationalRow[];
@@ -636,8 +636,8 @@ function Alertas() {
     <AppLayout>
       <div className="space-y-5">
         <PageHeader
-          title="Central Operacional de PendÃªncias"
-          subtitle="PendÃªncias, alertas e indicadores operacionais extraÃ­dos dos procedimentos ativos."
+          title="Central Operacional de Pendências"
+          subtitle="Pendências, alertas e indicadores operacionais extraídos dos procedimentos ativos."
           showActions={false}
         />
 
@@ -649,7 +649,7 @@ function Alertas() {
               </h2>
             </div>
             <span className="w-fit rounded-full border border-primary/25 bg-primary/10 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.12em] text-primary">
-              {smartAlerts.length} pendÃªncia(s) ativas
+              {smartAlerts.length} pendência(s) ativas
             </span>
           </div>
 
@@ -720,11 +720,11 @@ function Alertas() {
               <div className="flex items-center gap-2">
                 <SlidersHorizontal className="h-4 w-4 text-primary" />
                 <h2 className="text-sm font-black uppercase tracking-[0.16em] text-foreground">
-                  Filtro por perÃ­odo
+                  Filtro por período
                 </h2>
               </div>
               <p className="mt-1 text-xs text-muted-foreground">
-                Informe uma data Ãºnica ou um intervalo para atualizar os nÃºmeros abaixo.
+                Informe uma data única ou um intervalo para atualizar os números abaixo.
               </p>
             </div>
 
@@ -734,14 +734,14 @@ function Alertas() {
                 onClick={() => applyPreset(7)}
                 className="rounded-full border border-border bg-background/60 px-3 py-1.5 text-xs font-semibold transition hover:border-primary/40 hover:text-primary"
               >
-                Ãšltimos 7 dias
+                Últimos 7 dias
               </button>
               <button
                 type="button"
                 onClick={() => applyPreset(30)}
                 className="rounded-full border border-border bg-background/60 px-3 py-1.5 text-xs font-semibold transition hover:border-primary/40 hover:text-primary"
               >
-                Ãšltimos 30 dias
+                Últimos 30 dias
               </button>
               {hasActiveFilters ? (
                 <button
@@ -749,7 +749,7 @@ function Alertas() {
                   onClick={clearFilters}
                   className="rounded-full border border-primary/30 bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary transition hover:bg-primary/15"
                 >
-                  Limpar perÃ­odo
+                  Limpar período
                 </button>
               ) : null}
             </div>
@@ -793,7 +793,7 @@ function Alertas() {
               onOpen={openTableTarget}
             />
             <OperationalTable
-              title="EstatÃ­sticas do PerÃ­odo"
+              title="Estatísticas do Período"
               accent="warning"
               rows={periodStats}
               onOpen={openTableTarget}
@@ -829,7 +829,7 @@ function OperationalTable({
             <tr>
               <th className="px-4 py-2.5 text-left font-black">Indicador</th>
               <th className="w-28 px-4 py-2.5 text-right font-black">Valor</th>
-              <th className="px-4 py-2.5 text-left font-black">DescriÃ§Ã£o</th>
+              <th className="px-4 py-2.5 text-left font-black">Descrição</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border/60">

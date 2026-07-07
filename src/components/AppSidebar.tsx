@@ -3,7 +3,6 @@ import { useEffect, useState } from "react";
 import {
   LayoutDashboard,
   FileText,
-  FilePlus2,
   Bell,
   LogOut,
   Gavel,
@@ -12,7 +11,6 @@ import {
 } from "lucide-react";
 import { getProfileAvatarPublicUrl, logout } from "@/lib/auth";
 import {
-  canCreateCases,
   canManageUsers,
   canViewAuditoria,
   canViewRepresentacoes,
@@ -30,7 +28,6 @@ const baseItems = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
   { title: "Inquéritos", url: "/inqueritos", icon: FileText },
   { title: "Representações", url: "/representacoes", icon: Gavel },
-  { title: "Novo Caso", url: "/novo-caso", icon: FilePlus2 },
   { title: "Alertas", url: "/alertas", icon: Bell },
   { title: "Auditoria", url: "/auditoria", icon: ClipboardList },
 ] as const;
@@ -67,7 +64,6 @@ export function AppSidebar({ profile }: { profile: UserProfile }) {
   }, []);
 
   const visibleBaseItems = baseItems.filter((item) => {
-    if (item.url === "/novo-caso") return canCreateCases(profile);
     if (item.url === "/representacoes") return canViewRepresentacoes(profile);
     if (item.url === "/auditoria") return canViewAuditoria(profile);
     return true;
@@ -89,8 +85,12 @@ export function AppSidebar({ profile }: { profile: UserProfile }) {
   return (
     <aside className="hidden md:sticky md:top-0 md:flex h-screen w-64 shrink-0 flex-col bg-sidebar border-r border-sidebar-border">
       <div className="px-5 py-5 flex items-center gap-3">
-        <div className="h-14 w-14 rounded-lg bg-primary/15 border border-primary/30 shadow-[0_0_18px_rgba(34,197,94,0.24)] flex items-center justify-center p-1.5">
-          <img src="/sipi-logo.png" alt="Logo SIPI" className="h-full w-full object-contain" />
+        <div className="h-14 w-14 rounded-lg bg-primary/15 border border-primary/30 shadow-[0_0_18px_rgba(34,197,94,0.24)] flex items-center justify-center overflow-visible p-0.5">
+          <img
+            src="/sipi-logo.png"
+            alt="Logo SIPI"
+            className="h-[128%] w-[128%] max-w-none shrink-0 object-contain"
+          />
         </div>
         <div>
           <div className="font-bold text-sidebar-foreground tracking-wide">SIPI</div>

@@ -173,6 +173,16 @@ const CVLI_YEAR_COLORS = [
   "var(--success)",
   "var(--purple)",
 ];
+const DASHBOARD_CVLI_YEAR_LIMIT = 4;
+const DASHBOARD_LOCALIDADE_LIMIT = 6;
+const TEAM_DISTRIBUTION_COLORS = [
+  "var(--success)",
+  "var(--info)",
+  "var(--warning)",
+  "var(--purple)",
+  "var(--destructive)",
+  "var(--muted-foreground)",
+];
 
 function normalizeProcedureText(value: unknown) {
   return String(value ?? "")
@@ -251,6 +261,67 @@ function isValidTeamName(value: string) {
   return true;
 }
 
+function getNormalizedTeamName(value: unknown) {
+  const trimmed = String(value ?? "").trim();
+  if (!trimmed) return "Sem equipe";
+
+  const normalized = normalizeProcedureText(trimmed);
+  if (
+    normalized === "DT" ||
+    normalized === "D T" ||
+    normalized.includes("ITABELA") ||
+    normalized.includes("DELEGACIA TERRITORIAL")
+  ) {
+    return "DT Itabela";
+  }
+
+  return trimmed;
+}
+
+function getPriorityBucket(inquerito: InqueritoRecord) {
+  const priority = normalizeProcedureText(inquerito.prioridade);
+  if (priority.includes("ALTA")) return "alta";
+  if (priority.includes("MEDIA") || priority.includes("MÉDIA")) return "media";
+  if (priority.includes("BAIXA")) return "baixa";
+  return "baixa";
+}
+
+function getDiligenciaStatusBucket(inquerito: InqueritoRecord) {
+  const status = normalizeProcedureText(
+    [inquerito.situacao, inquerito.status_diligencias, inquerito.diligencias_pendentes].join(" "),
+  );
+
+  if (hasRelatorioEnviado(inquerito) || status.includes("CONCLUID") || status.includes("RELATAD")) {
+    return "concluida";
+  }
+  if (
+    status.includes("LAUDO") ||
+    status.includes("PERICIAL") ||
+    status.includes("TERCEIR") ||
+    status.includes("JUDICIAR")
+  ) {
+    return "aguardando_terceiros";
+  }
+  if (
+    status.includes("APROVAC") ||
+    status.includes("AUTORIZ") ||
+    status.includes("DECISAO") ||
+    status.includes("DECISÃO")
+  ) {
+    return "aguardando_aprovacao";
+  }
+  if (
+    status.includes("PENDENT") ||
+    status.includes("AGUARD") ||
+    status.includes("DILIGENCIA") ||
+    status.includes("DILIGÊNCIA")
+  ) {
+    return "pendente";
+  }
+
+  return "em_andamento";
+}
+
 function Dashboard() {
   const navigate = Route.useNavigate();
   const [isClient, setIsClient] = useState(false);
@@ -286,7 +357,9 @@ function Dashboard() {
     return parseOperationalDate(inquerito.data_envio_relatorio);
   };
   const getOperationalEntryDate = (inquerito: InqueritoRecord) =>
-    parseOperationalDate(inquerito.created_at) ?? parseOperationalDate(inquerito.data_instauracao);
+    parseOperationalDate(inquerito.data_instauracao) ??
+    parseOperationalDate(inquerito.data_fato) ??
+    parseOperationalDate(inquerito.created_at);
   const loadDashboardData = useCallback(async (forceRefresh = false) => {
     const requestId = ++loadRequestIdRef.current;
     setLoadError(null);
@@ -353,19 +426,23 @@ function Dashboard() {
   );
   const emAndamento = inqueritos.filter(isInqueritoEmAndamento).length;
   const finalizados = inqueritos.filter(hasRelatorioEnviado).length;
-  const prioridadeAlta = inqueritos.filter((i) => isStatus(i.prioridade, ["alta"])).length;
+  const inqueritosOperacionaisAtivos = inqueritos.filter(isInqueritoEmAndamento);
+  const prioridadeAltaTotal = inqueritos.filter((i) => isStatus(i.prioridade, ["alta"])).length;
+  const prioridadeAlta = inqueritosOperacionaisAtivos.filter((i) =>
+    isStatus(i.prioridade, ["alta"]),
+  ).length;
   const reuPreso = inqueritos.filter((i) => isYesLike(i.reu_preso)).length;
   const medidasProtetivas = inqueritos.filter((i) => isYesLike(i.medida_protetiva)).length;
-  const prazoCritico = inqueritos.filter((i) =>
+  const prazoCritico = inqueritosOperacionaisAtivos.filter((i) =>
     isOperationalDateDueWithin(i.prazo, 3, nowTs ?? Date.now()),
   ).length;
-  const prazoVencido = inqueritos.filter((i) =>
+  const prazoVencido = inqueritosOperacionaisAtivos.filter((i) =>
     isOperationalDateOverdue(i.prazo, nowTs ?? Date.now()),
   ).length;
-  const prazoVencendo7 = inqueritos.filter((i) =>
+  const prazoVencendo7 = inqueritosOperacionaisAtivos.filter((i) =>
     isOperationalDateDueWithin(i.prazo, 7, nowTs ?? Date.now()),
   ).length;
-  const diligenciasPendentes = inqueritos.filter(hasDiligenciasPendentes).length;
+  const diligenciasPendentes = inqueritosOperacionaisAtivos.filter(hasDiligenciasPendentes).length;
 
   const repsPendentes = representacoes.filter(isRepresentacaoPendente).length;
   const repsDeferidas = representacoes.filter(isRepresentacaoDeferida).length;
@@ -385,12 +462,18 @@ function Dashboard() {
   ).length;
   const taxaConclusao = total === 0 ? 0 : Number(((finalizados / total) * 100).toFixed(1));
   const relatadosNaoEnviados = inqueritos.filter(isRelatadoNaoEnviado).length;
-  const cvliSemRelatar = inqueritos.filter(
-    (inquerito) => isCvliRecord(inquerito) && !hasRelatorioEnviado(inquerito),
+  const prioridadeMedia = inqueritos.filter(
+    (inquerito) => getPriorityBucket(inquerito) === "media",
   ).length;
+  const prioridadeBaixa = inqueritos.filter(
+    (inquerito) => getPriorityBucket(inquerito) === "baixa",
+  ).length;
+  const cvliSemRelatar = inqueritosOperacionaisAtivos.filter(isCvliRecord).length;
   const produtividade = useMemo(() => {
-    const novos7 = inqueritos.filter((i) => isWithinLastDays(i.created_at, 7)).length;
-    const novos30 = inqueritos.filter((i) => isWithinLastDays(i.created_at, 30)).length;
+    const novos7 = inqueritos.filter((i) => isWithinLastDays(getOperationalEntryDate(i), 7)).length;
+    const novos30 = inqueritos.filter((i) =>
+      isWithinLastDays(getOperationalEntryDate(i), 30),
+    ).length;
     const concluidos7 = inqueritos.filter((i) => {
       const conclusao = getConclusaoDate(i);
       return conclusao ? isWithinLastDays(conclusao, 7) : false;
@@ -400,7 +483,12 @@ function Dashboard() {
       return conclusao ? isWithinLastDays(conclusao, 30) : false;
     }).length;
     const backlogGerado = novos30 - concluidos30;
-    const taxaConclusao30 = novos30 === 0 ? 0 : Math.round((concluidos30 / novos30) * 100);
+    const taxaConclusao30 =
+      novos30 === 0
+        ? concluidos30 > 0
+          ? 100
+          : 0
+        : Math.min(100, Math.round((concluidos30 / novos30) * 100));
     const situacaoOperacional =
       concluidos30 >= novos30
         ? "Controlada"
@@ -451,23 +539,45 @@ function Dashboard() {
 
     return { dias, totalAnalisado, maxValue, peakDay, mediaDiaria };
   }, [inqueritos]);
-  const POR_STATUS = useMemo(
-    () => [
-      { name: "Em andamento", value: emAndamento, color: "var(--info)" },
-      { name: "Concluídos", value: finalizados, color: "var(--success)" },
-    ],
-    [emAndamento, finalizados],
-  );
+  const POR_STATUS = useMemo(() => {
+    const counts = inqueritos.reduce(
+      (acc, inquerito) => {
+        const bucket = getDiligenciaStatusBucket(inquerito);
+        acc[bucket] += 1;
+        return acc;
+      },
+      {
+        concluida: 0,
+        pendente: 0,
+        em_andamento: 0,
+        aguardando_terceiros: 0,
+        aguardando_aprovacao: 0,
+      },
+    );
+
+    return [
+      { name: "Concluída", value: counts.concluida, color: "var(--success)" },
+      { name: "Pendente", value: counts.pendente, color: "var(--warning)" },
+      { name: "Em Andamento", value: counts.em_andamento, color: "var(--info)" },
+      {
+        name: "Aguardando Terceiros",
+        value: counts.aguardando_terceiros,
+        color: "var(--purple)",
+      },
+      {
+        name: "Aguard. Aprovação",
+        value: counts.aguardando_aprovacao,
+        color: "var(--destructive)",
+      },
+    ];
+  }, [inqueritos]);
   const POR_PRIORIDADE = useMemo(
     () => [
-      { name: "Alta", value: prioridadeAlta, color: "var(--warning)" },
-      {
-        name: "Outras",
-        value: Math.max(total - prioridadeAlta, 0),
-        color: "var(--muted-foreground)",
-      },
+      { name: "Alta", value: prioridadeAltaTotal, color: "var(--destructive)" },
+      { name: "Média", value: prioridadeMedia, color: "var(--warning)" },
+      { name: "Baixa", value: prioridadeBaixa, color: "var(--info)" },
     ],
-    [prioridadeAlta, total],
+    [prioridadeAltaTotal, prioridadeBaixa, prioridadeMedia],
   );
   const POR_GRAVIDADE = useMemo(() => {
     const counts = new Map<(typeof GRAVIDADE_TYPES)[number]["key"], number>();
@@ -518,6 +628,10 @@ function Dashboard() {
       };
     });
   }, [CVLI_COMPARISON]);
+  const CVLI_ANUAL_RESUMO = useMemo(
+    () => CVLI_ANUAL.slice(-DASHBOARD_CVLI_YEAR_LIMIT),
+    [CVLI_ANUAL],
+  );
   const CVLI_TOTAL = useMemo(() => {
     const registros = CVLI_ANUAL.reduce((acc, row) => acc + row.registros, 0);
     const elucidados = CVLI_ANUAL.reduce((acc, row) => acc + row.elucidados, 0);
@@ -525,7 +639,10 @@ function Dashboard() {
     const taxa = registros === 0 ? 0 : Number(((elucidados / registros) * 100).toFixed(1));
     return { registros, elucidados, pendentes, taxa };
   }, [CVLI_ANUAL]);
-  const CVLI_MENSAL_YEARS = CVLI_COMPARISON.years;
+  const CVLI_MENSAL_YEARS = useMemo(
+    () => CVLI_COMPARISON.years.slice(-DASHBOARD_CVLI_YEAR_LIMIT),
+    [CVLI_COMPARISON.years],
+  );
   const CVLI_MENSAL_TITLE =
     CVLI_MENSAL_YEARS.length === 0
       ? "CVLI — REGISTROS MENSAIS"
@@ -555,12 +672,15 @@ function Dashboard() {
       current.alta += i.prioridade?.toLowerCase().includes("alta") ? 1 : 0;
       byBairro.set(key, current);
     });
-    return Array.from(byBairro.entries()).map(([bairro, v]) => ({ bairro, ...v }));
+    return Array.from(byBairro.entries())
+      .map(([bairro, v]) => ({ bairro, ...v }))
+      .sort((a, b) => b.total - a.total || b.cvli - a.cvli || a.bairro.localeCompare(b.bairro));
   }, [inqueritos]);
+  const TOP_BAIRROS = useMemo(() => POR_BAIRRO.slice(0, DASHBOARD_LOCALIDADE_LIMIT), [POR_BAIRRO]);
   const EQUIPES = useMemo(() => {
     const byEquipe = new Map<string, number>();
     inqueritos.forEach((i) => {
-      const equipe = String(i.equipe || "Sem equipe").trim() || "Sem equipe";
+      const equipe = getNormalizedTeamName(i.equipe);
       if (!isValidTeamName(equipe)) return;
       byEquipe.set(equipe, (byEquipe.get(equipe) || 0) + 1);
     });
@@ -570,6 +690,16 @@ function Dashboard() {
       pct: total === 0 ? 0 : Math.round((value / total) * 100),
     }));
   }, [inqueritos, total]);
+  const totalEquipes = useMemo(() => EQUIPES.reduce((sum, item) => sum + item.value, 0), [EQUIPES]);
+  const EQUIPES_GRAFICO = useMemo(
+    () =>
+      EQUIPES.map((item, index) => ({
+        ...item,
+        pct: totalEquipes === 0 ? 0 : Math.round((item.value / totalEquipes) * 100),
+        color: TEAM_DISTRIBUTION_COLORS[index % TEAM_DISTRIBUTION_COLORS.length],
+      })),
+    [EQUIPES, totalEquipes],
+  );
   const RANKING_ESCRIVAES = useMemo(
     () =>
       escrivaoProductivity
@@ -693,7 +823,7 @@ function Dashboard() {
 
       {/* Mid row */}
       <div className="grid grid-cols-1 items-stretch gap-5 mb-6 lg:grid-cols-2 xl:grid-cols-3">
-        <div className={`${panelFxClass} h-full`}>
+        <div className={panelFxClass}>
           <Panel
             title="ALERTAS CRÍTICOS"
             accent="destructive"
@@ -928,7 +1058,7 @@ function Dashboard() {
       </div>
 
       {/* Blocos operacionais/judiciais/urgência */}
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-5 mb-6">
+      <div className="grid grid-cols-1 items-start xl:grid-cols-3 gap-5 mb-6">
         <div className={panelFxClass}>
           <Panel title="VISÃO OPERACIONAL" accent="success">
             <ul className="space-y-2 text-sm">
@@ -1058,20 +1188,20 @@ function Dashboard() {
       </div>
 
       {/* Donut row */}
-      <div className="grid grid-cols-1 items-stretch gap-5 mb-6 lg:grid-cols-3">
-        <div className={`${panelFxClass} h-full`}>
+      <div className="grid grid-cols-1 items-start gap-5 mb-6 lg:grid-cols-3">
+        <div className={panelFxClass}>
           <DonutPanel
             isClient={isClient}
             title="POR STATUS DE DILIGÊNCIA"
             data={POR_STATUS}
             total={POR_STATUS.reduce((a, b) => a + b.value, 0)}
             getItemAction={(name) =>
-              name === "Em andamento"
+              name === "Pendente"
                 ? {
-                    title: "Abrir inquéritos em andamento",
+                    title: "Abrir inquéritos pendentes",
                     onClick: () => goTo("/inqueritos", { status: "em_andamento" }),
                   }
-                : name === "Concluídos"
+                : name === "Concluída"
                   ? {
                       title: "Abrir inquéritos concluídos",
                       onClick: () => goTo("/inqueritos", { relatorio: "enviado" }),
@@ -1080,7 +1210,7 @@ function Dashboard() {
             }
           />
         </div>
-        <div className={`${panelFxClass} h-full`}>
+        <div className={panelFxClass}>
           <DonutPanel
             isClient={isClient}
             title="POR PRIORIDADE"
@@ -1092,18 +1222,27 @@ function Dashboard() {
                     title: "Abrir inquéritos com prioridade alta",
                     onClick: () => goTo("/inqueritos", { prioridade: "alta" }),
                   }
-                : undefined
+                : name === "Média"
+                  ? {
+                      title: "Abrir inquéritos com prioridade média",
+                      onClick: () => goTo("/inqueritos", { prioridade: "média" }),
+                    }
+                  : name === "Baixa"
+                    ? {
+                        title: "Abrir inquéritos com prioridade baixa",
+                        onClick: () => goTo("/inqueritos", { prioridade: "baixa" }),
+                      }
+                    : undefined
             }
           />
         </div>
-        <div className={`${panelFxClass} h-full`}>
+        <div className={panelFxClass}>
           <Panel
             title="PROCEDIMENTOS POR TIPO"
             accent="success"
-            className="h-full"
             action={<Maximize2 className="h-3.5 w-3.5 text-muted-foreground" />}
           >
-            <ul className="space-y-4">
+            <ul className="space-y-1.5">
               {PROCEDIMENTOS.map((t) => {
                 const width =
                   t.total === 0
@@ -1112,7 +1251,7 @@ function Dashboard() {
                 return (
                   <li
                     key={t.sigla}
-                    className="cursor-pointer rounded-md px-0.5 py-0.5 transition-colors duration-200 hover:bg-success/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-success/50"
+                    className="cursor-pointer rounded-md px-0.5 py-0.5 leading-tight transition-colors duration-200 hover:bg-success/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-success/50"
                     role="button"
                     tabIndex={0}
                     title={`Abrir inquéritos do tipo ${t.sigla}`}
@@ -1123,15 +1262,15 @@ function Dashboard() {
                       goTo("/inqueritos", { tipo: t.searchValue })
                     }
                   >
-                    <div className="mb-2 flex items-center justify-between gap-3">
-                      <span className="text-sm font-black tracking-wide text-foreground">
+                    <div className="mb-1 flex items-center justify-between gap-3">
+                      <span className="text-xs font-black tracking-wide text-foreground">
                         {t.sigla}
                       </span>
-                      <span className="text-sm font-black tabular-nums text-success">
+                      <span className="text-xs font-black tabular-nums text-success">
                         {t.total}
                       </span>
                     </div>
-                    <div className="h-2.5 overflow-hidden rounded-full bg-muted/70 shadow-inner shadow-black/20">
+                    <div className="h-1.5 overflow-hidden rounded-full bg-muted/60 shadow-inner shadow-black/20">
                       <div
                         className="h-full rounded-full bg-success shadow-[0_0_18px_rgba(34,197,94,0.5)] transition-all duration-500"
                         style={{ width: `${width}%` }}
@@ -1141,9 +1280,6 @@ function Dashboard() {
                 );
               })}
             </ul>
-            <div className="mt-4 text-[11px] text-muted-foreground">
-              IP: Inquéritos · APF: Flagrantes · TCO: Termos · BOC: Boletins · AIAI: Ato Infracional
-            </div>
           </Panel>
         </div>
       </div>
@@ -1153,10 +1289,10 @@ function Dashboard() {
         <div className={`${panelFxClass} xl:col-span-2`}>
           <Panel title="CVLI — COMPARATIVO ANUAL" accent="info">
             <div className="h-[285px] min-h-[285px] w-full min-w-0">
-              {isClient && CVLI_ANUAL.length > 0 ? (
+              {isClient && CVLI_ANUAL_RESUMO.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <ComposedChart
-                    data={CVLI_ANUAL}
+                    data={CVLI_ANUAL_RESUMO}
                     margin={{ top: 16, right: 32, bottom: 26, left: -8 }}
                   >
                     <CartesianGrid stroke="var(--border)" strokeDasharray="3 4" />
@@ -1238,7 +1374,7 @@ function Dashboard() {
             </button>
           </div>
           <div className="md:hidden divide-y divide-border">
-            {CVLI_ANUAL.map((r) => (
+            {CVLI_ANUAL_RESUMO.map((r) => (
               <div key={r.ano} className="px-4 py-3">
                 <div className="flex items-center justify-between gap-3">
                   <span className="font-semibold">{r.ano}</span>
@@ -1284,7 +1420,7 @@ function Dashboard() {
                 </tr>
               </thead>
               <tbody>
-                {CVLI_ANUAL.map((r) => (
+                {CVLI_ANUAL_RESUMO.map((r) => (
                   <tr
                     key={r.ano}
                     className="border-b border-border/50 transition-colors duration-200 hover:bg-success/10"
@@ -1316,10 +1452,10 @@ function Dashboard() {
       </div>
 
       {/* CVLI mensal + Bairros */}
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-5 mb-6">
-        <div className={panelFxClass}>
-          <Panel title={CVLI_MENSAL_TITLE} accent="info">
-            <SafeChartContainer fallback="Nenhum dado disponível.">
+      <div className="grid grid-cols-1 items-stretch xl:grid-cols-2 gap-5 mb-6">
+        <div className={`${panelFxClass} h-full`}>
+          <Panel title={CVLI_MENSAL_TITLE} accent="info" className="h-full">
+            <SafeChartContainer fallback="Nenhum dado disponível." className="h-full min-h-[220px]">
               {isClient && CVLI_MENSAL_YEARS.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart
@@ -1357,10 +1493,11 @@ function Dashboard() {
           </Panel>
         </div>
 
-        <div className={panelFxClass}>
+        <div className={`${panelFxClass} h-full`}>
           <Panel
             title="ANÁLISE POR LOCALIDADE"
             accent="warning"
+            className="h-full"
             icon={<MapPin className="h-4 w-4 text-warning" />}
             action={
               <button
@@ -1373,35 +1510,37 @@ function Dashboard() {
               </button>
             }
           >
-            <div className="overflow-auto max-h-72">
+            <div>
               <table className="w-full text-sm">
                 <thead className="text-[10px] tracking-[0.15em] text-muted-foreground sticky top-0 bg-card">
                   <tr className="border-b border-border">
                     <th className="text-left py-2 font-bold">BAIRRO</th>
-                    <th className="text-right py-2 font-bold">TOTAL</th>
-                    <th className="text-right py-2 font-bold">CVLI</th>
-                    <th className="text-right py-2 font-bold">ALTA</th>
+                    <th className="w-24 text-center py-2 font-bold">TOTAL</th>
+                    <th className="w-24 text-center py-2 font-bold">CVLI</th>
+                    <th className="w-24 text-center py-2 font-bold">ALTA</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {POR_BAIRRO.length === 0 ? (
+                  {TOP_BAIRROS.length === 0 ? (
                     <tr>
                       <td colSpan={4} className="py-6 text-center text-sm text-muted-foreground">
                         Nenhum dado disponível.
                       </td>
                     </tr>
                   ) : (
-                    POR_BAIRRO.map((b) => (
+                    TOP_BAIRROS.map((b) => (
                       <tr
                         key={b.bairro}
                         className="border-b border-border/50 transition-colors duration-200 hover:bg-success/10"
                       >
                         <td className="py-2.5 font-medium">{b.bairro}</td>
-                        <td className="py-2.5 text-right tabular-nums">{b.total}</td>
-                        <td className="py-2.5 text-right tabular-nums text-destructive">
+                        <td className="w-24 py-2.5 text-center tabular-nums">{b.total}</td>
+                        <td className="w-24 py-2.5 text-center tabular-nums text-destructive">
                           {b.cvli}
                         </td>
-                        <td className="py-2.5 text-right tabular-nums text-warning">{b.alta}</td>
+                        <td className="w-24 py-2.5 text-center tabular-nums text-warning">
+                          {b.alta}
+                        </td>
                       </tr>
                     ))
                   )}
@@ -1416,7 +1555,7 @@ function Dashboard() {
       <div className="grid grid-cols-1 items-stretch xl:grid-cols-2 gap-5">
         <div className={`${panelFxClass} h-full`}>
           <Panel title="ANÁLISE POR GRAVIDADE" accent="destructive" className="h-full">
-            <div className="h-[300px] min-h-[300px] w-full min-w-0">
+            <div className="h-full min-h-[245px] w-full min-w-0">
               {isClient ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart
@@ -1515,22 +1654,71 @@ function Dashboard() {
             {EQUIPES.length === 0 ? (
               <div className="py-6 text-sm text-muted-foreground">Nenhum dado disponível.</div>
             ) : (
-              <ul className="space-y-3.5">
-                {EQUIPES.map((t) => (
-                  <li key={t.name} className="flex items-center gap-3">
-                    <span className="text-xs text-muted-foreground w-44 truncate">{t.name}</span>
-                    <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-success rounded-full"
-                        style={{ width: `${t.pct}%` }}
-                      />
-                    </div>
-                    <span className="text-xs tabular-nums text-muted-foreground w-20 text-right">
-                      {t.value} ({t.pct}%)
+              <div className="grid items-center gap-5 md:grid-cols-[190px_minmax(0,1fr)]">
+                <div className="relative mx-auto h-40 w-40">
+                  {isClient ? (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={EQUIPES_GRAFICO}
+                          dataKey="value"
+                          innerRadius={48}
+                          outerRadius={74}
+                          paddingAngle={3}
+                          stroke="var(--card)"
+                          strokeWidth={3}
+                        >
+                          {EQUIPES_GRAFICO.map((team) => (
+                            <Cell key={team.name} fill={team.color} />
+                          ))}
+                        </Pie>
+                        <Tooltip
+                          formatter={(value: number, name: string) => [
+                            `${value} inquérito(s)`,
+                            name,
+                          ]}
+                          contentStyle={{
+                            backgroundColor: "var(--card)",
+                            border: "1px solid var(--border)",
+                            borderRadius: 8,
+                            color: "var(--foreground)",
+                          }}
+                          cursor={false}
+                        />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  ) : null}
+                  <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+                    <span className="text-3xl font-black tabular-nums text-success">
+                      {totalEquipes}
                     </span>
-                  </li>
-                ))}
-              </ul>
+                    <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                      Equipes
+                    </span>
+                  </div>
+                </div>
+                <ul className="space-y-3">
+                  {EQUIPES_GRAFICO.map((team) => (
+                    <li
+                      key={team.name}
+                      className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-md px-2 py-1.5 transition-colors duration-200 hover:bg-success/5"
+                    >
+                      <div className="flex min-w-0 items-center gap-2">
+                        <span
+                          className="h-2.5 w-2.5 shrink-0 rounded-full shadow-[0_0_10px_currentColor]"
+                          style={{ backgroundColor: team.color, color: team.color }}
+                        />
+                        <span className="truncate text-sm font-semibold text-foreground">
+                          {team.name}
+                        </span>
+                      </div>
+                      <span className="text-right text-xs font-semibold tabular-nums text-muted-foreground">
+                        {team.value} ({team.pct}%)
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             )}
           </Panel>
         </div>
@@ -1782,7 +1970,15 @@ function Dashboard() {
   );
 }
 
-function SafeChartContainer({ children, fallback }: { children: ReactNode; fallback: string }) {
+function SafeChartContainer({
+  children,
+  fallback,
+  className = "h-[220px] min-h-[220px]",
+}: {
+  children: ReactNode;
+  fallback: string;
+  className?: string;
+}) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [hasSize, setHasSize] = useState(false);
 
@@ -1802,7 +1998,7 @@ function SafeChartContainer({ children, fallback }: { children: ReactNode; fallb
   }, []);
 
   return (
-    <div ref={containerRef} className="h-[220px] min-h-[220px] w-full min-w-0">
+    <div ref={containerRef} className={`${className} w-full min-w-0`}>
       {hasSize ? (
         children
       ) : (
@@ -1882,20 +2078,20 @@ function DonutPanel({
       title={title}
       accent="success"
       action={<Maximize2 className="h-3.5 w-3.5 text-muted-foreground" />}
-      className="h-full"
     >
-      <div className="flex items-center gap-4">
-        <div className="relative h-36 w-36 shrink-0">
+      <div className="flex min-h-[182px] items-center gap-5 py-3">
+        <div className="relative h-[9rem] w-[9rem] shrink-0 sm:h-[9.5rem] sm:w-[9.5rem]">
           {isClient && hasData ? (
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
                   data={data}
                   dataKey="value"
-                  innerRadius={45}
-                  outerRadius={68}
+                  innerRadius={47}
+                  outerRadius={73}
                   paddingAngle={2}
-                  stroke="none"
+                  stroke="var(--card)"
+                  strokeWidth={2}
                 >
                   {data.map((d) => (
                     <Cell key={d.name} fill={d.color} />
@@ -1909,18 +2105,18 @@ function DonutPanel({
             </div>
           )}
           <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <span className="text-2xl font-bold tabular-nums">{total}</span>
-            <span className="text-[10px] text-muted-foreground">Total</span>
+            <span className="text-2xl font-black leading-none tabular-nums">{total}</span>
+            <span className="text-[9px] text-muted-foreground">Total</span>
           </div>
         </div>
-        <ul className="flex-1 space-y-2 text-sm">
+        <ul className="min-w-0 flex-1 space-y-2.5 text-sm">
           {data.map((d) => {
             const pct = total === 0 ? 0 : Math.round((d.value / total) * 100);
             const action = getItemAction?.(d.name);
             return (
               <li
                 key={d.name}
-                className={`flex items-center gap-2 rounded-md px-1.5 py-1 ${action ? "cursor-pointer transition-colors duration-200 hover:bg-success/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-success/50" : ""}`}
+                className={`grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-md px-1.5 py-0.5 leading-tight ${action ? "cursor-pointer transition-colors duration-200 hover:bg-success/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-success/50" : ""}`}
                 role={action ? "button" : undefined}
                 tabIndex={action ? 0 : undefined}
                 title={action?.title}
@@ -1932,12 +2128,16 @@ function DonutPanel({
                     : undefined
                 }
               >
-                <span
-                  className="h-2.5 w-2.5 rounded-sm shrink-0"
-                  style={{ backgroundColor: d.color }}
-                />
-                <span className="flex-1 text-foreground/90 text-xs truncate">{d.name}</span>
-                <span className="tabular-nums text-muted-foreground text-xs">
+                <span className="flex min-w-0 items-center gap-2">
+                  <span
+                    className="h-2 w-2 shrink-0 rounded-full"
+                    style={{ backgroundColor: d.color }}
+                  />
+                  <span className="truncate text-xs font-semibold text-foreground/90">
+                    {d.name}
+                  </span>
+                </span>
+                <span className="text-right text-xs tabular-nums text-muted-foreground">
                   {d.value} ({pct}%)
                 </span>
               </li>

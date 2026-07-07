@@ -181,7 +181,9 @@ function LocalidadesPage() {
             </div>
             <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
               {visibleStats.length} localidade(s)
-              {visibleStats.length > PAGE_SIZE ? ` - pagina ${safeLocalidadePage}/${totalLocalidadePages}` : ""}
+              {visibleStats.length > PAGE_SIZE
+                ? ` - pagina ${safeLocalidadePage}/${totalLocalidadePages}`
+                : ""}
             </span>
           </div>
 
@@ -291,8 +293,10 @@ function isHighPriority(inquerito: InqueritoRecord) {
 }
 
 function isConcluidoInquerito(inquerito: InqueritoRecord) {
-  return ["sim", "s", "true", "1", "yes", "y"].includes(normalizeText(inquerito.relatorio_enviado)) ||
-    Boolean(normalizeText(inquerito.data_envio_relatorio));
+  return (
+    ["sim", "s", "true", "1", "yes", "y"].includes(normalizeText(inquerito.relatorio_enviado)) ||
+    Boolean(normalizeText(inquerito.data_envio_relatorio))
+  );
 }
 
 function normalizeText(value: unknown) {
@@ -449,7 +453,8 @@ function LocalidadeModal({
             </p>
             <h3 className="mt-1 text-xl font-black text-foreground">{localidade}</h3>
             <p className="mt-1 text-sm text-muted-foreground">
-              {filteredInqueritos.length} de {inqueritos.length} B.O./procedimento(s) nesta localidade.
+              {filteredInqueritos.length} de {inqueritos.length} B.O./procedimento(s) nesta
+              localidade.
             </p>
           </div>
           <button
