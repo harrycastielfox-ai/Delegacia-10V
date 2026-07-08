@@ -208,6 +208,10 @@ function getProcedureType(value: unknown) {
   return null;
 }
 
+function getInqueritoProcedureType(inquerito: InqueritoRecord) {
+  return getProcedureType(inquerito.tipo_procedimento_normalizado ?? inquerito.tipo);
+}
+
 function pickRecordText(record: InqueritoRecord, ...keys: string[]) {
   const source = record as unknown as Record<string, unknown>;
   return keys
@@ -218,7 +222,7 @@ function pickRecordText(record: InqueritoRecord, ...keys: string[]) {
 
 function getGravidadeType(record: InqueritoRecord) {
   const formalCategory = normalizeCaseCategory(
-    pickRecordText(record, "categoria_caso", "categoriaCaso", "gravidade"),
+    pickRecordText(record, "categoria_criminal", "categoria_caso", "categoriaCaso", "gravidade"),
     "",
   );
   const searchable = normalizeProcedureText(
@@ -278,8 +282,12 @@ function getNormalizedTeamName(value: unknown) {
   return trimmed;
 }
 
+function getInqueritoTeamName(inquerito: InqueritoRecord) {
+  return getNormalizedTeamName(inquerito.equipe_responsavel ?? inquerito.equipe);
+}
+
 function getPriorityBucket(inquerito: InqueritoRecord) {
-  const priority = normalizeProcedureText(inquerito.prioridade);
+  const priority = normalizeProcedureText(inquerito.prioridade_operacional ?? inquerito.prioridade);
   if (priority.includes("ALTA")) return "alta";
   if (priority.includes("MEDIA") || priority.includes("MÉDIA")) return "media";
   if (priority.includes("BAIXA")) return "baixa";
@@ -354,7 +362,10 @@ function Dashboard() {
   );
   const getConclusaoDate = (inquerito: InqueritoRecord) => {
     if (!hasRelatorioEnviado(inquerito)) return null;
-    return parseOperationalDate(inquerito.data_envio_relatorio);
+    return (
+      parseOperationalDate(inquerito.data_relatorio) ??
+      parseOperationalDate(inquerito.data_envio_relatorio)
+    );
   };
   const getOperationalEntryDate = (inquerito: InqueritoRecord) =>
     parseOperationalDate(inquerito.data_instauracao) ??
@@ -427,12 +438,18 @@ function Dashboard() {
   const emAndamento = inqueritos.filter(isInqueritoEmAndamento).length;
   const finalizados = inqueritos.filter(hasRelatorioEnviado).length;
   const inqueritosOperacionaisAtivos = inqueritos.filter(isInqueritoEmAndamento);
-  const prioridadeAltaTotal = inqueritos.filter((i) => isStatus(i.prioridade, ["alta"])).length;
-  const prioridadeAlta = inqueritosOperacionaisAtivos.filter((i) =>
-    isStatus(i.prioridade, ["alta"]),
+  const prioridadeAltaTotal = inqueritos.filter((i) =>
+    isStatus(i.prioridade_operacional ?? i.prioridade, ["alta"]),
   ).length;
-  const reuPreso = inqueritos.filter((i) => isYesLike(i.reu_preso)).length;
-  const medidasProtetivas = inqueritos.filter((i) => isYesLike(i.medida_protetiva)).length;
+  const prioridadeAlta = inqueritosOperacionaisAtivos.filter((i) =>
+    isStatus(i.prioridade_operacional ?? i.prioridade, ["alta"]),
+  ).length;
+  const reuPreso = inqueritos.filter(
+    (i) => i.reu_preso_normalizado === true || isYesLike(i.reu_preso),
+  ).length;
+  const medidasProtetivas = inqueritos.filter(
+    (i) => i.medida_protetiva_normalizada === true || isYesLike(i.medida_protetiva),
+  ).length;
   const prazoCritico = inqueritosOperacionaisAtivos.filter((i) =>
     isOperationalDateDueWithin(i.prazo, 3, nowTs ?? Date.now()),
   ).length;
@@ -449,7 +466,7 @@ function Dashboard() {
   const repsIndeferidas = representacoes.filter(isRepresentacaoIndeferida).length;
   const repsCumpridas = representacoes.filter(isRepresentacaoCumprida).length;
   const repsSigilosas = representacoes.filter((r) =>
-    isRepresentacaoSigilosaValue(r.pedido_sigiloso),
+    isRepresentacaoSigilosaValue(r.pedido_sigiloso_normalizado ?? r.pedido_sigiloso),
   ).length;
   const repsVencidas = representacoes.filter((r) =>
     isRepresentacaoVencida(r, nowTs ?? Date.now()),
@@ -601,7 +618,7 @@ function Dashboard() {
     () =>
       PROCEDIMENTO_TYPES.map((type) => {
         const totalPorTipo = inqueritos.filter(
-          (i) => getProcedureType(i.tipo) === type.sigla,
+          (i) => getInqueritoProcedureType(i) === type.sigla,
         ).length;
         return {
           ...type,
@@ -669,7 +686,11 @@ function Dashboard() {
       const current = byBairro.get(key) || { total: 0, cvli: 0, alta: 0 };
       current.total += 1;
       current.cvli += isCvliRecord(i) ? 1 : 0;
-      current.alta += i.prioridade?.toLowerCase().includes("alta") ? 1 : 0;
+      current.alta += normalizeProcedureText(i.prioridade_operacional ?? i.prioridade).includes(
+        "ALTA",
+      )
+        ? 1
+        : 0;
       byBairro.set(key, current);
     });
     return Array.from(byBairro.entries())
@@ -680,7 +701,7 @@ function Dashboard() {
   const EQUIPES = useMemo(() => {
     const byEquipe = new Map<string, number>();
     inqueritos.forEach((i) => {
-      const equipe = getNormalizedTeamName(i.equipe);
+      const equipe = getInqueritoTeamName(i);
       if (!isValidTeamName(equipe)) return;
       byEquipe.set(equipe, (byEquipe.get(equipe) || 0) + 1);
     });

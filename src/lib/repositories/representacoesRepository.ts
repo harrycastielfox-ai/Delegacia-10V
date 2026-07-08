@@ -8,6 +8,7 @@ export type RepresentacaoRecord = {
   numero_ppe: string | null;
   processo_judicial: string | null;
   tipo: string | null;
+  tipo_normalizado: string | null;
   data_representacao: string | null;
   responsavel: string | null;
   vitima: string | null;
@@ -25,6 +26,7 @@ export type RepresentacaoRecord = {
   data_vencimento: string | null;
   observacoes_decisao: string | null;
   data_cumprimento: string | null;
+  cumprimento_status: string | null;
   equipe_cumprimento: string | null;
   resultado_cumprimento: string | null;
   observacoes_cumprimento: string | null;
@@ -32,6 +34,8 @@ export type RepresentacaoRecord = {
   equipe_responsavel: string | null;
   acompanhamento_especial: boolean | null;
   pedido_sigiloso: string | null;
+  pedido_sigiloso_normalizado: boolean | null;
+  medida_protetiva_normalizada: boolean | null;
   observacoes_internas: string | null;
   created_at: string | null;
   updated_at: string | null;

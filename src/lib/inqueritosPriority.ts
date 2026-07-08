@@ -85,6 +85,8 @@ function normalizeManualPriority(value: string) {
 }
 
 function hasReuPreso(record: PrioritySource) {
+  if (typeof record.reu_preso_normalizado === "boolean") return record.reu_preso_normalizado;
+
   const preso = normalizeText(pick(record, "reu_preso", "reuPreso"));
   const custodia = normalizeText(pick(record, "custodia", "situacao_custodia"));
   return (
@@ -95,6 +97,9 @@ function hasReuPreso(record: PrioritySource) {
 }
 
 function hasMedidaProtetiva(record: PrioritySource) {
+  if (typeof record.medida_protetiva_normalizada === "boolean")
+    return record.medida_protetiva_normalizada;
+
   const direct = normalizeText(
     pick(
       record,
@@ -132,9 +137,11 @@ export function calculateInqueritoOperationalPriorityDetails(
   const prazo = pick(record, "prazo", "data_prazo");
   const prazoDias = daysUntilPrazo(prazo);
   const categoria = normalizeText(
-    normalizeCaseCategory(pick(record, "categoria_caso", "categoriaCaso", "gravidade")),
+    normalizeCaseCategory(
+      pick(record, "categoria_criminal", "categoria_caso", "categoriaCaso", "gravidade"),
+    ),
   );
-  const manual = normalizeManualPriority(pick(record, "prioridade"));
+  const manual = normalizeManualPriority(pick(record, "prioridade_operacional", "prioridade"));
   const highCategories = ["cvli", "miae", "crimes sexuais", "violencia domestica", "violento"];
   const mediumCategories = [
     "drogas",

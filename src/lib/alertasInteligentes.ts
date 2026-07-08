@@ -1,6 +1,13 @@
 import type { InqueritoRecord } from "@/lib/repositories/inqueritosRepository";
 import type { RepresentacaoRecord } from "@/lib/repositories/representacoesRepository";
-import { isOperationalDateDueWithin, isOperationalDateOverdue } from "@/lib/operationalMetrics";
+import {
+  hasRelatorioEnviado as hasRelatorioEnviadoCentral,
+  isRepresentacaoCumprida as isRepresentacaoCumpridaCentral,
+  isRepresentacaoSigilosaValue,
+  isOperationalDateDueWithin,
+  isOperationalDateOverdue,
+} from "@/lib/operationalMetrics";
+import { isCvliRecord } from "@/lib/cvliMetrics";
 
 export type Severity = "critico" | "alto" | "medio" | "baixo";
 export type AlertModule = "Inquérito" | "Representação";
@@ -81,8 +88,10 @@ const boolLike = (v?: string | number | boolean | null) => {
 const isOverdue = (date?: string | null) => isOperationalDateOverdue(date);
 const isDueIn7Days = (date?: string | null) => isOperationalDateDueWithin(date, 7);
 const isDueInCritical3Days = (date?: string | null) => isOperationalDateDueWithin(date, 3);
-const hasReuPreso = (item: InqueritoRecord) => boolLike(item.reu_preso);
-const hasMedidaProtetiva = (item: InqueritoRecord) => boolLike(item.medida_protetiva);
+const hasReuPreso = (item: InqueritoRecord) =>
+  item.reu_preso_normalizado === true || boolLike(item.reu_preso);
+const hasMedidaProtetiva = (item: InqueritoRecord) =>
+  item.medida_protetiva_normalizada === true || boolLike(item.medida_protetiva);
 const hasDiligenciasPendentes = (item: InqueritoRecord) => {
   const diligencia = normalizeText(item.diligencias_pendentes);
   const status = normalizeText(item.status_diligencias);
@@ -103,6 +112,7 @@ const hasDiligenciasPendentes = (item: InqueritoRecord) => {
 const isAltaPrioridade = (item: InqueritoRecord) =>
   ["alta", "urg", "prioridade alta"].some((w) => normalizeText(item.prioridade).includes(w));
 const isCvliOuHomicidio = (item: InqueritoRecord) =>
+  isCvliRecord(item) ||
   ["homic", "cvli", "latrocin", "feminic", "grave"].some((w) =>
     normalizeText(`${item.tipificacao} ${item.tipo} ${item.gravidade}`).includes(w),
   );
@@ -110,19 +120,17 @@ const isCrimeSexual = (item: InqueritoRecord) =>
   ["estupro", "sexual", "assedio", "violacao sexual"].some((w) =>
     normalizeText(`${item.tipificacao} ${item.tipo}`).includes(w),
   );
-const hasRelatorioEnviado = (item: InqueritoRecord) =>
-  boolLike(item.relatorio_enviado) || hasText(item.data_envio_relatorio);
+const hasRelatorioEnviado = (item: InqueritoRecord) => hasRelatorioEnviadoCentral(item);
 const isInqueritoEmFluxo = (item: InqueritoRecord) => !hasRelatorioEnviado(item);
-const isRepresentacaoSigilosa = (item: RepresentacaoRecord) => boolLike(item.pedido_sigiloso);
+const isRepresentacaoSigilosa = (item: RepresentacaoRecord) =>
+  isRepresentacaoSigilosaValue(item.pedido_sigiloso_normalizado ?? item.pedido_sigiloso);
 const isRepresentacaoPendente = (item: RepresentacaoRecord) =>
   ["pend", "aguard", "analise"].some((w) => normalizeText(item.status).includes(w));
 const isRepresentacaoDeferida = (item: RepresentacaoRecord) => {
   const decision = normalizeText(`${item.status} ${item.observacoes_decisao}`);
   return !decision.includes("indeferid") && decision.includes("deferid");
 };
-const isRepresentacaoCumprida = (item: RepresentacaoRecord) =>
-  hasText(item.data_cumprimento) ||
-  ["cumprid", "finaliz", "encerrad"].some((w) => normalizeText(item.status).includes(w));
+const isRepresentacaoCumprida = (item: RepresentacaoRecord) => isRepresentacaoCumpridaCentral(item);
 const isRepresentacaoVencida = (item: RepresentacaoRecord) =>
   isOverdue(item.data_vencimento) && !isRepresentacaoCumprida(item);
 const isRepresentacaoVencendo = (item: RepresentacaoRecord) =>

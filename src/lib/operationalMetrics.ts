@@ -12,6 +12,7 @@ export function normalizeOperationalText(value: unknown) {
 }
 
 export function isYesLike(value: unknown) {
+  if (typeof value === "boolean") return value;
   return ["true", "t", "1", "sim", "s", "yes", "y", "ok"].includes(normalizeOperationalText(value));
 }
 
@@ -57,8 +58,11 @@ export function isOperationalDateDueWithin(value: unknown, limitDays: number, no
 }
 
 export function hasRelatorioEnviado(inquerito: InqueritoRecord) {
+  const status = normalizeOperationalText(inquerito.relatorio_status);
   return (
+    status === "enviado" ||
     isYesLike(inquerito.relatorio_enviado) ||
+    Boolean(parseOperationalDate(inquerito.data_relatorio)) ||
     Boolean(parseOperationalDate(inquerito.data_envio_relatorio))
   );
 }
@@ -68,6 +72,9 @@ export function isInqueritoEmAndamento(inquerito: InqueritoRecord) {
 }
 
 export function isRelatadoNaoEnviado(inquerito: InqueritoRecord) {
+  const relatorioStatus = normalizeOperationalText(inquerito.relatorio_status);
+  if (relatorioStatus === "relatado") return true;
+
   const status = normalizeOperationalText(
     `${inquerito.situacao ?? ""} ${inquerito.status_diligencias ?? ""}`,
   );
@@ -94,11 +101,15 @@ export function hasDiligenciasPendentes(inquerito: InqueritoRecord) {
 }
 
 export function isRepresentacaoSigilosaValue(value: unknown) {
+  if (typeof value === "boolean") return value;
   const normalized = normalizeOperationalText(value);
   return isYesLike(value) || normalized.includes("sigilos");
 }
 
 export function isRepresentacaoCumprida(representacao: RepresentacaoRecord) {
+  const cumprimentoStatus = normalizeOperationalText(representacao.cumprimento_status);
+  if (cumprimentoStatus === "cumprido") return true;
+
   const status = normalizeOperationalText(representacao.status);
   const resultado = normalizeOperationalText(representacao.resultado_cumprimento);
   return (
@@ -111,6 +122,9 @@ export function isRepresentacaoCumprida(representacao: RepresentacaoRecord) {
 }
 
 export function isRepresentacaoIndeferida(representacao: RepresentacaoRecord) {
+  const cumprimentoStatus = normalizeOperationalText(representacao.cumprimento_status);
+  if (cumprimentoStatus === "indeferido") return true;
+
   const decision = normalizeOperationalText(
     `${representacao.status ?? ""} ${representacao.observacoes_decisao ?? ""}`,
   );
@@ -119,6 +133,9 @@ export function isRepresentacaoIndeferida(representacao: RepresentacaoRecord) {
 
 export function isRepresentacaoDeferida(representacao: RepresentacaoRecord) {
   if (isRepresentacaoIndeferida(representacao)) return false;
+  const cumprimentoStatus = normalizeOperationalText(representacao.cumprimento_status);
+  if (cumprimentoStatus === "deferido") return true;
+
   const decision = normalizeOperationalText(
     `${representacao.status ?? ""} ${representacao.observacoes_decisao ?? ""}`,
   );
@@ -135,7 +152,9 @@ export function isRepresentacaoPendente(representacao: RepresentacaoRecord) {
   }
 
   const status = normalizeOperationalText(representacao.status);
+  const cumprimentoStatus = normalizeOperationalText(representacao.cumprimento_status);
   return (
+    cumprimentoStatus === "pendente" ||
     !status ||
     status.includes("pend") ||
     status.includes("aguard") ||

@@ -24,6 +24,10 @@ import {
   moduleMeta,
   type ModuleKey,
 } from "@/lib/alertasInteligentes";
+import {
+  hasRelatorioEnviado,
+  isRelatadoNaoEnviado as isRelatadoNaoEnviadoMetric,
+} from "@/lib/operationalMetrics";
 
 export const Route = createFileRoute("/alertas")({
   component: Alertas,
@@ -215,8 +219,12 @@ function getProcedureType(value: unknown) {
   return String(value ?? "").trim();
 }
 
+function getInqueritoProcedureType(record: InqueritoRecord) {
+  return getProcedureType(record.tipo_procedimento_normalizado ?? record.tipo);
+}
+
 function isInqueritoSemRelatorio(record: InqueritoRecord) {
-  return !isYesLike(record.relatorio_enviado) && !hasText(record.data_envio_relatorio);
+  return !hasRelatorioEnviado(record);
 }
 
 function isCvli(record: InqueritoRecord) {
@@ -248,7 +256,7 @@ function isTransito(record: InqueritoRecord) {
 }
 
 function isConcluido(record: InqueritoRecord) {
-  return isYesLike(record.relatorio_enviado) || hasText(record.data_envio_relatorio);
+  return hasRelatorioEnviado(record);
 }
 
 function isEmAndamento(record: InqueritoRecord) {
@@ -256,7 +264,7 @@ function isEmAndamento(record: InqueritoRecord) {
 }
 
 function isRelatadoNaoEnviado(record: InqueritoRecord) {
-  return isStatus(record.situacao, ["relat"]) && !isConcluido(record);
+  return isRelatadoNaoEnviadoMetric(record);
 }
 
 function getInqueritoDate(record: InqueritoRecord) {
@@ -361,11 +369,11 @@ function Alertas() {
       ...(dataFinal ? { dataFinal } : {}),
       ...(dataInicial || dataFinal ? { dataCampo: "entrada" } : {}),
     };
-    const ip = filteredInqueritos.filter((item) => getProcedureType(item.tipo) === "IP");
-    const apf = filteredInqueritos.filter((item) => getProcedureType(item.tipo) === "APF");
-    const tco = filteredInqueritos.filter((item) => getProcedureType(item.tipo) === "TCO");
-    const boc = filteredInqueritos.filter((item) => getProcedureType(item.tipo) === "BOC");
-    const aiai = filteredInqueritos.filter((item) => getProcedureType(item.tipo) === "AIAI");
+    const ip = filteredInqueritos.filter((item) => getInqueritoProcedureType(item) === "IP");
+    const apf = filteredInqueritos.filter((item) => getInqueritoProcedureType(item) === "APF");
+    const tco = filteredInqueritos.filter((item) => getInqueritoProcedureType(item) === "TCO");
+    const boc = filteredInqueritos.filter((item) => getInqueritoProcedureType(item) === "BOC");
+    const aiai = filteredInqueritos.filter((item) => getInqueritoProcedureType(item) === "AIAI");
     const concluidos = filteredInqueritos.filter(isConcluido).length;
     const taxaConclusao =
       filteredInqueritos.length === 0 ? 0 : (concluidos / filteredInqueritos.length) * 100;
@@ -505,14 +513,22 @@ function Alertas() {
   const periodStats = useMemo(() => {
     const relatoriosEnviados = inqueritos.filter(
       (item) =>
-        hasText(item.data_envio_relatorio) &&
-        inDateRange(parseDate(item.data_envio_relatorio), dataInicial, dataFinal),
+        (hasText(item.data_relatorio) || hasText(item.data_envio_relatorio)) &&
+        inDateRange(
+          parseDate(item.data_relatorio) ?? parseDate(item.data_envio_relatorio),
+          dataInicial,
+          dataFinal,
+        ),
     ).length;
-    const apf = filteredInqueritos.filter((item) => getProcedureType(item.tipo) === "APF").length;
+    const apf = filteredInqueritos.filter(
+      (item) => getInqueritoProcedureType(item) === "APF",
+    ).length;
     const mpu = filteredRepresentacoes.filter((item) =>
       normalizeText(item.tipo).includes("protetiva"),
     ).length;
-    const tco = filteredInqueritos.filter((item) => getProcedureType(item.tipo) === "TCO").length;
+    const tco = filteredInqueritos.filter(
+      (item) => getInqueritoProcedureType(item) === "TCO",
+    ).length;
     const cvli = filteredInqueritos.filter(isCvli);
     const cvliElucidados = cvli.filter(isCvliElucidado).length;
     const periodSearch = {
@@ -601,7 +617,9 @@ function Alertas() {
       },
       {
         label: "Prisões vinculadas no período",
-        value: filteredInqueritos.filter((item) => isYesLike(item.reu_preso)).length,
+        value: filteredInqueritos.filter(
+          (item) => item.reu_preso_normalizado === true || isYesLike(item.reu_preso),
+        ).length,
         desc: "Registros com réu preso",
         target: { to: "/inqueritos", search: { ...periodSearch, reu_preso: "sim" } },
       },

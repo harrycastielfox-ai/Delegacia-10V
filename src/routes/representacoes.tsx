@@ -9,6 +9,12 @@ import {
 import { getCurrentProfile } from "@/lib/auth";
 import { canViewRepresentacoes } from "@/lib/authz";
 import { canAccessSigilosa, isRepresentacaoSigilosa } from "@/lib/representacoesSigilo";
+import {
+  isRepresentacaoCumprida,
+  isRepresentacaoDeferida,
+  isRepresentacaoIndeferida,
+  isRepresentacaoSigilosaValue,
+} from "@/lib/operationalMetrics";
 
 export const Route = createFileRoute("/representacoes")({ component: Representacoes });
 
@@ -53,6 +59,10 @@ const parseDateUtc = (value?: string | null) => {
 };
 
 function buildOperationalStatus(r: RepresentacaoRecord) {
+  if (isRepresentacaoCumprida(r)) return "Cumprida/finalizada";
+  if (isRepresentacaoDeferida(r)) return "Aguardando equipe cumprir";
+  if (isRepresentacaoIndeferida(r)) return "Sem cumprimento (indeferida)";
+
   const statusN = normalizeText(r.status);
   const hasJudicialDecision = statusN.includes("defer") || statusN.includes("indefer");
   const isCumprida = statusN.includes("cumprid") || Boolean(r.data_cumprimento);
@@ -73,14 +83,11 @@ function getRepresentacaoState(r: RepresentacaoRecord) {
   const now = Date.now();
   const due = parseDateUtc(r.data_vencimento);
   const statusN = normalizeText(r.status);
-  const isCumprida =
-    statusN.includes("cumprid") ||
-    Boolean(r.data_cumprimento) ||
-    normalizeText(r.resultado_cumprimento).includes("cumpr");
+  const isCumprida = isRepresentacaoCumprida(r);
   const isSpecial = Boolean(r.acompanhamento_especial);
-  const isSigilosa =
-    normalizeText(r.pedido_sigiloso).includes("sim") ||
-    normalizeText(r.pedido_sigiloso).includes("sigilos");
+  const isSigilosa = isRepresentacaoSigilosaValue(
+    r.pedido_sigiloso_normalizado ?? r.pedido_sigiloso,
+  );
   const pendingJudicial = buildOperationalStatus(r) === "Pendente judicial";
   const incomplete =
     !normalizeText(r.tipo) || !normalizeText(r.vitima) || !normalizeText(r.investigado);
@@ -219,6 +226,7 @@ function Representacoes() {
           r.investigado,
           r.processo_judicial,
           r.vara_juizo,
+          r.tipo_normalizado,
           r.tipo,
           r.status,
           r.equipe_responsavel,
@@ -237,17 +245,20 @@ function Representacoes() {
           normalizeText(r.status) !== normalizeText(statusFilter)
         )
           return false;
-        if (tipoFilter === TIPO_FILTER_NAO_INFORMADO && normalizeText(r.tipo)) return false;
+        const tipoAtual = normalizeText(r.tipo_normalizado || r.tipo);
+        const tipoTextoCompleto = normalizeText(`${r.tipo_normalizado ?? ""} ${r.tipo ?? ""}`);
+        if (tipoFilter === TIPO_FILTER_NAO_INFORMADO && tipoAtual) return false;
         if (
           tipoFilter === TIPO_FILTER_MEDIDA_PROTETIVA &&
-          !normalizeText(r.tipo).includes("protetiv")
+          r.medida_protetiva_normalizada !== true &&
+          !tipoTextoCompleto.includes("protetiv")
         )
           return false;
         if (
           !["todos", TIPO_FILTER_NAO_INFORMADO, TIPO_FILTER_MEDIDA_PROTETIVA].includes(
             tipoFilter,
           ) &&
-          normalizeText(r.tipo) !== normalizeText(tipoFilter)
+          tipoAtual !== normalizeText(tipoFilter)
         )
           return false;
 

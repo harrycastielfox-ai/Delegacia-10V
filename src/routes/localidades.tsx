@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { AppLayout } from "@/components/AppLayout";
 import { isCvliRecord } from "@/lib/cvliMetrics";
 import { calculateInqueritoOperationalPriority } from "@/lib/inqueritosPriority";
+import { hasRelatorioEnviado } from "@/lib/operationalMetrics";
 import { listInqueritos, type InqueritoRecord } from "@/lib/repositories/inqueritosRepository";
 
 export const Route = createFileRoute("/localidades")({
@@ -293,10 +294,7 @@ function isHighPriority(inquerito: InqueritoRecord) {
 }
 
 function isConcluidoInquerito(inquerito: InqueritoRecord) {
-  return (
-    ["sim", "s", "true", "1", "yes", "y"].includes(normalizeText(inquerito.relatorio_enviado)) ||
-    Boolean(normalizeText(inquerito.data_envio_relatorio))
-  );
+  return hasRelatorioEnviado(inquerito);
 }
 
 function normalizeText(value: unknown) {

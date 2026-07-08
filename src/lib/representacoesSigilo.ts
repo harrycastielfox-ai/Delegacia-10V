@@ -36,7 +36,9 @@ export function isRepresentacaoSigilosa(
   representacao: Partial<RepresentacaoRecord> | null | undefined,
 ): boolean {
   if (!representacao) return false;
-  return isTruthySigiloValue(representacao.pedido_sigiloso);
+  return isTruthySigiloValue(
+    representacao.pedido_sigiloso_normalizado ?? representacao.pedido_sigiloso,
+  );
 }
 
 export function canAccessSigilosa(profile: unknown): boolean {

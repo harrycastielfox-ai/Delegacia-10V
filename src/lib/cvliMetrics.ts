@@ -58,8 +58,11 @@ function pickRecordText(record: InqueritoRecord, ...keys: string[]) {
 }
 
 export function isCvliRecord(record: InqueritoRecord) {
+  const normalizedCategory = normalizeText(record.categoria_criminal);
+  if (normalizedCategory === "CVLI") return true;
+
   const formalCategory = normalizeCaseCategory(
-    pickRecordText(record, "categoria_caso", "categoriaCaso", "gravidade"),
+    pickRecordText(record, "categoria_criminal", "categoria_caso", "categoriaCaso", "gravidade"),
     "",
   );
   const searchable = normalizeText(
@@ -99,6 +102,8 @@ function isDeterminedAuthorship(value: unknown) {
 }
 
 export function isCvliElucidado(record: InqueritoRecord) {
+  if (typeof record.cvli_elucidado === "boolean") return record.cvli_elucidado;
+
   const source = record as unknown as Record<string, unknown>;
   return (
     isYesLike(record.elucidado) ||

@@ -10,7 +10,12 @@ import {
   normalizeCaseCategory,
 } from "@/lib/inqueritosPriority";
 import { getCvliReferenceDate, isCvliElucidado, isCvliRecord } from "@/lib/cvliMetrics";
-import { isOperationalDateDueWithin, isOperationalDateOverdue } from "@/lib/operationalMetrics";
+import {
+  hasRelatorioEnviado,
+  isOperationalDateDueWithin,
+  isOperationalDateOverdue,
+  isRelatadoNaoEnviado,
+} from "@/lib/operationalMetrics";
 
 export const Route = createFileRoute("/inqueritos")({ component: Inqueritos });
 const priorTone: Record<string, string> = {
@@ -138,6 +143,8 @@ function isFalseyLike(value: unknown) {
   return ["false", "f", "0", "nao", "n", "no", "pendente", "nao elucidado"].includes(n);
 }
 function hasReuPreso(row: InqueritoListRow) {
+  if (typeof row.source.reu_preso_normalizado === "boolean")
+    return row.source.reu_preso_normalizado;
   const preso = normalizeText(row.reuPreso);
   const custodia = normalizeText(row.custodia);
   return (
@@ -147,6 +154,8 @@ function hasReuPreso(row: InqueritoListRow) {
   );
 }
 function hasMedidaProtetiva(row: InqueritoListRow) {
+  if (typeof row.source.medida_protetiva_normalizada === "boolean")
+    return row.source.medida_protetiva_normalizada;
   const direct = normalizeText(row.medidaProtetiva);
   if (isTruthyLike(direct) || ["ativa", "ativo"].includes(direct)) return true;
   return row.protetivaTexto.includes("protetiv");
@@ -169,10 +178,10 @@ function getProcedureType(value: string) {
   return value.trim();
 }
 function isSemRelatorio(row: InqueritoListRow) {
-  return !isTruthyLike(row.relatorioEnviado) && !hasTextValue(row.dataEnvioRelatorio);
+  return !hasRelatorioEnviado(row.source);
 }
 function isConcluidoCentral(row: InqueritoListRow) {
-  return isTruthyLike(row.relatorioEnviado) || hasTextValue(row.dataEnvioRelatorio);
+  return hasRelatorioEnviado(row.source);
 }
 function isEmAndamentoCentral(row: InqueritoListRow) {
   const situacao = normalizeText(row.situacao);
@@ -183,7 +192,7 @@ function isEmAndamentoCentral(row: InqueritoListRow) {
 }
 function getCategoryText(row: InqueritoListRow) {
   return normalizeText(
-    `${row.gravidade} ${row.tipificacao} ${row.tipoProcedimento} ${row.motivacao}`,
+    `${row.source.categoria_criminal ?? ""} ${row.gravidade} ${row.tipificacao} ${row.tipoProcedimento} ${row.motivacao}`,
   );
 }
 function isCvli(row: InqueritoListRow) {
@@ -340,13 +349,22 @@ function normalizeInqueritoForList(caso: InqueritoRecord): InqueritoListRow {
     numeroPpe: pick(raw, "numero_ppe", "numeroPpe", "ppe"),
     tipificacao: pick(raw, "tipificacao", "classificacao", "tipo_penal"),
     vitima: pick(raw, "vitima", "vítima"),
-    prioridade: pick(raw, "prioridade"),
-    gravidade: normalizeCaseCategory(pick(raw, "categoria_caso", "categoriaCaso", "gravidade")),
-    tipoProcedimento: pick(raw, "tipo", "tipo_procedimento", "tipoProcedimento", "procedimento"),
+    prioridade: pick(raw, "prioridade_operacional", "prioridade"),
+    gravidade: normalizeCaseCategory(
+      pick(raw, "categoria_criminal", "categoria_caso", "categoriaCaso", "gravidade"),
+    ),
+    tipoProcedimento: pick(
+      raw,
+      "tipo_procedimento_normalizado",
+      "tipo",
+      "tipo_procedimento",
+      "tipoProcedimento",
+      "procedimento",
+    ),
     bairro: pick(raw, "bairro", "localidade", "local", "comunidade"),
     situacao: pick(raw, "situacao", "situação", "status"),
     statusDiligencias: pick(raw, "status_diligencias", "statusDiligencias"),
-    equipe: pick(raw, "equipe"),
+    equipe: pick(raw, "equipe_responsavel", "equipe"),
     escrivao: pick(raw, "escrivao", "escrivao_responsavel", "responsavel", "responsavel_escrivao"),
     prazo: pick(raw, "prazo", "data_prazo"),
     investigado: pick(raw, "investigado", "suspeito", "autor_investigado", "autorInvestigado"),
@@ -376,10 +394,10 @@ function normalizeInqueritoForList(caso: InqueritoRecord): InqueritoListRow {
       .join(" "),
     dataFato: pick(raw, "data_fato", "dataFato"),
     dataInstauracao: pick(raw, "data_instauracao", "dataInstauracao"),
-    dataEnvioRelatorio: pick(raw, "data_envio_relatorio", "dataEnvioRelatorio"),
+    dataEnvioRelatorio: pick(raw, "data_relatorio", "data_envio_relatorio", "dataEnvioRelatorio"),
     createdAt: pick(raw, "created_at", "createdAt"),
-    relatorioEnviado: pick(raw, "relatorio_enviado", "relatorioEnviado"),
-    elucidado: pick(raw, "elucidado"),
+    relatorioEnviado: pick(raw, "relatorio_status", "relatorio_enviado", "relatorioEnviado"),
+    elucidado: pick(raw, "cvli_elucidado", "elucidado"),
     motivacao: pick(raw, "motivacao", "motivação"),
     fullText: fields.join(" "),
   };
@@ -659,7 +677,7 @@ function Inqueritos() {
         if (normalizeText(relatorioFilter) === "enviado" && !isConcluidoCentral(r)) return false;
         if (
           normalizeText(relatorioFilter) === "relatado_nao_enviado" &&
-          !(matchesSituacaoAlias(r.situacao, "relatado") && isSemRelatorio(r))
+          !isRelatadoNaoEnviado(r.source)
         )
           return false;
         if (normalizeText(statusQueryFilter) === "em_andamento" && !isEmAndamentoCentral(r))
