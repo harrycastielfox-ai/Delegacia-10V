@@ -125,6 +125,36 @@ function formatPrazoDisplay(value: string) {
   return ts < todayTs ? `Vencido — ${dateText}` : dateText;
 }
 
+function pluralize(value: number, singular: string, plural: string) {
+  return value === 1 ? singular : plural;
+}
+
+function formatElapsedDuration(value: string) {
+  if (!value || value === FALLBACK) return FALLBACK;
+
+  const match = value.match(/-?\d+/u);
+  if (!match) return value;
+
+  const totalDays = Math.abs(Number(match[0]));
+  if (!Number.isFinite(totalDays)) return value;
+
+  if (totalDays <= 30) {
+    return `${totalDays} ${pluralize(totalDays, "dia", "dias")}`;
+  }
+
+  const years = Math.floor(totalDays / 365);
+  const remainingAfterYears = totalDays % 365;
+  const months = Math.floor(remainingAfterYears / 30);
+  const days = remainingAfterYears % 30;
+
+  const parts: string[] = [];
+  if (years > 0) parts.push(`${years} ${pluralize(years, "ano", "anos")}`);
+  if (months > 0) parts.push(`${months} ${pluralize(months, "mês", "meses")}`);
+  if (days > 0) parts.push(`${days} ${pluralize(days, "dia", "dias")}`);
+
+  return parts.join(", ").replace(/, ([^,]*)$/u, " e $1");
+}
+
 function isPrazoVencido(value: string) {
   const ts = parsePrazoToUtc(value.replace("Vencido — ", ""));
   if (ts === null) return false;
@@ -181,7 +211,7 @@ function normalizeInqueritoForDetail(caso: InqueritoRecord): InqueritoDetalheUI 
     dataFato: pick(raw, "data_fato", "dataFato"),
     dataInstauracao: pick(raw, "data_instauracao", "dataInstauracao"),
     prazo: formatPrazoDisplay(pick(raw, "prazo")),
-    diasDecorridos: pick(raw, "dias_decorridos", "diasDecorridos"),
+    diasDecorridos: formatElapsedDuration(pick(raw, "dias_decorridos", "diasDecorridos")),
     ultimaEdicao: pick(raw, "updated_at", "updatedAt", "ultima_edicao", "ultimaEdicao"),
     delegadoResponsavel: pick(raw, "delegado_responsavel", "delegadoResponsavel"),
     bairro: pick(raw, "bairro", "bairroDistrito"),
@@ -393,7 +423,6 @@ function InqueritoDetalhes() {
     ["Categoria", detalhe.gravidade],
     ["Procedimento", detalhe.tipo],
     ["Diligências", detalhe.statusDiligencias],
-    ["Elucidado", detalhe.elucidado],
   ] as const;
 
   const badgeTone: Record<string, string> = {
@@ -402,7 +431,6 @@ function InqueritoDetalhes() {
     Categoria: "border-orange-500/35 bg-orange-500/15 text-orange-200",
     Procedimento: "border-sky-500/35 bg-sky-500/15 text-sky-200",
     Diligências: "border-violet-500/35 bg-violet-500/15 text-violet-200",
-    Elucidado: "border-emerald-500/35 bg-emerald-500/15 text-emerald-200",
   };
 
   return (
@@ -510,14 +538,15 @@ function InqueritoDetalhes() {
                 ["Nº BO", detalhe.numeroBo],
                 ["Data do fato", detalhe.dataFato],
                 ["Data de instauração", detalhe.dataInstauracao],
-                ["Prazo", detalhe.prazo],
                 ["Data limite", detalhe.prazo],
                 ["Dias corridos", detalhe.diasDecorridos],
+                ["Elucidação", detalhe.elucidado],
               ]}
             />
             <InfoCard
               title="Pessoas Envolvidas"
               icon={<UserRound className="h-4 w-4 text-primary" />}
+              stacked
               items={[
                 ["Vítima", detalhe.vitima],
                 ["Autor / Investigado", detalhe.investigado],
@@ -654,7 +683,9 @@ function InfoCard({
         <h2 className="text-xs font-extrabold uppercase tracking-[0.16em] text-primary">{title}</h2>
       </div>
       <div className="mb-3 h-px w-full bg-border/70" />
-      <div className={`grid grid-cols-1 gap-3 ${stacked ? "" : "md:grid-cols-2"}`}>
+      <div
+        className={`${stacked ? "" : "sipi-print-field-grid "}grid grid-cols-1 gap-3 ${stacked ? "" : "md:grid-cols-2"}`}
+      >
         {items.map(([k, v], idx) => {
           const hasPrintValue = !hiddenOnPrint.has(k) && hasPrintableFieldValue(v);
           return (

@@ -16,6 +16,7 @@ import {
 import { getCurrentProfile, getProfileAvatarPublicUrl, getSession } from "@/lib/auth";
 import {
   canAtlasAssignRole,
+  canAssignProtectedUserRole,
   canEditUserAccess,
   canManageUsers,
   type AuthorizationStatus,
@@ -161,7 +162,12 @@ function AdminUsuariosPage() {
   const canEditTarget = (target: UserProfile, nextRole?: UserRole) =>
     canEditUserAccess(currentProfile, target, nextRole);
   const allowedRolesForRequester = (target: UserProfile) => {
-    if (currentProfile?.cargo !== "atlas_access") return ROLE_OPTIONS;
+    if (currentProfile?.cargo !== "atlas_access") {
+      return ROLE_OPTIONS.filter(
+        (opt) =>
+          !["admin", "delegado"].includes(opt.value) || canAssignProtectedUserRole(currentProfile),
+      );
+    }
     if (!canEditTarget(target)) return [];
     return ROLE_OPTIONS.filter((opt) => canAtlasAssignRole(opt.value));
   };

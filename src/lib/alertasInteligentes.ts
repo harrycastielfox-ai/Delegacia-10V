@@ -1,5 +1,6 @@
 import type { InqueritoRecord } from "@/lib/repositories/inqueritosRepository";
 import type { RepresentacaoRecord } from "@/lib/repositories/representacoesRepository";
+import { isOperationalDateDueWithin, isOperationalDateOverdue } from "@/lib/operationalMetrics";
 
 export type Severity = "critico" | "alto" | "medio" | "baixo";
 export type AlertModule = "Inquérito" | "Representação";
@@ -77,35 +78,9 @@ const boolLike = (v?: string | number | boolean | null) => {
   const n = normalizeText(String(v ?? ""));
   return ["sim", "s", "true", "1", "yes", "y", "ok"].includes(n);
 };
-const parseSafeDate = (value?: string | null) => {
-  const raw = String(value ?? "").trim();
-  if (!raw) return null;
-  const br = /^(\d{2})\/(\d{2})\/(\d{4})$/u.exec(raw);
-  if (br) return Date.UTC(Number(br[3]), Number(br[2]) - 1, Number(br[1]), 12, 0, 0, 0);
-  const iso = /^(\d{4})-(\d{2})-(\d{2})/u.exec(raw);
-  if (iso) return Date.UTC(Number(iso[1]), Number(iso[2]) - 1, Number(iso[3]), 12, 0, 0, 0);
-  const dt = new Date(raw);
-  return Number.isNaN(dt.getTime())
-    ? null
-    : Date.UTC(dt.getUTCFullYear(), dt.getUTCMonth(), dt.getUTCDate(), 12, 0, 0, 0);
-};
-const diffDaysFromNow = (utcTs: number) => Math.ceil((utcTs - Date.now()) / (1000 * 60 * 60 * 24));
-const isOverdue = (date?: string | null) => {
-  const ts = parseSafeDate(date);
-  return ts !== null && diffDaysFromNow(ts) < 0;
-};
-const isDueIn7Days = (date?: string | null) => {
-  const ts = parseSafeDate(date);
-  if (ts === null) return false;
-  const days = diffDaysFromNow(ts);
-  return days >= 0 && days <= 7;
-};
-const isDueInCritical3Days = (date?: string | null) => {
-  const ts = parseSafeDate(date);
-  if (ts === null) return false;
-  const days = diffDaysFromNow(ts);
-  return days >= 0 && days <= 3;
-};
+const isOverdue = (date?: string | null) => isOperationalDateOverdue(date);
+const isDueIn7Days = (date?: string | null) => isOperationalDateDueWithin(date, 7);
+const isDueInCritical3Days = (date?: string | null) => isOperationalDateDueWithin(date, 3);
 const hasReuPreso = (item: InqueritoRecord) => boolLike(item.reu_preso);
 const hasMedidaProtetiva = (item: InqueritoRecord) => boolLike(item.medida_protetiva);
 const hasDiligenciasPendentes = (item: InqueritoRecord) => {

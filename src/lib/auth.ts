@@ -1,5 +1,9 @@
 import { supabase } from "@/lib/supabaseClient";
-import { INSTITUTIONAL_FUNCTIONS, type InstitutionalFunction, type UserProfile } from "@/lib/authz";
+import {
+  PUBLIC_SIGNUP_INSTITUTIONAL_FUNCTIONS,
+  type InstitutionalFunction,
+  type UserProfile,
+} from "@/lib/authz";
 
 export type CurrentUserProfile = UserProfile & { telefone: string | null };
 
@@ -40,10 +44,10 @@ function normalizePhone(value?: string): string {
     .slice(0, 11);
 }
 
-function normalizeInstitutionalFunction(
+function normalizePublicSignupInstitutionalFunction(
   value?: InstitutionalFunction | string | null,
 ): InstitutionalFunction | null {
-  return INSTITUTIONAL_FUNCTIONS.includes(value as InstitutionalFunction)
+  return PUBLIC_SIGNUP_INSTITUTIONAL_FUNCTIONS.includes(value as InstitutionalFunction)
     ? (value as InstitutionalFunction)
     : null;
 }
@@ -208,6 +212,18 @@ export async function updateOwnPhone(telefone: string): Promise<string | null> {
   return cleanTelefone || null;
 }
 
+export async function updateOwnName(nome: string): Promise<string> {
+  const cleanName = nome.trim().replace(/\s+/g, " ");
+  const { error } = await supabase.rpc("update_own_name", {
+    p_nome: cleanName,
+  });
+  if (error) {
+    throw new AuthFlowError("NAME_RPC_UPDATE_FAILED", "Falha ao atualizar nome no perfil.", error);
+  }
+
+  return cleanName;
+}
+
 export async function signUpUser(payload: {
   nome: string;
   email: string;
@@ -221,7 +237,7 @@ export async function signUpUser(payload: {
   const cleanEmail = normalizeEmail(email);
   const cleanLogin = normalizeLogin(login);
   const cleanTelefone = normalizePhone(telefone);
-  const cleanFunction = normalizeInstitutionalFunction(funcaoInstitucional);
+  const cleanFunction = normalizePublicSignupInstitutionalFunction(funcaoInstitucional);
 
   if (!cleanLogin) throw new Error("LOGIN_REQUIRED");
 

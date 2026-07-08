@@ -20,8 +20,10 @@ import {
 } from "lucide-react";
 import { getCurrentProfile, getProfileAvatarPublicUrl, getSession } from "@/lib/auth";
 import {
+  canAssignProtectedInstitutionalFunction,
   canManageUsers,
   INSTITUTIONAL_FUNCTIONS,
+  isProtectedInstitutionalFunction,
   type AuthorizationStatus,
   type InstitutionalFunction,
   type UserProfile,
@@ -55,6 +57,7 @@ function AdminUserProfilePage() {
   const [checkingAccess, setCheckingAccess] = useState(true);
   const [hasAccess, setHasAccess] = useState(false);
   const [loadingUser, setLoadingUser] = useState(false);
+  const [currentProfile, setCurrentProfile] = useState<UserProfile | null>(null);
   const [targetUser, setTargetUser] = useState<AdminUserProfile | null>(null);
   const [requestState, setRequestState] = useState<
     "idle" | "not_found" | "forbidden" | "rpc_unavailable" | "error"
@@ -85,7 +88,10 @@ function AdminUserProfilePage() {
           if (!cancelled) navigate({ to: "/modulos", replace: true });
           return;
         }
-        if (!cancelled) setHasAccess(canManageUsers(profile));
+        if (!cancelled) {
+          setCurrentProfile(profile);
+          setHasAccess(canManageUsers(profile));
+        }
       } catch (error) {
         console.error("[AdminUserProfilePage] Erro ao validar sessão", error);
         if (!cancelled) navigate({ to: "/modulos", replace: true });
@@ -232,6 +238,17 @@ function AdminUserProfilePage() {
   const initial = (targetUser?.nome?.trim().charAt(0) || "?").toUpperCase();
   const createdAt = formatDate(targetUser?.created_at);
   const updatedAt = formatDate(targetUser?.updated_at);
+  const institutionalFunctionOptions = useMemo(
+    () =>
+      INSTITUTIONAL_FUNCTIONS.filter(
+        (institutionalFunction) =>
+          !isProtectedInstitutionalFunction(institutionalFunction) ||
+          canAssignProtectedInstitutionalFunction(currentProfile),
+      ),
+    [currentProfile],
+  );
+  const canEditInstitutionalFunction =
+    currentProfile?.cargo === "admin" || currentProfile?.cargo === "delegado";
 
   const cancelInstitutionalFunctionEdit = () => {
     setInstitutionalFunctionDraft(targetUser?.funcao_institucional ?? "");
@@ -408,6 +425,8 @@ function AdminUserProfilePage() {
             <InstitutionalFunctionCard
               value={targetUser.funcao_institucional}
               draft={institutionalFunctionDraft}
+              options={institutionalFunctionOptions}
+              canEdit={canEditInstitutionalFunction}
               editing={editingInstitutionalFunction}
               saving={savingInstitutionalFunction}
               feedback={institutionalFunctionFeedback}
@@ -534,6 +553,8 @@ function InfoCard({
 function InstitutionalFunctionCard({
   value,
   draft,
+  options,
+  canEdit,
   editing,
   saving,
   feedback,
@@ -544,6 +565,8 @@ function InstitutionalFunctionCard({
 }: {
   value: InstitutionalFunction | null;
   draft: InstitutionalFunctionDraft;
+  options: readonly InstitutionalFunction[];
+  canEdit: boolean;
   editing: boolean;
   saving: boolean;
   feedback: { kind: "success" | "error"; message: string } | null;
@@ -559,7 +582,7 @@ function InstitutionalFunctionCard({
           <BriefcaseBusiness className="h-4 w-4" />
           Função institucional
         </div>
-        {!editing ? (
+        {!editing && canEdit ? (
           <button
             type="button"
             onClick={onEdit}
@@ -586,7 +609,7 @@ function InstitutionalFunctionCard({
             aria-label="Selecionar função institucional"
           >
             <option value="">Não definida</option>
-            {INSTITUTIONAL_FUNCTIONS.map((institutionalFunction) => (
+            {options.map((institutionalFunction) => (
               <option key={institutionalFunction} value={institutionalFunction}>
                 {INSTITUTIONAL_FUNCTION_LABELS[institutionalFunction]}
               </option>

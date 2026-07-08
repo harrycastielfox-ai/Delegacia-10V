@@ -228,10 +228,29 @@
     line-height: 1.4 !important;
     orphans: 3 !important;
     widows: 3 !important;
+    isolation: isolate !important;
+  }
+
+  .sipi-print-document::before {
+    content: "" !important;
+    position: fixed !important;
+    inset: 0 !important;
+    z-index: 0 !important;
+    pointer-events: none !important;
+    background-image: url("/sipi-logo.png") !important;
+    background-repeat: no-repeat !important;
+    background-position: center 54% !important;
+    background-size: min(150vw, 1080px) auto !important;
+    opacity: 0.055 !important;
+  }
+
+  .sipi-print-document > * {
+    position: relative !important;
+    z-index: 1 !important;
   }
 
   .sipi-print-document *,
-  .sipi-print-document ::before,
+  .sipi-print-document *::before,
   .sipi-print-document ::after {
     background-image: none !important;
     box-shadow: none !important;
@@ -352,6 +371,14 @@
 
   .sipi-print-document .grid {
     gap: 8px !important;
+  }
+
+  .sipi-print-document .sipi-print-field-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+
+  .sipi-print-document .sipi-print-field-grid [class*="md:col-span-2"] {
+    grid-column: 1 / -1 !important;
   }
 
   .sipi-print-document .space-y-4 > :not([hidden]) ~ :not([hidden]) {

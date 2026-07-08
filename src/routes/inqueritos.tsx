@@ -10,6 +10,7 @@ import {
   normalizeCaseCategory,
 } from "@/lib/inqueritosPriority";
 import { getCvliReferenceDate, isCvliElucidado, isCvliRecord } from "@/lib/cvliMetrics";
+import { isOperationalDateDueWithin, isOperationalDateOverdue } from "@/lib/operationalMetrics";
 
 export const Route = createFileRoute("/inqueritos")({ component: Inqueritos });
 const priorTone: Record<string, string> = {
@@ -89,20 +90,13 @@ function parseAnyDate(value?: string) {
   return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), 12, 0, 0, 0);
 }
 function isPrazoVencido(prazo: string) {
-  const ts = parseAnyDate(prazo);
-  return ts !== null && ts < Date.now();
+  return isOperationalDateOverdue(prazo);
 }
 function isPrazoCritico(prazo: string) {
-  const ts = parseAnyDate(prazo);
-  if (ts === null) return false;
-  const diffDays = Math.ceil((ts - Date.now()) / (1000 * 60 * 60 * 24));
-  return diffDays >= 0 && diffDays <= 3;
+  return isOperationalDateDueWithin(prazo, 3);
 }
 function isPrazoVencendo(prazo: string) {
-  const ts = parseAnyDate(prazo);
-  if (ts === null) return false;
-  const diffDays = Math.ceil((ts - Date.now()) / (1000 * 60 * 60 * 24));
-  return diffDays >= 0 && diffDays <= 7;
+  return isOperationalDateDueWithin(prazo, 7);
 }
 function isEmpty(value: string) {
   return !value || value === FALLBACK;

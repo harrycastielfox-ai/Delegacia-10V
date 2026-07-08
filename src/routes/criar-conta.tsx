@@ -16,19 +16,23 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { signUpUser } from "@/lib/auth";
-import type { InstitutionalFunction } from "@/lib/authz";
+import { PUBLIC_SIGNUP_INSTITUTIONAL_FUNCTIONS, type InstitutionalFunction } from "@/lib/authz";
 
 const MAX_AVATAR_MB = 2;
 const MAX_AVATAR_BYTES = MAX_AVATAR_MB * 1024 * 1024;
 const MAX_PHONE_DIGITS = 11;
 const POST_SIGNUP_LOGIN_KEY = "sipi:post-signup-login";
-const INSTITUTIONAL_FUNCTION_OPTIONS: Array<{ value: InstitutionalFunction; label: string }> = [
-  { value: "juiz", label: "Juiz(a)" },
-  { value: "delegado", label: "Delegado(a)" },
-  { value: "escrivao", label: "Escrivão(ã)" },
-  { value: "investigador", label: "Investigador(a)" },
-  { value: "agente_policia", label: "Agente de Polícia" },
-];
+const INSTITUTIONAL_FUNCTION_LABELS: Record<InstitutionalFunction, string> = {
+  juiz: "Juiz(a)",
+  delegado: "Delegado(a)",
+  escrivao: "Escrivão(ã)",
+  investigador: "Investigador(a)",
+  agente_policia: "Agente de Polícia",
+};
+const INSTITUTIONAL_FUNCTION_OPTIONS = PUBLIC_SIGNUP_INSTITUTIONAL_FUNCTIONS.map((value) => ({
+  value,
+  label: INSTITUTIONAL_FUNCTION_LABELS[value],
+}));
 
 export const Route = createFileRoute("/criar-conta")({ component: CreateAccountPage });
 

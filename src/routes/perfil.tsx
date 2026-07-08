@@ -5,6 +5,7 @@ import {
   getCurrentProfile,
   getProfileAvatarPublicUrl,
   updateOwnAvatar,
+  updateOwnName,
   updateOwnPhone,
 } from "@/lib/auth";
 
@@ -47,6 +48,13 @@ function PerfilPage() {
   const [feedback, setFeedback] = useState<{ type: "success" | "error"; message: string } | null>(
     null,
   );
+  const [nameDraft, setNameDraft] = useState(profile?.nome ?? "");
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [isSavingName, setIsSavingName] = useState(false);
+  const [nameFeedback, setNameFeedback] = useState<{
+    type: "success" | "error";
+    message: string;
+  } | null>(null);
   const [phoneDigits, setPhoneDigits] = useState(getPhoneDigits(profile?.telefone ?? ""));
   const [phoneDraft, setPhoneDraft] = useState(getPhoneDigits(profile?.telefone ?? ""));
   const [isEditingPhone, setIsEditingPhone] = useState(false);
@@ -65,6 +73,7 @@ function PerfilPage() {
         const freshPhone = getPhoneDigits(freshProfile.telefone ?? "");
         setProfile(freshProfile);
         setAvatarPath(freshProfile.avatar_path ?? null);
+        setNameDraft(freshProfile.nome ?? "");
         setPhoneDigits(freshPhone);
         setPhoneDraft(freshPhone);
       } catch (error) {
@@ -127,6 +136,63 @@ function PerfilPage() {
   const cancelAvatarChange = () => {
     setFeedback(null);
     resetPendingAvatar();
+  };
+
+  const startNameEdit = () => {
+    if (isSavingName) return;
+    setNameDraft(profile?.nome ?? "");
+    setNameFeedback(null);
+    setIsEditingName(true);
+  };
+
+  const cancelNameEdit = () => {
+    if (isSavingName) return;
+    setNameDraft(profile?.nome ?? "");
+    setNameFeedback(null);
+    setIsEditingName(false);
+  };
+
+  const saveName = async () => {
+    if (isSavingName) return;
+    const requestedName = nameDraft.trim().replace(/\s+/g, " ");
+
+    if (requestedName.length < 2) {
+      setNameFeedback({ type: "error", message: "Informe um nome com pelo menos 2 caracteres." });
+      return;
+    }
+
+    if (requestedName.length > 120) {
+      setNameFeedback({ type: "error", message: "O nome deve ter no mÃ¡ximo 120 caracteres." });
+      return;
+    }
+
+    setIsSavingName(true);
+    setNameFeedback(null);
+
+    try {
+      await updateOwnName(requestedName);
+      const freshProfile = await getCurrentProfile();
+
+      if (freshProfile) {
+        setProfile(freshProfile);
+        setAvatarPath(freshProfile.avatar_path ?? null);
+        setNameDraft(freshProfile.nome ?? requestedName);
+      }
+
+      setIsEditingName(false);
+      setNameFeedback({ type: "success", message: "Nome atualizado com sucesso." });
+    } catch (error) {
+      console.error("[perfil] Erro ao atualizar nome", {
+        userId: profile?.id ?? "unknown",
+        error,
+      });
+      setNameFeedback({
+        type: "error",
+        message: "NÃ£o foi possÃ­vel salvar o nome agora. Tente novamente em instantes.",
+      });
+    } finally {
+      setIsSavingName(false);
+    }
   };
 
   const startPhoneEdit = () => {
@@ -276,7 +342,51 @@ function PerfilPage() {
             />
 
             <div className="min-w-0 space-y-2">
-              <p className="text-lg font-semibold text-foreground">{profile.nome}</p>
+              {isEditingName ? (
+                <div className="max-w-md space-y-2">
+                  <label className="sr-only" htmlFor="profile-name">
+                    Nome
+                  </label>
+                  <input
+                    id="profile-name"
+                    value={nameDraft}
+                    onChange={(event) => setNameDraft(event.target.value)}
+                    maxLength={120}
+                    className="w-full rounded-lg border border-primary/30 bg-background/70 px-3 py-2 text-sm font-semibold text-foreground outline-none transition placeholder:text-muted-foreground focus:border-primary/70 focus:ring-2 focus:ring-primary/20"
+                    placeholder="Seu nome"
+                    disabled={isSavingName}
+                  />
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={saveName}
+                      className="rounded-md border border-primary/40 bg-primary/15 px-3 py-1 text-xs font-semibold text-primary transition hover:bg-primary/20 disabled:cursor-not-allowed disabled:opacity-60"
+                      disabled={isSavingName}
+                    >
+                      {isSavingName ? "Salvando..." : "Salvar nome"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={cancelNameEdit}
+                      className="rounded-md border border-primary/25 px-3 py-1 text-xs font-medium text-muted-foreground transition hover:text-foreground disabled:cursor-not-allowed disabled:opacity-60"
+                      disabled={isSavingName}
+                    >
+                      Cancelar
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="text-lg font-semibold text-foreground">{profile.nome}</p>
+                  <button
+                    type="button"
+                    onClick={startNameEdit}
+                    className="rounded-full border border-primary/25 px-2.5 py-1 text-[11px] font-semibold text-primary/85 transition hover:border-primary/50 hover:bg-primary/10 hover:text-primary"
+                  >
+                    Editar nome
+                  </button>
+                </div>
+              )}
               <p className="text-sm text-muted-foreground">{profile.email}</p>
               <button
                 type="button"
@@ -313,6 +423,14 @@ function PerfilPage() {
                   className={`text-xs ${feedback.type === "success" ? "text-emerald-400" : "text-rose-400"}`}
                 >
                   {feedback.message}
+                </p>
+              ) : null}
+
+              {nameFeedback ? (
+                <p
+                  className={`text-xs ${nameFeedback.type === "success" ? "text-emerald-400" : "text-rose-400"}`}
+                >
+                  {nameFeedback.message}
                 </p>
               ) : null}
             </div>

@@ -13,6 +13,17 @@ export const INSTITUTIONAL_FUNCTIONS = [
 ] as const;
 export type InstitutionalFunction = (typeof INSTITUTIONAL_FUNCTIONS)[number];
 
+export const PUBLIC_SIGNUP_INSTITUTIONAL_FUNCTIONS = [
+  "escrivao",
+  "investigador",
+  "agente_policia",
+] as const satisfies readonly InstitutionalFunction[];
+
+export const PROTECTED_INSTITUTIONAL_FUNCTIONS = [
+  "juiz",
+  "delegado",
+] as const satisfies readonly InstitutionalFunction[];
+
 export interface UserProfile {
   id: string;
   nome: string;
@@ -42,8 +53,26 @@ export function isAtlasAccess(profile: Pick<UserProfile, "cargo"> | null): boole
   return profile?.cargo === "atlas_access";
 }
 
-export function canManageUsers(profile: Pick<UserProfile, "cargo"> | null): boolean {
-  return isAdmin(profile) || isDelegado(profile);
+export function canManageUsers(
+  profile: Pick<UserProfile, "cargo" | "funcao_institucional"> | null,
+): boolean {
+  return isAdmin(profile) || isDelegado(profile) || profile?.funcao_institucional === "juiz";
+}
+
+export function isProtectedInstitutionalFunction(
+  value: InstitutionalFunction | string | null | undefined,
+): boolean {
+  return PROTECTED_INSTITUTIONAL_FUNCTIONS.includes(value as InstitutionalFunction);
+}
+
+export function canAssignProtectedInstitutionalFunction(
+  requester: Pick<UserProfile, "cargo"> | null,
+): boolean {
+  return requester?.cargo === "admin";
+}
+
+export function canAssignProtectedUserRole(requester: Pick<UserProfile, "cargo"> | null): boolean {
+  return requester?.cargo === "admin";
 }
 
 export function canViewPrivateCases(profile: Pick<UserProfile, "cargo"> | null): boolean {
