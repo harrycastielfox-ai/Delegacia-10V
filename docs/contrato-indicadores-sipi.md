@@ -364,10 +364,12 @@ Classificacao:
 Definicao de produto:
 
 - caso que vence em ate 3 dias, excluindo casos ja vencidos.
+- em cards operacionais de inqueritos, deve considerar apenas procedimentos ainda ativos/sem relatorio enviado.
 
 Regra atual:
 
 - dias restantes entre 0 e 3.
+- quando o indicador navegar para `/inqueritos`, enviar tambem `status=em_andamento` para a lista destino usar a mesma base do contador.
 
 Campos atuais:
 

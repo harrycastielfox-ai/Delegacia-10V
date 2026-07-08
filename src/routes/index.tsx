@@ -796,7 +796,7 @@ function Dashboard() {
             hint="< 3 dias"
             icon={AlertTriangle}
             tone="destructive"
-            onClick={() => goTo("/inqueritos", { prazo: "critico" })}
+            onClick={() => goTo("/inqueritos", { prazo: "critico", status: "em_andamento" })}
           />
         </div>
         <div className={kpiFxClass}>
@@ -837,9 +837,10 @@ function Dashboard() {
                 tabIndex={0}
                 title="Abrir inquéritos com prazo crítico"
                 aria-label="Abrir inquéritos com prazo crítico"
-                onClick={() => goTo("/inqueritos", { prazo: "critico" })}
+                onClick={() => goTo("/inqueritos", { prazo: "critico", status: "em_andamento" })}
                 onKeyDown={(e) =>
-                  (e.key === "Enter" || e.key === " ") && goTo("/inqueritos", { prazo: "critico" })
+                  (e.key === "Enter" || e.key === " ") &&
+                  goTo("/inqueritos", { prazo: "critico", status: "em_andamento" })
                 }
               >
                 <span className="h-2 w-2 rounded-full bg-destructive shrink-0" />
@@ -1150,19 +1151,19 @@ function Dashboard() {
                 label="Prazo vencido"
                 value={String(prazoVencido)}
                 color="var(--destructive)"
-                onClick={() => goTo("/inqueritos", { prazo: "vencido" })}
+                onClick={() => goTo("/inqueritos", { prazo: "vencido", status: "em_andamento" })}
               />
               <Row
                 label="Vencendo em 7 dias"
                 value={String(prazoVencendo7)}
                 color="var(--warning)"
-                onClick={() => goTo("/inqueritos", { prazo: "vencendo" })}
+                onClick={() => goTo("/inqueritos", { prazo: "vencendo", status: "em_andamento" })}
               />
               <Row
                 label="Prazo crítico (0-3 dias)"
                 value={String(prazoCritico)}
                 color="var(--destructive)"
-                onClick={() => goTo("/inqueritos", { prazo: "critico" })}
+                onClick={() => goTo("/inqueritos", { prazo: "critico", status: "em_andamento" })}
               />
               <Row
                 label="Representações vencidas"
