@@ -171,3 +171,220 @@
       drop-shadow(0 0 10px rgba(255, 255, 255, 0.7));
   }
 }
+
+@media screen {
+  .print-only {
+    display: none !important;
+  }
+}
+
+@media print {
+  @page {
+    size: A4;
+    margin: 12mm 10mm;
+  }
+
+  @page :left {
+    margin-left: 14mm;
+    margin-right: 10mm;
+  }
+
+  @page :right {
+    margin-left: 10mm;
+    margin-right: 14mm;
+  }
+
+  * {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  html,
+  body {
+    background: #ffffff !important;
+    color: #111827 !important;
+    font-family: Arial, Helvetica, sans-serif !important;
+  }
+
+  body * {
+    visibility: hidden;
+  }
+
+  .sipi-print-document,
+  .sipi-print-document * {
+    visibility: visible;
+  }
+
+  .sipi-print-document {
+    position: absolute !important;
+    inset: 0 auto auto 0 !important;
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 2mm 0 0 !important;
+    background: #ffffff !important;
+    color: #111827 !important;
+    font-size: 9.5pt !important;
+    line-height: 1.4 !important;
+    orphans: 3 !important;
+    widows: 3 !important;
+  }
+
+  .sipi-print-document *,
+  .sipi-print-document ::before,
+  .sipi-print-document ::after {
+    background-image: none !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+
+  .sipi-print-hidden,
+  .sipi-print-actions,
+  .sipi-print-empty-card,
+  .sipi-print-empty-field,
+  .sipi-print-document button,
+  .sipi-print-document svg {
+    display: none !important;
+  }
+
+  .sipi-print-document .print-only {
+    display: flex !important;
+  }
+
+  .sipi-print-header {
+    align-items: flex-start !important;
+    justify-content: space-between !important;
+    gap: 18px !important;
+    margin-bottom: 12px !important;
+    padding: 3px 0 10px !important;
+    border-bottom: 2px solid #111827 !important;
+  }
+
+  .sipi-print-kicker {
+    margin: 0 0 4px !important;
+    color: #111827 !important;
+    font-size: 8pt !important;
+    font-weight: 800 !important;
+    letter-spacing: 0.12em !important;
+    text-transform: uppercase !important;
+  }
+
+  .sipi-print-header h1 {
+    margin: 0 !important;
+    color: #111827 !important;
+    font-size: 18pt !important;
+    font-weight: 900 !important;
+    letter-spacing: 0 !important;
+  }
+
+  .sipi-print-header p,
+  .sipi-print-header small {
+    color: #111827 !important;
+  }
+
+  .sipi-print-header-meta {
+    min-width: 170px !important;
+    padding: 10px 12px !important;
+    border: 1px solid #9ca3af !important;
+    border-radius: 8px !important;
+    text-align: right !important;
+  }
+
+  .sipi-print-header-meta span,
+  .sipi-print-header-meta small {
+    display: block !important;
+    color: #111827 !important;
+    font-size: 7pt !important;
+    letter-spacing: 0.08em !important;
+    text-transform: uppercase !important;
+  }
+
+  .sipi-print-header-meta strong {
+    display: block !important;
+    margin: 3px 0 !important;
+    color: #111827 !important;
+    font-size: 12pt !important;
+  }
+
+  .sipi-print-hero,
+  .sipi-print-document article {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+    border: 1px solid #d1d5db !important;
+    border-radius: 8px !important;
+    background: #ffffff !important;
+    color: #111827 !important;
+    padding: 8px 10px !important;
+  }
+
+  .sipi-print-document section {
+    break-inside: auto !important;
+    page-break-inside: auto !important;
+  }
+
+  .sipi-print-document h1,
+  .sipi-print-document h2,
+  .sipi-print-document h3,
+  .sipi-print-document p,
+  .sipi-print-document strong,
+  .sipi-print-document span,
+  .sipi-print-document div,
+  .sipi-print-document li {
+    color: #111827 !important;
+  }
+
+  .sipi-print-document h2,
+  .sipi-print-document [class*="text-primary"] {
+    color: #111827 !important;
+  }
+
+  .sipi-print-document [class*="text-muted"],
+  .sipi-print-document [class*="text-zinc-4"],
+  .sipi-print-document [class*="text-zinc-5"] {
+    color: #4b5563 !important;
+  }
+
+  .sipi-print-document [class*="bg-"],
+  .sipi-print-document [class*="border-"] {
+    background-color: #ffffff !important;
+    border-color: #d1d5db !important;
+  }
+
+  .sipi-print-document .grid {
+    gap: 8px !important;
+  }
+
+  .sipi-print-document .space-y-4 > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 8px !important;
+  }
+
+  .sipi-print-document .rounded-xl,
+  .sipi-print-document .rounded-lg,
+  .sipi-print-document .rounded-md,
+  .sipi-print-document .rounded-full {
+    border-radius: 8px !important;
+  }
+
+  .sipi-print-document .text-3xl,
+  .sipi-print-document .text-2xl {
+    font-size: 17pt !important;
+    line-height: 1.2 !important;
+  }
+
+  .sipi-print-document .text-sm {
+    font-size: 9.5pt !important;
+  }
+
+  .sipi-print-document .text-xs,
+  .sipi-print-document .text-\[10px\] {
+    font-size: 7.5pt !important;
+  }
+
+  .sipi-print-document .tracking-\[0\.16em\] {
+    letter-spacing: 0.08em !important;
+  }
+
+  .sipi-print-document .whitespace-pre-wrap {
+    white-space: pre-wrap !important;
+  }
+}

@@ -133,6 +133,36 @@ function isPrazoVencido(value: string) {
   return ts < todayTs;
 }
 
+function normalizePrintableValue(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+}
+
+function hasPrintableFieldValue(value: string) {
+  const normalized = normalizePrintableValue(value);
+  return (
+    Boolean(normalized) &&
+    !["-", "—", "selecione", "sem informacao", "nao informado"].includes(normalized)
+  );
+}
+
+function renderCrimeCode(value: string) {
+  const match = value.match(/^(\s*\d+)(\s*:\s*)(.*)$/);
+  if (!match) return value;
+
+  const [, code, separator, description] = match;
+  return (
+    <>
+      <strong className="font-extrabold">{code}</strong>
+      {separator}
+      {description}
+    </>
+  );
+}
+
 function normalizeInqueritoForDetail(caso: InqueritoRecord): InqueritoDetalheUI {
   const raw = caso as unknown as Record<string, unknown>;
   const priorityDetails = calculateInqueritoOperationalPriorityDetails(raw);
@@ -360,38 +390,50 @@ function InqueritoDetalhes() {
     ["Prioridade operacional", detalhe.prioridade],
     ["Motivo", detalhe.prioridadeMotivo],
     ["Situação", detalhe.situacao],
-    ["Categoria do Caso", detalhe.gravidade],
-    ["Tipo de Procedimento", detalhe.tipo],
-    ["Status diligências", detalhe.statusDiligencias],
+    ["Categoria", detalhe.gravidade],
+    ["Procedimento", detalhe.tipo],
+    ["Diligências", detalhe.statusDiligencias],
     ["Elucidado", detalhe.elucidado],
   ] as const;
 
   const badgeTone: Record<string, string> = {
     "Prioridade operacional": "border-rose-500/35 bg-rose-500/15 text-rose-200",
     Situação: "border-amber-500/35 bg-amber-500/15 text-amber-200",
-    "Categoria do Caso": "border-orange-500/35 bg-orange-500/15 text-orange-200",
-    "Tipo de Procedimento": "border-sky-500/35 bg-sky-500/15 text-sky-200",
-    "Status diligências": "border-violet-500/35 bg-violet-500/15 text-violet-200",
+    Categoria: "border-orange-500/35 bg-orange-500/15 text-orange-200",
+    Procedimento: "border-sky-500/35 bg-sky-500/15 text-sky-200",
+    Diligências: "border-violet-500/35 bg-violet-500/15 text-violet-200",
     Elucidado: "border-emerald-500/35 bg-emerald-500/15 text-emerald-200",
   };
 
   return (
     <AppLayout>
-      <div className="mx-auto w-full max-w-[1480px] space-y-4 px-1 lg:px-2">
-        <header className="rounded-xl border border-border/70 bg-card/65 p-4 lg:p-5">
+      <div className="sipi-print-document mx-auto w-full max-w-[1480px] space-y-4 px-1 lg:px-2">
+        <div className="print-only sipi-print-header">
+          <div>
+            <p className="sipi-print-kicker">SIPI - Sistema de Inquéritos Policiais</p>
+            <h1>Ficha de Inquérito Policial</h1>
+            <p>Documento operacional para conferência e arquivamento interno.</p>
+          </div>
+          <div className="sipi-print-header-meta">
+            <span>PPE</span>
+            <strong>{detalhe.numeroPpe}</strong>
+            <small>Gerado em {new Date().toLocaleString("pt-BR")}</small>
+          </div>
+        </div>
+        <header className="sipi-print-hero rounded-xl border border-border/70 bg-card/65 p-4 lg:p-5">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
             <div className="min-w-0 flex-1 space-y-1.5">
               <Link
                 to="/inqueritos"
-                className="inline-flex w-fit items-center gap-1 rounded-md border border-border/80 bg-background/70 px-2.5 py-1 text-xs text-muted-foreground hover:bg-accent"
+                className="sipi-print-hidden inline-flex w-fit items-center gap-1 rounded-md border border-border/80 bg-background/70 px-2.5 py-1 text-xs text-muted-foreground hover:bg-accent"
               >
                 ← Voltar
               </Link>
-              <h1 className="text-3xl font-extrabold tracking-tight text-foreground break-words">
+              <h1 className="sipi-print-hidden text-3xl font-extrabold tracking-tight text-foreground break-words">
                 {detalhe.numeroPpe}
               </h1>
               <p className="max-w-5xl text-sm leading-6 text-muted-foreground break-words">
-                {detalhe.tipificacao}
+                {renderCrimeCode(detalhe.tipificacao)}
               </p>
               {detalhe.ultimaEdicao !== FALLBACK && (
                 <p className="inline-flex items-center gap-1 text-xs text-muted-foreground">
@@ -400,7 +442,7 @@ function InqueritoDetalhes() {
                 </p>
               )}
             </div>
-            <div className="flex w-full flex-wrap items-center justify-start gap-2 sm:justify-end lg:w-auto lg:flex-nowrap">
+            <div className="sipi-print-actions flex w-full flex-wrap items-center justify-start gap-2 sm:justify-end lg:w-auto lg:flex-nowrap">
               <button
                 onClick={() => window.print()}
                 className="px-3.5 py-2 text-xs rounded-md border border-border bg-card hover:bg-accent"
@@ -432,16 +474,19 @@ function InqueritoDetalhes() {
             </div>
           </div>
           <div className="mt-3 flex flex-wrap gap-2.5">
-            {badges.map(([label, value]) => (
-              <span
-                key={label}
-                className={`inline-flex items-center rounded-md border px-2.5 py-1 text-[10px] font-semibold ${badgeTone[label] ?? "border-border/70 bg-muted/30 text-foreground"}`}
-              >
-                {label}: {value || FALLBACK}
-              </span>
-            ))}
+            {badges.map(([label, value]) => {
+              const hideOnPrint = label === "Prioridade operacional" || label === "Motivo";
+              return (
+                <span
+                  key={label}
+                  className={`${hideOnPrint ? "sipi-print-hidden " : ""}inline-flex items-center rounded-md border px-2.5 py-1 text-[10px] font-semibold ${badgeTone[label] ?? "border-border/70 bg-muted/30 text-foreground"}`}
+                >
+                  {label}: {value || FALLBACK}
+                </span>
+              );
+            })}
             {isPrazoVencido(detalhe.prazo) && (
-              <span className="rounded-md border border-red-500/40 bg-red-500/15 px-2.5 py-1 text-[10px] font-semibold text-red-200">
+              <span className="sipi-print-hidden rounded-md border border-red-500/40 bg-red-500/15 px-2.5 py-1 text-[10px] font-semibold text-red-200">
                 Vencido
               </span>
             )}
@@ -458,6 +503,7 @@ function InqueritoDetalhes() {
             <InfoCard
               title="Dados Gerais"
               icon={<BookOpen className="h-4 w-4 text-primary" />}
+              hiddenOnPrintLabels={["Nº PPE"]}
               items={[
                 ["Nº PPE", detalhe.numeroPpe],
                 ["Nº físico", detalhe.numeroFisico],
@@ -503,6 +549,7 @@ function InqueritoDetalhes() {
             <InfoCard
               title="Classificação"
               icon={<FileSearch className="h-4 w-4 text-primary" />}
+              className="sipi-print-hidden"
               items={[
                 ["Tipificação", detalhe.tipificacao],
                 ["Prioridade operacional", detalhe.prioridade],
@@ -579,6 +626,7 @@ function InfoCard({
   items,
   icon,
   className = "",
+  hiddenOnPrintLabels = [],
   stacked = false,
   highlightFirst = false,
   preWrapValues = false,
@@ -587,13 +635,19 @@ function InfoCard({
   items: [string, string][];
   icon?: React.ReactNode;
   className?: string;
+  hiddenOnPrintLabels?: string[];
   stacked?: boolean;
   highlightFirst?: boolean;
   preWrapValues?: boolean;
 }) {
+  const hiddenOnPrint = new Set(hiddenOnPrintLabels);
+  const hasPrintableContent = items.some(
+    ([label, value]) => !hiddenOnPrint.has(label) && hasPrintableFieldValue(value),
+  );
+
   return (
     <article
-      className={`self-start rounded-xl border border-border/60 bg-card/80 p-4 lg:p-5 ${className}`}
+      className={`${hasPrintableContent ? "" : "sipi-print-empty-card "}self-start rounded-xl border border-border/60 bg-card/80 p-4 lg:p-5 ${className}`}
     >
       <div className="flex items-center gap-2 pb-2">
         {icon}
@@ -601,21 +655,24 @@ function InfoCard({
       </div>
       <div className="mb-3 h-px w-full bg-border/70" />
       <div className={`grid grid-cols-1 gap-3 ${stacked ? "" : "md:grid-cols-2"}`}>
-        {items.map(([k, v], idx) => (
-          <div
-            key={k}
-            className={`min-w-0 space-y-1 ${highlightFirst && idx === 0 ? "md:col-span-2 rounded-lg border border-border/60 bg-background/30 p-3" : ""}`}
-          >
-            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
-              {k}
-            </p>
-            <p
-              className={`text-sm text-foreground break-words ${preWrapValues ? "whitespace-pre-wrap" : ""} ${highlightFirst && idx === 0 ? "text-base font-semibold leading-7" : "leading-5"}`}
+        {items.map(([k, v], idx) => {
+          const hasPrintValue = !hiddenOnPrint.has(k) && hasPrintableFieldValue(v);
+          return (
+            <div
+              key={k}
+              className={`${hasPrintValue ? "" : "sipi-print-empty-field "}min-w-0 space-y-1 ${highlightFirst && idx === 0 ? "md:col-span-2 rounded-lg border border-border/60 bg-background/30 p-3" : ""}`}
             >
-              {v || FALLBACK}
-            </p>
-          </div>
-        ))}
+              <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
+                {k}
+              </p>
+              <p
+                className={`text-sm text-foreground break-words ${preWrapValues ? "whitespace-pre-wrap" : ""} ${highlightFirst && idx === 0 ? "text-base font-semibold leading-7" : "leading-5"}`}
+              >
+                {v || FALLBACK}
+              </p>
+            </div>
+          );
+        })}
       </div>
     </article>
   );

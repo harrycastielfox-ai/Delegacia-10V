@@ -86,6 +86,32 @@ function getPrioridadeBadgeClass(prioridade?: string | null) {
 function isEmptyValue(value?: string | null) {
   return !value?.trim();
 }
+
+function hasPrintableRepresentacaoValue(value?: string | null) {
+  const normalized = normalizeText(value);
+  return (
+    Boolean(normalized) &&
+    !["-", "—", "selecione", "sem informacao", "nao informado"].includes(normalized)
+  );
+}
+
+function isPrintHiddenRepresentacaoLabel(label: string) {
+  return label === "PPE vinculado / Procedimento relacionado";
+}
+
+function getPrintRepresentacaoFieldClass(label: string, value?: string | null) {
+  return isPrintHiddenRepresentacaoLabel(label) || !hasPrintableRepresentacaoValue(value)
+    ? "sipi-print-empty-field "
+    : "";
+}
+
+function hasPrintableRepresentacaoSection(items: Array<[string, string | null | undefined]>) {
+  return items.some(
+    ([label, value]) =>
+      !isPrintHiddenRepresentacaoLabel(label) && hasPrintableRepresentacaoValue(value),
+  );
+}
+
 function formatPrazoStatus(item: RepresentacaoRecord) {
   if (item.data_cumprimento) return "Cumprida";
   if (!item.data_vencimento) return "Sem vencimento";
@@ -475,8 +501,20 @@ function DetalheRepresentacao() {
 
   return (
     <AppLayout>
-      <div className="mx-auto w-full max-w-[1480px] space-y-4 px-1 lg:px-2">
-        <header className="rounded-xl border border-border/70 bg-card/65 p-4 lg:p-5">
+      <div className="sipi-print-document mx-auto w-full max-w-[1480px] space-y-4 px-1 lg:px-2">
+        <div className="print-only sipi-print-header">
+          <div>
+            <p className="sipi-print-kicker">SIPI - Sistema de Inquéritos Policiais</p>
+            <h1>Ficha de Representação</h1>
+            <p>Documento operacional para conferência e acompanhamento judicial.</p>
+          </div>
+          <div className="sipi-print-header-meta">
+            <span>PPE / Processo</span>
+            <strong>{item.numero_ppe || item.processo_judicial || "Sem identificação"}</strong>
+            <small>Gerado em {new Date().toLocaleString("pt-BR")}</small>
+          </div>
+        </div>
+        <header className="sipi-print-hero rounded-xl border border-border/70 bg-card/65 p-4 lg:p-5">
           <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
@@ -494,19 +532,19 @@ function DetalheRepresentacao() {
                   ? subtitleParts.join(" • ")
                   : "Detalhes da representação cadastrada"}
               </p>
-              <p className="mt-2 text-sm break-words text-foreground">
+              <p className="sipi-print-hidden mt-2 text-sm break-words text-foreground">
                 {item.numero_ppe
                   ? `PPE/Procedimento: ${item.numero_ppe}`
                   : `Processo/PPE: ${withFallback(item.processo_judicial)}`}
               </p>
             </div>
 
-            <div className="flex flex-wrap items-center gap-2 xl:justify-end">
+            <div className="sipi-print-actions flex flex-wrap items-center gap-2 xl:justify-end">
               <button
                 onClick={() => window.print()}
                 className="px-3.5 py-2 text-xs rounded-md border border-border bg-card hover:bg-accent"
               >
-                Imprimir
+                Gerar PDF
               </button>
               <button
                 onClick={() =>
@@ -575,7 +613,10 @@ function DetalheRepresentacao() {
         <section className="grid items-start gap-4 xl:grid-cols-2">
           <div className="space-y-4 self-start">
             {[cardSections[0], cardSections[1]].map(({ title, items }) => (
-              <article key={title} className={sectionCardClass}>
+              <article
+                key={title}
+                className={`${hasPrintableRepresentacaoSection(items) ? "" : "sipi-print-empty-card "}${sectionCardClass}`}
+              >
                 <div className="flex items-center gap-2 pb-2">
                   {title === "Identificação Judicial" ? (
                     <Scale className="h-4 w-4 text-primary" />
@@ -587,7 +628,10 @@ function DetalheRepresentacao() {
                 <div className="mb-3 h-px w-full bg-border/70" />
                 <div className="divide-y divide-border/60">
                   {items.map(([label, value]) => (
-                    <div key={label} className={infoRowClass}>
+                    <div
+                      key={label}
+                      className={`${getPrintRepresentacaoFieldClass(label, value)}${infoRowClass}`}
+                    >
                       <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
                         {label}
                       </p>
@@ -630,7 +674,10 @@ function DetalheRepresentacao() {
 
           <div className="space-y-4 self-start">
             {[cardSections[2], cardSections[3]].map(({ title, items }) => (
-              <article key={title} className={sectionCardClass}>
+              <article
+                key={title}
+                className={`${hasPrintableRepresentacaoSection(items) ? "" : "sipi-print-empty-card "}${sectionCardClass}`}
+              >
                 <div className="flex items-center gap-2 pb-2">
                   {title === "Tramitação Judicial" ? (
                     <Gavel className="h-4 w-4 text-primary" />
@@ -644,7 +691,7 @@ function DetalheRepresentacao() {
                   {items.map(([label, value]) => (
                     <div
                       key={label}
-                      className="grid gap-1 py-2.5 sm:grid-cols-[170px_1fr] sm:gap-3"
+                      className={`${getPrintRepresentacaoFieldClass(label, value)}grid gap-1 py-2.5 sm:grid-cols-[170px_1fr] sm:gap-3`}
                     >
                       <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
                         {label}
@@ -672,7 +719,10 @@ function DetalheRepresentacao() {
 
         <section className="space-y-4">
           {fundamentacaoCards.map(([title, value]) => (
-            <article key={title} className={sectionCardClass}>
+            <article
+              key={title}
+              className={`${hasPrintableRepresentacaoValue(value) ? "" : "sipi-print-empty-card "}${sectionCardClass}`}
+            >
               <div className="flex items-center gap-2 pb-2">
                 <FileText className="h-4 w-4 text-primary" />
                 <h2 className={sectionTitleClass}>{title}</h2>

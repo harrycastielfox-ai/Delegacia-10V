@@ -268,11 +268,13 @@ function CvliComparisonTable({
             >
               Mês
             </th>
-            {years.map((year) => (
+            {years.map((year, index) => (
               <th
                 key={year}
                 colSpan={3}
-                className="border-x border-info/20 bg-[#0a1014] px-4 py-3 text-center text-sm font-black text-foreground first:border-l-0 last:border-r-0"
+                className={`bg-[#0a1014] px-4 py-3 text-center text-sm font-black text-foreground ${
+                  index > 0 ? "border-l-2 border-l-slate-100/70" : "border-l border-l-info/20"
+                } border-r border-r-info/20`}
               >
                 <span className="inline-flex items-center gap-2">
                   <span
@@ -285,10 +287,12 @@ function CvliComparisonTable({
             ))}
           </tr>
           <tr className="border-b border-info/25 bg-[#080d10]">
-            {years.flatMap((year) => [
+            {years.flatMap((year, index) => [
               <th
                 key={`${year}-registros`}
-                className="border-r border-info/10 px-3 py-2 text-center text-[9px] font-bold uppercase tracking-[0.12em] text-info"
+                className={`border-r border-info/10 px-3 py-2 text-center text-[9px] font-bold uppercase tracking-[0.12em] text-info ${
+                  index > 0 ? "border-l-2 border-l-slate-100/70" : ""
+                }`}
               >
                 Registros
               </th>,
@@ -300,7 +304,7 @@ function CvliComparisonTable({
               </th>,
               <th
                 key={`${year}-taxa`}
-                className="border-r border-info/20 px-3 py-2 text-center text-[9px] font-bold uppercase tracking-[0.12em] text-muted-foreground last:border-r-0"
+                className="border-r border-info/30 px-3 py-2 text-center text-[9px] font-bold uppercase tracking-[0.12em] text-muted-foreground last:border-r-0"
               >
                 %
               </th>,
@@ -316,9 +320,10 @@ function CvliComparisonTable({
               <th className="sticky left-0 z-10 border-r border-info/20 bg-[#080d10] px-4 py-3 text-left font-semibold text-foreground">
                 {row.month}
               </th>
-              {years.flatMap((year) =>
+              {years.flatMap((year, index) =>
                 renderMetricCells(`${row.monthIndex}-${year}`, row.byYear[year], {
                   year,
+                  isFirstYear: index === 0,
                   monthIndex: row.monthIndex,
                   monthLabel: row.month,
                   onOpenMetric,
@@ -330,9 +335,10 @@ function CvliComparisonTable({
             <th className="sticky left-0 z-10 border-r border-info/20 bg-[#090f12] px-4 py-4 text-left text-success">
               TOTAL
             </th>
-            {years.flatMap((year) =>
+            {years.flatMap((year, index) =>
               renderMetricCells(`total-${year}`, comparison.totals[year], {
                 year,
+                isFirstYear: index === 0,
                 monthIndex: null,
                 monthLabel: "Todos os meses",
                 onOpenMetric,
@@ -351,6 +357,7 @@ function renderMetricCells(
   metric: CvliMetric,
   options: {
     year: number;
+    isFirstYear: boolean;
     monthIndex: number | null;
     monthLabel: string;
     onOpenMetric: (
@@ -361,14 +368,15 @@ function renderMetricCells(
     emphasized?: boolean;
   },
 ) {
-  const { year, monthIndex, monthLabel, onOpenMetric, emphasized = false } = options;
+  const { year, isFirstYear, monthIndex, monthLabel, onOpenMetric, emphasized = false } = options;
   const valueClass = emphasized ? "font-black" : "font-semibold";
   const hasRecord = metric.registros > 0;
+  const yearDividerClass = isFirstYear ? "" : "border-l-2 border-l-slate-100/70";
 
   return [
     <td
       key={`${key}-registros`}
-      className={`border-r border-info/10 px-3 py-3 text-center tabular-nums ${valueClass}`}
+      className={`${yearDividerClass} border-r border-info/10 px-3 py-3 text-center tabular-nums ${valueClass}`}
     >
       <MetricLink
         value={metric.registros}
@@ -390,7 +398,7 @@ function renderMetricCells(
     </td>,
     <td
       key={`${key}-taxa`}
-      className={`border-r border-info/20 px-3 py-3 text-center font-black tabular-nums last:border-r-0 ${
+      className={`border-r border-info/30 px-3 py-3 text-center font-black tabular-nums last:border-r-0 ${
         hasRecord ? getRateTextClass(metric.taxa) : "text-muted-foreground/55"
       }`}
     >
