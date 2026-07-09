@@ -7,6 +7,7 @@ import {
   ArrowRight,
   LockKeyhole,
   Construction,
+  Database,
   Shield,
   LogOut,
   Route as RouteIcon,
@@ -74,6 +75,16 @@ const MODULOS: Modulo[] = [
       "Apoio a diligências externas com cadastro de pessoas, endereços, rotas, chegada ao local, fotos e Street View.",
     icon: RouteIcon,
     tone: "operational",
+    disponivel: false,
+  },
+  {
+    id: "extracao-dados",
+    titulo: "EXTRAÇÃO DE DADOS",
+    hint: "Relatórios e exportações",
+    descricao:
+      "Geração de relatórios operacionais, planilhas consolidadas e extrações para conferência institucional.",
+    icon: Database,
+    tone: "info",
     disponivel: false,
   },
 ];

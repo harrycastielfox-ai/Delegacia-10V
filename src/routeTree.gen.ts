@@ -17,6 +17,7 @@ import { Route as ModulosRouteImport } from './routes/modulos'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as LocalidadesRouteImport } from './routes/localidades'
 import { Route as InqueritosRouteImport } from './routes/inqueritos'
+import { Route as EstatisticasRouteImport } from './routes/estatisticas'
 import { Route as CvliComparativoRouteImport } from './routes/cvli-comparativo'
 import { Route as CriarContaRouteImport } from './routes/criar-conta'
 import { Route as AuditoriaRouteImport } from './routes/auditoria'
@@ -69,6 +70,11 @@ const LocalidadesRoute = LocalidadesRouteImport.update({
 const InqueritosRoute = InqueritosRouteImport.update({
   id: '/inqueritos',
   path: '/inqueritos',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EstatisticasRoute = EstatisticasRouteImport.update({
+  id: '/estatisticas',
+  path: '/estatisticas',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CvliComparativoRoute = CvliComparativoRouteImport.update({
@@ -146,6 +152,7 @@ export interface FileRoutesByFullPath {
   '/auditoria': typeof AuditoriaRoute
   '/criar-conta': typeof CriarContaRoute
   '/cvli-comparativo': typeof CvliComparativoRoute
+  '/estatisticas': typeof EstatisticasRoute
   '/inqueritos': typeof InqueritosRouteWithChildren
   '/localidades': typeof LocalidadesRoute
   '/login': typeof LoginRoute
@@ -169,6 +176,7 @@ export interface FileRoutesByTo {
   '/auditoria': typeof AuditoriaRoute
   '/criar-conta': typeof CriarContaRoute
   '/cvli-comparativo': typeof CvliComparativoRoute
+  '/estatisticas': typeof EstatisticasRoute
   '/inqueritos': typeof InqueritosRouteWithChildren
   '/localidades': typeof LocalidadesRoute
   '/login': typeof LoginRoute
@@ -193,6 +201,7 @@ export interface FileRoutesById {
   '/auditoria': typeof AuditoriaRoute
   '/criar-conta': typeof CriarContaRoute
   '/cvli-comparativo': typeof CvliComparativoRoute
+  '/estatisticas': typeof EstatisticasRoute
   '/inqueritos': typeof InqueritosRouteWithChildren
   '/localidades': typeof LocalidadesRoute
   '/login': typeof LoginRoute
@@ -218,6 +227,7 @@ export interface FileRouteTypes {
     | '/auditoria'
     | '/criar-conta'
     | '/cvli-comparativo'
+    | '/estatisticas'
     | '/inqueritos'
     | '/localidades'
     | '/login'
@@ -241,6 +251,7 @@ export interface FileRouteTypes {
     | '/auditoria'
     | '/criar-conta'
     | '/cvli-comparativo'
+    | '/estatisticas'
     | '/inqueritos'
     | '/localidades'
     | '/login'
@@ -264,6 +275,7 @@ export interface FileRouteTypes {
     | '/auditoria'
     | '/criar-conta'
     | '/cvli-comparativo'
+    | '/estatisticas'
     | '/inqueritos'
     | '/localidades'
     | '/login'
@@ -288,6 +300,7 @@ export interface RootRouteChildren {
   AuditoriaRoute: typeof AuditoriaRoute
   CriarContaRoute: typeof CriarContaRoute
   CvliComparativoRoute: typeof CvliComparativoRoute
+  EstatisticasRoute: typeof EstatisticasRoute
   InqueritosRoute: typeof InqueritosRouteWithChildren
   LocalidadesRoute: typeof LocalidadesRoute
   LoginRoute: typeof LoginRoute
@@ -355,6 +368,13 @@ declare module '@tanstack/react-router' {
       path: '/inqueritos'
       fullPath: '/inqueritos'
       preLoaderRoute: typeof InqueritosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/estatisticas': {
+      id: '/estatisticas'
+      path: '/estatisticas'
+      fullPath: '/estatisticas'
+      preLoaderRoute: typeof EstatisticasRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/cvli-comparativo': {
@@ -532,6 +552,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuditoriaRoute: AuditoriaRoute,
   CriarContaRoute: CriarContaRoute,
   CvliComparativoRoute: CvliComparativoRoute,
+  EstatisticasRoute: EstatisticasRoute,
   InqueritosRoute: InqueritosRouteWithChildren,
   LocalidadesRoute: LocalidadesRoute,
   LoginRoute: LoginRoute,

@@ -1,4 +1,5 @@
 ﻿import { Outlet, createFileRoute, Link, useLocation } from "@tanstack/react-router";
+import { useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import {
   AlertTriangle,
@@ -308,10 +309,12 @@ function formatPercent(value: number) {
   return `${value.toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%`;
 }
 
-function Alertas() {
+export function Alertas({ mode = "alertas" }: { mode?: "alertas" | "estatisticas" }) {
   const location = useLocation();
   const isAlertasIndex = location.pathname === "/alertas";
-  const navigate = Route.useNavigate();
+  const navigate = useNavigate();
+  const showAlertPanels = mode === "alertas";
+  const showStats = mode === "estatisticas";
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [inqueritos, setInqueritos] = useState<InqueritoRecord[]>([]);
@@ -648,17 +651,22 @@ function Alertas() {
     navigate({ to: "/inqueritos", search: target.search ?? {} });
   }
 
-  if (!isAlertasIndex) return <Outlet />;
+  if (showAlertPanels && !isAlertasIndex) return <Outlet />;
 
   return (
     <AppLayout>
       <div className="space-y-5">
         <PageHeader
-          title="Central Operacional de Pendências"
-          subtitle="Pendências, alertas e indicadores operacionais extraídos dos procedimentos ativos."
+          title={showStats ? "Estatísticas Operacionais" : "Central Operacional de Pendências"}
+          subtitle={
+            showStats
+              ? "Panorama geral e estatísticas por período extraídas dos procedimentos ativos."
+              : "Pendências e alertas operacionais extraídos dos procedimentos ativos."
+          }
           showActions={false}
         />
 
+        {showAlertPanels ? (
         <section className="rounded-2xl border border-border/70 bg-[#020607] p-4 shadow-[0_18px_52px_rgba(0,0,0,0.18)]">
           <div className="mb-4 flex flex-col gap-2 border-b border-border/60 pb-4 sm:flex-row sm:items-end sm:justify-between">
             <div>
@@ -731,7 +739,9 @@ function Alertas() {
             })}
           </div>
         </section>
+        ) : null}
 
+        {showStats ? (
         <section className="rounded-2xl border border-border/70 bg-card/60 p-4 shadow-[0_16px_42px_rgba(0,0,0,0.14)]">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div>
@@ -790,6 +800,7 @@ function Alertas() {
             />
           </div>
         </section>
+        ) : null}
 
         {loading ? (
           <div className="rounded-lg border border-border bg-card p-4 text-sm text-muted-foreground">
@@ -802,7 +813,7 @@ function Alertas() {
           </div>
         ) : null}
 
-        {!loading && !error ? (
+        {showStats && !loading && !error ? (
           <div className="grid gap-5 xl:grid-cols-[1.15fr_0.85fr]">
             <OperationalTable
               title="Panorama System Geral"

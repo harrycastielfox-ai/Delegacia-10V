@@ -1,6 +1,15 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { LayoutDashboard, FileText, Bell, LogOut, Gavel, Users, ClipboardList } from "lucide-react";
+import {
+  LayoutDashboard,
+  FileText,
+  Bell,
+  LogOut,
+  Gavel,
+  Users,
+  ClipboardList,
+  BarChart3,
+} from "lucide-react";
 import { getProfileAvatarPublicUrl, logout } from "@/lib/auth";
 import {
   canManageUsers,
@@ -20,6 +29,7 @@ const baseItems = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
   { title: "Inquéritos", url: "/inqueritos", icon: FileText },
   { title: "Representações", url: "/representacoes", icon: Gavel },
+  { title: "Estatísticas", url: "/estatisticas", icon: BarChart3 },
   { title: "Alertas", url: "/alertas", icon: Bell },
   { title: "Auditoria", url: "/auditoria", icon: ClipboardList },
 ] as const;
