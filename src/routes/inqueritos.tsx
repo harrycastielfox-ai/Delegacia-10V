@@ -12,6 +12,7 @@ import {
 import { getCvliReferenceDate, isCvliElucidado, isCvliRecord } from "@/lib/cvliMetrics";
 import {
   hasRelatorioEnviado,
+  isInqueritoEmAndamento,
   isOperationalDateDueWithin,
   isOperationalDateOverdue,
   isRelatadoNaoEnviado,
@@ -184,11 +185,7 @@ function isConcluidoCentral(row: InqueritoListRow) {
   return hasRelatorioEnviado(row.source);
 }
 function isEmAndamentoCentral(row: InqueritoListRow) {
-  const situacao = normalizeText(row.situacao);
-  return (
-    !isConcluidoCentral(row) &&
-    !["arquiv", "finaliz", "encerr"].some((term) => situacao.includes(term))
-  );
+  return isInqueritoEmAndamento(row.source);
 }
 function getCategoryText(row: InqueritoListRow) {
   return normalizeText(

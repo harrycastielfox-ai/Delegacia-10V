@@ -1,6 +1,15 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, type FormEvent } from "react";
-import { User, Lock, Eye, EyeOff, LogIn, AlertCircle, CheckCircle2 } from "lucide-react";
+import {
+  User,
+  Lock,
+  Eye,
+  EyeOff,
+  LogIn,
+  AlertCircle,
+  CheckCircle2,
+  ShieldCheck,
+} from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -85,6 +94,63 @@ function readPostSignupLogin() {
   }
 }
 
+function PostSignupWelcomeOverlay({ message, onClose }: { message: string; onClose: () => void }) {
+  return (
+    <div className="post-signup-welcome fixed inset-0 z-50 flex items-center justify-center overflow-hidden bg-background/96 px-4 text-foreground backdrop-blur-md">
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute left-1/2 top-1/2 h-[520px] w-[520px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-primary/10" />
+        <div className="absolute left-1/2 top-1/2 h-[360px] w-[360px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-primary/15" />
+        <div className="absolute left-1/2 top-1/2 h-[220px] w-[220px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary/10 blur-3xl" />
+        <div className="absolute inset-x-0 top-1/2 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
+      </div>
+
+      <section className="post-signup-welcome-card relative w-full max-w-xl overflow-hidden rounded-3xl border border-primary/25 bg-card/95 p-8 text-center shadow-[0_30px_100px_rgba(0,0,0,0.55),0_0_48px_rgba(34,197,94,0.12)]">
+        <span
+          className="post-signup-panel-sheen pointer-events-none absolute inset-y-[-35%] left-[-70%] z-0 w-1/3 rotate-12 bg-gradient-to-r from-transparent via-white/20 to-transparent blur-sm"
+          aria-hidden="true"
+        />
+
+        <div className="relative z-10 mx-auto h-36 w-36 overflow-hidden drop-shadow-[0_0_30px_rgba(34,197,94,0.2)]">
+          <img src="/sipi-logo.png" alt="Logo SIPI" className="h-full w-full object-contain" />
+        </div>
+
+        <div
+          className="relative z-10 mx-auto mt-4 h-1.5 w-56 overflow-hidden rounded-full border border-primary/15 bg-primary/10 shadow-[0_0_18px_rgba(34,197,94,0.12)]"
+          aria-hidden="true"
+        >
+          <span className="post-signup-loading-bar absolute inset-y-0 left-0 w-1/3 rounded-full bg-gradient-to-r from-transparent via-primary to-transparent shadow-[0_0_14px_rgba(34,197,94,0.55)]" />
+        </div>
+
+        <div className="post-signup-welcome-pulse relative z-10 mx-auto mt-5 flex h-14 w-14 items-center justify-center rounded-full border border-primary/30 bg-primary/15 text-primary">
+          <ShieldCheck className="h-7 w-7" aria-hidden="true" />
+        </div>
+
+        <p className="relative z-10 mt-6 text-[11px] font-black uppercase tracking-[0.28em] text-primary">
+          Solicitação registrada
+        </p>
+        <h2 className="relative z-10 mt-3 text-3xl font-black tracking-tight text-foreground">
+          Bem-vindo ao SIPI
+        </h2>
+        <p className="relative z-10 mx-auto mt-3 max-w-md text-sm leading-6 text-muted-foreground">
+          {message}
+        </p>
+        <p className="relative z-10 mx-auto mt-2 max-w-md text-xs leading-5 text-muted-foreground/80">
+          Aguarde a liberação institucional pelo órgão competente antes de acessar os módulos do
+          sistema.
+        </p>
+
+        <button
+          type="button"
+          onClick={onClose}
+          className="relative z-10 mt-6 rounded-full border border-primary/30 bg-primary/10 px-4 py-2 text-xs font-bold uppercase tracking-[0.16em] text-primary transition hover:bg-primary/15"
+        >
+          Continuar para login
+        </button>
+      </section>
+    </div>
+  );
+}
+
 function LoginPage() {
   const navigate = useNavigate();
   const [usuario, setUsuario] = useState("");
@@ -92,6 +158,7 @@ function LoginPage() {
   const [showSenha, setShowSenha] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const [postSignupMessage, setPostSignupMessage] = useState<string | null>(null);
+  const [showSignupWelcome, setShowSignupWelcome] = useState(false);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -100,6 +167,7 @@ function LoginPage() {
     setUsuario(postSignup.login);
     setSenha(postSignup.password);
     setPostSignupMessage(postSignup.message);
+    setShowSignupWelcome(true);
   }, []);
 
   useEffect(() => {
@@ -204,8 +272,92 @@ function LoginPage() {
             animation: none;
             opacity: 0;
           }
+
+          .post-signup-welcome,
+          .post-signup-welcome-card,
+          .post-signup-panel-sheen,
+          .post-signup-loading-bar,
+          .post-signup-welcome-pulse {
+            animation: none !important;
+          }
+        }
+
+        .post-signup-welcome-card {
+          animation: postSignupWelcomeCard 520ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+        }
+
+        .post-signup-welcome-pulse {
+          animation: postSignupWelcomePulse 1.8s ease-in-out infinite;
+        }
+
+        .post-signup-panel-sheen {
+          animation: postSignupPanelSheen 3.2s ease-in-out infinite;
+          mix-blend-mode: screen;
+        }
+
+        .post-signup-loading-bar {
+          animation: postSignupLoadingBar 1.65s ease-in-out infinite;
+        }
+
+        @keyframes postSignupWelcomeCard {
+          0% {
+            opacity: 0;
+            transform: translateY(18px) scale(0.96);
+          }
+          100% {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+          }
+        }
+
+        @keyframes postSignupWelcomePulse {
+          0%, 100% {
+            box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.24);
+          }
+          50% {
+            box-shadow: 0 0 0 18px rgba(34, 197, 94, 0);
+          }
+        }
+
+        @keyframes postSignupPanelSheen {
+          0%, 28% {
+            transform: translateX(-130%) rotate(12deg);
+            opacity: 0;
+          }
+          38% {
+            opacity: 0.6;
+          }
+          58% {
+            transform: translateX(620%) rotate(12deg);
+            opacity: 0;
+          }
+          100% {
+            transform: translateX(620%) rotate(12deg);
+            opacity: 0;
+          }
+        }
+
+        @keyframes postSignupLoadingBar {
+          0% {
+            transform: translateX(-130%);
+            opacity: 0.24;
+          }
+          45% {
+            opacity: 1;
+          }
+          100% {
+            transform: translateX(330%);
+            opacity: 0.24;
+          }
         }
       `}</style>
+
+      {showSignupWelcome ? (
+        <PostSignupWelcomeOverlay
+          onClose={() => setShowSignupWelcome(false)}
+          message={postSignupMessage ?? POST_SIGNUP_MESSAGE}
+        />
+      ) : null}
 
       <div className="pointer-events-none absolute inset-0 opacity-60">
         <div className="absolute -top-32 -left-32 h-96 w-96 rounded-full bg-primary/20 blur-3xl" />

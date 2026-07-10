@@ -24,10 +24,12 @@ const MAX_PHONE_DIGITS = 11;
 const POST_SIGNUP_LOGIN_KEY = "sipi:post-signup-login";
 const INSTITUTIONAL_FUNCTION_LABELS: Record<InstitutionalFunction, string> = {
   juiz: "Juiz(a)",
+  promotor: "Promotor(a)",
   delegado: "Delegado(a)",
   escrivao: "Escrivão(ã)",
   investigador: "Investigador(a)",
   agente_policia: "Agente de Polícia",
+  administrativo: "Administrativo",
 };
 const INSTITUTIONAL_FUNCTION_OPTIONS = PUBLIC_SIGNUP_INSTITUTIONAL_FUNCTIONS.map((value) => ({
   value,

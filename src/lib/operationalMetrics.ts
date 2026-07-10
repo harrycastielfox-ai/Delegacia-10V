@@ -68,7 +68,14 @@ export function hasRelatorioEnviado(inquerito: InqueritoRecord) {
 }
 
 export function isInqueritoEmAndamento(inquerito: InqueritoRecord) {
-  return !hasRelatorioEnviado(inquerito);
+  if (hasRelatorioEnviado(inquerito)) return false;
+
+  const status = normalizeOperationalText(
+    `${inquerito.situacao ?? ""} ${inquerito.status_diligencias ?? ""}`,
+  );
+  const closedTerms = ["arquiv", "finaliz", "encerr", "cancel", "baixad"];
+
+  return !closedTerms.some((term) => status.includes(term));
 }
 
 export function isRelatadoNaoEnviado(inquerito: InqueritoRecord) {

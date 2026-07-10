@@ -2,6 +2,7 @@ import type { InqueritoRecord } from "@/lib/repositories/inqueritosRepository";
 import type { RepresentacaoRecord } from "@/lib/repositories/representacoesRepository";
 import {
   hasRelatorioEnviado as hasRelatorioEnviadoCentral,
+  isInqueritoEmAndamento as isInqueritoEmAndamentoCentral,
   isRepresentacaoCumprida as isRepresentacaoCumpridaCentral,
   isRepresentacaoSigilosaValue,
   isOperationalDateDueWithin,
@@ -121,7 +122,7 @@ const isCrimeSexual = (item: InqueritoRecord) =>
     normalizeText(`${item.tipificacao} ${item.tipo}`).includes(w),
   );
 const hasRelatorioEnviado = (item: InqueritoRecord) => hasRelatorioEnviadoCentral(item);
-const isInqueritoEmFluxo = (item: InqueritoRecord) => !hasRelatorioEnviado(item);
+const isInqueritoEmFluxo = (item: InqueritoRecord) => isInqueritoEmAndamentoCentral(item);
 const isRepresentacaoSigilosa = (item: RepresentacaoRecord) =>
   isRepresentacaoSigilosaValue(item.pedido_sigiloso_normalizado ?? item.pedido_sigiloso);
 const isRepresentacaoPendente = (item: RepresentacaoRecord) =>
@@ -258,7 +259,7 @@ export function buildSmartAlerts(
         status,
         searchable: normalizeText(`${identifier} ${principal} diligencias`),
       });
-    if (isCvliOuHomicidio(i) && !hasRelatorioEnviado(i))
+    if (isActive && isCvliOuHomicidio(i) && !hasRelatorioEnviado(i))
       out.push({
         id: `inq-${i.id}-cvli-sem-rel`,
         title: "CVLI/Homicídio sem relatório",
@@ -276,7 +277,7 @@ export function buildSmartAlerts(
         status,
         searchable: normalizeText(`${identifier} ${principal} cvli homicidio`),
       });
-    if (isCrimeSexual(i) && !hasRelatorioEnviado(i))
+    if (isActive && isCrimeSexual(i) && !hasRelatorioEnviado(i))
       out.push({
         id: `inq-${i.id}-sexual-sem-rel`,
         title: "Crime sexual sem relatório",

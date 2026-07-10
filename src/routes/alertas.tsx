@@ -27,6 +27,7 @@ import {
 } from "@/lib/alertasInteligentes";
 import {
   hasRelatorioEnviado,
+  isInqueritoEmAndamento,
   isRelatadoNaoEnviado as isRelatadoNaoEnviadoMetric,
 } from "@/lib/operationalMetrics";
 
@@ -159,11 +160,6 @@ function isYesLike(value: unknown) {
   return ["sim", "s", "true", "1", "yes", "y", "ok"].includes(normalizeText(value));
 }
 
-function isStatus(value: unknown, terms: string[]) {
-  const text = normalizeText(value);
-  return terms.some((term) => text.includes(normalizeText(term)));
-}
-
 function parseDate(value: unknown) {
   const raw = String(value ?? "").trim();
   if (!raw) return null;
@@ -261,7 +257,7 @@ function isConcluido(record: InqueritoRecord) {
 }
 
 function isEmAndamento(record: InqueritoRecord) {
-  return !isConcluido(record) && !isStatus(record.situacao, ["arquiv", "finaliz", "encerr"]);
+  return isInqueritoEmAndamento(record);
 }
 
 function isRelatadoNaoEnviado(record: InqueritoRecord) {
@@ -624,7 +620,7 @@ export function Alertas({ mode = "alertas" }: { mode?: "alertas" | "estatisticas
           (item) => item.reu_preso_normalizado === true || isYesLike(item.reu_preso),
         ).length,
         desc: "Registros com réu preso",
-        target: { to: "/inqueritos", search: { ...periodSearch, reu_preso: "sim" } },
+        target: { to: "/inqueritos", search: { ...periodSearch, reuPreso: "true" } },
       },
     ] satisfies OperationalRow[];
   }, [dataFinal, dataInicial, filteredInqueritos, filteredRepresentacoes, inqueritos]);
@@ -667,139 +663,141 @@ export function Alertas({ mode = "alertas" }: { mode?: "alertas" | "estatisticas
         />
 
         {showAlertPanels ? (
-        <section className="rounded-2xl border border-border/70 bg-[#020607] p-4 shadow-[0_18px_52px_rgba(0,0,0,0.18)]">
-          <div className="mb-4 flex flex-col gap-2 border-b border-border/60 pb-4 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <h2 className="text-sm font-black uppercase tracking-[0.18em] text-primary">
-                CENTRAL ODP
-              </h2>
+          <section className="rounded-2xl border border-border/70 bg-[#020607] p-4 shadow-[0_18px_52px_rgba(0,0,0,0.18)]">
+            <div className="mb-4 flex flex-col gap-2 border-b border-border/60 pb-4 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <h2 className="text-sm font-black uppercase tracking-[0.18em] text-primary">
+                  CENTRAL ODP
+                </h2>
+              </div>
+              <span className="w-fit rounded-full border border-primary/25 bg-primary/10 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.12em] text-primary">
+                {smartAlerts.length} pendência(s) ativas
+              </span>
             </div>
-            <span className="w-fit rounded-full border border-primary/25 bg-primary/10 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.12em] text-primary">
-              {smartAlerts.length} pendência(s) ativas
-            </span>
-          </div>
 
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-            {(Object.keys(moduleMeta) as ModuleKey[]).map((key) => {
-              const meta = moduleMeta[key];
-              const Icon = icons[key];
-              const count = moduleAlerts[key].length;
-              const tone = moduleTone[key];
-              return (
-                <Link
-                  key={key}
-                  to="/alertas/$modulo"
-                  params={{ modulo: key }}
-                  className={`group relative min-h-[164px] overflow-hidden rounded-2xl border border-border/70 bg-gradient-to-br ${tone.surface} p-4 text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.02),0_12px_30px_rgba(0,0,0,0.16)] transition-all duration-200 cursor-pointer ${tone.hover}`}
-                >
-                  <span className={`absolute left-0 top-5 h-16 w-1 rounded-r-full ${tone.rail}`} />
-                  <span
-                    className={`pointer-events-none absolute -right-12 -top-12 h-36 w-36 rounded-full blur-3xl ${tone.glow} opacity-45 transition-opacity duration-200 group-hover:opacity-70`}
-                  />
-                  <span className="pointer-events-none absolute inset-x-4 bottom-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+              {(Object.keys(moduleMeta) as ModuleKey[]).map((key) => {
+                const meta = moduleMeta[key];
+                const Icon = icons[key];
+                const count = moduleAlerts[key].length;
+                const tone = moduleTone[key];
+                return (
+                  <Link
+                    key={key}
+                    to="/alertas/$modulo"
+                    params={{ modulo: key }}
+                    className={`group relative min-h-[164px] overflow-hidden rounded-2xl border border-border/70 bg-gradient-to-br ${tone.surface} p-4 text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.02),0_12px_30px_rgba(0,0,0,0.16)] transition-all duration-200 cursor-pointer ${tone.hover}`}
+                  >
+                    <span
+                      className={`absolute left-0 top-5 h-16 w-1 rounded-r-full ${tone.rail}`}
+                    />
+                    <span
+                      className={`pointer-events-none absolute -right-12 -top-12 h-36 w-36 rounded-full blur-3xl ${tone.glow} opacity-45 transition-opacity duration-200 group-hover:opacity-70`}
+                    />
+                    <span className="pointer-events-none absolute inset-x-4 bottom-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
 
-                  <div className="relative mb-4 flex items-center justify-between">
-                    <span
-                      className={`rounded-xl border p-2.5 shadow-[0_0_24px_rgba(0,0,0,0.2)] ${tone.icon}`}
-                    >
-                      <Icon className="h-5 w-5" />
-                    </span>
-                    <span
-                      className={`rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.1em] ${tone.badge}`}
-                    >
-                      {meta.badge}
-                    </span>
-                  </div>
-                  <h3 className="relative text-base font-black tracking-tight text-foreground">
-                    {meta.title}
-                  </h3>
-                  <p className="relative mt-1 min-h-[38px] text-xs leading-5 text-muted-foreground">
-                    {meta.desc}
-                  </p>
-                  <div className="relative mt-4 flex items-end justify-between gap-3">
-                    <div>
-                      <p className="text-[10px] font-black uppercase tracking-[0.16em] text-muted-foreground">
-                        Alertas
-                      </p>
-                      <p
-                        className={`mt-0.5 text-3xl font-black leading-none tabular-nums ${tone.count}`}
+                    <div className="relative mb-4 flex items-center justify-between">
+                      <span
+                        className={`rounded-xl border p-2.5 shadow-[0_0_24px_rgba(0,0,0,0.2)] ${tone.icon}`}
                       >
-                        {count}
-                      </p>
+                        <Icon className="h-5 w-5" />
+                      </span>
+                      <span
+                        className={`rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.1em] ${tone.badge}`}
+                      >
+                        {meta.badge}
+                      </span>
                     </div>
-                    <span
-                      className={`inline-flex items-center gap-1.5 rounded-full border border-current/25 bg-background/35 px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.08em] transition-colors ${tone.cta}`}
-                    >
-                      Abrir{" "}
-                      <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
-                    </span>
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
-        </section>
+                    <h3 className="relative text-base font-black tracking-tight text-foreground">
+                      {meta.title}
+                    </h3>
+                    <p className="relative mt-1 min-h-[38px] text-xs leading-5 text-muted-foreground">
+                      {meta.desc}
+                    </p>
+                    <div className="relative mt-4 flex items-end justify-between gap-3">
+                      <div>
+                        <p className="text-[10px] font-black uppercase tracking-[0.16em] text-muted-foreground">
+                          Alertas
+                        </p>
+                        <p
+                          className={`mt-0.5 text-3xl font-black leading-none tabular-nums ${tone.count}`}
+                        >
+                          {count}
+                        </p>
+                      </div>
+                      <span
+                        className={`inline-flex items-center gap-1.5 rounded-full border border-current/25 bg-background/35 px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.08em] transition-colors ${tone.cta}`}
+                      >
+                        Abrir{" "}
+                        <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+                      </span>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          </section>
         ) : null}
 
         {showStats ? (
-        <section className="rounded-2xl border border-border/70 bg-card/60 p-4 shadow-[0_16px_42px_rgba(0,0,0,0.14)]">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-            <div>
-              <div className="flex items-center gap-2">
-                <SlidersHorizontal className="h-4 w-4 text-primary" />
-                <h2 className="text-sm font-black uppercase tracking-[0.16em] text-foreground">
-                  Filtro por período
-                </h2>
+          <section className="rounded-2xl border border-border/70 bg-card/60 p-4 shadow-[0_16px_42px_rgba(0,0,0,0.14)]">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+              <div>
+                <div className="flex items-center gap-2">
+                  <SlidersHorizontal className="h-4 w-4 text-primary" />
+                  <h2 className="text-sm font-black uppercase tracking-[0.16em] text-foreground">
+                    Filtro por período
+                  </h2>
+                </div>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Informe uma data única ou um intervalo para atualizar os números abaixo.
+                </p>
               </div>
-              <p className="mt-1 text-xs text-muted-foreground">
-                Informe uma data única ou um intervalo para atualizar os números abaixo.
-              </p>
-            </div>
 
-            <div className="flex flex-wrap gap-2">
-              <button
-                type="button"
-                onClick={() => applyPreset(7)}
-                className="rounded-full border border-border bg-background/60 px-3 py-1.5 text-xs font-semibold transition hover:border-primary/40 hover:text-primary"
-              >
-                Últimos 7 dias
-              </button>
-              <button
-                type="button"
-                onClick={() => applyPreset(30)}
-                className="rounded-full border border-border bg-background/60 px-3 py-1.5 text-xs font-semibold transition hover:border-primary/40 hover:text-primary"
-              >
-                Últimos 30 dias
-              </button>
-              {hasActiveFilters ? (
+              <div className="flex flex-wrap gap-2">
                 <button
                   type="button"
-                  onClick={clearFilters}
-                  className="rounded-full border border-primary/30 bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary transition hover:bg-primary/15"
+                  onClick={() => applyPreset(7)}
+                  className="rounded-full border border-border bg-background/60 px-3 py-1.5 text-xs font-semibold transition hover:border-primary/40 hover:text-primary"
                 >
-                  Limpar período
+                  Últimos 7 dias
                 </button>
-              ) : null}
+                <button
+                  type="button"
+                  onClick={() => applyPreset(30)}
+                  className="rounded-full border border-border bg-background/60 px-3 py-1.5 text-xs font-semibold transition hover:border-primary/40 hover:text-primary"
+                >
+                  Últimos 30 dias
+                </button>
+                {hasActiveFilters ? (
+                  <button
+                    type="button"
+                    onClick={clearFilters}
+                    className="rounded-full border border-primary/30 bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary transition hover:bg-primary/15"
+                  >
+                    Limpar período
+                  </button>
+                ) : null}
+              </div>
             </div>
-          </div>
 
-          <div className="mt-4 grid gap-3 md:grid-cols-2">
-            <input
-              type="date"
-              value={dataInicial}
-              onChange={(event) => setDataInicial(event.target.value)}
-              className="date-picker-neon h-11 rounded-xl border border-border/90 bg-background/70 px-3 text-sm outline-none transition focus:border-primary/50"
-              aria-label="Data inicial"
-            />
-            <input
-              type="date"
-              value={dataFinal}
-              onChange={(event) => setDataFinal(event.target.value)}
-              className="date-picker-neon h-11 rounded-xl border border-border/90 bg-background/70 px-3 text-sm outline-none transition focus:border-primary/50"
-              aria-label="Data final"
-            />
-          </div>
-        </section>
+            <div className="mt-4 grid gap-3 md:grid-cols-2">
+              <input
+                type="date"
+                value={dataInicial}
+                onChange={(event) => setDataInicial(event.target.value)}
+                className="date-picker-neon h-11 rounded-xl border border-border/90 bg-background/70 px-3 text-sm outline-none transition focus:border-primary/50"
+                aria-label="Data inicial"
+              />
+              <input
+                type="date"
+                value={dataFinal}
+                onChange={(event) => setDataFinal(event.target.value)}
+                className="date-picker-neon h-11 rounded-xl border border-border/90 bg-background/70 px-3 text-sm outline-none transition focus:border-primary/50"
+                aria-label="Data final"
+              />
+            </div>
+          </section>
         ) : null}
 
         {loading ? (

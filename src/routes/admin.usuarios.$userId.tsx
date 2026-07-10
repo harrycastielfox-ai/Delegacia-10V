@@ -45,10 +45,12 @@ type InstitutionalFunctionDraft = InstitutionalFunction | "";
 
 const INSTITUTIONAL_FUNCTION_LABELS: Record<InstitutionalFunction, string> = {
   juiz: "Juiz(a)",
+  promotor: "Promotor(a)",
   delegado: "Delegado(a)",
   escrivao: "Escrivão(ã)",
   investigador: "Investigador(a)",
   agente_policia: "Agente de Polícia",
+  administrativo: "Administrativo",
 };
 
 function AdminUserProfilePage() {

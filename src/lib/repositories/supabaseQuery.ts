@@ -16,7 +16,8 @@ type RunSupabaseQueryOptions = {
   timeoutMs?: number;
 };
 
-const DEFAULT_QUERY_TIMEOUT_MS = 15000;
+const DEFAULT_QUERY_TIMEOUT_MS = 20000;
+const DEFAULT_QUERY_RETRIES = 1;
 const DEFAULT_RETRY_DELAY_MS = 500;
 
 function delay(ms: number) {
@@ -61,7 +62,7 @@ export async function runSupabaseQuery<T>(
   options: RunSupabaseQueryOptions = {},
 ): Promise<T> {
   const timeoutMs = options.timeoutMs ?? DEFAULT_QUERY_TIMEOUT_MS;
-  const retries = options.retries ?? 0;
+  const retries = options.retries ?? DEFAULT_QUERY_RETRIES;
   let lastError: unknown = null;
 
   for (let attempt = 0; attempt <= retries; attempt += 1) {

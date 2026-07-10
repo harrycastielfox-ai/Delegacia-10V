@@ -6,21 +6,28 @@ export type AuthorizationStatus = (typeof AUTHORIZATION_STATUS)[number];
 
 export const INSTITUTIONAL_FUNCTIONS = [
   "juiz",
+  "promotor",
   "delegado",
   "escrivao",
   "investigador",
   "agente_policia",
+  "administrativo",
 ] as const;
 export type InstitutionalFunction = (typeof INSTITUTIONAL_FUNCTIONS)[number];
 
 export const PUBLIC_SIGNUP_INSTITUTIONAL_FUNCTIONS = [
+  "delegado",
+  "juiz",
+  "promotor",
   "escrivao",
   "investigador",
   "agente_policia",
+  "administrativo",
 ] as const satisfies readonly InstitutionalFunction[];
 
 export const PROTECTED_INSTITUTIONAL_FUNCTIONS = [
   "juiz",
+  "promotor",
   "delegado",
 ] as const satisfies readonly InstitutionalFunction[];
 
@@ -56,7 +63,7 @@ export function isAtlasAccess(profile: Pick<UserProfile, "cargo"> | null): boole
 export function canManageUsers(
   profile: Pick<UserProfile, "cargo" | "funcao_institucional"> | null,
 ): boolean {
-  return isAdmin(profile) || isDelegado(profile) || profile?.funcao_institucional === "juiz";
+  return isAdmin(profile) || isDelegado(profile);
 }
 
 export function isProtectedInstitutionalFunction(
