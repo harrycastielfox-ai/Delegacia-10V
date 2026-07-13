@@ -4,9 +4,13 @@ import { pathToFileURL } from "node:url";
 
 const serverEntry = resolve("dist/server/index.js");
 const serverModule = await import(`${pathToFileURL(serverEntry).href}?t=${Date.now()}`);
-const response = await serverModule.default.fetch(new Request("https://local.build/"), {}, {
-  waitUntil() {},
-});
+const response = await serverModule.default.fetch(
+  new Request("https://local.build/"),
+  {},
+  {
+    waitUntil() {},
+  },
+);
 const indexHtml = await response.text();
 
 await mkdir("dist/.openai", { recursive: true });
