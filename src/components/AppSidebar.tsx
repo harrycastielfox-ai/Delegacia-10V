@@ -24,6 +24,7 @@ import {
 } from "@/lib/alertasInteligentes";
 import { listInqueritos } from "@/lib/repositories/inqueritosRepository";
 import { listRepresentacoes } from "@/lib/repositories/representacoesRepository";
+import { AppearanceSwitcher } from "./AppearanceSwitcher";
 
 const baseItems = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
@@ -86,18 +87,30 @@ export function AppSidebar({ profile }: { profile: UserProfile }) {
 
   return (
     <aside className="hidden md:sticky md:top-0 md:flex h-screen w-64 shrink-0 flex-col bg-sidebar border-r border-sidebar-border">
-      <div className="px-5 py-5 flex items-center gap-3">
-        <div className="h-14 w-14 rounded-lg bg-primary/15 border border-primary/30 shadow-[0_0_18px_rgba(34,197,94,0.24)] flex items-center justify-center overflow-visible p-0.5">
-          <img
-            src="/sipi-logo.png"
-            alt="Logo SIPI"
-            className="h-[128%] w-[128%] max-w-none shrink-0 object-contain"
-          />
-        </div>
-        <div>
-          <div className="font-bold text-sidebar-foreground tracking-wide">SIPI</div>
-          <div className="text-xs text-muted-foreground -mt-0.5">Inquéritos Policiais</div>
-        </div>
+      <div className="flex items-center gap-3 border-b border-sidebar-border/90 px-5 py-5">
+        <Link
+          to="/modulos"
+          aria-label="Voltar aos módulos"
+          title="Voltar aos módulos"
+          className="sipi-brand-link group flex min-w-0 flex-1 items-center gap-3 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <div className="flex h-14 w-14 items-center justify-center overflow-visible rounded-lg border border-primary/30 bg-primary/15 p-0.5 shadow-[0_0_18px_rgba(34,197,94,0.24)] transition-colors group-hover:border-primary/55">
+            <img
+              src="/sipi-logo.png"
+              alt="Logo SIPI"
+              className="h-[145%] w-[145%] max-w-none shrink-0 object-contain"
+            />
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="font-bold tracking-wide text-sidebar-foreground transition-colors group-hover:text-primary">
+              SIPI
+            </div>
+            <div className="-mt-0.5 truncate text-xs text-muted-foreground">
+              Inquéritos Policiais
+            </div>
+          </div>
+        </Link>
+        <AppearanceSwitcher />
       </div>
 
       <div className="px-5 mt-4 mb-2 text-[10px] tracking-[0.2em] text-muted-foreground font-semibold">

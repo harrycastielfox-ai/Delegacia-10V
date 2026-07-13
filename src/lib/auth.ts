@@ -232,14 +232,29 @@ export async function signUpUser(payload: {
   funcaoInstitucional?: InstitutionalFunction | null;
   password: string;
   avatarFile?: File | null;
+  termsAcceptedAt: string;
+  termsVersion: string;
+  accessContextConsent: boolean;
 }) {
-  const { nome, email, login, telefone, funcaoInstitucional, password, avatarFile } = payload;
+  const {
+    nome,
+    email,
+    login,
+    telefone,
+    funcaoInstitucional,
+    password,
+    avatarFile,
+    termsAcceptedAt,
+    termsVersion,
+    accessContextConsent,
+  } = payload;
   const cleanEmail = normalizeEmail(email);
   const cleanLogin = normalizeLogin(login);
   const cleanTelefone = normalizePhone(telefone);
   const cleanFunction = normalizePublicSignupInstitutionalFunction(funcaoInstitucional);
 
   if (!cleanLogin) throw new Error("LOGIN_REQUIRED");
+  if (!accessContextConsent || !termsAcceptedAt || !termsVersion) throw new Error("TERMS_REQUIRED");
 
   const { data: existingLogin, error: loginCheckError } = await supabase.rpc(
     "resolve_login_to_email",
@@ -262,6 +277,9 @@ export async function signUpUser(payload: {
         login: cleanLogin,
         telefone: cleanTelefone || null,
         funcao_institucional: cleanFunction,
+        terms_accepted_at: termsAcceptedAt,
+        terms_version: termsVersion,
+        access_context_consent: true,
       },
     },
   });

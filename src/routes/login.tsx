@@ -21,10 +21,28 @@ import {
   logout,
 } from "@/lib/auth";
 import { isAuthorized } from "@/lib/authz";
+import {
+  AccessContextError,
+  captureNetworkAccessContext,
+  getLatestUserAccessContext,
+  registerOwnAccessContext,
+  requestPreciseLocation,
+} from "@/lib/accessContext";
 
 const POST_SIGNUP_LOGIN_KEY = "sipi:post-signup-login";
 const POST_SIGNUP_MESSAGE =
   "Conta criada com sucesso. Aguarde autorização de um administrador para acessar o SIPI.";
+
+function registerAccessContextInBackground() {
+  return registerOwnAccessContext()
+    .then(() => captureNetworkAccessContext())
+    .catch((error) => {
+      if (error instanceof AccessContextError && error.code === "UNAVAILABLE") return;
+      if (import.meta.env.DEV) {
+        console.warn("[login] Não foi possível registrar o contexto do acesso.");
+      }
+    });
+}
 
 export const Route = createFileRoute("/login")({
   head: () => ({
@@ -139,13 +157,9 @@ function PostSignupWelcomeOverlay({ message, onClose }: { message: string; onClo
           sistema.
         </p>
 
-        <button
-          type="button"
-          onClick={onClose}
-          className="relative z-10 mt-6 rounded-full border border-primary/30 bg-primary/10 px-4 py-2 text-xs font-bold uppercase tracking-[0.16em] text-primary transition hover:bg-primary/15"
-        >
-          Continuar para login
-        </button>
+        <p className="relative z-10 mt-6 text-[11px] font-semibold uppercase tracking-[0.16em] text-primary/80">
+          Retornando ao login em instantes...
+        </p>
       </section>
     </div>
   );
@@ -171,6 +185,12 @@ function LoginPage() {
   }, []);
 
   useEffect(() => {
+    if (!showSignupWelcome) return;
+    const timeoutId = window.setTimeout(() => setShowSignupWelcome(false), 5000);
+    return () => window.clearTimeout(timeoutId);
+  }, [showSignupWelcome]);
+
+  useEffect(() => {
     void (async () => {
       try {
         const session = await getSession();
@@ -182,6 +202,8 @@ function LoginPage() {
           await logout();
           return;
         }
+
+        registerAccessContextInBackground();
 
         if (!isAuthorized(profile)) {
           navigate({ to: "/aguardando-autorizacao", replace: true });
@@ -225,6 +247,8 @@ function LoginPage() {
         setErro("Seu acesso está bloqueado. Procure um administrador do sistema.");
         return;
       }
+
+      await registerAccessContextInBackground();
 
       if (!isAuthorized(profile)) {
         navigate({ to: "/aguardando-autorizacao" });

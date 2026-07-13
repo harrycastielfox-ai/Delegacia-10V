@@ -91,6 +91,98 @@
   --sidebar-ring: oklch(0.78 0.18 152);
 }
 
+html[data-theme="light"] {
+  color-scheme: light;
+
+  --background: oklch(0.965 0.006 240);
+  --foreground: oklch(0.2 0.018 240);
+
+  --card: oklch(0.995 0.003 240);
+  --card-foreground: oklch(0.2 0.018 240);
+
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.2 0.018 240);
+
+  --primary: oklch(0.54 0.16 152);
+  --primary-foreground: oklch(0.99 0 0);
+
+  --secondary: oklch(0.92 0.009 240);
+  --secondary-foreground: oklch(0.24 0.018 240);
+
+  --muted: oklch(0.925 0.008 240);
+  --muted-foreground: oklch(0.45 0.022 240);
+
+  --accent: oklch(0.9 0.012 240);
+  --accent-foreground: oklch(0.2 0.018 240);
+
+  --destructive: oklch(0.56 0.21 25);
+  --destructive-foreground: oklch(0.99 0 0);
+
+  --success: oklch(0.53 0.17 152);
+  --warning: oklch(0.68 0.15 85);
+  --info: oklch(0.55 0.17 235);
+  --purple: oklch(0.54 0.19 295);
+
+  --border: oklch(0.82 0.012 240);
+  --input: oklch(0.87 0.01 240);
+  --ring: oklch(0.54 0.16 152);
+
+  --sidebar: oklch(0.985 0.004 240);
+  --sidebar-foreground: oklch(0.21 0.018 240);
+  --sidebar-primary: oklch(0.54 0.16 152);
+  --sidebar-primary-foreground: oklch(0.99 0 0);
+  --sidebar-accent: oklch(0.92 0.01 240);
+  --sidebar-accent-foreground: oklch(0.19 0.018 240);
+  --sidebar-border: oklch(0.82 0.012 240);
+  --sidebar-ring: oklch(0.54 0.16 152);
+}
+
+html[data-theme="black"] {
+  color-scheme: dark;
+
+  --background: oklch(0.075 0.004 240);
+  --foreground: oklch(0.96 0.006 240);
+
+  --card: oklch(0.105 0.006 240);
+  --card-foreground: oklch(0.96 0.006 240);
+
+  --popover: oklch(0.12 0.007 240);
+  --popover-foreground: oklch(0.96 0.006 240);
+
+  --primary: oklch(0.75 0.18 152);
+  --primary-foreground: oklch(0.075 0.004 240);
+
+  --secondary: oklch(0.16 0.009 240);
+  --secondary-foreground: oklch(0.96 0.006 240);
+
+  --muted: oklch(0.145 0.007 240);
+  --muted-foreground: oklch(0.67 0.015 240);
+
+  --accent: oklch(0.18 0.012 240);
+  --accent-foreground: oklch(0.97 0.005 240);
+
+  --destructive: oklch(0.64 0.22 25);
+  --destructive-foreground: oklch(0.98 0 0);
+
+  --success: oklch(0.75 0.18 152);
+  --warning: oklch(0.8 0.17 85);
+  --info: oklch(0.68 0.18 235);
+  --purple: oklch(0.67 0.2 295);
+
+  --border: oklch(0.22 0.011 240);
+  --input: oklch(0.17 0.009 240);
+  --ring: oklch(0.75 0.18 152);
+
+  --sidebar: oklch(0.055 0.003 240);
+  --sidebar-foreground: oklch(0.94 0.006 240);
+  --sidebar-primary: oklch(0.75 0.18 152);
+  --sidebar-primary-foreground: oklch(0.075 0.004 240);
+  --sidebar-accent: oklch(0.14 0.008 240);
+  --sidebar-accent-foreground: oklch(0.97 0.005 240);
+  --sidebar-border: oklch(0.18 0.009 240);
+  --sidebar-ring: oklch(0.75 0.18 152);
+}
+
 @layer base {
   * {
     border-color: var(--color-border);
@@ -103,10 +195,134 @@
     font-family: var(--font-display);
     -webkit-font-smoothing: antialiased;
   }
+
+  button,
+  input,
+  select,
+  textarea {
+    color: inherit;
+  }
 }
 
 /* Stat card glow utilities */
 @layer utilities {
+  .appearance-trigger {
+    position: relative;
+    display: inline-flex;
+    width: 2.125rem;
+    height: 2.125rem;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid color-mix(in oklab, white 18%, transparent);
+    border-radius: 0.5rem;
+    background: oklch(0.2 0.012 240);
+    color: white;
+    box-shadow: 0 8px 20px -14px rgb(0 0 0 / 0.75);
+    transition:
+      border-color 160ms ease,
+      background-color 160ms ease,
+      box-shadow 160ms ease;
+  }
+
+  .appearance-trigger::after {
+    position: absolute;
+    inset: -0.22rem;
+    border: 1px solid color-mix(in oklab, var(--primary) 58%, transparent);
+    border-radius: 0.68rem;
+    content: "";
+    opacity: 0;
+    pointer-events: none;
+    animation: appearance-trigger-pulse 3.2s ease-out infinite;
+  }
+
+  .appearance-trigger svg {
+    transform-origin: 50% 18%;
+    animation: appearance-bulb-glow 3.2s ease-in-out infinite;
+  }
+
+  .appearance-trigger:hover {
+    border-color: color-mix(in oklab, var(--primary) 60%, white 15%);
+    background: oklch(0.25 0.014 240);
+    box-shadow: 0 0 16px color-mix(in oklab, var(--primary) 28%, transparent);
+  }
+
+  .appearance-trigger:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+
+  @keyframes appearance-trigger-pulse {
+    0%,
+    55%,
+    100% {
+      opacity: 0;
+      transform: scale(0.96);
+    }
+
+    68% {
+      opacity: 0.62;
+    }
+
+    86% {
+      opacity: 0;
+      transform: scale(1.08);
+    }
+  }
+
+  @keyframes appearance-bulb-glow {
+    0%,
+    55%,
+    100% {
+      filter: none;
+      transform: rotate(0deg);
+    }
+
+    64% {
+      filter: drop-shadow(0 0 4px color-mix(in oklab, var(--primary) 78%, white 12%));
+      transform: rotate(-5deg);
+    }
+
+    73% {
+      filter: drop-shadow(0 0 7px color-mix(in oklab, var(--primary) 82%, white 10%));
+      transform: rotate(5deg);
+    }
+
+    82% {
+      filter: none;
+      transform: rotate(0deg);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .appearance-trigger::after,
+    .appearance-trigger svg {
+      animation: none;
+    }
+  }
+
+  html[data-theme="light"] [class~="bg-[#020607]"],
+  html[data-theme="light"] [class~="bg-[#070b0e]"],
+  html[data-theme="light"] [class~="bg-[#070b0e]/55"],
+  html[data-theme="light"] [class~="bg-[#080d10]"],
+  html[data-theme="light"] [class~="bg-[#090f12]"],
+  html[data-theme="light"] [class~="bg-[#0a1014]"] {
+    background-color: var(--card) !important;
+  }
+
+  html[data-theme="light"] [class~="hover:bg-[#0b1418]"]:hover {
+    background-color: var(--accent) !important;
+  }
+
+  html[data-theme="light"] .operational-map-backdrop {
+    opacity: 0.08;
+  }
+
+  html[data-theme="light"] .operational-module-card:hover,
+  html[data-theme="light"] .operational-module-card:focus-visible {
+    background-color: var(--card) !important;
+  }
+
   .stat-card {
     background: linear-gradient(
       145deg,
@@ -169,6 +385,17 @@
   .date-picker-neon:focus::-webkit-calendar-picker-indicator {
     filter: invert(1) brightness(2.25) drop-shadow(0 0 5px rgba(255, 255, 255, 1))
       drop-shadow(0 0 10px rgba(255, 255, 255, 0.7));
+  }
+
+  html[data-theme="light"] .date-picker-neon::-webkit-calendar-picker-indicator {
+    filter: brightness(0.35)
+      drop-shadow(0 0 3px color-mix(in oklab, var(--primary) 38%, transparent));
+  }
+
+  html[data-theme="light"] .date-picker-neon:hover::-webkit-calendar-picker-indicator,
+  html[data-theme="light"] .date-picker-neon:focus::-webkit-calendar-picker-indicator {
+    filter: brightness(0.18)
+      drop-shadow(0 0 5px color-mix(in oklab, var(--primary) 55%, transparent));
   }
 }
 

@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { getCurrentProfile, getProfileAvatarPublicUrl, getSession, logout } from "@/lib/auth";
 import { isAuthorized, type UserProfile } from "@/lib/authz";
+import { AppearanceSwitcher } from "@/components/AppearanceSwitcher";
 
 export const Route = createFileRoute("/modulos")({
   head: () => ({
@@ -176,6 +177,7 @@ function ModulosPage() {
             </div>
           </div>
           <div className="flex items-center gap-3">
+            <AppearanceSwitcher />
             {avatarUrl ? (
               <img
                 src={avatarUrl}
@@ -268,7 +270,7 @@ function ModuloCard({ modulo, onIndisponivel }: { modulo: Modulo; onIndisponivel
     <div
       className={`group relative h-full overflow-hidden rounded-xl border p-6 flex flex-col transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xl ${styles.ring} ${
         isOperationalLocation
-          ? "border-border bg-card shadow-[0_0_16px_rgba(34,211,238,0.025),inset_0_1px_0_rgba(255,255,255,0.025)] group-hover:border-cyan-400/45 group-focus-visible:border-cyan-400/45 group-hover:bg-cyan-950/10 group-focus-visible:bg-cyan-950/10 group-hover:shadow-[0_0_24px_rgba(34,211,238,0.18),0_0_44px_rgba(16,185,129,0.08),inset_0_1px_0_rgba(255,255,255,0.05)] group-focus-visible:shadow-[0_0_24px_rgba(34,211,238,0.18),0_0_44px_rgba(16,185,129,0.08),inset_0_1px_0_rgba(255,255,255,0.05)]"
+          ? "operational-module-card border-border bg-card shadow-[0_0_16px_rgba(34,211,238,0.025),inset_0_1px_0_rgba(255,255,255,0.025)] group-hover:border-cyan-400/45 group-focus-visible:border-cyan-400/45 group-hover:bg-cyan-950/10 group-focus-visible:bg-cyan-950/10 group-hover:shadow-[0_0_24px_rgba(34,211,238,0.18),0_0_44px_rgba(16,185,129,0.08),inset_0_1px_0_rgba(255,255,255,0.05)] group-focus-visible:shadow-[0_0_24px_rgba(34,211,238,0.18),0_0_44px_rgba(16,185,129,0.08),inset_0_1px_0_rgba(255,255,255,0.05)]"
           : "border-border bg-card"
       } ${modulo.disponivel ? "cursor-pointer" : "cursor-not-allowed opacity-95"}`}
     >
@@ -347,7 +349,10 @@ function ModuloCard({ modulo, onIndisponivel }: { modulo: Modulo; onIndisponivel
 
 function OperationalMapBackdrop() {
   return (
-    <div className="pointer-events-none absolute inset-0" aria-hidden="true">
+    <div
+      className="operational-map-backdrop pointer-events-none absolute inset-0"
+      aria-hidden="true"
+    >
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_18%,rgba(34,211,238,0.035),transparent_34%),radial-gradient(circle_at_88%_78%,rgba(16,185,129,0.03),transparent_32%),linear-gradient(135deg,rgba(2,6,23,0.30),rgba(8,47,73,0.035)_48%,rgba(2,6,23,0.70))] opacity-90 transition-opacity duration-200 group-hover:opacity-100 group-focus-visible:opacity-100" />
       <svg
         className="absolute inset-0 h-full w-full opacity-35 transition-opacity duration-200 group-hover:opacity-50 group-focus-visible:opacity-50"

@@ -63,7 +63,6 @@ function PerfilPage() {
     type: "success" | "error";
     message: string;
   } | null>(null);
-
   useEffect(() => {
     let cancelled = false;
     void (async () => {
@@ -162,7 +161,7 @@ function PerfilPage() {
     }
 
     if (requestedName.length > 120) {
-      setNameFeedback({ type: "error", message: "O nome deve ter no mÃ¡ximo 120 caracteres." });
+      setNameFeedback({ type: "error", message: "O nome deve ter no máximo 120 caracteres." });
       return;
     }
 
@@ -188,7 +187,7 @@ function PerfilPage() {
       });
       setNameFeedback({
         type: "error",
-        message: "NÃ£o foi possÃ­vel salvar o nome agora. Tente novamente em instantes.",
+        message: "Não foi possível salvar o nome agora. Tente novamente em instantes.",
       });
     } finally {
       setIsSavingName(false);

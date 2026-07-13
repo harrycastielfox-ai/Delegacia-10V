@@ -10,7 +10,10 @@ import {
   Clock3,
   FileText,
   KeyRound,
+  Laptop,
   Mail,
+  MapPin,
+  Network,
   Pencil,
   Phone,
   Shield,
@@ -34,6 +37,11 @@ import {
   type AuditoriaEvent,
 } from "@/lib/repositories/auditoriaRepository";
 import { supabase } from "@/lib/supabaseClient";
+import {
+  AccessContextError,
+  getLatestUserAccessContext,
+  type UserAccessContext,
+} from "@/lib/accessContext";
 
 export const Route = createFileRoute("/admin/usuarios/$userId")({
   component: AdminUserProfilePage,
@@ -75,6 +83,10 @@ function AdminUserProfilePage() {
     kind: "success" | "error";
     message: string;
   } | null>(null);
+  const [accessContext, setAccessContext] = useState<UserAccessContext | null>(null);
+  const [accessContextState, setAccessContextState] = useState<
+    "idle" | "loading" | "ready" | "unavailable" | "forbidden" | "error"
+  >("idle");
 
   useEffect(() => {
     let cancelled = false;
@@ -167,6 +179,35 @@ function AdminUserProfilePage() {
       }
       setLoadingUser(false);
     })();
+    return () => {
+      cancelled = true;
+    };
+  }, [hasAccess, userId]);
+
+  useEffect(() => {
+    if (!hasAccess) return;
+    let cancelled = false;
+
+    void (async () => {
+      setAccessContextState("loading");
+      try {
+        const context = await getLatestUserAccessContext(userId);
+        if (cancelled) return;
+        setAccessContext(context);
+        setAccessContextState("ready");
+      } catch (error) {
+        if (cancelled) return;
+        setAccessContext(null);
+        if (error instanceof AccessContextError && error.code === "UNAVAILABLE") {
+          setAccessContextState("unavailable");
+        } else if (error instanceof AccessContextError && error.code === "PERMISSION_DENIED") {
+          setAccessContextState("forbidden");
+        } else {
+          setAccessContextState("error");
+        }
+      }
+    })();
+
     return () => {
       cancelled = true;
     };
@@ -452,6 +493,8 @@ function AdminUserProfilePage() {
             ) : null}
           </section>
 
+          <AccessContextSection context={accessContext} state={accessContextState} />
+
           <section className="rounded-2xl border border-primary/15 bg-card/70 p-5">
             <div className="mb-4 flex items-center justify-between gap-3">
               <div>
@@ -510,6 +553,105 @@ function AdminUserProfilePage() {
       ) : null}
     </PageShell>
   );
+}
+
+function AccessContextSection({
+  context,
+  state,
+}: {
+  context: UserAccessContext | null;
+  state: "idle" | "loading" | "ready" | "unavailable" | "forbidden" | "error";
+}) {
+  const stateMessage =
+    state === "loading" || state === "idle"
+      ? "Carregando último contexto de acesso..."
+      : state === "unavailable"
+        ? "O contrato de contexto de acesso ainda não foi ativado no banco."
+        : state === "forbidden"
+          ? "Seu perfil não tem permissão para consultar este contexto de acesso."
+          : state === "error"
+            ? "Não foi possível carregar o contexto de acesso agora."
+            : !context
+              ? "Nenhum contexto de acesso foi registrado para este usuário."
+              : null;
+
+  return (
+    <section className="overflow-hidden rounded-2xl border border-primary/20 bg-card/70">
+      <div className="flex flex-col gap-2 border-b border-primary/10 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h2 className="flex items-center gap-2 text-lg font-semibold">
+            <Network className="h-5 w-5 text-primary" />
+            Último contexto de acesso
+          </h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Rede, dispositivo e localização informados na sessão mais recente.
+          </p>
+        </div>
+        {context ? (
+          <span className="text-xs font-medium text-muted-foreground">
+            {formatDate(context.observed_at)}
+          </span>
+        ) : null}
+      </div>
+
+      {stateMessage ? (
+        <p className="px-5 py-6 text-sm text-muted-foreground">{stateMessage}</p>
+      ) : null}
+
+      {context ? (
+        <div className="grid md:grid-cols-2">
+          <div className="space-y-4 px-5 py-5 md:border-r md:border-primary/10">
+            <ContextGroupTitle icon={Laptop} title="Rede e dispositivo" />
+            <ContextRow label="Endereço IP" value={context.ip_address || "Não registrado"} />
+            <ContextRow label="Provedor" value={context.ip_provider || "Não identificado"} />
+            <ContextRow label="Dispositivo" value={context.device_label || "Não identificado"} />
+            <ContextRow label="Sistema" value={context.operating_system || "Não identificado"} />
+            <ContextRow label="Navegador" value={context.browser || "Não identificado"} />
+            <ContextRow label="Fuso horário" value={context.timezone || "Não informado"} />
+          </div>
+          <div className="space-y-4 border-t border-primary/10 px-5 py-5 md:border-t-0">
+            <ContextGroupTitle icon={MapPin} title="Localização" />
+            <ContextRow label="País" value={context.country || "Não informado"} />
+            <ContextRow label="Estado" value={context.region || "Não informado"} />
+            <ContextRow label="Cidade" value={context.city || "Não informado"} />
+            <ContextRow label="Rua" value={context.street || "Não informado"} />
+            <ContextRow label="Coordenadas" value={formatCoordinates(context)} />
+            <ContextRow
+              label="Precisão"
+              value={
+                context.accuracy_meters == null
+                  ? "Não informada"
+                  : `Aproximadamente ${Math.round(context.accuracy_meters)} m`
+              }
+            />
+          </div>
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
+function ContextGroupTitle({ icon: Icon, title }: { icon: IconType; title: string }) {
+  return (
+    <h3 className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-primary/85">
+      <Icon className="h-4 w-4" />
+      {title}
+    </h3>
+  );
+}
+
+function ContextRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="grid gap-1 sm:grid-cols-[9rem_minmax(0,1fr)] sm:items-baseline">
+      <span className="text-xs font-medium text-muted-foreground">{label}</span>
+      <span className="break-words text-sm font-semibold text-foreground">{value}</span>
+    </div>
+  );
+}
+
+function formatCoordinates(context: UserAccessContext) {
+  if (context.latitude == null || context.longitude == null) return "Não autorizadas";
+  return `${context.latitude.toFixed(6)}, ${context.longitude.toFixed(6)}`;
 }
 
 function PageShell({ children }: { children: ReactNode }) {

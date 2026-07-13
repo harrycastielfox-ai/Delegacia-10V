@@ -22,6 +22,7 @@ const MAX_AVATAR_MB = 2;
 const MAX_AVATAR_BYTES = MAX_AVATAR_MB * 1024 * 1024;
 const MAX_PHONE_DIGITS = 11;
 const POST_SIGNUP_LOGIN_KEY = "sipi:post-signup-login";
+const TERMS_VERSION = "2026-07-13";
 const INSTITUTIONAL_FUNCTION_LABELS: Record<InstitutionalFunction, string> = {
   juiz: "Juiz(a)",
   promotor: "Promotor(a)",
@@ -50,6 +51,7 @@ function CreateAccountPage() {
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [acceptedAccessTerms, setAcceptedAccessTerms] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   function selectAvatar(file: File | null) {
@@ -75,6 +77,10 @@ function CreateAccountPage() {
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
+    if (!acceptedAccessTerms) {
+      setError("Leia e aceite os Termos de Acesso do SIPI para continuar.");
+      return;
+    }
     if (!funcaoInstitucional) {
       setError("Selecione sua função institucional.");
       return;
@@ -91,6 +97,9 @@ function CreateAccountPage() {
         funcaoInstitucional,
         password: senha,
         avatarFile,
+        termsAcceptedAt: new Date().toISOString(),
+        termsVersion: TERMS_VERSION,
+        accessContextConsent: true,
       });
       const message = result.avatarUploadWarning
         ? result.avatarUploadWarningReason === "NO_ACTIVE_SESSION"
@@ -273,6 +282,23 @@ function CreateAccountPage() {
               <span>{error}</span>
             </div>
           ) : null}
+          <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-primary/20 bg-primary/5 px-3 py-3 text-xs text-muted-foreground">
+            <input
+              type="checkbox"
+              checked={acceptedAccessTerms}
+              onChange={(event) => setAcceptedAccessTerms(event.target.checked)}
+              className="mt-0.5 h-4 w-4 shrink-0 accent-primary"
+              required
+            />
+            <span className="leading-5">
+              Li e concordo com os Termos de Acesso do SIPI e autorizo o registro deste dispositivo,
+              IP e localização para fins de segurança e auditoria.
+              <span className="mt-1 block text-[11px] text-muted-foreground/80">
+                A localização precisa depende da permissão do navegador e pode ser recusada sem
+                impedir o cadastro.
+              </span>
+            </span>
+          </label>
           <div className="space-y-3">
             <Button
               className="h-11 w-full bg-primary text-xs font-bold uppercase tracking-[0.16em] text-primary-foreground hover:bg-primary/90"
