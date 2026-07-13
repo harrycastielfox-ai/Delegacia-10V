@@ -74,6 +74,7 @@ export default {
       return new Response(decodeBase64(asset.body), {
         headers: {
           "content-type": asset.contentType,
+          "x-sites-adapter": "static-worker",
           "cache-control": url.pathname.startsWith("/assets/")
             ? "public, max-age=31536000, immutable"
             : "public, max-age=3600",
@@ -81,9 +82,20 @@ export default {
       });
     }
 
+    if (url.pathname.startsWith("/assets/")) {
+      return new Response("Not found", {
+        status: 404,
+        headers: {
+          "content-type": "text/plain; charset=utf-8",
+          "x-sites-adapter": "static-worker",
+        },
+      });
+    }
+
     return new Response(INDEX_HTML, {
       headers: {
         "content-type": "text/html; charset=utf-8",
+        "x-sites-adapter": "static-worker",
         "cache-control": "no-store",
       },
     });
