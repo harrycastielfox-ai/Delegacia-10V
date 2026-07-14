@@ -48,19 +48,11 @@ import {
 import { normalizeCaseCategory } from "@/lib/inqueritosPriority";
 import { buildCvliMonthlyComparison, isCvliRecord } from "@/lib/cvliMetrics";
 import {
-  hasDiligenciasPendentes,
   hasRelatorioEnviado,
   isInqueritoEmAndamento,
   isOperationalDateDueWithin,
-  isOperationalDateOverdue,
   isRelatadoNaoEnviado,
-  isRepresentacaoCumprida,
-  isRepresentacaoDeferida,
-  isRepresentacaoIndeferida,
-  isRepresentacaoPendente,
-  isRepresentacaoSigilosaValue,
   isRepresentacaoVencendo,
-  isRepresentacaoVencida,
   isYesLike,
   normalizeOperationalText,
   parseOperationalDate,
@@ -453,29 +445,8 @@ function Dashboard() {
   const prazoCritico = inqueritosOperacionaisAtivos.filter((i) =>
     isOperationalDateDueWithin(i.prazo, 3, nowTs ?? Date.now()),
   ).length;
-  const prazoVencido = inqueritosOperacionaisAtivos.filter((i) =>
-    isOperationalDateOverdue(i.prazo, nowTs ?? Date.now()),
-  ).length;
-  const prazoVencendo7 = inqueritosOperacionaisAtivos.filter((i) =>
-    isOperationalDateDueWithin(i.prazo, 7, nowTs ?? Date.now()),
-  ).length;
-  const diligenciasPendentes = inqueritosOperacionaisAtivos.filter(hasDiligenciasPendentes).length;
-
-  const repsPendentes = representacoes.filter(isRepresentacaoPendente).length;
-  const repsDeferidas = representacoes.filter(isRepresentacaoDeferida).length;
-  const repsIndeferidas = representacoes.filter(isRepresentacaoIndeferida).length;
-  const repsCumpridas = representacoes.filter(isRepresentacaoCumprida).length;
-  const repsSigilosas = representacoes.filter((r) =>
-    isRepresentacaoSigilosaValue(r.pedido_sigiloso_normalizado ?? r.pedido_sigiloso),
-  ).length;
-  const repsVencidas = representacoes.filter((r) =>
-    isRepresentacaoVencida(r, nowTs ?? Date.now()),
-  ).length;
   const repsVencendo7 = representacoes.filter((r) =>
     isRepresentacaoVencendo(r, 7, nowTs ?? Date.now()),
-  ).length;
-  const repsAcompanhamentoEspecial = representacoes.filter((r) =>
-    isYesLike(r.acompanhamento_especial),
   ).length;
   const taxaConclusao = total === 0 ? 0 : Number(((finalizados / total) * 100).toFixed(1));
   const relatadosNaoEnviados = inqueritos.filter(isRelatadoNaoEnviado).length;
@@ -1079,138 +1050,9 @@ function Dashboard() {
         </div>
       </div>
 
-      {/* Blocos operacionais/judiciais/urgência */}
-      <div className="grid grid-cols-1 items-start xl:grid-cols-3 gap-5 mb-6">
-        <div className={panelFxClass}>
-          <Panel title="VISÃO OPERACIONAL" accent="success">
-            <ul className="space-y-2 text-sm">
-              <Row
-                label="Em andamento"
-                value={String(emAndamento)}
-                color="var(--info)"
-                onClick={() => goTo("/inqueritos", { status: "em_andamento" })}
-              />
-              <Row
-                label="Concluídos"
-                value={String(finalizados)}
-                color="var(--success)"
-                onClick={() => goTo("/inqueritos", { relatorio: "enviado" })}
-              />
-              <Row
-                label="Alta prioridade"
-                value={String(prioridadeAlta)}
-                color="var(--warning)"
-                onClick={() => goTo("/inqueritos", { prioridade: "alta" })}
-              />
-              <Row
-                label="Diligências pendentes"
-                value={String(diligenciasPendentes)}
-                color="var(--destructive)"
-                onClick={() => goTo("/inqueritos", { diligenciasPendentes: "true" })}
-              />
-              <Row
-                label="Réu preso"
-                value={String(reuPreso)}
-                color="var(--purple)"
-                onClick={() => goTo("/inqueritos", { reuPreso: "true" })}
-              />
-              <Row
-                label="Medida protetiva"
-                value={String(medidasProtetivas)}
-                color="var(--warning)"
-                onClick={() => goTo("/inqueritos", { medidaProtetiva: "true" })}
-              />
-            </ul>
-          </Panel>
-        </div>
-        <div className={panelFxClass}>
-          <Panel title="VISÃO JUDICIAL" accent="info">
-            <ul className="space-y-2 text-sm">
-              <Row
-                label="Total de representações"
-                value={String(totalRepresentacoes)}
-                color="var(--info)"
-                onClick={() => goTo("/representacoes")}
-              />
-              <Row
-                label="Pendentes"
-                value={String(repsPendentes)}
-                color="var(--warning)"
-                onClick={() => goTo("/representacoes", { operationalFilter: "pendentes" })}
-              />
-              <Row
-                label="Deferidas"
-                value={String(repsDeferidas)}
-                color="var(--success)"
-                onClick={() => goTo("/representacoes", { operationalFilter: "deferidas" })}
-              />
-              <Row
-                label="Indeferidas"
-                value={String(repsIndeferidas)}
-                color="var(--destructive)"
-                onClick={() => goTo("/representacoes", { operationalFilter: "indeferidas" })}
-              />
-              <Row
-                label="Cumpridas"
-                value={String(repsCumpridas)}
-                color="var(--primary)"
-                onClick={() => goTo("/representacoes", { operationalFilter: "cumpridas" })}
-              />
-              <Row
-                label="Sigilosas"
-                value={String(repsSigilosas)}
-                color="var(--purple)"
-                onClick={() => goTo("/representacoes", { operationalFilter: "sigilosas" })}
-              />
-            </ul>
-          </Panel>
-        </div>
-        <div className={panelFxClass}>
-          <Panel title="VISÃO DE URGÊNCIA" accent="destructive">
-            <ul className="space-y-2 text-sm">
-              <Row
-                label="Prazo vencido"
-                value={String(prazoVencido)}
-                color="var(--destructive)"
-                onClick={() => goTo("/inqueritos", { prazo: "vencido", status: "em_andamento" })}
-              />
-              <Row
-                label="Vencendo em 7 dias"
-                value={String(prazoVencendo7)}
-                color="var(--warning)"
-                onClick={() => goTo("/inqueritos", { prazo: "vencendo", status: "em_andamento" })}
-              />
-              <Row
-                label="Prazo crítico (0-3 dias)"
-                value={String(prazoCritico)}
-                color="var(--destructive)"
-                onClick={() => goTo("/inqueritos", { prazo: "critico", status: "em_andamento" })}
-              />
-              <Row
-                label="Representações vencidas"
-                value={String(repsVencidas)}
-                color="var(--destructive)"
-                onClick={() => goTo("/representacoes", { operationalFilter: "vencidas" })}
-              />
-              <Row
-                label="Representações vencendo (7 dias)"
-                value={String(repsVencendo7)}
-                color="var(--warning)"
-                onClick={() => goTo("/representacoes", { operationalFilter: "vencendo" })}
-              />
-              <Row
-                label="Acompanhamento especial"
-                value={String(repsAcompanhamentoEspecial)}
-                color="var(--info)"
-                onClick={() => goTo("/representacoes", { operationalFilter: "especial" })}
-              />
-            </ul>
-          </Panel>
-        </div>
-      </div>
-
+      <div className="flex flex-col">
       {/* Donut row */}
-      <div className="grid grid-cols-1 items-start gap-5 mb-6 lg:grid-cols-3">
+      <div className="order-[10] grid grid-cols-1 items-start gap-5 mb-6 lg:grid-cols-3">
         <div className={panelFxClass}>
           <DonutPanel
             isClient={isClient}
@@ -1307,7 +1149,7 @@ function Dashboard() {
       </div>
 
       {/* CVLI Chart */}
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-5 mb-6">
+      <div className="order-[20] grid grid-cols-1 xl:grid-cols-3 gap-5 mb-6">
         <div className={`${panelFxClass} xl:col-span-2`}>
           <Panel title="CVLI — COMPARATIVO ANUAL" accent="info">
             <div className="h-[285px] min-h-[285px] w-full min-w-0">
@@ -1474,7 +1316,7 @@ function Dashboard() {
       </div>
 
       {/* CVLI mensal + Bairros */}
-      <div className="grid grid-cols-1 items-stretch xl:grid-cols-2 gap-5 mb-6">
+      <div className="order-[25] grid grid-cols-1 items-stretch xl:grid-cols-2 gap-5 mb-6">
         <div className={`${panelFxClass} h-full`}>
           <Panel title={CVLI_MENSAL_TITLE} accent="info" className="h-full">
             <SafeChartContainer fallback="Nenhum dado disponível." className="h-full min-h-[220px]">
@@ -1574,7 +1416,7 @@ function Dashboard() {
       </div>
 
       {/* Gravidade + Equipe */}
-      <div className="grid grid-cols-1 items-stretch xl:grid-cols-2 gap-5">
+      <div className="order-[30] grid grid-cols-1 items-stretch xl:grid-cols-2 gap-5">
         <div className={`${panelFxClass} h-full`}>
           <Panel title="ANÁLISE POR GRAVIDADE" accent="destructive" className="h-full">
             <div className="h-full min-h-[245px] w-full min-w-0">
@@ -1746,7 +1588,7 @@ function Dashboard() {
         </div>
       </div>
 
-      <section className="mt-6">
+      <section className="order-[50] mt-6">
         <div className="mb-3 flex items-end justify-between gap-3">
           <div>
             <h2 className="text-sm font-black uppercase tracking-[0.18em] text-foreground">
@@ -1988,6 +1830,7 @@ function Dashboard() {
           </div>
         </div>
       </section>
+      </div>
     </AppLayout>
   );
 }

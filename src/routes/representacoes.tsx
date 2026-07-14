@@ -1,7 +1,23 @@
 import { Outlet, createFileRoute, Link, useLocation, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { AppLayout } from "@/components/AppLayout";
-import { Search, Filter, Lock } from "lucide-react";
+import {
+  AlertTriangle,
+  CalendarDays,
+  ChevronLeft,
+  ChevronRight,
+  Clock3,
+  FileText,
+  Filter,
+  Landmark,
+  Lock,
+  Plus,
+  Scale,
+  Search,
+  ShieldCheck,
+  UserRound,
+  UsersRound,
+} from "lucide-react";
 import {
   listRepresentacoes,
   type RepresentacaoRecord,
@@ -29,6 +45,7 @@ const STATUS_FILTER_CUMPRIDAS = "__status_cumpridas__";
 const STATUS_FILTER_PENDENTES = "__status_pendentes__";
 const TIPO_FILTER_NAO_INFORMADO = "__tipo_nao_informado__";
 const TIPO_FILTER_MEDIDA_PROTETIVA = "__tipo_medida_protetiva__";
+const PAGE_SIZE = 25;
 const isMedidaProtetivaAlias = (value: string) =>
   normalizeText(value).replace(/-/g, " ").includes("protetiv");
 
@@ -121,12 +138,18 @@ function getRepresentacaoState(r: RepresentacaoRecord) {
 }
 
 function buildPrazoLabel(state: ReturnType<typeof getRepresentacaoState>) {
-  if (state.isCumprida) return "🟢 Cumprida";
-  if (state.isOverdue) return `🔴 Vencida há ${Math.abs(state.daysToDue ?? 0)} dia(s)`;
-  if (state.daysToDue === 0) return "🟡 Vence hoje";
-  if (state.daysToDue === 1) return "🟡 Vence amanhã";
-  if (state.isDueSoon) return `🟡 Vence em ${state.daysToDue} dia(s)`;
-  return "🟢 Sem criticidade de prazo";
+  if (state.isCumprida) return "Cumprida";
+  if (state.isOverdue) return `Vencida há ${Math.abs(state.daysToDue ?? 0)} dia(s)`;
+  if (state.daysToDue === 0) return "Vence hoje";
+  if (state.daysToDue === 1) return "Vence amanhã";
+  if (state.isDueSoon) return `Vence em ${state.daysToDue} dia(s)`;
+  return "Sem prazo crítico";
+}
+
+function formatDate(value?: string | null) {
+  const timestamp = parseDateUtc(value);
+  if (timestamp === null) return null;
+  return new Intl.DateTimeFormat("pt-BR", { timeZone: "UTC" }).format(timestamp);
 }
 
 function Representacoes() {
@@ -141,6 +164,7 @@ function Representacoes() {
   const [dataFinal, setDataFinal] = useState("");
   const [showFilters, setShowFilters] = useState(false);
   const [operationalFilter, setOperationalFilter] = useState("todas");
+  const [currentPage, setCurrentPage] = useState(1);
   const [representacoes, setRepresentacoes] = useState<RepresentacaoRecord[]>([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -309,10 +333,21 @@ function Representacoes() {
       vencidas: base.filter((s) => s.isOverdue).length,
       vencendo: base.filter((s) => s.isDueSoon).length,
       pendentesJudiciais: base.filter((s) => s.pendingJudicial).length,
+      sigilosas: base.filter((s) => s.isSigilosa).length,
       acompanhamentoEspecial: base.filter((s) => s.isSpecial).length,
       cumpridas: base.filter((s) => s.isCumprida).length,
     };
   }, [representacoes]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, statusFilter, tipoFilter, dataInicial, dataFinal, operationalFilter]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const pagedRepresentacoes = useMemo(
+    () => filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE),
+    [currentPage, filtered],
+  );
 
   if (!isRepresentacoesIndex) return <Outlet />;
   if (restricted)
@@ -341,67 +376,121 @@ function Representacoes() {
     { key: "especial", label: "Acomp. Especial" },
   ];
 
+  const summaryCards = [
+    {
+      key: "pendentes",
+      label: "Pendentes",
+      value: kpis.pendentesJudiciais,
+      helper: "Aguardando decisão",
+      icon: FileText,
+      className: "border-amber-500/25 bg-amber-500/[0.04] text-amber-300",
+    },
+    {
+      key: "vencendo",
+      label: "Vencendo",
+      value: kpis.vencendo,
+      helper: "Próximos 7 dias",
+      icon: Clock3,
+      className: "border-red-500/25 bg-red-500/[0.04] text-red-300",
+    },
+    {
+      key: "vencidas",
+      label: "Vencidas",
+      value: kpis.vencidas,
+      helper: "Prazo ultrapassado",
+      icon: AlertTriangle,
+      className: "border-white/25 bg-white/[0.04] text-white",
+    },
+    {
+      key: "sigilosas",
+      label: "Sigilosas",
+      value: kpis.sigilosas,
+      helper: "Acesso restrito",
+      icon: Lock,
+      className: "border-purple-500/25 bg-purple-500/[0.04] text-purple-300",
+    },
+    {
+      key: "cumpridas",
+      label: "Cumpridas",
+      value: kpis.cumpridas,
+      helper: "Finalizadas",
+      icon: ShieldCheck,
+      className: "border-emerald-500/25 bg-emerald-500/[0.04] text-emerald-300",
+    },
+  ];
+
   return (
     <AppLayout>
-      <div className="space-y-5">
-        <div className="flex items-center justify-between rounded-xl border border-border/70 bg-card/50 p-4">
-          <div>
-            <h1 className="text-2xl font-bold">Representações Judiciais</h1>
-            <p className="text-sm text-muted-foreground">Fila operacional judicial</p>
+      <div className="space-y-5 pb-6">
+        <header className="flex flex-col gap-4 border-b border-border/70 pb-5 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex min-w-0 items-center gap-3">
+            <span className="grid h-11 w-11 shrink-0 place-items-center rounded-lg border border-primary/25 bg-primary/[0.06] text-primary">
+              <Scale className="h-5 w-5" aria-hidden="true" />
+            </span>
+            <div className="min-w-0">
+              <h1 className="text-2xl font-bold">Representações Judiciais</h1>
+              <p className="text-sm text-muted-foreground">Gestão de medidas e pedidos judiciais</p>
+            </div>
           </div>
           <Link
             to="/nova-representacao"
-            className="inline-flex items-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground"
+            className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-[0_0_18px_rgba(52,211,153,0.12)] transition hover:bg-primary/90"
           >
-            Cadastrar Representação
+            <Plus className="h-4 w-4" aria-hidden="true" />
+            Nova representação
           </Link>
-        </div>
+        </header>
         {error && <p className="text-xs text-destructive">{error}</p>}
 
         <section className="grid grid-cols-2 gap-3 lg:grid-cols-5">
-          {[
-            ["vencidas", "🔴 Vencidas", kpis.vencidas, "text-destructive"],
-            ["vencendo", "🟡 Vencendo", kpis.vencendo, "text-warning"],
-            ["pendentes", "⚖ Pendentes Judiciais", kpis.pendentesJudiciais, "text-amber-300"],
-            ["especial", "🛡 Acomp. Especial", kpis.acompanhamentoEspecial, "text-info"],
-            ["cumpridas", "📄 Cumpridas", kpis.cumpridas, "text-emerald-300"],
-          ].map(([key, label, value, tone]) => (
+          {summaryCards.map(({ key, label, value, helper, icon: Icon, className }) => (
             <button
-              key={String(key)}
-              onClick={() => setOperationalFilter(String(key))}
-              className={`rounded-xl border border-border bg-card/70 p-3 text-left transition hover:bg-muted/20 ${operationalFilter === key ? "ring-1 ring-primary/40" : ""}`}
+              key={key}
+              type="button"
+              onClick={() => setOperationalFilter(key)}
+              className={`group min-h-[108px] rounded-lg border p-4 text-left transition hover:-translate-y-0.5 hover:border-current/40 ${className} ${operationalFilter === key ? "ring-1 ring-current/40" : ""}`}
             >
-              <p className="text-[11px] text-muted-foreground">{label}</p>
-              <p className={`text-2xl font-bold ${tone}`}>{String(value)}</p>
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-sm font-medium text-foreground/80">{label}</p>
+                  <p className="mt-1 text-3xl font-bold text-current">{value}</p>
+                </div>
+                <span className="grid h-9 w-9 place-items-center rounded-lg border border-current/20 bg-current/10">
+                  <Icon className="h-[18px] w-[18px]" aria-hidden="true" />
+                </span>
+              </div>
+              <p className="mt-1 text-xs text-muted-foreground">{helper}</p>
             </button>
           ))}
         </section>
 
-        <div className="rounded-xl border border-border/80 bg-card/70 p-4">
-          <div className="flex flex-wrap gap-2">
+        <section className="rounded-lg border border-border/80 bg-card/45 p-3">
+          <div className="flex flex-wrap gap-1.5">
             {quickFilters.map((f) => (
               <button
                 key={f.key}
+                type="button"
                 onClick={() => setOperationalFilter(f.key)}
-                className={`rounded-full border px-3 py-1.5 text-xs ${operationalFilter === f.key ? "border-primary/50 bg-primary/15 text-primary" : "border-border text-muted-foreground"}`}
+                className={`rounded-md border px-3 py-1.5 text-xs font-medium transition ${operationalFilter === f.key ? "border-primary/50 bg-primary/10 text-primary" : "border-border/80 text-muted-foreground hover:border-border hover:text-foreground"}`}
               >
                 {f.label}
               </button>
             ))}
           </div>
-          <div className="mt-3 flex gap-3">
+          <div className="mt-3 flex flex-col gap-2 sm:flex-row">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <input
                 placeholder="Buscar por PPE, vítima, investigado, processo, vara, tipo, status, equipe ou observações..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="h-11 w-full rounded-xl border border-border/90 bg-background/70 py-2.5 pl-10 pr-4 text-sm"
+                className="h-10 w-full rounded-lg border border-border/90 bg-background/60 py-2 pl-10 pr-4 text-sm outline-none transition focus:border-primary/45"
               />
             </div>
             <button
+              type="button"
               onClick={() => setShowFilters((prev) => !prev)}
-              className="inline-flex h-11 items-center gap-2 rounded-xl border border-border bg-background/70 px-4 text-sm"
+              className={`inline-flex h-10 items-center justify-center gap-2 rounded-lg border px-4 text-sm font-medium transition ${showFilters ? "border-primary/40 bg-primary/10 text-primary" : "border-border bg-background/60 hover:border-border/90"}`}
             >
               <Filter className="h-4 w-4" />
               Filtros
@@ -412,7 +501,7 @@ function Representacoes() {
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="h-11 rounded-xl border border-border/90 bg-background/70 px-3 text-sm"
+                className="h-10 rounded-lg border border-border/90 bg-background/70 px-3 text-sm"
               >
                 <option value="todos">Status: todos</option>
                 <option value={STATUS_FILTER_CUMPRIDAS}>Status: cumpridas</option>
@@ -421,7 +510,7 @@ function Representacoes() {
               <select
                 value={tipoFilter}
                 onChange={(e) => setTipoFilter(e.target.value)}
-                className="h-11 rounded-xl border border-border/90 bg-background/70 px-3 text-sm"
+                className="h-10 rounded-lg border border-border/90 bg-background/70 px-3 text-sm"
               >
                 <option value="todos">Tipo: todos</option>
                 <option value={TIPO_FILTER_NAO_INFORMADO}>Tipo: não informado</option>
@@ -431,37 +520,75 @@ function Representacoes() {
                 type="date"
                 value={dataInicial}
                 onChange={(e) => setDataInicial(e.target.value)}
-                className="h-11 rounded-xl border border-border/90 bg-background/70 px-3 text-sm"
+                aria-label="Data inicial"
+                className="h-10 rounded-lg border border-border/90 bg-background/70 px-3 text-sm"
               />
               <input
                 type="date"
                 value={dataFinal}
                 onChange={(e) => setDataFinal(e.target.value)}
-                className="h-11 rounded-xl border border-border/90 bg-background/70 px-3 text-sm"
+                aria-label="Data final"
+                className="h-10 rounded-lg border border-border/90 bg-background/70 px-3 text-sm"
               />
             </div>
           )}
-          <p className="mt-3 text-xs text-muted-foreground">
+          <p className="mt-2 text-xs text-muted-foreground">
             {filtered.length} de {representacoes.length} representações
           </p>
-        </div>
+        </section>
 
-        <div className="space-y-2">
-          {filtered.map((r) => {
+        <section className="overflow-hidden rounded-lg border border-border/80 bg-card/35">
+          <div className="hidden grid-cols-[minmax(270px,2fr)_minmax(180px,1.35fr)_minmax(150px,1.1fr)_120px_150px_minmax(120px,0.8fr)_32px] items-center gap-4 border-b border-border/80 bg-muted/[0.08] px-4 py-2.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground lg:grid">
+            <span>Representação</span>
+            <span>Interessado / alvo</span>
+            <span>Vara</span>
+            <span>Status</span>
+            <span>Prazo</span>
+            <span>Equipe</span>
+            <span aria-hidden="true" />
+          </div>
+          {pagedRepresentacoes.map((r) => {
             const state = getRepresentacaoState(r);
             const isSigilosa = isRepresentacaoSigilosa(r) || state.isSigilosa;
             const canOpenThisRecord = !isSigilosa || canOpenSigilosas;
             const blockedSigilosaTitle = "Representação sigilosa — acesso restrito";
             const prazo = buildPrazoLabel(state);
-            const tone = state.isOverdue
-              ? "border-l-red-700/70"
-              : state.isDueSoon || state.pendingJudicial
-                ? "border-l-amber-500/65"
-                : state.incomplete
-                  ? "border-l-sky-500/55"
+            const dueDate = formatDate(r.data_vencimento);
+            const statusLabel = isSigilosa
+              ? "Sigilosa"
+              : state.isOverdue
+                ? "Vencida"
+                : state.isDueSoon
+                  ? "Vencendo"
                   : state.isCumprida
-                    ? "border-l-emerald-500/50"
-                    : "border-l-border/40";
+                    ? "Cumprida"
+                    : state.pendingJudicial
+                      ? "Pendente"
+                      : state.isSpecial
+                        ? "Especial"
+                        : "Acompanhamento";
+            const statusTone = isSigilosa
+              ? "border-purple-500/35 bg-purple-500/10 text-purple-300"
+              : state.isOverdue
+                ? "border-white/35 bg-white/10 text-white"
+                : state.isDueSoon
+                  ? "border-red-500/35 bg-red-500/10 text-red-400"
+                  : state.isCumprida
+                    ? "border-emerald-500/35 bg-emerald-500/10 text-emerald-300"
+                    : state.pendingJudicial
+                      ? "border-amber-500/35 bg-amber-500/10 text-amber-300"
+                      : "border-sky-500/30 bg-sky-500/10 text-sky-300";
+            const rowTone = isSigilosa
+              ? "border-l-purple-400"
+              : state.isOverdue
+                ? "border-l-white"
+                : state.isDueSoon
+                  ? "border-l-red-500"
+                  : state.isCumprida
+                    ? "border-l-emerald-400"
+                    : state.pendingJudicial
+                      ? "border-l-amber-400"
+                      : "border-l-sky-400/60";
 
             return (
               <div
@@ -495,96 +622,147 @@ function Representacoes() {
                       })
                     : alert(blockedSigilosaTitle))
                 }
-                className={`rounded-xl border border-border/70 border-l-[3px] bg-card/80 px-3 py-2.5 transition-colors duration-150 ${canOpenThisRecord ? "cursor-pointer hover:border-border hover:bg-accent/25" : "cursor-not-allowed opacity-90"} ${tone}`}
+                className={`group grid min-h-[76px] grid-cols-1 gap-3 border-b border-l-[3px] border-b-border/70 px-4 py-3 text-left transition-colors last:border-b-0 lg:grid-cols-[minmax(270px,2fr)_minmax(180px,1.35fr)_minmax(150px,1.1fr)_120px_150px_minmax(120px,0.8fr)_32px] lg:items-center lg:gap-4 ${canOpenThisRecord ? "cursor-pointer hover:bg-accent/20" : "cursor-not-allowed opacity-75"} ${rowTone}`}
               >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0 space-y-1">
-                    <p className="truncate text-sm font-semibold">
-                      PPE {r.numero_ppe || "—"} • {r.tipo || "Não informado"}
-                      {isSigilosa && (
-                        <Lock
-                          className="ml-1 inline h-3.5 w-3.5 align-[-1px] text-red-400/80"
-                          aria-hidden="true"
-                        />
-                      )}
+                <div className="flex min-w-0 items-start gap-3">
+                  <FileText className="mt-0.5 h-5 w-5 shrink-0 text-current opacity-80" />
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold text-foreground">
+                      PPE {r.numero_ppe || "—"} · {r.tipo || "Não informado"}
                     </p>
-                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
-                      <span>⚖ {buildOperationalStatus(r)}</span>
-                      <span>👤 {r.investigado || r.vitima || "—"}</span>
-                      <span>🏛 {r.vara_juizo || "Não informado"}</span>
-                      <span
-                        className={
-                          state.isOverdue
-                            ? "text-destructive"
-                            : state.isDueSoon
-                              ? "text-warning"
-                              : state.isCumprida
-                                ? "text-emerald-300"
-                                : "text-muted-foreground"
-                        }
-                      >
-                        🕒 {prazo.replace(/^[🟢🔴🟡]\s/u, "")}
-                      </span>
-                    </div>
-                    <div className="flex flex-wrap gap-1 pt-0.5">
-                      {state.pendingJudicial && (
-                        <span className="rounded border border-warning/40 bg-warning/10 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-warning">
-                          PENDENTE
-                        </span>
-                      )}
-                      {state.incomplete && (
-                        <span className="rounded border border-info/40 bg-info/10 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-info">
-                          INCOMPLETA
-                        </span>
-                      )}
-                      {isSigilosa && (
-                        <span className="rounded border border-purple-400/35 bg-purple-500/10 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide">
-                          SIGILOSA
-                        </span>
-                      )}
-                      {state.isOverdue && (
-                        <span className="rounded border border-destructive/40 bg-destructive/10 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-destructive">
-                          URGENTE
-                        </span>
-                      )}
-                      {state.isSpecial && (
-                        <span className="rounded border border-info/40 bg-info/10 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-info">
-                          ACOMP. ESPECIAL
-                        </span>
-                      )}
-                    </div>
+                    <p className="mt-0.5 truncate text-xs text-muted-foreground">
+                      {buildOperationalStatus(r)}
+                    </p>
+                    {(isSigilosa || state.incomplete || state.isSpecial) && (
+                      <div className="mt-1.5 flex flex-wrap gap-1">
+                        {isSigilosa && (
+                          <span className="inline-flex items-center gap-1 rounded border border-purple-400/30 bg-purple-500/10 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-purple-300">
+                            <Lock className="h-2.5 w-2.5" /> Sigilosa
+                          </span>
+                        )}
+                        {state.incomplete && (
+                          <span className="rounded border border-sky-400/30 bg-sky-500/10 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-sky-300">
+                            Incompleta
+                          </span>
+                        )}
+                        {state.isSpecial && (
+                          <span className="rounded border border-blue-400/30 bg-blue-500/10 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-blue-300">
+                            Acomp. especial
+                          </span>
+                        )}
+                      </div>
+                    )}
                   </div>
-                  <button
-                    disabled={!canOpenThisRecord}
-                    className="shrink-0 rounded-full border border-border/80 px-2 py-0.5 text-xs text-muted-foreground disabled:cursor-not-allowed disabled:opacity-60"
-                    aria-label={
-                      canOpenThisRecord
-                        ? `Abrir detalhe da representação ${r.numero_ppe || r.id}`
-                        : blockedSigilosaTitle
-                    }
-                    title={
-                      canOpenThisRecord
-                        ? `Abrir detalhe da representação ${r.numero_ppe || r.id}`
-                        : blockedSigilosaTitle
-                    }
-                  >
-                    ›
-                  </button>
                 </div>
+
+                <div className="min-w-0">
+                  <span className="mb-1 block text-[9px] font-semibold uppercase tracking-wide text-muted-foreground lg:hidden">
+                    Interessado / alvo
+                  </span>
+                  <p className="flex items-start gap-2 text-xs text-foreground/85">
+                    <UserRound className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                    <span className="line-clamp-2">
+                      {r.investigado || r.vitima || "Não informado"}
+                    </span>
+                  </p>
+                </div>
+
+                <div className="min-w-0">
+                  <span className="mb-1 block text-[9px] font-semibold uppercase tracking-wide text-muted-foreground lg:hidden">
+                    Vara
+                  </span>
+                  <p className="flex items-start gap-2 text-xs text-foreground/85">
+                    <Landmark className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                    <span className="line-clamp-2">{r.vara_juizo || "Não informado"}</span>
+                  </p>
+                </div>
+
+                <div>
+                  <span className="mb-1 block text-[9px] font-semibold uppercase tracking-wide text-muted-foreground lg:hidden">
+                    Status
+                  </span>
+                  <span
+                    className={`inline-flex rounded border px-2 py-1 text-[9px] font-bold uppercase tracking-wide ${statusTone}`}
+                  >
+                    {statusLabel}
+                  </span>
+                </div>
+
+                <div>
+                  <span className="mb-1 block text-[9px] font-semibold uppercase tracking-wide text-muted-foreground lg:hidden">
+                    Prazo
+                  </span>
+                  <p className="flex items-center gap-2 text-xs text-foreground/85">
+                    <CalendarDays className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                    {dueDate || prazo}
+                  </p>
+                  {dueDate && (
+                    <p
+                      className={`mt-1 text-[10px] ${state.isOverdue ? "text-white" : state.isDueSoon ? "text-red-400" : state.isCumprida ? "text-emerald-300" : "text-muted-foreground"}`}
+                    >
+                      {prazo}
+                    </p>
+                  )}
+                </div>
+
+                <div className="min-w-0">
+                  <span className="mb-1 block text-[9px] font-semibold uppercase tracking-wide text-muted-foreground lg:hidden">
+                    Equipe
+                  </span>
+                  <p className="flex items-center gap-2 text-xs text-foreground/85">
+                    <UsersRound className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                    <span className="truncate">{r.equipe_responsavel || "Sem equipe"}</span>
+                  </p>
+                </div>
+
+                <ChevronRight className="hidden h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-0.5 lg:block" />
               </div>
             );
           })}
           {!loading && filtered.length === 0 && (
-            <div className="rounded-xl border border-border bg-card/70 p-6 text-center text-sm text-muted-foreground">
+            <div className="p-10 text-center text-sm text-muted-foreground">
               Nenhum resultado para a busca informada.
             </div>
           )}
           {loading && (
-            <div className="rounded-xl border border-border bg-card/70 p-6 text-center text-sm text-muted-foreground">
+            <div className="p-10 text-center text-sm text-muted-foreground">
               Carregando representações...
             </div>
           )}
-        </div>
+          {!loading && filtered.length > 0 && (
+            <footer className="flex flex-col gap-3 border-t border-border/80 bg-muted/[0.04] px-4 py-3 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
+              <span>
+                Exibindo {(currentPage - 1) * PAGE_SIZE + 1}–
+                {Math.min(currentPage * PAGE_SIZE, filtered.length)} de {filtered.length}{" "}
+                representações
+              </span>
+              <div className="flex items-center gap-2">
+                <span className="mr-2 hidden sm:inline">{PAGE_SIZE} por página</span>
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+                  disabled={currentPage === 1}
+                  className="grid h-8 w-8 place-items-center rounded-md border border-border transition hover:text-foreground disabled:cursor-not-allowed disabled:opacity-35"
+                  aria-label="Página anterior"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </button>
+                <span className="grid h-8 min-w-8 place-items-center rounded-md border border-primary/50 bg-primary/10 px-2 font-semibold text-primary">
+                  {currentPage}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
+                  disabled={currentPage === totalPages}
+                  className="grid h-8 w-8 place-items-center rounded-md border border-border transition hover:text-foreground disabled:cursor-not-allowed disabled:opacity-35"
+                  aria-label="Próxima página"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </button>
+              </div>
+            </footer>
+          )}
+        </section>
       </div>
     </AppLayout>
   );

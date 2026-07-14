@@ -26,9 +26,19 @@ import {
   type ModuleKey,
 } from "@/lib/alertasInteligentes";
 import {
+  hasDiligenciasPendentes,
   hasRelatorioEnviado,
   isInqueritoEmAndamento,
+  isOperationalDateDueWithin,
+  isOperationalDateOverdue,
   isRelatadoNaoEnviado as isRelatadoNaoEnviadoMetric,
+  isRepresentacaoCumprida,
+  isRepresentacaoDeferida,
+  isRepresentacaoIndeferida,
+  isRepresentacaoPendente,
+  isRepresentacaoSigilosaValue,
+  isRepresentacaoVencendo,
+  isRepresentacaoVencida,
 } from "@/lib/operationalMetrics";
 
 export const Route = createFileRoute("/alertas")({
@@ -625,6 +635,187 @@ export function Alertas({ mode = "alertas" }: { mode?: "alertas" | "estatisticas
     ] satisfies OperationalRow[];
   }, [dataFinal, dataInicial, filteredInqueritos, filteredRepresentacoes, inqueritos]);
 
+  const managementViews = useMemo(() => {
+    const now = Date.now();
+    const inqueritosAtivos = filteredInqueritos.filter(isInqueritoEmAndamento);
+    const periodSearch = {
+      ...(dataInicial ? { dataInicial } : {}),
+      ...(dataFinal ? { dataFinal } : {}),
+    };
+
+    const operacional = [
+      {
+        label: "Em andamento",
+        value: inqueritosAtivos.length,
+        desc: "Procedimentos ativos no período",
+        target: { to: "/inqueritos", search: { ...periodSearch, status: "em_andamento" } },
+      },
+      {
+        label: "Concluídos",
+        value: filteredInqueritos.filter(hasRelatorioEnviado).length,
+        desc: "Procedimentos com relatório enviado",
+        target: { to: "/inqueritos", search: { ...periodSearch, relatorio: "enviado" } },
+      },
+      {
+        label: "Alta prioridade",
+        value: inqueritosAtivos.filter(
+          (item) => normalizeText(item.prioridade_operacional ?? item.prioridade) === "alta",
+        ).length,
+        desc: "Procedimentos ativos que requerem atenção",
+        target: { to: "/inqueritos", search: { ...periodSearch, prioridade: "alta" } },
+      },
+      {
+        label: "Diligências pendentes",
+        value: inqueritosAtivos.filter(hasDiligenciasPendentes).length,
+        desc: "Procedimentos com diligências ainda pendentes",
+        target: {
+          to: "/inqueritos",
+          search: { ...periodSearch, diligenciasPendentes: "true" },
+        },
+      },
+      {
+        label: "Réu preso",
+        value: filteredInqueritos.filter(
+          (item) => item.reu_preso_normalizado === true || isYesLike(item.reu_preso),
+        ).length,
+        desc: "Procedimentos vinculados a réu preso",
+        target: { to: "/inqueritos", search: { ...periodSearch, reuPreso: "true" } },
+      },
+      {
+        label: "Medida protetiva",
+        value: filteredInqueritos.filter(
+          (item) => item.medida_protetiva_normalizada === true || isYesLike(item.medida_protetiva),
+        ).length,
+        desc: "Procedimentos com medida protetiva",
+        target: { to: "/inqueritos", search: { ...periodSearch, medidaProtetiva: "true" } },
+      },
+    ] satisfies OperationalRow[];
+
+    const judicial = [
+      {
+        label: "Total de representações",
+        value: filteredRepresentacoes.length,
+        desc: "Representações acessíveis no período",
+        target: {
+          to: "/representacoes",
+          search: { ...periodSearch, operationalFilter: "todas" },
+        },
+      },
+      {
+        label: "Pendentes",
+        value: filteredRepresentacoes.filter(isRepresentacaoPendente).length,
+        desc: "Representações aguardando decisão ou cumprimento",
+        target: {
+          to: "/representacoes",
+          search: { ...periodSearch, operationalFilter: "pendentes" },
+        },
+      },
+      {
+        label: "Deferidas",
+        value: filteredRepresentacoes.filter(isRepresentacaoDeferida).length,
+        desc: "Representações deferidas",
+        target: {
+          to: "/representacoes",
+          search: { ...periodSearch, operationalFilter: "deferidas" },
+        },
+      },
+      {
+        label: "Indeferidas",
+        value: filteredRepresentacoes.filter(isRepresentacaoIndeferida).length,
+        desc: "Representações indeferidas",
+        target: {
+          to: "/representacoes",
+          search: { ...periodSearch, operationalFilter: "indeferidas" },
+        },
+      },
+      {
+        label: "Cumpridas",
+        value: filteredRepresentacoes.filter(isRepresentacaoCumprida).length,
+        desc: "Representações com cumprimento registrado",
+        target: {
+          to: "/representacoes",
+          search: { ...periodSearch, operationalFilter: "cumpridas" },
+        },
+      },
+      {
+        label: "Sigilosas",
+        value: filteredRepresentacoes.filter((item) =>
+          isRepresentacaoSigilosaValue(
+            item.pedido_sigiloso_normalizado ?? item.pedido_sigiloso,
+          ),
+        ).length,
+        desc: "Representações sigilosas acessíveis ao perfil atual",
+        target: {
+          to: "/representacoes",
+          search: { ...periodSearch, operationalFilter: "sigilosas" },
+        },
+      },
+    ] satisfies OperationalRow[];
+
+    const urgencia = [
+      {
+        label: "Prazo vencido",
+        value: inqueritosAtivos.filter((item) => isOperationalDateOverdue(item.prazo, now)).length,
+        desc: "Procedimentos ativos com prazo vencido",
+        target: {
+          to: "/inqueritos",
+          search: { ...periodSearch, prazo: "vencido", status: "em_andamento" },
+        },
+      },
+      {
+        label: "Vencendo em 7 dias",
+        value: inqueritosAtivos.filter((item) => isOperationalDateDueWithin(item.prazo, 7, now))
+          .length,
+        desc: "Procedimentos ativos próximos do vencimento",
+        target: {
+          to: "/inqueritos",
+          search: { ...periodSearch, prazo: "vencendo", status: "em_andamento" },
+        },
+      },
+      {
+        label: "Prazo crítico (0-3 dias)",
+        value: inqueritosAtivos.filter((item) => isOperationalDateDueWithin(item.prazo, 3, now))
+          .length,
+        desc: "Procedimentos ativos em janela crítica",
+        target: {
+          to: "/inqueritos",
+          search: { ...periodSearch, prazo: "critico", status: "em_andamento" },
+        },
+      },
+      {
+        label: "Representações vencidas",
+        value: filteredRepresentacoes.filter((item) => isRepresentacaoVencida(item, now)).length,
+        desc: "Representações com prazo vencido",
+        target: {
+          to: "/representacoes",
+          search: { ...periodSearch, operationalFilter: "vencidas" },
+        },
+      },
+      {
+        label: "Representações vencendo (7 dias)",
+        value: filteredRepresentacoes.filter((item) => isRepresentacaoVencendo(item, 7, now))
+          .length,
+        desc: "Representações próximas do vencimento",
+        target: {
+          to: "/representacoes",
+          search: { ...periodSearch, operationalFilter: "vencendo" },
+        },
+      },
+      {
+        label: "Acompanhamento especial",
+        value: filteredRepresentacoes.filter((item) => isYesLike(item.acompanhamento_especial))
+          .length,
+        desc: "Representações marcadas para acompanhamento especial",
+        target: {
+          to: "/representacoes",
+          search: { ...periodSearch, operationalFilter: "especial" },
+        },
+      },
+    ] satisfies OperationalRow[];
+
+    return { operacional, judicial, urgencia };
+  }, [dataFinal, dataInicial, filteredInqueritos, filteredRepresentacoes]);
+
   const hasActiveFilters = Boolean(dataInicial) || Boolean(dataFinal);
 
   function applyPreset(days: number) {
@@ -812,20 +1003,51 @@ export function Alertas({ mode = "alertas" }: { mode?: "alertas" | "estatisticas
         ) : null}
 
         {showStats && !loading && !error ? (
-          <div className="grid gap-5 xl:grid-cols-[1.15fr_0.85fr]">
-            <OperationalTable
-              title="Panorama System Geral"
-              accent="info"
-              rows={panorama}
-              onOpen={openTableTarget}
-            />
-            <OperationalTable
-              title="Estatísticas do Período"
-              accent="warning"
-              rows={periodStats}
-              onOpen={openTableTarget}
-            />
-          </div>
+          <>
+            <div className="grid gap-5 xl:grid-cols-[1.15fr_0.85fr]">
+              <OperationalTable
+                title="Panorama System Geral"
+                accent="info"
+                rows={panorama}
+                onOpen={openTableTarget}
+              />
+              <OperationalTable
+                title="Estatísticas do Período"
+                accent="warning"
+                rows={periodStats}
+                onOpen={openTableTarget}
+              />
+            </div>
+
+            <section className="space-y-4 pt-2">
+              <div className="border-b border-border/70 pb-3">
+                <h2 className="text-sm font-black uppercase tracking-[0.16em] text-primary">
+                  Visões gerenciais
+                </h2>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Resumos operacional, judicial e de urgência conforme o período selecionado.
+                </p>
+              </div>
+              <OperationalTable
+                title="Visão Operacional"
+                accent="success"
+                rows={managementViews.operacional}
+                onOpen={openTableTarget}
+              />
+              <OperationalTable
+                title="Visão Judicial"
+                accent="info"
+                rows={managementViews.judicial}
+                onOpen={openTableTarget}
+              />
+              <OperationalTable
+                title="Visão de Urgência"
+                accent="destructive"
+                rows={managementViews.urgencia}
+                onOpen={openTableTarget}
+              />
+            </section>
+          </>
         ) : null}
       </div>
     </AppLayout>
@@ -840,10 +1062,15 @@ function OperationalTable({
 }: {
   title: string;
   rows: OperationalRow[];
-  accent: "info" | "warning";
+  accent: "info" | "warning" | "success" | "destructive";
   onOpen: (target?: TableTarget) => void;
 }) {
-  const accentClass = accent === "warning" ? "text-amber-300" : "text-sky-300";
+  const accentClass = {
+    info: "text-sky-300",
+    warning: "text-amber-300",
+    success: "text-emerald-300",
+    destructive: "text-red-300",
+  }[accent];
 
   return (
     <section className="overflow-hidden rounded-2xl border border-border/70 bg-card/65 shadow-[0_16px_42px_rgba(0,0,0,0.14)]">
