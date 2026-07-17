@@ -11,7 +11,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 
 const options: Array<{
   value: Appearance;
-  label: "Padrão" | "Claro" | "Black";
+  label: string;
   description: string;
   icon: typeof Monitor;
 }> = [

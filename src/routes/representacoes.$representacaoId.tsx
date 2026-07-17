@@ -8,9 +8,18 @@ import {
 } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { AppLayout } from "@/components/AppLayout";
+import { MissingInfoPopover } from "@/components/MissingInfoPopover";
+import { RegistrationQualityPanel } from "@/components/RegistrationQualityPanel";
+import { SipiPrintSheet, type SipiPrintSection } from "@/components/SipiPrintSheet";
+import {
+  getRepresentationRegistrationChecks,
+  type ComplianceStatus,
+} from "@/lib/operationalContracts";
 import {
   getRepresentacaoById,
+  listRepresentacaoPessoas,
   softDeleteRepresentacao,
+  type RepresentacaoPessoaRecord,
   type RepresentacaoRecord,
 } from "@/lib/repositories/representacoesRepository";
 import { getCurrentProfile } from "@/lib/auth";
@@ -30,6 +39,15 @@ function normalizeText(value?: string | null) {
     .toLowerCase()
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "");
+}
+function getPessoaPapelLabel(papel: RepresentacaoPessoaRecord["papel"]) {
+  const labels: Record<RepresentacaoPessoaRecord["papel"], string> = {
+    vitima: "Vítima adicional",
+    investigado_representado: "Investigado / Representado adicional",
+    testemunha: "Testemunha",
+    outro: "Outro envolvido",
+  };
+  return labels[papel];
 }
 function getStatusAlias(status?: string | null) {
   const n = normalizeText(status);
@@ -93,6 +111,19 @@ function hasPrintableRepresentacaoValue(value?: string | null) {
     Boolean(normalized) &&
     !["-", "—", "selecione", "sem informacao", "nao informado"].includes(normalized)
   );
+}
+
+function normalizeComplianceStatus(value?: string | null): ComplianceStatus {
+  const normalized = normalizeText(value);
+  if (normalized.includes("parcial")) return "parcial";
+  if (normalized.includes("cumpr")) return "cumprido";
+  if (normalized.includes("indefer") || normalized.includes("nao se aplica")) return "indeferido";
+  if (normalized.includes("cancel")) return "cancelado";
+  return "pendente";
+}
+
+function onlyPopulatedItems(items: Array<[string, string | null | undefined]>) {
+  return items.filter(([, value]) => hasPrintableRepresentacaoValue(value));
 }
 
 function isPrintHiddenRepresentacaoLabel(label: string) {
@@ -210,7 +241,7 @@ function buildTimelineEvents(item: RepresentacaoRecord): TimelineEvent[] {
       icon: "⚖",
     });
 
-  if (item.prazo_concedido_dias != null || item.data_vencimento) {
+  if ((item.prazo_concedido_dias ?? 0) > 0 || item.data_vencimento) {
     const due = item.data_vencimento ? new Date(item.data_vencimento) : null;
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
@@ -309,8 +340,10 @@ function DetalheRepresentacao() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [error, setError] = useState("");
+  const [pessoasLoadWarning, setPessoasLoadWarning] = useState(false);
   const [restricted, setRestricted] = useState(false);
   const [sigiloRestricted, setSigiloRestricted] = useState(false);
+  const [pessoasAdicionais, setPessoasAdicionais] = useState<RepresentacaoPessoaRecord[]>([]);
 
   useEffect(() => {
     let active = true;
@@ -318,6 +351,7 @@ function DetalheRepresentacao() {
     (async () => {
       setLoading(true);
       setError("");
+      setPessoasLoadWarning(false);
       setSigiloRestricted(false);
 
       const currentProfile = await getCurrentProfile();
@@ -329,7 +363,18 @@ function DetalheRepresentacao() {
       if (active) setRestricted(false);
 
       try {
-        const data = await getRepresentacaoById(representacaoId);
+        const [data, pessoasResult] = await Promise.all([
+          getRepresentacaoById(representacaoId),
+          listRepresentacaoPessoas(representacaoId)
+            .then((pessoas) => ({ pessoas, failed: false }))
+            .catch((peopleError: unknown) => {
+              console.warn(
+                "[representacoes:detalhe] pessoas adicionais indisponiveis",
+                peopleError,
+              );
+              return { pessoas: [], failed: true };
+            }),
+        ]);
         if (!active) return;
         const isSigilosa = isRepresentacaoSigilosa(data);
         const userCanAccessSigilo = canAccessSigilosa(currentProfile);
@@ -340,6 +385,8 @@ function DetalheRepresentacao() {
         }
         setSigiloRestricted(false);
         setItem(data);
+        setPessoasAdicionais(pessoasResult.pessoas);
+        setPessoasLoadWarning(pessoasResult.failed);
       } catch (err: unknown) {
         if (!active) return;
         const maybeError = err as { code?: string; message?: string };
@@ -457,6 +504,10 @@ function DetalheRepresentacao() {
           ["Vítima", item.vitima],
           ["Investigado / Representado", item.investigado],
           ["Autor preso?", item.autor_preso],
+          ...pessoasAdicionais.map((person): [string, string] => [
+            getPessoaPapelLabel(person.papel),
+            person.observacao ? `${person.nome} — ${person.observacao}` : person.nome,
+          ]),
         ],
       },
       {
@@ -465,11 +516,19 @@ function DetalheRepresentacao() {
           ["Status", item.status],
           ["Data de envio ao Judiciário", item.data_envio_judiciario],
           ["Vara / Juízo", item.vara_juizo],
-          ["Prazo concedido (dias)", item.prazo_concedido_dias?.toString()],
+          [
+            "Prazo concedido (dias)",
+            item.prazo_concedido_dias && item.prazo_concedido_dias > 0
+              ? item.prazo_concedido_dias.toString()
+              : null,
+          ],
           ["Data de vencimento", item.data_vencimento],
           ["Data da decisão judicial", item.data_decisao_judicial],
           ["Data de cumprimento", item.data_cumprimento],
+          ["Situação do cumprimento", item.cumprimento_status],
+          ["Equipe de cumprimento", item.equipe_cumprimento],
           ["Resultado do cumprimento", item.resultado_cumprimento],
+          ["Observações do cumprimento", item.observacoes_cumprimento],
           ["Observações da decisão", item.observacoes_decisao],
         ],
       },
@@ -497,24 +556,110 @@ function DetalheRepresentacao() {
     ["Objetivo da representação", item.objetivo],
     ["Diligências relacionadas", item.diligencias_relacionadas],
   ];
+  const visibleCardSections = cardSections
+    .map((section) => ({ ...section, items: onlyPopulatedItems(section.items) }))
+    .filter((section) => section.items.length > 0);
+  const visibleFundamentacaoCards = fundamentacaoCards.filter(([, value]) =>
+    hasPrintableRepresentacaoValue(value),
+  );
+  const hasInquiryReference = Boolean(item.inquerito_id || item.numero_ppe?.trim());
+  const hasNoInquiryJustification = Boolean(item.justificativa_sem_inquerito?.trim());
+  const registrationChecks = getRepresentationRegistrationChecks({
+    vinculoInquerito: hasInquiryReference ? "sim" : hasNoInquiryJustification ? "nao" : "",
+    inqueritoId: item.inquerito_id,
+    justificativaSemInquerito: item.justificativa_sem_inquerito ?? "",
+    ppe: item.numero_ppe ?? "",
+    processo: item.processo_judicial ?? "",
+    tipoRepresentacao: item.tipo ?? "",
+    tipoOutra: item.tipo_normalizado === "outros" ? (item.tipo ?? "") : "",
+    dataRepresentacao: item.data_representacao ?? "",
+    vitima: item.vitima ?? "",
+    investigado: item.investigado ?? "",
+    resumoFatos: item.resumo_fatos ?? "",
+    status: item.status ?? "",
+    dataEnvioJudiciario: item.data_envio_judiciario ?? "",
+    dataDecisaoJudicial: item.data_decisao_judicial ?? "",
+    varaJuizo: item.vara_juizo ?? "",
+    prazoConcedidoDias:
+      item.prazo_concedido_dias && item.prazo_concedido_dias > 0
+        ? String(item.prazo_concedido_dias)
+        : "",
+    dataVencimento: item.data_vencimento ?? "",
+    cumprimentoStatus: normalizeComplianceStatus(item.cumprimento_status),
+    dataCumprimento: item.data_cumprimento ?? "",
+    equipeCumprimento: item.equipe_cumprimento ?? "",
+    resultadoCumprimento: item.resultado_cumprimento ?? "",
+    prioridadeOperacional: item.prioridade_operacional ?? "",
+  });
+  const pendingRegistrationChecks = registrationChecks.filter((check) => !check.complete);
+  const summaryItems: Array<[string, string]> = [];
+  if (hasPrintableRepresentacaoValue(item.status)) {
+    summaryItems.push(
+      ["Status judicial", statusAlias],
+      ["Situação", situacaoOperacional.replace("Situação: ", "")],
+    );
+  }
+  if (hasPrintableRepresentacaoValue(item.prioridade_operacional)) {
+    summaryItems.push(["Prioridade", prioridadeText]);
+  }
+  if (item.data_vencimento || item.data_cumprimento) {
+    summaryItems.push(["Prazo", formatPrazoStatus(item)]);
+  }
+  if (item.acompanhamento_especial != null) {
+    summaryItems.push(["Acomp. especial", item.acompanhamento_especial ? "Sim" : "Não"]);
+  }
+  if (hasPrintableRepresentacaoValue(item.pedido_sigiloso)) {
+    summaryItems.push(["Sigilosa", item.pedido_sigiloso!]);
+  }
+  const hasOperationalAlerts = Boolean(item.data_vencimento || item.acompanhamento_especial);
   const timelineEvents = buildTimelineEvents(item);
+  const printSections: SipiPrintSection[] = [
+    ...visibleCardSections.map((section) => ({
+      title: section.title,
+      fields: section.items
+        .filter(([label]) => label !== "PPE vinculado / Procedimento relacionado")
+        .map(([label, value]) => ({ label, value })),
+    })),
+    {
+      title: "Vínculo com o procedimento",
+      fields: [
+        { label: "PPE / Procedimento relacionado", value: item.numero_ppe },
+        {
+          label: "Justificativa quando não há inquérito vinculado",
+          value: item.justificativa_sem_inquerito,
+          wide: true,
+        },
+      ],
+    },
+    ...visibleFundamentacaoCards.map(([title, value]) => ({
+      title,
+      wide: true,
+      narrative: true,
+      fields: [{ label: "Registro", value, wide: true }],
+    })),
+  ];
 
   return (
     <AppLayout>
       <div className="sipi-print-document mx-auto w-full max-w-[1480px] space-y-4 px-1 lg:px-2">
-        <div className="print-only sipi-print-header">
-          <div>
-            <p className="sipi-print-kicker">SIPI - Sistema de Inquéritos Policiais</p>
-            <h1>Ficha de Representação</h1>
-            <p>Documento operacional para conferência e acompanhamento judicial.</p>
-          </div>
-          <div className="sipi-print-header-meta">
-            <span>PPE / Processo</span>
-            <strong>{item.numero_ppe || item.processo_judicial || "Sem identificação"}</strong>
-            <small>Gerado em {new Date().toLocaleString("pt-BR")}</small>
-          </div>
-        </div>
-        <header className="sipi-print-hero rounded-xl border border-border/70 bg-card/65 p-4 lg:p-5">
+        <SipiPrintSheet
+          documentTitle="Ficha de Representação Judicial"
+          documentSubtitle="Conferência, tramitação e acompanhamento da medida"
+          identifierLabel={item.numero_ppe ? "PPE" : "Processo"}
+          identifier={item.numero_ppe || item.processo_judicial || "Sem identificação"}
+          summary={[
+            { label: "Tipo", value: item.tipo },
+            { label: "Status judicial", value: statusAlias },
+            { label: "Prioridade", value: item.prioridade_operacional },
+            { label: "Prazo", value: item.data_vencimento ? formatPrazoStatus(item) : null },
+            {
+              label: "Sigilo",
+              value: isRepresentacaoSigilosa(item) ? "Representação sigilosa" : null,
+            },
+          ]}
+          sections={printSections}
+        />
+        <header className="sipi-print-hidden rounded-xl border border-border/70 bg-card/65 p-4 lg:p-5">
           <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
@@ -526,17 +671,20 @@ function DetalheRepresentacao() {
                     Sigilo ativo
                   </span>
                 ) : null}
+                <MissingInfoPopover items={pendingRegistrationChecks} />
               </div>
               <p className="mt-1 text-sm break-words text-muted-foreground">
                 {subtitleParts.length > 0
                   ? subtitleParts.join(" • ")
                   : "Detalhes da representação cadastrada"}
               </p>
-              <p className="sipi-print-hidden mt-2 text-sm break-words text-foreground">
-                {item.numero_ppe
-                  ? `PPE/Procedimento: ${item.numero_ppe}`
-                  : `Processo/PPE: ${withFallback(item.processo_judicial)}`}
-              </p>
+              {item.numero_ppe || item.processo_judicial ? (
+                <p className="sipi-print-hidden mt-2 text-sm break-words text-foreground">
+                  {item.numero_ppe
+                    ? `PPE/Procedimento: ${item.numero_ppe}`
+                    : `Processo/PPE: ${item.processo_judicial}`}
+                </p>
+              ) : null}
             </div>
 
             <div className="sipi-print-actions flex flex-wrap items-center gap-2 xl:justify-end">
@@ -567,158 +715,167 @@ function DetalheRepresentacao() {
           </div>
         </header>
 
-        <section className="grid items-start gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-          {[
-            ["Status judicial", statusAlias],
-            ["Situação", situacaoOperacional.replace("Situação: ", "")],
-            ["Prioridade", prioridadeText],
-            ["Prazo", formatPrazoStatus(item)],
-            [
-              "Acomp. especial",
-              item.acompanhamento_especial == null
-                ? "—"
-                : item.acompanhamento_especial
-                  ? "Sim"
-                  : "Não",
-            ],
-            ["Sigilosa", withFallback(item.pedido_sigiloso)],
-          ].map(([label, value]) => (
-            <article key={label} className={summaryCardClass}>
-              <p className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
-                {label}
-              </p>
-              {label === "Status judicial" ? (
-                <span
-                  className={`mt-1 inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-semibold ${getStatusBadgeClass(item.status)}`}
-                >
-                  {value}
-                </span>
-              ) : label === "Prioridade" ? (
-                <span
-                  className={`mt-1 inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-semibold ${getPrioridadeBadgeClass(item.prioridade_operacional)}`}
-                >
-                  {value}
-                </span>
-              ) : (
-                <span
-                  className={`mt-1 inline-flex w-fit items-center rounded-md border px-2 py-0.5 text-xs font-semibold ${getTopIndicatorBadgeClass(label, value)}`}
-                >
-                  {value}
-                </span>
-              )}
-            </article>
-          ))}
-        </section>
+        {pessoasLoadWarning ? (
+          <div className="sipi-print-hidden rounded-lg border border-amber-400/35 bg-amber-400/10 px-4 py-3 text-sm text-amber-200">
+            Os dados da representacao foram carregados, mas as pessoas adicionais estao
+            temporariamente indisponiveis.
+          </div>
+        ) : null}
+
+        <div className="sipi-print-hidden">
+          <RegistrationQualityPanel checks={registrationChecks} />
+        </div>
+
+        {summaryItems.length > 0 ? (
+          <section className="grid items-start gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+            {summaryItems.map(([label, value]) => (
+              <article key={label} className={summaryCardClass}>
+                <p className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
+                  {label}
+                </p>
+                {label === "Status judicial" ? (
+                  <span
+                    className={`mt-1 inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-semibold ${getStatusBadgeClass(item.status)}`}
+                  >
+                    {value}
+                  </span>
+                ) : label === "Prioridade" ? (
+                  <span
+                    className={`mt-1 inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-semibold ${getPrioridadeBadgeClass(item.prioridade_operacional)}`}
+                  >
+                    {value}
+                  </span>
+                ) : (
+                  <span
+                    className={`mt-1 inline-flex w-fit items-center rounded-md border px-2 py-0.5 text-xs font-semibold ${getTopIndicatorBadgeClass(label, value)}`}
+                  >
+                    {value}
+                  </span>
+                )}
+              </article>
+            ))}
+          </section>
+        ) : null}
 
         <section className="grid items-start gap-4 xl:grid-cols-2">
           <div className="space-y-4 self-start">
-            {[cardSections[0], cardSections[1]].map(({ title, items }) => (
-              <article
-                key={title}
-                className={`${hasPrintableRepresentacaoSection(items) ? "" : "sipi-print-empty-card "}${sectionCardClass}`}
-              >
-                <div className="flex items-center gap-2 pb-2">
-                  {title === "Identificação Judicial" ? (
-                    <Scale className="h-4 w-4 text-primary" />
-                  ) : (
-                    <UserRound className="h-4 w-4 text-primary" />
-                  )}
-                  <h2 className={sectionTitleClass}>{title}</h2>
-                </div>
-                <div className="mb-3 h-px w-full bg-border/70" />
-                <div className="divide-y divide-border/60">
-                  {items.map(([label, value]) => (
-                    <div
-                      key={label}
-                      className={`${getPrintRepresentacaoFieldClass(label, value)}${infoRowClass}`}
-                    >
-                      <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
-                        {label}
-                      </p>
-                      <p
-                        className={`text-sm whitespace-pre-wrap break-words [overflow-wrap:anywhere] ${isEmptyValue(value) ? "text-zinc-500" : "text-foreground"}`}
+            {visibleCardSections
+              .filter(
+                ({ title }) => title === "Identificação Judicial" || title === "Pessoas Envolvidas",
+              )
+              .map(({ title, items }) => (
+                <article
+                  key={title}
+                  className={`${hasPrintableRepresentacaoSection(items) ? "" : "sipi-print-empty-card "}${sectionCardClass}`}
+                >
+                  <div className="flex items-center gap-2 pb-2">
+                    {title === "Identificação Judicial" ? (
+                      <Scale className="h-4 w-4 text-primary" />
+                    ) : (
+                      <UserRound className="h-4 w-4 text-primary" />
+                    )}
+                    <h2 className={sectionTitleClass}>{title}</h2>
+                  </div>
+                  <div className="mb-3 h-px w-full bg-border/70" />
+                  <div className="divide-y divide-border/60">
+                    {items.map(([label, value]) => (
+                      <div
+                        key={label}
+                        className={`${getPrintRepresentacaoFieldClass(label, value)}${infoRowClass}`}
                       >
-                        {withFallback(value)}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              </article>
-            ))}
-            <article className={sectionCardClass}>
-              <div className="flex items-center gap-2 pb-2">
-                <BellRing className="h-4 w-4 text-primary" />
-                <h2 className={sectionTitleClass}>Pendências e Alertas</h2>
-              </div>
-              <div className="mb-3 h-px w-full bg-border/70" />
-              <div className="space-y-2">
-                <div className="rounded-lg border border-border/60 bg-background/30 px-3 py-2.5">
-                  <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
-                    Prazo operacional
-                  </p>
-                  <p className="mt-1 text-sm text-foreground">{formatPrazoStatus(item)}</p>
-                </div>
-                <div className="rounded-lg border border-border/60 bg-background/30 px-3 py-2.5">
-                  <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
-                    Sinalização
-                  </p>
-                  <p className="mt-1 text-sm text-foreground">
-                    {item.acompanhamento_especial
-                      ? "Acompanhamento especial ativo."
-                      : "Sem alertas operacionais marcados."}
-                  </p>
-                </div>
-              </div>
-            </article>
-          </div>
-
-          <div className="space-y-4 self-start">
-            {[cardSections[2], cardSections[3]].map(({ title, items }) => (
-              <article
-                key={title}
-                className={`${hasPrintableRepresentacaoSection(items) ? "" : "sipi-print-empty-card "}${sectionCardClass}`}
-              >
-                <div className="flex items-center gap-2 pb-2">
-                  {title === "Tramitação Judicial" ? (
-                    <Gavel className="h-4 w-4 text-primary" />
-                  ) : (
-                    <ShieldCheck className="h-4 w-4 text-primary" />
-                  )}
-                  <h2 className={sectionTitleClass}>{title}</h2>
-                </div>
-                <div className="mb-3 h-px w-full bg-border/70" />
-                <div className="divide-y divide-border/60">
-                  {items.map(([label, value]) => (
-                    <div
-                      key={label}
-                      className={`${getPrintRepresentacaoFieldClass(label, value)}grid gap-1 py-2.5 sm:grid-cols-[170px_1fr] sm:gap-3`}
-                    >
-                      <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
-                        {label}
-                      </p>
-                      {title === "Tramitação Judicial" && label === "Status" ? (
-                        <span
-                          className={`mt-0.5 inline-flex w-fit items-center rounded-md border px-2 py-0.5 text-xs font-semibold ${getStatusBadgeClass(item.status)}`}
-                        >
-                          {withFallback(value)}
-                        </span>
-                      ) : (
+                        <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
+                          {label}
+                        </p>
                         <p
                           className={`text-sm whitespace-pre-wrap break-words [overflow-wrap:anywhere] ${isEmptyValue(value) ? "text-zinc-500" : "text-foreground"}`}
                         >
                           {withFallback(value)}
                         </p>
-                      )}
+                      </div>
+                    ))}
+                  </div>
+                </article>
+              ))}
+            {hasOperationalAlerts ? (
+              <article className={sectionCardClass}>
+                <div className="flex items-center gap-2 pb-2">
+                  <BellRing className="h-4 w-4 text-primary" />
+                  <h2 className={sectionTitleClass}>Pendências e Alertas</h2>
+                </div>
+                <div className="mb-3 h-px w-full bg-border/70" />
+                <div className="space-y-2">
+                  {item.data_vencimento ? (
+                    <div className="rounded-lg border border-border/60 bg-background/30 px-3 py-2.5">
+                      <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
+                        Prazo operacional
+                      </p>
+                      <p className="mt-1 text-sm text-foreground">{formatPrazoStatus(item)}</p>
                     </div>
-                  ))}
+                  ) : null}
+                  {item.acompanhamento_especial ? (
+                    <div className="rounded-lg border border-border/60 bg-background/30 px-3 py-2.5">
+                      <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
+                        Sinalização
+                      </p>
+                      <p className="mt-1 text-sm text-foreground">Acompanhamento especial ativo.</p>
+                    </div>
+                  ) : null}
                 </div>
               </article>
-            ))}
+            ) : null}
+          </div>
+
+          <div className="space-y-4 self-start">
+            {visibleCardSections
+              .filter(
+                ({ title }) => title === "Tramitação Judicial" || title === "Controle Interno",
+              )
+              .map(({ title, items }) => (
+                <article
+                  key={title}
+                  className={`${hasPrintableRepresentacaoSection(items) ? "" : "sipi-print-empty-card "}${sectionCardClass}`}
+                >
+                  <div className="flex items-center gap-2 pb-2">
+                    {title === "Tramitação Judicial" ? (
+                      <Gavel className="h-4 w-4 text-primary" />
+                    ) : (
+                      <ShieldCheck className="h-4 w-4 text-primary" />
+                    )}
+                    <h2 className={sectionTitleClass}>{title}</h2>
+                  </div>
+                  <div className="mb-3 h-px w-full bg-border/70" />
+                  <div className="divide-y divide-border/60">
+                    {items.map(([label, value]) => (
+                      <div
+                        key={label}
+                        className={`${getPrintRepresentacaoFieldClass(label, value)}grid gap-1 py-2.5 sm:grid-cols-[170px_1fr] sm:gap-3`}
+                      >
+                        <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
+                          {label}
+                        </p>
+                        {title === "Tramitação Judicial" && label === "Status" ? (
+                          <span
+                            className={`mt-0.5 inline-flex w-fit items-center rounded-md border px-2 py-0.5 text-xs font-semibold ${getStatusBadgeClass(item.status)}`}
+                          >
+                            {withFallback(value)}
+                          </span>
+                        ) : (
+                          <p
+                            className={`text-sm whitespace-pre-wrap break-words [overflow-wrap:anywhere] ${isEmptyValue(value) ? "text-zinc-500" : "text-foreground"}`}
+                          >
+                            {withFallback(value)}
+                          </p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </article>
+              ))}
           </div>
         </section>
 
         <section className="space-y-4">
-          {fundamentacaoCards.map(([title, value]) => (
+          {visibleFundamentacaoCards.map(([title, value]) => (
             <article
               key={title}
               className={`${hasPrintableRepresentacaoValue(value) ? "" : "sipi-print-empty-card "}${sectionCardClass}`}

@@ -731,11 +731,26 @@ function Dashboard() {
 
   return (
     <AppLayout>
-      <PageHeader
-        title="Painel de Controle"
-        subtitle={`SIPI — atualizado em ${updatedAtLabel || "—"}`}
-        showActions={false}
-      />
+      <div className="relative">
+        <PageHeader
+          title="Painel de Controle"
+          subtitle={`SIPI — atualizado em ${updatedAtLabel || "—"}`}
+          showActions={false}
+        />
+        <div
+          className="absolute right-1 top-0 hidden select-none items-center gap-2.5 text-success lg:flex"
+          aria-label="SIPI"
+        >
+          <img
+            src="/sipi-dashboard-shield.svg"
+            alt=""
+            className="h-11 w-11 object-contain drop-shadow-[0_0_7px_rgba(57,229,111,0.5)]"
+          />
+          <span className="text-2xl font-black tracking-normal drop-shadow-[0_0_8px_rgba(34,197,94,0.35)]">
+            SIPI
+          </span>
+        </div>
+      </div>
       {loadError ? <p className="text-xs text-muted-foreground mb-3">{loadError}</p> : null}
 
       {/* KPI cards */}
@@ -1051,785 +1066,788 @@ function Dashboard() {
       </div>
 
       <div className="flex flex-col">
-      {/* Donut row */}
-      <div className="order-[10] grid grid-cols-1 items-start gap-5 mb-6 lg:grid-cols-3">
-        <div className={panelFxClass}>
-          <DonutPanel
-            isClient={isClient}
-            title="POR STATUS DE DILIGÊNCIA"
-            data={POR_STATUS}
-            total={POR_STATUS.reduce((a, b) => a + b.value, 0)}
-            getItemAction={(name) =>
-              name === "Pendente"
-                ? {
-                    title: "Abrir inquéritos pendentes",
-                    onClick: () => goTo("/inqueritos", { status: "em_andamento" }),
-                  }
-                : name === "Concluída"
+        {/* Donut row */}
+        <div className="order-[10] grid grid-cols-1 items-start gap-5 mb-6 lg:grid-cols-3">
+          <div className={panelFxClass}>
+            <DonutPanel
+              isClient={isClient}
+              title="POR STATUS DE DILIGÊNCIA"
+              data={POR_STATUS}
+              total={POR_STATUS.reduce((a, b) => a + b.value, 0)}
+              getItemAction={(name) =>
+                name === "Pendente"
                   ? {
-                      title: "Abrir inquéritos concluídos",
-                      onClick: () => goTo("/inqueritos", { relatorio: "enviado" }),
+                      title: "Abrir inquéritos pendentes",
+                      onClick: () => goTo("/inqueritos", { status: "em_andamento" }),
                     }
-                  : undefined
-            }
-          />
-        </div>
-        <div className={panelFxClass}>
-          <DonutPanel
-            isClient={isClient}
-            title="POR PRIORIDADE"
-            data={POR_PRIORIDADE}
-            total={POR_PRIORIDADE.reduce((a, b) => a + b.value, 0)}
-            getItemAction={(name) =>
-              name === "Alta"
-                ? {
-                    title: "Abrir inquéritos com prioridade alta",
-                    onClick: () => goTo("/inqueritos", { prioridade: "alta" }),
-                  }
-                : name === "Média"
-                  ? {
-                      title: "Abrir inquéritos com prioridade média",
-                      onClick: () => goTo("/inqueritos", { prioridade: "média" }),
-                    }
-                  : name === "Baixa"
+                  : name === "Concluída"
                     ? {
-                        title: "Abrir inquéritos com prioridade baixa",
-                        onClick: () => goTo("/inqueritos", { prioridade: "baixa" }),
+                        title: "Abrir inquéritos concluídos",
+                        onClick: () => goTo("/inqueritos", { relatorio: "enviado" }),
                       }
                     : undefined
-            }
-          />
-        </div>
-        <div className={panelFxClass}>
-          <Panel
-            title="PROCEDIMENTOS POR TIPO"
-            accent="success"
-            action={<Maximize2 className="h-3.5 w-3.5 text-muted-foreground" />}
-          >
-            <ul className="space-y-1.5">
-              {PROCEDIMENTOS.map((t) => {
-                const width =
-                  t.total === 0
-                    ? 0
-                    : Math.max(5, Math.round((t.total / maxProcedimentoCount) * 100));
-                return (
-                  <li
-                    key={t.sigla}
-                    className="cursor-pointer rounded-md px-0.5 py-0.5 leading-tight transition-colors duration-200 hover:bg-success/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-success/50"
-                    role="button"
-                    tabIndex={0}
-                    title={`Abrir inquéritos do tipo ${t.sigla}`}
-                    aria-label={`Abrir inquéritos do tipo ${t.sigla}`}
-                    onClick={() => goTo("/inqueritos", { tipo: t.searchValue })}
-                    onKeyDown={(e) =>
-                      (e.key === "Enter" || e.key === " ") &&
-                      goTo("/inqueritos", { tipo: t.searchValue })
+              }
+            />
+          </div>
+          <div className={panelFxClass}>
+            <DonutPanel
+              isClient={isClient}
+              title="POR PRIORIDADE"
+              data={POR_PRIORIDADE}
+              total={POR_PRIORIDADE.reduce((a, b) => a + b.value, 0)}
+              getItemAction={(name) =>
+                name === "Alta"
+                  ? {
+                      title: "Abrir inquéritos com prioridade alta",
+                      onClick: () => goTo("/inqueritos", { prioridade: "alta" }),
                     }
-                  >
-                    <div className="mb-1 flex items-center justify-between gap-3">
-                      <span className="text-xs font-black tracking-wide text-foreground">
-                        {t.sigla}
-                      </span>
-                      <span className="text-xs font-black tabular-nums text-success">
-                        {t.total}
-                      </span>
-                    </div>
-                    <div className="h-1.5 overflow-hidden rounded-full bg-muted/60 shadow-inner shadow-black/20">
-                      <div
-                        className="h-full rounded-full bg-success shadow-[0_0_18px_rgba(34,197,94,0.5)] transition-all duration-500"
-                        style={{ width: `${width}%` }}
-                      />
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
-          </Panel>
-        </div>
-      </div>
-
-      {/* CVLI Chart */}
-      <div className="order-[20] grid grid-cols-1 xl:grid-cols-3 gap-5 mb-6">
-        <div className={`${panelFxClass} xl:col-span-2`}>
-          <Panel title="CVLI — COMPARATIVO ANUAL" accent="info">
-            <div className="h-[285px] min-h-[285px] w-full min-w-0">
-              {isClient && CVLI_ANUAL_RESUMO.length > 0 ? (
-                <ResponsiveContainer width="100%" height="100%">
-                  <ComposedChart
-                    data={CVLI_ANUAL_RESUMO}
-                    margin={{ top: 16, right: 32, bottom: 26, left: -8 }}
-                  >
-                    <CartesianGrid stroke="var(--border)" strokeDasharray="3 4" />
-                    <XAxis dataKey="ano" stroke="var(--muted-foreground)" fontSize={11} />
-                    <YAxis
-                      yAxisId="left"
-                      stroke="var(--muted-foreground)"
-                      fontSize={11}
-                      allowDecimals={false}
-                    />
-                    <YAxis
-                      yAxisId="right"
-                      orientation="right"
-                      stroke="var(--muted-foreground)"
-                      fontSize={11}
-                      domain={[0, 100]}
-                      ticks={[0, 25, 50, 75, 100]}
-                      tickFormatter={(v) => `${v}%`}
-                    />
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: "var(--card)",
-                        border: "1px solid var(--border)",
-                        borderRadius: 8,
-                        fontSize: 12,
-                      }}
-                    />
-                    <Bar
-                      yAxisId="left"
-                      dataKey="registros"
-                      name="Registros"
-                      fill="var(--info)"
-                      radius={[4, 4, 0, 0]}
-                    />
-                    <Bar
-                      yAxisId="left"
-                      dataKey="elucidados"
-                      name="Elucidados"
-                      fill="var(--success)"
-                      radius={[4, 4, 0, 0]}
-                    />
-                    <Line
-                      yAxisId="right"
-                      type="linear"
-                      dataKey="taxa"
-                      name="Taxa de elucidação (%)"
-                      stroke="var(--foreground)"
-                      strokeWidth={2}
-                      dot={{ r: 3, fill: "var(--foreground)" }}
-                    />
-                  </ComposedChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="h-full flex items-center justify-center text-sm text-muted-foreground">
-                  Nenhum dado disponível.
-                </div>
-              )}
-            </div>
-            <div className="mt-2 flex flex-wrap items-center justify-center gap-4 text-[11px]">
-              <Legend color="var(--info)" label="Registros" />
-              <Legend color="var(--success)" label="Elucidados" />
-              <Legend color="var(--foreground)" label="Taxa de elucidação (%)" line />
-            </div>
-          </Panel>
-        </div>
-
-        <div className="flex h-full flex-col overflow-hidden rounded-xl border border-border bg-card transition-all duration-300 hover:border-success/55 hover:shadow-[0_0_0_1px_rgba(34,197,94,0.25),0_14px_28px_-22px_rgba(34,197,94,0.75)]">
-          <div className="flex items-center justify-between gap-3 border-b border-border bg-muted/20 px-4 py-3">
-            <div className="text-[10px] tracking-[0.15em] text-info font-bold">
-              CVLI — RESUMO ANUAL
-            </div>
-            <button
-              type="button"
-              onClick={() => navigate({ to: "/cvli-comparativo" })}
-              className="inline-flex h-7 items-center gap-1.5 rounded-md border border-success/70 bg-success px-2.5 text-[10px] font-black uppercase tracking-[0.12em] text-background shadow-[0_0_12px_rgba(34,197,94,0.38)] transition hover:-translate-y-0.5 hover:shadow-[0_0_18px_rgba(34,197,94,0.58)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-success/60"
-            >
-              Abrir
-              <ArrowUpRight className="h-3.5 w-3.5" />
-            </button>
-          </div>
-          <div className="md:hidden divide-y divide-border">
-            {CVLI_ANUAL_RESUMO.map((r) => (
-              <div key={r.ano} className="px-4 py-3">
-                <div className="flex items-center justify-between gap-3">
-                  <span className="font-semibold">{r.ano}</span>
-                  <span className="text-success font-black">
-                    {r.taxa.toString().replace(".", ",")}%
-                  </span>
-                </div>
-                <div className="mt-2 grid grid-cols-2 gap-2 text-[11px] text-muted-foreground">
-                  <span>
-                    Reg. <strong className="text-foreground">{r.registros}</strong>
-                  </span>
-                  <span>
-                    Eluc. <strong className="text-foreground">{r.elucidados}</strong>
-                  </span>
-                </div>
-              </div>
-            ))}
-            <div className="px-4 py-3 bg-muted/30 font-bold">
-              <div className="flex items-center justify-between gap-3">
-                <span>TOTAL</span>
-                <span className="text-success">
-                  {CVLI_TOTAL.taxa.toString().replace(".", ",")}%
-                </span>
-              </div>
-              <div className="mt-2 grid grid-cols-2 gap-2 text-[11px] text-muted-foreground">
-                <span>
-                  Reg. <strong className="text-foreground">{CVLI_TOTAL.registros}</strong>
-                </span>
-                <span>
-                  Eluc. <strong className="text-foreground">{CVLI_TOTAL.elucidados}</strong>
-                </span>
-              </div>
-            </div>
-          </div>
-          <div className="hidden min-h-0 flex-1 flex-col overflow-x-auto md:flex">
-            <table className="w-full text-sm">
-              <thead className="text-[10px] tracking-[0.15em] text-muted-foreground">
-                <tr className="border-b border-border">
-                  <th className="text-left px-4 py-3 font-bold">ANO</th>
-                  <th className="text-right px-4 py-3 font-bold">REG</th>
-                  <th className="text-right px-4 py-3 font-bold">ELUC</th>
-                  <th className="text-right px-4 py-3 font-bold">%</th>
-                </tr>
-              </thead>
-              <tbody>
-                {CVLI_ANUAL_RESUMO.map((r) => (
-                  <tr
-                    key={r.ano}
-                    className="border-b border-border/50 transition-colors duration-200 hover:bg-success/10"
-                  >
-                    <td className="px-4 py-3 font-semibold">{r.ano}</td>
-                    <td className="px-4 py-3 text-right tabular-nums">{r.registros}</td>
-                    <td className="px-4 py-3 text-right tabular-nums">{r.elucidados}</td>
-                    <td className="px-4 py-3 text-right tabular-nums text-success font-semibold">
-                      {r.taxa.toString().replace(".", ",")}%
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            <table className="mt-auto w-full border-t border-border text-sm">
-              <tbody>
-                <tr className="font-bold">
-                  <td className="px-4 py-3">TOTAL</td>
-                  <td className="px-4 py-3 text-right tabular-nums">{CVLI_TOTAL.registros}</td>
-                  <td className="px-4 py-3 text-right tabular-nums">{CVLI_TOTAL.elucidados}</td>
-                  <td className="px-4 py-3 text-right tabular-nums text-success">
-                    {CVLI_TOTAL.taxa.toString().replace(".", ",")}%
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-
-      {/* CVLI mensal + Bairros */}
-      <div className="order-[25] grid grid-cols-1 items-stretch xl:grid-cols-2 gap-5 mb-6">
-        <div className={`${panelFxClass} h-full`}>
-          <Panel title={CVLI_MENSAL_TITLE} accent="info" className="h-full">
-            <SafeChartContainer fallback="Nenhum dado disponível." className="h-full min-h-[220px]">
-              {isClient && CVLI_MENSAL_YEARS.length > 0 ? (
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart
-                    data={CVLI_MENSAL}
-                    margin={{ top: 10, right: 10, bottom: 0, left: -20 }}
-                  >
-                    <CartesianGrid stroke="var(--border)" vertical={false} />
-                    <XAxis dataKey="mes" stroke="var(--muted-foreground)" fontSize={10} />
-                    <YAxis stroke="var(--muted-foreground)" fontSize={10} />
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: "var(--card)",
-                        border: "1px solid var(--border)",
-                        borderRadius: 8,
-                        fontSize: 12,
-                      }}
-                    />
-                    {CVLI_MENSAL_YEARS.map((year, index) => (
-                      <Bar
-                        key={year}
-                        dataKey={`y${year}`}
-                        fill={CVLI_YEAR_COLORS[index % CVLI_YEAR_COLORS.length]}
-                        name={String(year)}
-                        radius={[3, 3, 0, 0]}
-                      />
-                    ))}
-                  </BarChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="h-full flex items-center justify-center text-sm text-muted-foreground">
-                  Nenhum dado disponível.
-                </div>
-              )}
-            </SafeChartContainer>
-          </Panel>
-        </div>
-
-        <div className={`${panelFxClass} h-full`}>
-          <Panel
-            title="ANÁLISE POR LOCALIDADE"
-            accent="warning"
-            className="h-full"
-            icon={<MapPin className="h-4 w-4 text-warning" />}
-            action={
-              <button
-                type="button"
-                onClick={() => navigate({ to: "/localidades" })}
-                className="inline-flex h-7 items-center gap-1.5 rounded-md border border-warning/70 bg-warning px-2.5 text-[10px] font-black uppercase tracking-[0.12em] text-background shadow-[0_0_12px_rgba(245,158,11,0.34)] transition hover:-translate-y-0.5 hover:shadow-[0_0_18px_rgba(245,158,11,0.48)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-warning/60"
-              >
-                Abrir
-                <ArrowUpRight className="h-3.5 w-3.5" />
-              </button>
-            }
-          >
-            <div>
-              <table className="w-full text-sm">
-                <thead className="text-[10px] tracking-[0.15em] text-muted-foreground sticky top-0 bg-card">
-                  <tr className="border-b border-border">
-                    <th className="text-left py-2 font-bold">BAIRRO</th>
-                    <th className="w-24 text-center py-2 font-bold">TOTAL</th>
-                    <th className="w-24 text-center py-2 font-bold">CVLI</th>
-                    <th className="w-24 text-center py-2 font-bold">ALTA</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {TOP_BAIRROS.length === 0 ? (
-                    <tr>
-                      <td colSpan={4} className="py-6 text-center text-sm text-muted-foreground">
-                        Nenhum dado disponível.
-                      </td>
-                    </tr>
-                  ) : (
-                    TOP_BAIRROS.map((b) => (
-                      <tr
-                        key={b.bairro}
-                        className="border-b border-border/50 transition-colors duration-200 hover:bg-success/10"
-                      >
-                        <td className="py-2.5 font-medium">{b.bairro}</td>
-                        <td className="w-24 py-2.5 text-center tabular-nums">{b.total}</td>
-                        <td className="w-24 py-2.5 text-center tabular-nums text-destructive">
-                          {b.cvli}
-                        </td>
-                        <td className="w-24 py-2.5 text-center tabular-nums text-warning">
-                          {b.alta}
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </Panel>
-        </div>
-      </div>
-
-      {/* Gravidade + Equipe */}
-      <div className="order-[30] grid grid-cols-1 items-stretch xl:grid-cols-2 gap-5">
-        <div className={`${panelFxClass} h-full`}>
-          <Panel title="ANÁLISE POR GRAVIDADE" accent="destructive" className="h-full">
-            <div className="h-full min-h-[245px] w-full min-w-0">
-              {isClient ? (
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart
-                    data={POR_GRAVIDADE}
-                    layout="vertical"
-                    margin={{ top: 10, right: 12, bottom: 4, left: 72 }}
-                  >
-                    <CartesianGrid
-                      stroke="var(--border)"
-                      strokeDasharray="3 4"
-                      horizontal={false}
-                    />
-                    <XAxis
-                      type="number"
-                      stroke="var(--muted-foreground)"
-                      fontSize={11}
-                      allowDecimals={false}
-                      domain={[0, Math.max(1, maxGravidadeCount)]}
-                    />
-                    <YAxis
-                      type="category"
-                      dataKey="label"
-                      stroke="var(--muted-foreground)"
-                      fontSize={10}
-                      width={72}
-                      tickLine={false}
-                      axisLine={false}
-                    />
-                    <Tooltip
-                      cursor={{
-                        fill: "rgba(255,255,255,0.14)",
-                        stroke: "rgba(255,255,255,0.18)",
-                        strokeWidth: 1,
-                      }}
-                      formatter={(value) => [`n: ${Number(value ?? 0)}`, "Procedimentos"]}
-                      labelStyle={{
-                        color: "var(--foreground)",
-                        fontWeight: 800,
-                        marginBottom: 4,
-                      }}
-                      itemStyle={{
-                        color: "var(--destructive)",
-                        fontWeight: 700,
-                      }}
-                      contentStyle={{
-                        backgroundColor: "var(--card)",
-                        border: "1px solid var(--border)",
-                        borderRadius: 8,
-                        fontSize: 12,
-                        boxShadow: "0 12px 30px rgba(0,0,0,0.35)",
-                      }}
-                    />
-                    <Bar
-                      dataKey="value"
-                      name="Procedimentos"
-                      fill="var(--destructive)"
-                      radius={[0, 4, 4, 0]}
-                      activeBar={{
-                        fill: "#ff4d57",
-                        stroke: "rgba(255,255,255,0.9)",
-                        strokeWidth: 1,
-                      }}
-                      onClick={(data) =>
-                        goToGravidade(
-                          (data as { payload?: { key?: string; value?: number } }).payload,
-                        )
+                  : name === "Média"
+                    ? {
+                        title: "Abrir inquéritos com prioridade média",
+                        onClick: () => goTo("/inqueritos", { prioridade: "média" }),
                       }
-                    >
-                      {POR_GRAVIDADE.map((item) => (
-                        <Cell
-                          key={item.key}
-                          fill="var(--destructive)"
-                          cursor={item.value > 0 ? "pointer" : "default"}
-                        />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="h-full flex items-center justify-center text-sm text-muted-foreground">
-                  Nenhum dado disponível.
-                </div>
-              )}
-            </div>
-          </Panel>
-        </div>
-
-        <div className={`${panelFxClass} h-full`}>
-          <Panel
-            title="DISTRIBUIÇÃO POR EQUIPE"
-            accent="success"
-            icon={<Users className="h-4 w-4 text-success" />}
-            action={<ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />}
-            className="h-full"
-          >
-            {EQUIPES.length === 0 ? (
-              <div className="py-6 text-sm text-muted-foreground">Nenhum dado disponível.</div>
-            ) : (
-              <div className="grid items-center gap-5 md:grid-cols-[190px_minmax(0,1fr)]">
-                <div className="relative mx-auto h-40 w-40">
-                  {isClient ? (
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie
-                          data={EQUIPES_GRAFICO}
-                          dataKey="value"
-                          innerRadius={48}
-                          outerRadius={74}
-                          paddingAngle={3}
-                          stroke="var(--card)"
-                          strokeWidth={3}
-                        >
-                          {EQUIPES_GRAFICO.map((team) => (
-                            <Cell key={team.name} fill={team.color} />
-                          ))}
-                        </Pie>
-                        <Tooltip
-                          formatter={(value: number, name: string) => [
-                            `${value} inquérito(s)`,
-                            name,
-                          ]}
-                          contentStyle={{
-                            backgroundColor: "var(--card)",
-                            border: "1px solid var(--border)",
-                            borderRadius: 8,
-                            color: "var(--foreground)",
-                          }}
-                          cursor={false}
-                        />
-                      </PieChart>
-                    </ResponsiveContainer>
-                  ) : null}
-                  <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-                    <span className="text-3xl font-black tabular-nums text-success">
-                      {totalEquipes}
-                    </span>
-                    <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-                      Equipes
-                    </span>
-                  </div>
-                </div>
-                <ul className="space-y-3">
-                  {EQUIPES_GRAFICO.map((team) => (
-                    <li
-                      key={team.name}
-                      className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-md px-2 py-1.5 transition-colors duration-200 hover:bg-success/5"
-                    >
-                      <div className="flex min-w-0 items-center gap-2">
-                        <span
-                          className="h-2.5 w-2.5 shrink-0 rounded-full shadow-[0_0_10px_currentColor]"
-                          style={{ backgroundColor: team.color, color: team.color }}
-                        />
-                        <span className="truncate text-sm font-semibold text-foreground">
-                          {team.name}
-                        </span>
-                      </div>
-                      <span className="text-right text-xs font-semibold tabular-nums text-muted-foreground">
-                        {team.value} ({team.pct}%)
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </Panel>
-        </div>
-      </div>
-
-      <section className="order-[50] mt-6">
-        <div className="mb-3 flex items-end justify-between gap-3">
-          <div>
-            <h2 className="text-sm font-black uppercase tracking-[0.18em] text-foreground">
-              Gestão Operacional
-            </h2>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Ritmo da unidade, carga semanal e módulos planejados.
-            </p>
+                    : name === "Baixa"
+                      ? {
+                          title: "Abrir inquéritos com prioridade baixa",
+                          onClick: () => goTo("/inqueritos", { prioridade: "baixa" }),
+                        }
+                      : undefined
+              }
+            />
           </div>
-        </div>
-
-        <div className="grid grid-cols-1 items-stretch gap-5 lg:grid-cols-3">
-          <div className={`${panelFxClass} h-full`}>
+          <div className={panelFxClass}>
             <Panel
-              title="PRODUTIVIDADE OPERACIONAL"
+              title="PROCEDIMENTOS POR TIPO"
               accent="success"
-              icon={<Gauge className="h-4 w-4 text-success" />}
-              className="h-full"
+              action={<Maximize2 className="h-3.5 w-3.5 text-muted-foreground" />}
             >
-              <div className="flex h-full min-h-[300px] flex-col">
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="rounded-lg border border-border/55 bg-background/25 px-3.5 py-3">
-                    <div className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
-                      Novos (7d)
-                    </div>
-                    <div className="mt-1.5 text-2xl font-black tabular-nums text-info">
-                      {produtividade.novos7}
-                    </div>
-                  </div>
-                  <div className="rounded-lg border border-border/55 bg-background/25 px-3.5 py-3">
-                    <div className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
-                      Concluídos (7d)
-                    </div>
-                    <div className="mt-1.5 text-2xl font-black tabular-nums text-success">
-                      {produtividade.concluidos7}
-                    </div>
-                  </div>
-                  <div className="rounded-lg border border-border/55 bg-background/25 px-3.5 py-3">
-                    <div className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
-                      Novos (30d)
-                    </div>
-                    <div className="mt-1.5 text-2xl font-black tabular-nums text-info">
-                      {produtividade.novos30}
-                    </div>
-                  </div>
-                  <div className="rounded-lg border border-border/55 bg-background/25 px-3.5 py-3">
-                    <div className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
-                      Concluídos (30d)
-                    </div>
-                    <div className="mt-1.5 text-2xl font-black tabular-nums text-success">
-                      {produtividade.concluidos30}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="mt-auto rounded-lg border border-border/60 bg-background/25 px-3.5 py-3.5">
-                  <div className="flex items-center justify-between gap-3">
-                    <span className="text-xs font-black text-foreground">Taxa de conclusão</span>
-                    <span className="text-sm font-black tabular-nums text-success">
-                      {produtividade.taxaConclusao30}%
-                    </span>
-                  </div>
-                  <div className="mt-2 h-2 overflow-hidden rounded-full bg-muted/80 shadow-inner shadow-black/20">
-                    <div
-                      className="h-full rounded-full bg-success transition-all duration-500"
-                      style={{
-                        width: `${Math.min(100, produtividade.taxaConclusao30)}%`,
-                        boxShadow:
-                          produtividade.taxaConclusao30 > 0
-                            ? "0 0 18px rgba(34,197,94,0.45)"
-                            : "none",
-                      }}
-                    />
-                  </div>
-                  <div className="mt-2 flex flex-wrap items-center justify-between gap-x-4 gap-y-1 text-xs text-muted-foreground">
-                    <span>
-                      Backlog gerado:{" "}
-                      <strong
-                        className="font-black tabular-nums"
-                        style={{ color: backlogGeradoColor }}
-                      >
-                        {produtividade.backlogGerado > 0
-                          ? `+${produtividade.backlogGerado}`
-                          : produtividade.backlogGerado}
-                      </strong>
-                    </span>
-                    <span>
-                      Situação:{" "}
-                      <strong className="font-black" style={{ color: situacaoOperacionalColor }}>
-                        {produtividade.situacaoOperacional}
-                      </strong>
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </Panel>
-          </div>
-
-          <div className={`${panelFxClass} h-full`}>
-            <Panel
-              title="CARGA POR DIA DA SEMANA"
-              accent="info"
-              icon={<CalendarDays className="h-4 w-4 text-info" />}
-              className="h-full"
-            >
-              <div className="mb-4 grid grid-cols-3 gap-2">
-                <div className="rounded-md border border-success/25 bg-success/5 px-3 py-2.5">
-                  <div className="text-[9px] font-bold uppercase tracking-[0.12em] text-muted-foreground">
-                    Maior
-                  </div>
-                  <div className="mt-1 truncate text-sm font-black text-success">
-                    {cargaPorDiaSemana.peakDay?.label ?? "Sem dados"}
-                  </div>
-                </div>
-                <div className="rounded-md border border-border/60 bg-background/30 px-3 py-2.5">
-                  <div className="text-[9px] font-bold uppercase tracking-[0.12em] text-muted-foreground">
-                    Média
-                  </div>
-                  <div className="mt-1 text-sm font-black tabular-nums text-foreground">
-                    {cargaPorDiaSemana.mediaDiaria.toString().replace(".", ",")}
-                  </div>
-                </div>
-                <div className="rounded-md border border-border/60 bg-background/30 px-3 py-2.5">
-                  <div className="text-[9px] font-bold uppercase tracking-[0.12em] text-muted-foreground">
-                    Total
-                  </div>
-                  <div className="mt-1 text-sm font-black tabular-nums text-foreground">
-                    {cargaPorDiaSemana.totalAnalisado}
-                  </div>
-                </div>
-              </div>
-
-              <ul className="space-y-3">
-                {cargaPorDiaSemana.dias.map((day) => {
-                  const width = day.total === 0 ? 0 : Math.max(8, day.percent);
+              <ul className="space-y-1.5">
+                {PROCEDIMENTOS.map((t) => {
+                  const width =
+                    t.total === 0
+                      ? 0
+                      : Math.max(5, Math.round((t.total / maxProcedimentoCount) * 100));
                   return (
                     <li
-                      key={day.key}
-                      className={`grid grid-cols-[5.25rem_1fr_2.5rem] items-center gap-3 rounded-md px-1.5 py-1 text-sm ${day.isPeak ? "bg-success/5" : ""}`}
+                      key={t.sigla}
+                      className="cursor-pointer rounded-md px-0.5 py-0.5 leading-tight transition-colors duration-200 hover:bg-success/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-success/50"
+                      role="button"
+                      tabIndex={0}
+                      title={`Abrir inquéritos do tipo ${t.sigla}`}
+                      aria-label={`Abrir inquéritos do tipo ${t.sigla}`}
+                      onClick={() => goTo("/inqueritos", { tipo: t.searchValue })}
+                      onKeyDown={(e) =>
+                        (e.key === "Enter" || e.key === " ") &&
+                        goTo("/inqueritos", { tipo: t.searchValue })
+                      }
                     >
-                      <span
-                        className={`truncate font-bold ${day.isPeak ? "text-success" : "text-muted-foreground"}`}
-                      >
-                        {day.label}
-                      </span>
-                      <div className="h-4 overflow-hidden rounded-full bg-muted/80 shadow-inner shadow-black/20">
+                      <div className="mb-1 flex items-center justify-between gap-3">
+                        <span className="text-xs font-black tracking-wide text-foreground">
+                          {t.sigla}
+                        </span>
+                        <span className="text-xs font-black tabular-nums text-success">
+                          {t.total}
+                        </span>
+                      </div>
+                      <div className="h-1.5 overflow-hidden rounded-full bg-muted/60 shadow-inner shadow-black/20">
                         <div
-                          className="h-full rounded-full transition-all duration-500"
-                          style={{
-                            width: `${width}%`,
-                            backgroundColor: day.isPeak ? "var(--success)" : "var(--info)",
-                            boxShadow: day.total > 0 ? "0 0 16px rgba(34,197,94,0.4)" : "none",
-                          }}
+                          className="h-full rounded-full bg-success shadow-[0_0_18px_rgba(34,197,94,0.5)] transition-all duration-500"
+                          style={{ width: `${width}%` }}
                         />
                       </div>
-                      <span className="text-right font-black tabular-nums text-foreground">
-                        {day.total}
-                      </span>
                     </li>
                   );
                 })}
               </ul>
             </Panel>
           </div>
+        </div>
+
+        {/* CVLI Chart */}
+        <div className="order-[20] grid grid-cols-1 xl:grid-cols-3 gap-5 mb-6">
+          <div className={`${panelFxClass} xl:col-span-2`}>
+            <Panel title="CVLI — COMPARATIVO ANUAL" accent="info">
+              <div className="h-[285px] min-h-[285px] w-full min-w-0">
+                {isClient && CVLI_ANUAL_RESUMO.length > 0 ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <ComposedChart
+                      data={CVLI_ANUAL_RESUMO}
+                      margin={{ top: 16, right: 32, bottom: 26, left: -8 }}
+                    >
+                      <CartesianGrid stroke="var(--border)" strokeDasharray="3 4" />
+                      <XAxis dataKey="ano" stroke="var(--muted-foreground)" fontSize={11} />
+                      <YAxis
+                        yAxisId="left"
+                        stroke="var(--muted-foreground)"
+                        fontSize={11}
+                        allowDecimals={false}
+                      />
+                      <YAxis
+                        yAxisId="right"
+                        orientation="right"
+                        stroke="var(--muted-foreground)"
+                        fontSize={11}
+                        domain={[0, 100]}
+                        ticks={[0, 25, 50, 75, 100]}
+                        tickFormatter={(v) => `${v}%`}
+                      />
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: "var(--card)",
+                          border: "1px solid var(--border)",
+                          borderRadius: 8,
+                          fontSize: 12,
+                        }}
+                      />
+                      <Bar
+                        yAxisId="left"
+                        dataKey="registros"
+                        name="Registros"
+                        fill="var(--info)"
+                        radius={[4, 4, 0, 0]}
+                      />
+                      <Bar
+                        yAxisId="left"
+                        dataKey="elucidados"
+                        name="Elucidados"
+                        fill="var(--success)"
+                        radius={[4, 4, 0, 0]}
+                      />
+                      <Line
+                        yAxisId="right"
+                        type="linear"
+                        dataKey="taxa"
+                        name="Taxa de elucidação (%)"
+                        stroke="var(--foreground)"
+                        strokeWidth={2}
+                        dot={{ r: 3, fill: "var(--foreground)" }}
+                      />
+                    </ComposedChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="h-full flex items-center justify-center text-sm text-muted-foreground">
+                    Nenhum dado disponível.
+                  </div>
+                )}
+              </div>
+              <div className="mt-2 flex flex-wrap items-center justify-center gap-4 text-[11px]">
+                <Legend color="var(--info)" label="Registros" />
+                <Legend color="var(--success)" label="Elucidados" />
+                <Legend color="var(--foreground)" label="Taxa de elucidação (%)" line />
+              </div>
+            </Panel>
+          </div>
+
+          <div className="flex h-full flex-col overflow-hidden rounded-xl border border-border bg-card transition-all duration-300 hover:border-success/55 hover:shadow-[0_0_0_1px_rgba(34,197,94,0.25),0_14px_28px_-22px_rgba(34,197,94,0.75)]">
+            <div className="flex items-center justify-between gap-3 border-b border-border bg-muted/20 px-4 py-3">
+              <div className="text-[10px] tracking-[0.15em] text-info font-bold">
+                CVLI — RESUMO ANUAL
+              </div>
+              <button
+                type="button"
+                onClick={() => navigate({ to: "/cvli-comparativo" })}
+                className="inline-flex h-7 items-center gap-1.5 rounded-md border border-success/70 bg-success px-2.5 text-[10px] font-black uppercase tracking-[0.12em] text-background shadow-[0_0_12px_rgba(34,197,94,0.38)] transition hover:-translate-y-0.5 hover:shadow-[0_0_18px_rgba(34,197,94,0.58)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-success/60"
+              >
+                Abrir
+                <ArrowUpRight className="h-3.5 w-3.5" />
+              </button>
+            </div>
+            <div className="md:hidden divide-y divide-border">
+              {CVLI_ANUAL_RESUMO.map((r) => (
+                <div key={r.ano} className="px-4 py-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="font-semibold">{r.ano}</span>
+                    <span className="text-success font-black">
+                      {r.taxa.toString().replace(".", ",")}%
+                    </span>
+                  </div>
+                  <div className="mt-2 grid grid-cols-2 gap-2 text-[11px] text-muted-foreground">
+                    <span>
+                      Reg. <strong className="text-foreground">{r.registros}</strong>
+                    </span>
+                    <span>
+                      Eluc. <strong className="text-foreground">{r.elucidados}</strong>
+                    </span>
+                  </div>
+                </div>
+              ))}
+              <div className="px-4 py-3 bg-muted/30 font-bold">
+                <div className="flex items-center justify-between gap-3">
+                  <span>TOTAL</span>
+                  <span className="text-success">
+                    {CVLI_TOTAL.taxa.toString().replace(".", ",")}%
+                  </span>
+                </div>
+                <div className="mt-2 grid grid-cols-2 gap-2 text-[11px] text-muted-foreground">
+                  <span>
+                    Reg. <strong className="text-foreground">{CVLI_TOTAL.registros}</strong>
+                  </span>
+                  <span>
+                    Eluc. <strong className="text-foreground">{CVLI_TOTAL.elucidados}</strong>
+                  </span>
+                </div>
+              </div>
+            </div>
+            <div className="hidden min-h-0 flex-1 flex-col overflow-x-auto md:flex">
+              <table className="w-full text-sm">
+                <thead className="text-[10px] tracking-[0.15em] text-muted-foreground">
+                  <tr className="border-b border-border">
+                    <th className="text-left px-4 py-3 font-bold">ANO</th>
+                    <th className="text-right px-4 py-3 font-bold">REG</th>
+                    <th className="text-right px-4 py-3 font-bold">ELUC</th>
+                    <th className="text-right px-4 py-3 font-bold">%</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {CVLI_ANUAL_RESUMO.map((r) => (
+                    <tr
+                      key={r.ano}
+                      className="border-b border-border/50 transition-colors duration-200 hover:bg-success/10"
+                    >
+                      <td className="px-4 py-3 font-semibold">{r.ano}</td>
+                      <td className="px-4 py-3 text-right tabular-nums">{r.registros}</td>
+                      <td className="px-4 py-3 text-right tabular-nums">{r.elucidados}</td>
+                      <td className="px-4 py-3 text-right tabular-nums text-success font-semibold">
+                        {r.taxa.toString().replace(".", ",")}%
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <table className="mt-auto w-full border-t border-border text-sm">
+                <tbody>
+                  <tr className="font-bold">
+                    <td className="px-4 py-3">TOTAL</td>
+                    <td className="px-4 py-3 text-right tabular-nums">{CVLI_TOTAL.registros}</td>
+                    <td className="px-4 py-3 text-right tabular-nums">{CVLI_TOTAL.elucidados}</td>
+                    <td className="px-4 py-3 text-right tabular-nums text-success">
+                      {CVLI_TOTAL.taxa.toString().replace(".", ",")}%
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        {/* CVLI mensal + Bairros */}
+        <div className="order-[25] grid grid-cols-1 items-stretch xl:grid-cols-2 gap-5 mb-6">
+          <div className={`${panelFxClass} h-full`}>
+            <Panel title={CVLI_MENSAL_TITLE} accent="info" className="h-full">
+              <SafeChartContainer
+                fallback="Nenhum dado disponível."
+                className="h-full min-h-[220px]"
+              >
+                {isClient && CVLI_MENSAL_YEARS.length > 0 ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={CVLI_MENSAL}
+                      margin={{ top: 10, right: 10, bottom: 0, left: -20 }}
+                    >
+                      <CartesianGrid stroke="var(--border)" vertical={false} />
+                      <XAxis dataKey="mes" stroke="var(--muted-foreground)" fontSize={10} />
+                      <YAxis stroke="var(--muted-foreground)" fontSize={10} />
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: "var(--card)",
+                          border: "1px solid var(--border)",
+                          borderRadius: 8,
+                          fontSize: 12,
+                        }}
+                      />
+                      {CVLI_MENSAL_YEARS.map((year, index) => (
+                        <Bar
+                          key={year}
+                          dataKey={`y${year}`}
+                          fill={CVLI_YEAR_COLORS[index % CVLI_YEAR_COLORS.length]}
+                          name={String(year)}
+                          radius={[3, 3, 0, 0]}
+                        />
+                      ))}
+                    </BarChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="h-full flex items-center justify-center text-sm text-muted-foreground">
+                    Nenhum dado disponível.
+                  </div>
+                )}
+              </SafeChartContainer>
+            </Panel>
+          </div>
 
           <div className={`${panelFxClass} h-full`}>
             <Panel
-              title="RANKING DE ESCRIVÃES"
+              title="ANÁLISE POR LOCALIDADE"
               accent="warning"
-              icon={<Users className="h-4 w-4 text-warning" />}
               className="h-full"
+              icon={<MapPin className="h-4 w-4 text-warning" />}
+              action={
+                <button
+                  type="button"
+                  onClick={() => navigate({ to: "/localidades" })}
+                  className="inline-flex h-7 items-center gap-1.5 rounded-md border border-warning/70 bg-warning px-2.5 text-[10px] font-black uppercase tracking-[0.12em] text-background shadow-[0_0_12px_rgba(245,158,11,0.34)] transition hover:-translate-y-0.5 hover:shadow-[0_0_18px_rgba(245,158,11,0.48)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-warning/60"
+                >
+                  Abrir
+                  <ArrowUpRight className="h-3.5 w-3.5" />
+                </button>
+              }
             >
-              <div className="min-w-0">
-                <div className="grid grid-cols-[minmax(0,1.5fr)_0.62fr_0.58fr_0.58fr_0.58fr_0.58fr] gap-2 border-b border-border/70 px-1 pb-2.5 text-[9px] font-bold uppercase tracking-[0.08em] text-muted-foreground">
-                  <span>Escrivão</span>
-                  <span className="text-right">Pontos</span>
-                  <span className="text-right">Cad.</span>
-                  <span className="text-right">Relat.</span>
-                  <span className="text-right">Conc.</span>
-                  <span className="text-right">Atual.</span>
-                </div>
-                {escrivaoProductivityError ? (
-                  <div className="py-6 text-center text-xs text-warning">
-                    {escrivaoProductivityError}
-                  </div>
-                ) : RANKING_ESCRIVAES.length === 0 ? (
-                  <div className="py-6 text-center text-xs text-muted-foreground">
-                    Defina a função Escrivão(ã) no perfil administrativo para iniciar o ranking.
-                  </div>
-                ) : (
-                  <div>
-                    {RANKING_ESCRIVAES.map((row, index) => (
-                      <div
-                        key={row.user_id}
-                        className="grid w-full grid-cols-[minmax(0,1.5fr)_0.62fr_0.58fr_0.58fr_0.58fr_0.58fr] items-center gap-2 border-b border-border/35 px-1 py-2 text-left text-xs last:border-b-0"
-                        title={
-                          row.ultima_atividade
-                            ? `Última atividade: ${new Date(row.ultima_atividade).toLocaleString("pt-BR")}`
-                            : "Sem atividade no período"
+              <div>
+                <table className="w-full text-sm">
+                  <thead className="text-[10px] tracking-[0.15em] text-muted-foreground sticky top-0 bg-card">
+                    <tr className="border-b border-border">
+                      <th className="text-left py-2 font-bold">BAIRRO</th>
+                      <th className="w-24 text-center py-2 font-bold">TOTAL</th>
+                      <th className="w-24 text-center py-2 font-bold">CVLI</th>
+                      <th className="w-24 text-center py-2 font-bold">ALTA</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {TOP_BAIRROS.length === 0 ? (
+                      <tr>
+                        <td colSpan={4} className="py-6 text-center text-sm text-muted-foreground">
+                          Nenhum dado disponível.
+                        </td>
+                      </tr>
+                    ) : (
+                      TOP_BAIRROS.map((b) => (
+                        <tr
+                          key={b.bairro}
+                          className="border-b border-border/50 transition-colors duration-200 hover:bg-success/10"
+                        >
+                          <td className="py-2.5 font-medium">{b.bairro}</td>
+                          <td className="w-24 py-2.5 text-center tabular-nums">{b.total}</td>
+                          <td className="w-24 py-2.5 text-center tabular-nums text-destructive">
+                            {b.cvli}
+                          </td>
+                          <td className="w-24 py-2.5 text-center tabular-nums text-warning">
+                            {b.alta}
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </Panel>
+          </div>
+        </div>
+
+        {/* Gravidade + Equipe */}
+        <div className="order-[30] grid grid-cols-1 items-stretch xl:grid-cols-2 gap-5">
+          <div className={`${panelFxClass} h-full`}>
+            <Panel title="ANÁLISE POR GRAVIDADE" accent="destructive" className="h-full">
+              <div className="h-full min-h-[245px] w-full min-w-0">
+                {isClient ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={POR_GRAVIDADE}
+                      layout="vertical"
+                      margin={{ top: 10, right: 12, bottom: 4, left: 72 }}
+                    >
+                      <CartesianGrid
+                        stroke="var(--border)"
+                        strokeDasharray="3 4"
+                        horizontal={false}
+                      />
+                      <XAxis
+                        type="number"
+                        stroke="var(--muted-foreground)"
+                        fontSize={11}
+                        allowDecimals={false}
+                        domain={[0, Math.max(1, maxGravidadeCount)]}
+                      />
+                      <YAxis
+                        type="category"
+                        dataKey="label"
+                        stroke="var(--muted-foreground)"
+                        fontSize={10}
+                        width={72}
+                        tickLine={false}
+                        axisLine={false}
+                      />
+                      <Tooltip
+                        cursor={{
+                          fill: "rgba(255,255,255,0.14)",
+                          stroke: "rgba(255,255,255,0.18)",
+                          strokeWidth: 1,
+                        }}
+                        formatter={(value) => [`n: ${Number(value ?? 0)}`, "Procedimentos"]}
+                        labelStyle={{
+                          color: "var(--foreground)",
+                          fontWeight: 800,
+                          marginBottom: 4,
+                        }}
+                        itemStyle={{
+                          color: "var(--destructive)",
+                          fontWeight: 700,
+                        }}
+                        contentStyle={{
+                          backgroundColor: "var(--card)",
+                          border: "1px solid var(--border)",
+                          borderRadius: 8,
+                          fontSize: 12,
+                          boxShadow: "0 12px 30px rgba(0,0,0,0.35)",
+                        }}
+                      />
+                      <Bar
+                        dataKey="value"
+                        name="Procedimentos"
+                        fill="var(--destructive)"
+                        radius={[0, 4, 4, 0]}
+                        activeBar={{
+                          fill: "#ff4d57",
+                          stroke: "rgba(255,255,255,0.9)",
+                          strokeWidth: 1,
+                        }}
+                        onClick={(data) =>
+                          goToGravidade(
+                            (data as { payload?: { key?: string; value?: number } }).payload,
+                          )
                         }
                       >
-                        <span className="flex min-w-0 items-center gap-2 truncate font-black text-foreground">
-                          <span
-                            className={`w-4 shrink-0 text-[10px] ${
-                              index === 0
-                                ? "text-warning"
-                                : index === 1
-                                  ? "text-muted-foreground"
-                                  : index === 2
-                                    ? "text-amber-700"
-                                    : "text-muted-foreground/60"
-                            }`}
-                          >
-                            {index + 1}º
-                          </span>
-                          <span className="truncate">{row.nome}</span>
-                        </span>
-                        <span className="text-right font-black tabular-nums text-foreground">
-                          {row.pontos}
-                        </span>
-                        <span className="text-right font-black tabular-nums text-info">
-                          {row.cadastros}
-                        </span>
-                        <span className="text-right font-black tabular-nums text-success">
-                          {row.relatorios_enviados}
-                        </span>
-                        <span className="text-right font-black tabular-nums text-emerald-300">
-                          {row.conclusoes}
-                        </span>
-                        <span className="text-right font-black tabular-nums text-warning">
-                          {row.atualizacoes}
-                        </span>
-                      </div>
-                    ))}
+                        {POR_GRAVIDADE.map((item) => (
+                          <Cell
+                            key={item.key}
+                            fill="var(--destructive)"
+                            cursor={item.value > 0 ? "pointer" : "default"}
+                          />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="h-full flex items-center justify-center text-sm text-muted-foreground">
+                    Nenhum dado disponível.
                   </div>
                 )}
               </div>
             </Panel>
           </div>
+
+          <div className={`${panelFxClass} h-full`}>
+            <Panel
+              title="DISTRIBUIÇÃO POR EQUIPE"
+              accent="success"
+              icon={<Users className="h-4 w-4 text-success" />}
+              action={<ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />}
+              className="h-full"
+            >
+              {EQUIPES.length === 0 ? (
+                <div className="py-6 text-sm text-muted-foreground">Nenhum dado disponível.</div>
+              ) : (
+                <div className="grid items-center gap-5 md:grid-cols-[190px_minmax(0,1fr)]">
+                  <div className="relative mx-auto h-40 w-40">
+                    {isClient ? (
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie
+                            data={EQUIPES_GRAFICO}
+                            dataKey="value"
+                            innerRadius={48}
+                            outerRadius={74}
+                            paddingAngle={3}
+                            stroke="var(--card)"
+                            strokeWidth={3}
+                          >
+                            {EQUIPES_GRAFICO.map((team) => (
+                              <Cell key={team.name} fill={team.color} />
+                            ))}
+                          </Pie>
+                          <Tooltip
+                            formatter={(value: number, name: string) => [
+                              `${value} inquérito(s)`,
+                              name,
+                            ]}
+                            contentStyle={{
+                              backgroundColor: "var(--card)",
+                              border: "1px solid var(--border)",
+                              borderRadius: 8,
+                              color: "var(--foreground)",
+                            }}
+                            cursor={false}
+                          />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    ) : null}
+                    <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+                      <span className="text-3xl font-black tabular-nums text-success">
+                        {totalEquipes}
+                      </span>
+                      <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                        Equipes
+                      </span>
+                    </div>
+                  </div>
+                  <ul className="space-y-3">
+                    {EQUIPES_GRAFICO.map((team) => (
+                      <li
+                        key={team.name}
+                        className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-md px-2 py-1.5 transition-colors duration-200 hover:bg-success/5"
+                      >
+                        <div className="flex min-w-0 items-center gap-2">
+                          <span
+                            className="h-2.5 w-2.5 shrink-0 rounded-full shadow-[0_0_10px_currentColor]"
+                            style={{ backgroundColor: team.color, color: team.color }}
+                          />
+                          <span className="truncate text-sm font-semibold text-foreground">
+                            {team.name}
+                          </span>
+                        </div>
+                        <span className="text-right text-xs font-semibold tabular-nums text-muted-foreground">
+                          {team.value} ({team.pct}%)
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </Panel>
+          </div>
         </div>
-      </section>
+
+        <section className="order-[50] mt-6">
+          <div className="mb-3 flex items-end justify-between gap-3">
+            <div>
+              <h2 className="text-sm font-black uppercase tracking-[0.18em] text-foreground">
+                Gestão Operacional
+              </h2>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Ritmo da unidade, carga semanal e módulos planejados.
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 items-stretch gap-5 lg:grid-cols-3">
+            <div className={`${panelFxClass} h-full`}>
+              <Panel
+                title="PRODUTIVIDADE OPERACIONAL"
+                accent="success"
+                icon={<Gauge className="h-4 w-4 text-success" />}
+                className="h-full"
+              >
+                <div className="flex h-full min-h-[300px] flex-col">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="rounded-lg border border-border/55 bg-background/25 px-3.5 py-3">
+                      <div className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
+                        Novos (7d)
+                      </div>
+                      <div className="mt-1.5 text-2xl font-black tabular-nums text-info">
+                        {produtividade.novos7}
+                      </div>
+                    </div>
+                    <div className="rounded-lg border border-border/55 bg-background/25 px-3.5 py-3">
+                      <div className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
+                        Concluídos (7d)
+                      </div>
+                      <div className="mt-1.5 text-2xl font-black tabular-nums text-success">
+                        {produtividade.concluidos7}
+                      </div>
+                    </div>
+                    <div className="rounded-lg border border-border/55 bg-background/25 px-3.5 py-3">
+                      <div className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
+                        Novos (30d)
+                      </div>
+                      <div className="mt-1.5 text-2xl font-black tabular-nums text-info">
+                        {produtividade.novos30}
+                      </div>
+                    </div>
+                    <div className="rounded-lg border border-border/55 bg-background/25 px-3.5 py-3">
+                      <div className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
+                        Concluídos (30d)
+                      </div>
+                      <div className="mt-1.5 text-2xl font-black tabular-nums text-success">
+                        {produtividade.concluidos30}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-auto rounded-lg border border-border/60 bg-background/25 px-3.5 py-3.5">
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-xs font-black text-foreground">Taxa de conclusão</span>
+                      <span className="text-sm font-black tabular-nums text-success">
+                        {produtividade.taxaConclusao30}%
+                      </span>
+                    </div>
+                    <div className="mt-2 h-2 overflow-hidden rounded-full bg-muted/80 shadow-inner shadow-black/20">
+                      <div
+                        className="h-full rounded-full bg-success transition-all duration-500"
+                        style={{
+                          width: `${Math.min(100, produtividade.taxaConclusao30)}%`,
+                          boxShadow:
+                            produtividade.taxaConclusao30 > 0
+                              ? "0 0 18px rgba(34,197,94,0.45)"
+                              : "none",
+                        }}
+                      />
+                    </div>
+                    <div className="mt-2 flex flex-wrap items-center justify-between gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                      <span>
+                        Backlog gerado:{" "}
+                        <strong
+                          className="font-black tabular-nums"
+                          style={{ color: backlogGeradoColor }}
+                        >
+                          {produtividade.backlogGerado > 0
+                            ? `+${produtividade.backlogGerado}`
+                            : produtividade.backlogGerado}
+                        </strong>
+                      </span>
+                      <span>
+                        Situação:{" "}
+                        <strong className="font-black" style={{ color: situacaoOperacionalColor }}>
+                          {produtividade.situacaoOperacional}
+                        </strong>
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </Panel>
+            </div>
+
+            <div className={`${panelFxClass} h-full`}>
+              <Panel
+                title="CARGA POR DIA DA SEMANA"
+                accent="info"
+                icon={<CalendarDays className="h-4 w-4 text-info" />}
+                className="h-full"
+              >
+                <div className="mb-4 grid grid-cols-3 gap-2">
+                  <div className="rounded-md border border-success/25 bg-success/5 px-3 py-2.5">
+                    <div className="text-[9px] font-bold uppercase tracking-[0.12em] text-muted-foreground">
+                      Maior
+                    </div>
+                    <div className="mt-1 truncate text-sm font-black text-success">
+                      {cargaPorDiaSemana.peakDay?.label ?? "Sem dados"}
+                    </div>
+                  </div>
+                  <div className="rounded-md border border-border/60 bg-background/30 px-3 py-2.5">
+                    <div className="text-[9px] font-bold uppercase tracking-[0.12em] text-muted-foreground">
+                      Média
+                    </div>
+                    <div className="mt-1 text-sm font-black tabular-nums text-foreground">
+                      {cargaPorDiaSemana.mediaDiaria.toString().replace(".", ",")}
+                    </div>
+                  </div>
+                  <div className="rounded-md border border-border/60 bg-background/30 px-3 py-2.5">
+                    <div className="text-[9px] font-bold uppercase tracking-[0.12em] text-muted-foreground">
+                      Total
+                    </div>
+                    <div className="mt-1 text-sm font-black tabular-nums text-foreground">
+                      {cargaPorDiaSemana.totalAnalisado}
+                    </div>
+                  </div>
+                </div>
+
+                <ul className="space-y-3">
+                  {cargaPorDiaSemana.dias.map((day) => {
+                    const width = day.total === 0 ? 0 : Math.max(8, day.percent);
+                    return (
+                      <li
+                        key={day.key}
+                        className={`grid grid-cols-[5.25rem_1fr_2.5rem] items-center gap-3 rounded-md px-1.5 py-1 text-sm ${day.isPeak ? "bg-success/5" : ""}`}
+                      >
+                        <span
+                          className={`truncate font-bold ${day.isPeak ? "text-success" : "text-muted-foreground"}`}
+                        >
+                          {day.label}
+                        </span>
+                        <div className="h-4 overflow-hidden rounded-full bg-muted/80 shadow-inner shadow-black/20">
+                          <div
+                            className="h-full rounded-full transition-all duration-500"
+                            style={{
+                              width: `${width}%`,
+                              backgroundColor: day.isPeak ? "var(--success)" : "var(--info)",
+                              boxShadow: day.total > 0 ? "0 0 16px rgba(34,197,94,0.4)" : "none",
+                            }}
+                          />
+                        </div>
+                        <span className="text-right font-black tabular-nums text-foreground">
+                          {day.total}
+                        </span>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </Panel>
+            </div>
+
+            <div className={`${panelFxClass} h-full`}>
+              <Panel
+                title="RANKING DE ESCRIVÃES"
+                accent="warning"
+                icon={<Users className="h-4 w-4 text-warning" />}
+                className="h-full"
+              >
+                <div className="min-w-0">
+                  <div className="grid grid-cols-[minmax(0,1.5fr)_0.62fr_0.58fr_0.58fr_0.58fr_0.58fr] gap-2 border-b border-border/70 px-1 pb-2.5 text-[9px] font-bold uppercase tracking-[0.08em] text-muted-foreground">
+                    <span>Escrivão</span>
+                    <span className="text-right">Pontos</span>
+                    <span className="text-right">Cad.</span>
+                    <span className="text-right">Relat.</span>
+                    <span className="text-right">Conc.</span>
+                    <span className="text-right">Atual.</span>
+                  </div>
+                  {escrivaoProductivityError ? (
+                    <div className="py-6 text-center text-xs text-warning">
+                      {escrivaoProductivityError}
+                    </div>
+                  ) : RANKING_ESCRIVAES.length === 0 ? (
+                    <div className="py-6 text-center text-xs text-muted-foreground">
+                      Defina a função Escrivão(ã) no perfil administrativo para iniciar o ranking.
+                    </div>
+                  ) : (
+                    <div>
+                      {RANKING_ESCRIVAES.map((row, index) => (
+                        <div
+                          key={row.user_id}
+                          className="grid w-full grid-cols-[minmax(0,1.5fr)_0.62fr_0.58fr_0.58fr_0.58fr_0.58fr] items-center gap-2 border-b border-border/35 px-1 py-2 text-left text-xs last:border-b-0"
+                          title={
+                            row.ultima_atividade
+                              ? `Última atividade: ${new Date(row.ultima_atividade).toLocaleString("pt-BR")}`
+                              : "Sem atividade no período"
+                          }
+                        >
+                          <span className="flex min-w-0 items-center gap-2 truncate font-black text-foreground">
+                            <span
+                              className={`w-4 shrink-0 text-[10px] ${
+                                index === 0
+                                  ? "text-warning"
+                                  : index === 1
+                                    ? "text-muted-foreground"
+                                    : index === 2
+                                      ? "text-amber-700"
+                                      : "text-muted-foreground/60"
+                              }`}
+                            >
+                              {index + 1}º
+                            </span>
+                            <span className="truncate">{row.nome}</span>
+                          </span>
+                          <span className="text-right font-black tabular-nums text-foreground">
+                            {row.pontos}
+                          </span>
+                          <span className="text-right font-black tabular-nums text-info">
+                            {row.cadastros}
+                          </span>
+                          <span className="text-right font-black tabular-nums text-success">
+                            {row.relatorios_enviados}
+                          </span>
+                          <span className="text-right font-black tabular-nums text-emerald-300">
+                            {row.conclusoes}
+                          </span>
+                          <span className="text-right font-black tabular-nums text-warning">
+                            {row.atualizacoes}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </Panel>
+            </div>
+          </div>
+        </section>
       </div>
     </AppLayout>
   );

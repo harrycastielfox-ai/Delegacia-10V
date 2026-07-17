@@ -740,9 +740,7 @@ export function Alertas({ mode = "alertas" }: { mode?: "alertas" | "estatisticas
       {
         label: "Sigilosas",
         value: filteredRepresentacoes.filter((item) =>
-          isRepresentacaoSigilosaValue(
-            item.pedido_sigiloso_normalizado ?? item.pedido_sigiloso,
-          ),
+          isRepresentacaoSigilosaValue(item.pedido_sigiloso_normalizado ?? item.pedido_sigiloso),
         ).length,
         desc: "Representações sigilosas acessíveis ao perfil atual",
         target: {

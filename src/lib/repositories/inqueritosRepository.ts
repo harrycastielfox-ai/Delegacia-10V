@@ -7,6 +7,7 @@ export type InqueritoRecord = {
   numero_ppe: string | null;
   numero_fisico: string | null;
   numero_bo: string | null;
+  origem_registro: string | null;
   visibilidade: string | null;
   tipo: string | null;
   tipo_procedimento_normalizado: string | null;
@@ -28,6 +29,7 @@ export type InqueritoRecord = {
   reu_preso: string | null;
   reu_preso_normalizado: boolean | null;
   elucidado: string | null;
+  autoria_determinada: string | null;
   cvli_elucidado: boolean | null;
   data_elucidacao: string | null;
   houve_arma_fogo: string | null;
@@ -57,6 +59,29 @@ export type InqueritoRecord = {
 
 export type InqueritoPayload = Partial<
   Omit<InqueritoRecord, "id" | "created_at" | "updated_at" | "deleted_at">
+>;
+
+export type InqueritoLinkOption = Pick<
+  InqueritoRecord,
+  "id" | "numero_ppe" | "tipo" | "tipo_procedimento_normalizado" | "data_instauracao" | "situacao"
+>;
+
+export type InqueritoPessoaPapel = "vitima" | "autor_investigado" | "testemunha" | "outro";
+
+export type InqueritoPessoaRecord = {
+  id: string;
+  inquerito_id: string;
+  papel: InqueritoPessoaPapel;
+  nome: string;
+  observacao: string | null;
+  ordem: number;
+  created_at: string;
+  updated_at: string;
+};
+
+export type InqueritoPessoaInput = Pick<
+  InqueritoPessoaRecord,
+  "papel" | "nome" | "observacao" | "ordem"
 >;
 
 const LIST_CACHE_TTL_MS = 10000;
@@ -115,6 +140,82 @@ export async function getInqueritoById(id: string) {
   return data as InqueritoRecord | null;
 }
 
+export async function listInqueritoPessoas(inqueritoId: string) {
+  const data = await runSupabaseQuery<InqueritoPessoaRecord[]>(
+    "pessoas envolvidas no inquérito",
+    (signal) =>
+      supabase
+        .from("inquerito_pessoas")
+        .select("id,inquerito_id,papel,nome,observacao,ordem,created_at,updated_at")
+        .eq("inquerito_id", inqueritoId)
+        .order("ordem", { ascending: true })
+        .order("created_at", { ascending: true })
+        .abortSignal(signal),
+  );
+
+  return (data ?? []) as InqueritoPessoaRecord[];
+}
+
+export async function replaceInqueritoPessoas(
+  inqueritoId: string,
+  pessoas: InqueritoPessoaInput[],
+) {
+  const normalized = pessoas
+    .map((person, index) => ({
+      papel: person.papel,
+      nome: person.nome.trim(),
+      observacao: person.observacao?.trim() || null,
+      ordem: index,
+    }))
+    .filter((person) => person.nome.length > 0);
+
+  await runSupabaseQuery<unknown>("atualização das pessoas envolvidas", (signal) =>
+    supabase
+      .rpc("replace_inquerito_pessoas", {
+        p_inquerito_id: inqueritoId,
+        p_pessoas: normalized,
+      })
+      .abortSignal(signal),
+  );
+}
+
+export async function findInqueritosByPpe(numeroPpe: string, limit = 8) {
+  const normalizedPpe = numeroPpe.trim();
+  if (!normalizedPpe) return [];
+
+  const data = await runSupabaseQuery<InqueritoLinkOption[]>("busca por PPE", (signal) =>
+    supabase
+      .from("inqueritos")
+      .select("id,numero_ppe,tipo,tipo_procedimento_normalizado,data_instauracao,situacao")
+      .eq("numero_ppe", normalizedPpe)
+      .is("deleted_at", null)
+      .order("data_instauracao", { ascending: false, nullsFirst: false })
+      .limit(limit)
+      .abortSignal(signal),
+  );
+
+  return (data ?? []) as InqueritoLinkOption[];
+}
+
+export async function searchInqueritosForLink(query: string, limit = 20) {
+  const normalizedQuery = query.trim();
+  if (normalizedQuery.length < 2) return [];
+  const safeQuery = normalizedQuery.replace(/[%_]/g, "");
+
+  const data = await runSupabaseQuery<InqueritoLinkOption[]>("vinculo por PPE", (signal) =>
+    supabase
+      .from("inqueritos")
+      .select("id,numero_ppe,tipo,tipo_procedimento_normalizado,data_instauracao,situacao")
+      .ilike("numero_ppe", `%${safeQuery}%`)
+      .is("deleted_at", null)
+      .order("data_instauracao", { ascending: false, nullsFirst: false })
+      .limit(limit)
+      .abortSignal(signal),
+  );
+
+  return (data ?? []) as InqueritoLinkOption[];
+}
+
 export async function createInquerito(payload: InqueritoPayload) {
   const data = await runSupabaseQuery<InqueritoRecord>("criação de inquérito", (signal) =>
     supabase.from("inqueritos").insert(payload).select("*").single().abortSignal(signal),
@@ -139,15 +240,17 @@ export async function updateInquerito(id: string, payload: InqueritoPayload) {
 }
 
 export async function softDeleteInquerito(id: string) {
-  const deletedAt = new Date().toISOString();
-  await runSupabaseQuery<null>("exclusão de inquérito", (signal) =>
-    supabase
-      .from("inqueritos")
-      .update({ deleted_at: deletedAt })
-      .eq("id", id)
-      .is("deleted_at", null)
-      .abortSignal(signal),
+  const deleted = await runSupabaseQuery<boolean>("exclusão de inquérito", (signal) =>
+    supabase.rpc("soft_delete_inquerito", { p_id: id }).abortSignal(signal),
   );
+
+  if (!deleted) {
+    throw {
+      code: "PGRST116",
+      message: "Inquérito não encontrado ou já excluído.",
+    };
+  }
+
   invalidateInqueritosCache();
   return true;
 }

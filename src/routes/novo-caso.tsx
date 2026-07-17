@@ -1,12 +1,34 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { type FormEvent, useEffect, useState } from "react";
+import { type FormEvent, useEffect, useMemo, useState } from "react";
 import { AppLayout } from "@/components/AppLayout";
+import { FormFieldLabel } from "@/components/FormFieldLabel";
 import { PageHeader } from "@/components/PageHeader";
-import { createInquerito } from "@/lib/repositories/inqueritosRepository";
+import { InquiryPeopleEditor } from "@/components/InquiryPeopleEditor";
+import { RegistrationQualityPanel } from "@/components/RegistrationQualityPanel";
+import {
+  createInquerito,
+  findInqueritosByPpe,
+  replaceInqueritoPessoas,
+  type InqueritoLinkOption,
+} from "@/lib/repositories/inqueritosRepository";
 import { logAuditoria } from "@/lib/repositories/auditoriaRepository";
 import { getCurrentProfile } from "@/lib/auth";
 import { canCreateCases, type UserProfile } from "@/lib/authz";
 import { CASE_CATEGORY_OPTIONS, normalizeCaseCategory } from "@/lib/inqueritosPriority";
+import {
+  OCCURRENCE_ORIGIN_OPTIONS,
+  PROCEDURE_TYPE_OPTIONS,
+  REPORT_STATUS_OPTIONS,
+  createInquiryPerson,
+  getInquiryRegistrationChecks,
+  isYesValue,
+  normalizeCriminalCategory,
+  normalizePriority,
+  normalizeProcedureType,
+  type OccurrenceOrigin,
+  type InquiryPersonFormValue,
+  type ReportStatus,
+} from "@/lib/operationalContracts";
 
 export const Route = createFileRoute("/novo-caso")({
   head: () => ({ meta: [{ title: "Novo Caso — SIPI" }] }),
@@ -22,15 +44,20 @@ function NovoCaso() {
   const [armaUtilizada, setArmaUtilizada] = useState("");
   const [ppe, setPpe] = useState("");
   const [tipificacao, setTipificacao] = useState("");
-  const [vitima, setVitima] = useState("");
-  const [investigado, setInvestigado] = useState("");
+  const [pessoas, setPessoas] = useState<InquiryPersonFormValue[]>([
+    createInquiryPerson("vitima"),
+    createInquiryPerson("autor_investigado"),
+  ]);
   const [autoria, setAutoria] = useState("");
   const [numeroBo, setNumeroBo] = useState("");
   const [numeroFisico, setNumeroFisico] = useState("");
   const [prazo, setPrazo] = useState("");
   const [dataFato, setDataFato] = useState("");
   const [dataInstauracao, setDataInstauracao] = useState("");
-  const [tipo, setTipo] = useState("Inquérito Policial");
+  const [tipo, setTipo] = useState("Inquérito Policial (IP)");
+  const [origemRegistro, setOrigemRegistro] = useState<OccurrenceOrigin>("novo");
+  const [ppeMatches, setPpeMatches] = useState<InqueritoLinkOption[]>([]);
+  const [checkingPpe, setCheckingPpe] = useState(false);
   const [prioridade, setPrioridade] = useState("MÉDIA");
   const [gravidade, setGravidade] = useState("Outro");
   const [situacao, setSituacao] = useState("Instaurado");
@@ -49,12 +76,17 @@ function NovoCaso() {
   const [observacoes, setObservacoes] = useState("");
   const [medidaProtetiva, setMedidaProtetiva] = useState("");
   const [numeroProcessoMedida, setNumeroProcessoMedida] = useState("");
-  const [relatorioEnviado, setRelatorioEnviado] = useState("");
+  const [relatorioStatus, setRelatorioStatus] = useState<ReportStatus>("pendente");
+  const [dataRelatorio, setDataRelatorio] = useState("");
   const [dataEnvioRelatorio, setDataEnvioRelatorio] = useState("");
+  const [dataElucidacao, setDataElucidacao] = useState("");
   const [representacoesLegais, setRepresentacoesLegais] = useState("");
   const [visibilidade, setVisibilidade] = useState("");
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [checkingAccess, setCheckingAccess] = useState(true);
+
+  const vitima = pessoas.find((pessoa) => pessoa.papel === "vitima")?.nome ?? "";
+  const investigado = pessoas.find((pessoa) => pessoa.papel === "autor_investigado")?.nome ?? "";
 
   useEffect(() => {
     let isMounted = true;
@@ -79,6 +111,109 @@ function NovoCaso() {
     };
   }, []);
 
+  useEffect(() => {
+    const normalizedPpe = ppe.trim();
+    if (normalizedPpe.length < 2) {
+      setPpeMatches([]);
+      setCheckingPpe(false);
+      return;
+    }
+
+    let isCurrent = true;
+    const timer = window.setTimeout(() => {
+      setCheckingPpe(true);
+      void findInqueritosByPpe(normalizedPpe)
+        .then((matches) => {
+          if (isCurrent) setPpeMatches(matches);
+        })
+        .catch(() => {
+          if (isCurrent) setPpeMatches([]);
+        })
+        .finally(() => {
+          if (isCurrent) setCheckingPpe(false);
+        });
+    }, 350);
+
+    return () => {
+      isCurrent = false;
+      window.clearTimeout(timer);
+    };
+  }, [ppe]);
+
+  const registrationChecks = useMemo(
+    () =>
+      getInquiryRegistrationChecks({
+        ppe,
+        numeroBo,
+        origemRegistro,
+        visibilidade,
+        tipoProcedimento: tipo,
+        situacao,
+        dataFato,
+        dataInstauracao,
+        prazo,
+        tipificacao,
+        gravidade,
+        vitima,
+        investigado,
+        autoria,
+        reuPreso,
+        bairro,
+        distrito,
+        delegado: delegadoResponsavel,
+        equipe,
+        escrivao,
+        statusDiligencias,
+        elucidado,
+        dataElucidacao,
+        houveArmaDeFogo,
+        armaUtilizada,
+        vinculadoFaccao,
+        nomeFaccao,
+        medidaProtetiva,
+        numeroProcessoMedida,
+        relatorioStatus,
+        dataRelatorio,
+        dataEnvioRelatorio,
+      }),
+    [
+      armaUtilizada,
+      autoria,
+      bairro,
+      dataElucidacao,
+      dataEnvioRelatorio,
+      dataFato,
+      dataInstauracao,
+      dataRelatorio,
+      delegadoResponsavel,
+      distrito,
+      elucidado,
+      equipe,
+      escrivao,
+      gravidade,
+      houveArmaDeFogo,
+      investigado,
+      medidaProtetiva,
+      nomeFaccao,
+      numeroBo,
+      numeroProcessoMedida,
+      origemRegistro,
+      ppe,
+      prazo,
+      reuPreso,
+      relatorioStatus,
+      situacao,
+      statusDiligencias,
+      tipificacao,
+      tipo,
+      vinculadoFaccao,
+      visibilidade,
+      vitima,
+    ],
+  );
+
+  const blockingChecks = registrationChecks.filter((item) => item.blocking && !item.complete);
+
   const handleHouveArmaDeFogoChange = (value: string) => {
     setHouveArmaDeFogo(value);
     if (value !== "Sim") {
@@ -86,35 +221,76 @@ function NovoCaso() {
     }
   };
 
+  const handleElucidadoChange = (value: string) => {
+    setElucidado(value);
+    if (!isYesValue(value)) setDataElucidacao("");
+  };
+
+  const handleVinculoFaccaoChange = (value: string) => {
+    setVinculadoFaccao(value);
+    if (!isYesValue(value)) setNomeFaccao("");
+  };
+
+  const handleMedidaProtetivaChange = (value: string) => {
+    setMedidaProtetiva(value);
+    if (!isYesValue(value)) setNumeroProcessoMedida("");
+  };
+
+  const handleRelatorioStatusChange = (value: ReportStatus) => {
+    setRelatorioStatus(value);
+    if (value === "pendente") {
+      setDataRelatorio("");
+      setDataEnvioRelatorio("");
+    } else if (value === "relatado") {
+      setDataEnvioRelatorio("");
+    }
+  };
+
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    console.log("submit novo caso iniciado");
     if (loading || !canCreateCases(profile)) return;
     setErro("");
     setFeedback("");
+    if (blockingChecks.length > 0) {
+      setErro(`Revise antes de salvar: ${blockingChecks.map((item) => item.label).join("; ")}.`);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
     setLoading(true);
+    const normalizedType = normalizeProcedureType(tipo);
+    const normalizedCategory = normalizeCriminalCategory(normalizeCaseCategory(gravidade, "Outro"));
+    const isCvli = normalizedCategory === "CVLI";
     const payload = {
       numero_ppe: ppe.trim() || null,
       numero_bo: numeroBo.trim() || null,
       numero_fisico: numeroFisico.trim() || null,
+      origem_registro: origemRegistro,
       visibilidade: visibilidade.trim() || null,
       tipificacao: tipificacao.trim() || null,
       vitima: vitima.trim() || null,
       investigado: investigado.trim() || null,
+      autoria_determinada: autoria || null,
       reu_preso: reuPreso || null,
+      reu_preso_normalizado: reuPreso ? isYesValue(reuPreso) : null,
       prazo: prazo || null,
       data_fato: dataFato || null,
       data_instauracao: dataInstauracao || null,
       tipo: tipo || null,
+      tipo_procedimento_normalizado: normalizedType,
       prioridade: prioridade || null,
+      prioridade_operacional: normalizePriority(prioridade),
       gravidade: normalizeCaseCategory(gravidade, "Outro"),
+      categoria_criminal: normalizedCategory,
       status_diligencias: statusDiligencias || null,
       situacao: situacao || null,
       elucidado: elucidado || null,
+      cvli_elucidado: isCvli && elucidado ? isYesValue(elucidado) : null,
+      data_elucidacao: isCvli && isYesValue(elucidado) ? dataElucidacao || null : null,
       houve_arma_fogo: houveArmaDeFogo || null,
       arma_utilizada: armaUtilizada || null,
       delegado_responsavel: delegadoResponsavel.trim() || null,
       equipe: equipe.trim() || null,
+      equipe_responsavel: equipe.trim() || null,
       escrivao: escrivao.trim() || null,
       bairro: bairro.trim() || null,
       distrito: distrito.trim() || null,
@@ -124,14 +300,36 @@ function NovoCaso() {
       diligencias_pendentes: diligenciasPendentes.trim() || null,
       observacoes: observacoes.trim() || null,
       medida_protetiva: medidaProtetiva || null,
+      medida_protetiva_normalizada: medidaProtetiva ? isYesValue(medidaProtetiva) : null,
       numero_processo_medida: numeroProcessoMedida.trim() || null,
-      relatorio_enviado: relatorioEnviado || null,
-      data_envio_relatorio: dataEnvioRelatorio || null,
+      relatorio_status: relatorioStatus,
+      relatorio_enviado: relatorioStatus === "enviado" ? "Sim" : "Não",
+      data_relatorio: relatorioStatus !== "pendente" ? dataRelatorio || null : null,
+      data_envio_relatorio: relatorioStatus === "enviado" ? dataEnvioRelatorio || null : null,
       representacoes_legais: representacoesLegais.trim() || null,
     };
-    console.log("payload enviado", payload);
     try {
       const created = await createInquerito(payload);
+      const pessoasPreenchidas = pessoas
+        .filter((pessoa) => pessoa.nome.trim())
+        .map((pessoa, ordem) => ({
+          papel: pessoa.papel,
+          nome: pessoa.nome.trim(),
+          observacao: pessoa.observacao.trim() || null,
+          ordem,
+        }));
+      let pessoasWarning = false;
+      if (pessoasPreenchidas.length > 0) {
+        try {
+          await replaceInqueritoPessoas(created.id, pessoasPreenchidas);
+        } catch (pessoasError) {
+          pessoasWarning = true;
+          console.warn(
+            "[inqueritos:pessoas] Registro principal salvo sem pessoas adicionais",
+            pessoasError,
+          );
+        }
+      }
       try {
         const auditResult = await logAuditoria({
           acao: "create",
@@ -151,14 +349,13 @@ function NovoCaso() {
       } catch (auditError) {
         console.warn("[auditoria]", auditError);
       }
-      console.log("resposta/erro do Supabase", created);
-      setFeedback("Inquérito salvo com sucesso.");
+      setFeedback(
+        pessoasWarning
+          ? "Inquérito salvo. As pessoas adicionais não puderam ser vinculadas agora."
+          : "Inquérito salvo com sucesso.",
+      );
       navigate({ to: "/inqueritos/$caseId", params: { caseId: created.id } });
     } catch (error) {
-      console.error("resposta/erro do Supabase", error);
-      if (typeof error === "object" && error !== null && "message" in error) {
-        console.error("mensagem do erro Supabase:", error.message);
-      }
       const isRlsError =
         typeof error === "object" &&
         error !== null &&
@@ -202,6 +399,8 @@ function NovoCaso() {
       />
 
       <form className="space-y-5 max-w-6xl pb-6" onSubmit={handleSubmit}>
+        <RegistrationQualityPanel checks={registrationChecks} />
+
         <SectionCard title="Identificação do Procedimento">
           <Field
             label="PPE"
@@ -209,6 +408,22 @@ function NovoCaso() {
             value={ppe}
             onChange={(e) => setPpe(e.target.value)}
           />
+          <OptionSelect
+            label="Origem do registro"
+            options={OCCURRENCE_ORIGIN_OPTIONS}
+            value={origemRegistro}
+            onChange={(value) => setOrigemRegistro(value as OccurrenceOrigin)}
+          />
+          {checkingPpe && (
+            <InlineNotice>Verificando ocorrências existentes com este PPE...</InlineNotice>
+          )}
+          {!checkingPpe && ppeMatches.length > 0 && (
+            <InlineNotice tone="warning">
+              Este PPE já aparece em {ppeMatches.length} ocorrência(s) ativa(s). O cadastro continua
+              permitido para procedimentos restaurados ou relacionados; confirme a origem do
+              registro antes de salvar.
+            </InlineNotice>
+          )}
           <Field
             label="Nº do B.O."
             placeholder="Ex.: 2026.000001"
@@ -225,7 +440,7 @@ function NovoCaso() {
             label="Tipo de Procedimento"
             value={tipo}
             onChange={setTipo}
-            options={["Inquérito Policial", "TCO", "Verificação Preliminar", "Outros"]}
+            options={PROCEDURE_TYPE_OPTIONS.map((option) => option.label)}
           />
           <Select
             label="Visibilidade"
@@ -289,8 +504,16 @@ function NovoCaso() {
             label="Elucidado"
             options={["Sim", "Não"]}
             value={elucidado}
-            onChange={setElucidado}
+            onChange={handleElucidadoChange}
           />
+          {normalizeCriminalCategory(gravidade) === "CVLI" && elucidado === "Sim" && (
+            <Field
+              label="Data da elucidação"
+              type="date"
+              value={dataElucidacao}
+              onChange={(e) => setDataElucidacao(e.target.value)}
+            />
+          )}
           <Select
             label="Houve arma de fogo?"
             options={["Sim", "Não"]}
@@ -308,18 +531,7 @@ function NovoCaso() {
         </SectionCard>
 
         <SectionCard title="Pessoas Envolvidas">
-          <Field
-            label="Vítima"
-            placeholder="Nome completo da vítima"
-            value={vitima}
-            onChange={(e) => setVitima(e.target.value)}
-          />
-          <Field
-            label="Autor / Investigado"
-            placeholder="Nome ou 'Desconhecido'"
-            value={investigado}
-            onChange={(e) => setInvestigado(e.target.value)}
-          />
+          <InquiryPeopleEditor value={pessoas} onChange={setPessoas} />
           <Select
             label="Autoria Determinada ou Indeterminada"
             options={["Determinada", "Indeterminada", "Desconhecida", "Sem Autoria"]}
@@ -375,14 +587,16 @@ function NovoCaso() {
             label="Vinculado a Facção"
             options={["Sim", "Não", "A definir"]}
             value={vinculadoFaccao}
-            onChange={setVinculadoFaccao}
+            onChange={handleVinculoFaccaoChange}
           />
-          <Field
-            label="Nome da Facção"
-            placeholder="Informe se houver"
-            value={nomeFaccao}
-            onChange={(e) => setNomeFaccao(e.target.value)}
-          />
+          {isYesValue(vinculadoFaccao) && (
+            <Field
+              label="Nome da Facção"
+              placeholder="Informe a facção vinculada"
+              value={nomeFaccao}
+              onChange={(e) => setNomeFaccao(e.target.value)}
+            />
+          )}
           <Select
             label="Status de Diligências"
             value={statusDiligencias}
@@ -416,26 +630,38 @@ function NovoCaso() {
             label="Medida Protetiva"
             options={["Sim", "Não"]}
             value={medidaProtetiva}
-            onChange={setMedidaProtetiva}
+            onChange={handleMedidaProtetivaChange}
           />
-          <Field
-            label="Nº Processo da Medida"
-            placeholder="0001234-55.2025.8.17.0001"
-            value={numeroProcessoMedida}
-            onChange={(e) => setNumeroProcessoMedida(e.target.value)}
+          {isYesValue(medidaProtetiva) && (
+            <Field
+              label="Nº Processo da Medida"
+              placeholder="0001234-55.2025.8.17.0001"
+              value={numeroProcessoMedida}
+              onChange={(e) => setNumeroProcessoMedida(e.target.value)}
+            />
+          )}
+          <OptionSelect
+            label="Situação do relatório"
+            options={REPORT_STATUS_OPTIONS}
+            value={relatorioStatus}
+            onChange={(value) => handleRelatorioStatusChange(value as ReportStatus)}
           />
-          <Select
-            label="Relatório Enviado"
-            options={["Sim", "Não"]}
-            value={relatorioEnviado}
-            onChange={setRelatorioEnviado}
-          />
-          <Field
-            label="Data de Envio do Relatório"
-            type="date"
-            value={dataEnvioRelatorio}
-            onChange={(e) => setDataEnvioRelatorio(e.target.value)}
-          />
+          {relatorioStatus !== "pendente" && (
+            <Field
+              label="Data do relatório"
+              type="date"
+              value={dataRelatorio}
+              onChange={(e) => setDataRelatorio(e.target.value)}
+            />
+          )}
+          {relatorioStatus === "enviado" && (
+            <Field
+              label="Data de envio do relatório"
+              type="date"
+              value={dataEnvioRelatorio}
+              onChange={(e) => setDataEnvioRelatorio(e.target.value)}
+            />
+          )}
           <Field
             label="Representações Legais"
             type="number"
@@ -463,6 +689,7 @@ function NovoCaso() {
         <div className="flex gap-3 justify-end">
           <button
             type="button"
+            onClick={() => navigate({ to: "/inqueritos" })}
             className="px-5 py-2.5 rounded-lg text-sm border border-border hover:bg-accent"
           >
             Cancelar
@@ -495,9 +722,7 @@ function Field({
 }: { label: string } & React.InputHTMLAttributes<HTMLInputElement>) {
   return (
     <div>
-      <label className="block text-xs font-bold tracking-wider text-muted-foreground mb-2">
-        {label.toUpperCase()}
-      </label>
+      <FormFieldLabel label={label} />
       <input
         {...props}
         className="w-full bg-card border border-border rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-primary"
@@ -513,9 +738,7 @@ function TextArea({
 }: { label: string; rows?: number } & React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
   return (
     <div className="md:col-span-2 lg:col-span-3">
-      <label className="block text-xs font-bold tracking-wider text-muted-foreground mb-2">
-        {label.toUpperCase()}
-      </label>
+      <FormFieldLabel label={label} />
       <textarea
         rows={rows}
         {...props}
@@ -532,15 +755,13 @@ function Select({
   onChange,
 }: {
   label: string;
-  options: string[];
+  options: readonly string[];
   value?: string;
   onChange?: (value: string) => void;
 }) {
   return (
     <div>
-      <label className="block text-xs font-bold tracking-wider text-muted-foreground mb-2">
-        {label.toUpperCase()}
-      </label>
+      <FormFieldLabel label={label} />
       <select
         value={value}
         onChange={(e) => onChange?.(e.target.value)}
@@ -551,6 +772,54 @@ function Select({
           <option key={o}>{o}</option>
         ))}
       </select>
+    </div>
+  );
+}
+
+function OptionSelect({
+  label,
+  options,
+  value,
+  onChange,
+}: {
+  label: string;
+  options: readonly { value: string; label: string }[];
+  value?: string;
+  onChange?: (value: string) => void;
+}) {
+  return (
+    <div>
+      <FormFieldLabel label={label} />
+      <select
+        value={value}
+        onChange={(event) => onChange?.(event.target.value)}
+        className="w-full bg-card border border-border rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-primary"
+      >
+        {options.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
+function InlineNotice({
+  children,
+  tone = "neutral",
+}: {
+  children: React.ReactNode;
+  tone?: "neutral" | "warning";
+}) {
+  const classes =
+    tone === "warning"
+      ? "border-amber-500/35 bg-amber-500/8 text-amber-100"
+      : "border-primary/25 bg-primary/5 text-muted-foreground";
+
+  return (
+    <div className={`md:col-span-2 lg:col-span-3 rounded-lg border px-4 py-3 text-xs ${classes}`}>
+      {children}
     </div>
   );
 }

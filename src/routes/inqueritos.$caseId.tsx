@@ -8,9 +8,13 @@ import {
 } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { AppLayout } from "@/components/AppLayout";
+import { MissingInfoPopover } from "@/components/MissingInfoPopover";
+import { SipiPrintSheet, type SipiPrintSection } from "@/components/SipiPrintSheet";
 import {
   getInqueritoById,
+  listInqueritoPessoas,
   softDeleteInquerito,
+  type InqueritoPessoaRecord,
   type InqueritoRecord,
 } from "@/lib/repositories/inqueritosRepository";
 import { logAuditoria } from "@/lib/repositories/auditoriaRepository";
@@ -26,13 +30,32 @@ import {
   normalizeCaseCategory,
 } from "@/lib/inqueritosPriority";
 import {
+  getInquiryRegistrationChecks,
+  isYesValue,
+  OCCURRENCE_ORIGIN_OPTIONS,
+  REPORT_STATUS_OPTIONS,
+  type ReportStatus,
+} from "@/lib/operationalContracts";
+import {
+  ArrowLeft,
   BookOpen,
+  CalendarDays,
   FileSearch,
+  FileText,
+  Flag,
+  FolderOpen,
+  Gavel,
+  Link2,
+  MoreVertical,
+  Pencil,
+  Printer,
   Scale,
+  ShieldAlert,
   UserRound,
   ShieldCheck,
   NotebookPen,
   CalendarClock,
+  Trash2,
 } from "lucide-react";
 
 export const Route = createFileRoute("/inqueritos/$caseId")({ component: InqueritoDetalhes });
@@ -44,6 +67,8 @@ type InqueritoDetalheUI = {
   tipificacao: string;
   numeroFisico: string;
   numeroBo: string;
+  origemRegistro: string;
+  visibilidade: string;
   tipo: string;
   situacao: string;
   prioridade: string;
@@ -62,6 +87,7 @@ type InqueritoDetalheUI = {
   autoriaDeterminada: string;
   reuPreso: string;
   elucidado: string;
+  dataElucidacao: string;
   houveArmaFogo: string;
   armaUtilizada: string;
   equipe: string;
@@ -70,6 +96,8 @@ type InqueritoDetalheUI = {
   nomeFaccao: string;
   statusDiligencias: string;
   relatorioEnviado: string;
+  relatorioStatus: string;
+  dataRelatorio: string;
   dataEnvioRelatorio: string;
   medidaProtetiva: string;
   numeroProcessoMedida: string;
@@ -78,6 +106,7 @@ type InqueritoDetalheUI = {
   diligenciasPendentes: string;
   representacoesLegais: string;
   historicoAlteracoes: string;
+  dataCadastro: string;
 };
 
 const FALLBACK = "—";
@@ -92,6 +121,36 @@ function pick(record: Record<string, unknown>, ...keys: string[]) {
     if (text && normalizeText(text) !== "selecione") {
       return text;
     }
+  }
+  return FALLBACK;
+}
+
+function pickBoolean(record: Record<string, unknown>, ...keys: string[]) {
+  for (const key of keys) {
+    const value = record[key];
+    if (typeof value === "boolean") return value ? "Sim" : "Não";
+  }
+  return FALLBACK;
+}
+
+function pickTextOrBoolean(
+  record: Record<string, unknown>,
+  textKeys: string[],
+  booleanKeys: string[],
+) {
+  const text = pick(record, ...textKeys);
+  return text !== FALLBACK ? text : pickBoolean(record, ...booleanKeys);
+}
+
+function getOptionLabel(value: string, options: ReadonlyArray<{ value: string; label: string }>) {
+  if (!value || value === FALLBACK) return FALLBACK;
+  return options.find((option) => option.value === value)?.label ?? value;
+}
+
+function pickCaseCategory(record: Record<string, unknown>) {
+  for (const key of ["categoria_criminal", "categoria_caso", "categoriaCaso", "gravidade"]) {
+    const normalized = normalizeCaseCategory(String(record[key] ?? ""));
+    if (normalized !== FALLBACK) return normalized;
   }
   return FALLBACK;
 }
@@ -163,6 +222,53 @@ function isPrazoVencido(value: string) {
   return ts < todayTs;
 }
 
+function formatDateValue(value: string) {
+  const timestamp = parsePrazoToUtc(value);
+  return timestamp === null ? FALLBACK : formatDatePtBr(timestamp);
+}
+
+function getPrazoSummary(value: string) {
+  const timestamp = parsePrazoToUtc(value.replace("Vencido — ", ""));
+  if (timestamp === null) {
+    return { label: "Não informado", detail: "Sem data limite", overdue: false };
+  }
+
+  const now = new Date();
+  const todayTimestamp = Date.UTC(
+    now.getUTCFullYear(),
+    now.getUTCMonth(),
+    now.getUTCDate(),
+    12,
+    0,
+    0,
+    0,
+  );
+  const differenceInDays = Math.round((timestamp - todayTimestamp) / 86_400_000);
+  const date = formatDatePtBr(timestamp);
+
+  if (differenceInDays < 0) {
+    return {
+      label: `Vencido há ${formatElapsedDuration(String(Math.abs(differenceInDays)))}`,
+      detail: date,
+      overdue: true,
+    };
+  }
+
+  if (differenceInDays === 0) {
+    return { label: "Vence hoje", detail: date, overdue: false };
+  }
+
+  return {
+    label: `Vence em ${formatElapsedDuration(String(differenceInDays))}`,
+    detail: date,
+    overdue: false,
+  };
+}
+
+function displayValue(value: string) {
+  return hasPrintableFieldValue(value) ? value : "Não informado";
+}
+
 function normalizePrintableValue(value: string) {
   return value
     .normalize("NFD")
@@ -203,11 +309,20 @@ function normalizeInqueritoForDetail(caso: InqueritoRecord): InqueritoDetalheUI 
     tipificacao: pick(raw, "tipificacao"),
     numeroFisico: pick(raw, "numero_fisico", "numeroFisico"),
     numeroBo: pick(raw, "numero_bo", "numeroBo"),
-    tipo: pick(raw, "tipo", "tipo_procedimento", "tipoProcedimento", "procedimento"),
+    origemRegistro: getOptionLabel(pick(raw, "origem_registro"), OCCURRENCE_ORIGIN_OPTIONS),
+    visibilidade: pick(raw, "visibilidade"),
+    tipo: pick(
+      raw,
+      "tipo",
+      "tipo_procedimento_normalizado",
+      "tipo_procedimento",
+      "tipoProcedimento",
+      "procedimento",
+    ),
     situacao: pick(raw, "situacao", "status_diligencias"),
     prioridade: priorityDetails.priority,
     prioridadeMotivo: priorityDetails.reason,
-    gravidade: normalizeCaseCategory(pick(raw, "categoria_caso", "categoriaCaso", "gravidade")),
+    gravidade: pickCaseCategory(raw),
     dataFato: pick(raw, "data_fato", "dataFato"),
     dataInstauracao: pick(raw, "data_instauracao", "dataInstauracao"),
     prazo: formatPrazoDisplay(pick(raw, "prazo")),
@@ -219,24 +334,32 @@ function normalizeInqueritoForDetail(caso: InqueritoRecord): InqueritoDetalheUI 
     vitima: pick(raw, "vitima"),
     investigado: pick(raw, "investigado", "suspeito", "autor_investigado", "autorInvestigado"),
     autoriaDeterminada: pick(raw, "autoria_determinada", "autoriaDeterminada"),
-    reuPreso: pick(raw, "reu_preso", "reuPreso"),
-    elucidado: pick(raw, "elucidado"),
+    reuPreso: pickTextOrBoolean(raw, ["reu_preso", "reuPreso"], ["reu_preso_normalizado"]),
+    elucidado: pickTextOrBoolean(raw, ["elucidado"], ["cvli_elucidado"]),
+    dataElucidacao: pick(raw, "data_elucidacao"),
     houveArmaFogo: pick(raw, "houve_arma_fogo", "houveArmaFogo"),
     armaUtilizada: pick(raw, "arma_utilizada", "armaUtilizada"),
-    equipe: pick(raw, "equipe", "equipeResponsavel"),
+    equipe: pick(raw, "equipe_responsavel", "equipe", "equipeResponsavel"),
     escrivao: pick(raw, "escrivao"),
     vinculadoFaccao: pick(raw, "vinculado_faccao", "vinculadoFaccao", "faccao"),
     nomeFaccao: pick(raw, "nome_faccao", "nomeFaccao"),
     statusDiligencias: pick(raw, "status_diligencias", "situacao", "statusDiligencias"),
     relatorioEnviado: pick(raw, "relatorio_enviado", "relatorioEnviado"),
+    relatorioStatus: getOptionLabel(pick(raw, "relatorio_status"), REPORT_STATUS_OPTIONS),
+    dataRelatorio: pick(raw, "data_relatorio"),
     dataEnvioRelatorio: pick(raw, "data_envio_relatorio", "dataEnvioRelatorio"),
-    medidaProtetiva: pick(raw, "medida_protetiva", "medidaProtetiva"),
+    medidaProtetiva: pickTextOrBoolean(
+      raw,
+      ["medida_protetiva", "medidaProtetiva"],
+      ["medida_protetiva_normalizada"],
+    ),
     numeroProcessoMedida: pick(raw, "numero_processo_medida", "numeroProcessoMedida"),
     motivacao: pick(raw, "motivacao"),
     observacoes: pick(raw, "observacoes"),
     diligenciasPendentes: pick(raw, "diligencias_pendentes", "diligenciasPendentes"),
     representacoesLegais: pick(raw, "representacoes_legais", "representacoesLegais"),
     historicoAlteracoes: pick(raw, "historico_alteracoes", "historicoAlteracoes"),
+    dataCadastro: pick(raw, "created_at"),
   };
 }
 
@@ -245,11 +368,18 @@ function InqueritoDetalhes() {
   const navigate = useNavigate();
   const location = useLocation();
   const [caso, setCaso] = useState<InqueritoRecord | null>(null);
+  const [pessoas, setPessoas] = useState<InqueritoPessoaRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState("");
+  const [pessoasLoadWarning, setPessoasLoadWarning] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [showFullClassification, setShowFullClassification] = useState(false);
+  const [expandedNarratives, setExpandedNarratives] = useState({
+    diligencias: false,
+    observacoes: false,
+  });
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [restricted, setRestricted] = useState(false);
 
@@ -257,9 +387,16 @@ function InqueritoDetalhes() {
     (async () => {
       try {
         setErro("");
-        const [currentProfile, inquerito] = await Promise.all([
+        setPessoasLoadWarning(false);
+        const [currentProfile, inquerito, pessoasResult] = await Promise.all([
           getCurrentProfile(),
           getInqueritoById(caseId),
+          listInqueritoPessoas(caseId)
+            .then((pessoasSalvas) => ({ pessoasSalvas, failed: false }))
+            .catch((peopleError: unknown) => {
+              console.warn("[inqueritos:detalhe] pessoas adicionais indisponiveis", peopleError);
+              return { pessoasSalvas: [], failed: true };
+            }),
         ]);
         setProfile(currentProfile);
         if (!inquerito) {
@@ -279,6 +416,8 @@ function InqueritoDetalhes() {
         }
         setRestricted(false);
         setCaso(inquerito);
+        setPessoas(pessoasResult.pessoasSalvas);
+        setPessoasLoadWarning(pessoasResult.failed);
       } catch (error) {
         const message =
           typeof error === "object" &&
@@ -295,6 +434,55 @@ function InqueritoDetalhes() {
   }, [caseId, location.pathname]);
 
   const detalhe = useMemo(() => (caso ? normalizeInqueritoForDetail(caso) : null), [caso]);
+  const registrationChecks = useMemo(() => {
+    if (!caso) return [];
+    const raw = caso as unknown as Record<string, unknown>;
+    const savedReportStatus = String(raw.relatorio_status ?? "");
+    const relatorioStatus: ReportStatus = ["pendente", "relatado", "enviado"].includes(
+      savedReportStatus,
+    )
+      ? (savedReportStatus as ReportStatus)
+      : isYesValue(raw.relatorio_enviado)
+        ? "enviado"
+        : raw.data_relatorio
+          ? "relatado"
+          : "pendente";
+
+    return getInquiryRegistrationChecks({
+      ppe: String(raw.numero_ppe ?? ""),
+      numeroBo: String(raw.numero_bo ?? ""),
+      origemRegistro: String(raw.origem_registro ?? ""),
+      visibilidade: String(raw.visibilidade ?? ""),
+      tipoProcedimento: String(raw.tipo ?? raw.tipo_procedimento_normalizado ?? ""),
+      situacao: String(raw.situacao ?? ""),
+      dataFato: String(raw.data_fato ?? ""),
+      dataInstauracao: String(raw.data_instauracao ?? ""),
+      prazo: String(raw.prazo ?? ""),
+      tipificacao: String(raw.tipificacao ?? ""),
+      gravidade: String(raw.categoria_criminal ?? raw.gravidade ?? ""),
+      vitima: String(raw.vitima ?? ""),
+      investigado: String(raw.investigado ?? ""),
+      autoria: String(raw.autoria_determinada ?? ""),
+      reuPreso: String(raw.reu_preso ?? raw.reu_preso_normalizado ?? ""),
+      bairro: String(raw.bairro ?? ""),
+      distrito: String(raw.distrito ?? ""),
+      delegado: String(raw.delegado_responsavel ?? ""),
+      equipe: String(raw.equipe_responsavel ?? raw.equipe ?? ""),
+      escrivao: String(raw.escrivao ?? ""),
+      statusDiligencias: String(raw.status_diligencias ?? ""),
+      elucidado: String(raw.elucidado ?? ""),
+      dataElucidacao: String(raw.data_elucidacao ?? ""),
+      houveArmaDeFogo: String(raw.houve_arma_fogo ?? ""),
+      armaUtilizada: String(raw.arma_utilizada ?? ""),
+      vinculadoFaccao: String(raw.faccao ?? ""),
+      nomeFaccao: String(raw.nome_faccao ?? ""),
+      medidaProtetiva: String(raw.medida_protetiva ?? ""),
+      numeroProcessoMedida: String(raw.numero_processo_medida ?? ""),
+      relatorioStatus,
+      dataRelatorio: String(raw.data_relatorio ?? ""),
+      dataEnvioRelatorio: String(raw.data_envio_relatorio ?? ""),
+    });
+  }, [caso]);
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const isEditingChildRoute = pathname.endsWith("/editar");
 
@@ -416,205 +604,447 @@ function InqueritoDetalhes() {
     }
   };
 
-  const badges = [
-    ["Prioridade operacional", detalhe.prioridade],
-    ["Motivo", detalhe.prioridadeMotivo],
-    ["Situação", detalhe.situacao],
-    ["Categoria", detalhe.gravidade],
-    ["Procedimento", detalhe.tipo],
-    ["Diligências", detalhe.statusDiligencias],
-  ] as const;
-
-  const badgeTone: Record<string, string> = {
-    "Prioridade operacional": "border-rose-500/35 bg-rose-500/15 text-rose-200",
-    Situação: "border-amber-500/35 bg-amber-500/15 text-amber-200",
-    Categoria: "border-orange-500/35 bg-orange-500/15 text-orange-200",
-    Procedimento: "border-sky-500/35 bg-sky-500/15 text-sky-200",
-    Diligências: "border-violet-500/35 bg-violet-500/15 text-violet-200",
-  };
+  const prazoSummary = getPrazoSummary(detalhe.prazo);
+  const pendingChecks = registrationChecks.filter((item) => !item.complete);
+  const headerIdentifier =
+    detalhe.numeroPpe !== FALLBACK
+      ? detalhe.numeroPpe
+      : detalhe.numeroBo !== FALLBACK
+        ? `B.O. ${detalhe.numeroBo}`
+        : "sem identificação";
+  const peopleRows: Array<[string, string]> =
+    pessoas.length > 0
+      ? pessoas.map((pessoa) => [
+          pessoa.papel === "vitima"
+            ? "Vítima"
+            : pessoa.papel === "autor_investigado"
+              ? "Autor / Investigado"
+              : pessoa.papel === "testemunha"
+                ? "Testemunha"
+                : "Outro envolvido",
+          pessoa.observacao ? `${pessoa.nome} — (Alcunha: ${pessoa.observacao})` : pessoa.nome,
+        ])
+      : [
+          ["Vítima", detalhe.vitima],
+          ["Autor / Investigado", detalhe.investigado],
+        ];
+  const hasAdditionalClassification = [
+    detalhe.houveArmaFogo,
+    detalhe.armaUtilizada,
+    detalhe.vinculadoFaccao,
+    detalhe.nomeFaccao,
+  ].some(hasPrintableFieldValue);
+  const printSections: SipiPrintSection[] = [
+    {
+      title: "Resumo do fato",
+      wide: true,
+      narrative: true,
+      fields: [
+        { label: "Tipificação", value: detalhe.tipificacao, wide: true },
+        { label: "Motivação", value: detalhe.motivacao, wide: true },
+      ],
+    },
+    {
+      title: "Dados gerais",
+      fields: [
+        { label: "Nº físico", value: detalhe.numeroFisico },
+        { label: "Nº do B.O.", value: detalhe.numeroBo },
+        { label: "Data do fato", value: formatDateValue(detalhe.dataFato) },
+        { label: "Data de instauração", value: formatDateValue(detalhe.dataInstauracao) },
+        { label: "Data limite", value: prazoSummary.detail },
+        { label: "Tempo decorrido", value: detalhe.diasDecorridos },
+        { label: "Elucidação", value: detalhe.elucidado },
+        { label: "Data da elucidação", value: formatDateValue(detalhe.dataElucidacao) },
+      ],
+    },
+    {
+      title: "Pessoas envolvidas",
+      fields: [
+        ...peopleRows.map(([label, value]) => ({ label, value, wide: true })),
+        { label: "Autoria", value: detalhe.autoriaDeterminada },
+        { label: "Réu preso", value: detalhe.reuPreso },
+      ],
+    },
+    {
+      title: "Dados operacionais",
+      fields: [
+        { label: "Bairro", value: detalhe.bairro },
+        { label: "Distrito", value: detalhe.distrito },
+        { label: "Equipe", value: detalhe.equipe },
+        { label: "Escrivão", value: detalhe.escrivao },
+        { label: "Delegado responsável", value: detalhe.delegadoResponsavel },
+        { label: "Última atualização", value: formatDateTime(detalhe.ultimaEdicao) },
+      ],
+    },
+    {
+      title: "Controle do cadastro",
+      fields: [
+        { label: "Origem do registro", value: detalhe.origemRegistro },
+        { label: "Visibilidade", value: detalhe.visibilidade },
+        { label: "Cadastrado em", value: formatDateTime(detalhe.dataCadastro) },
+        { label: "Prioridade operacional", value: detalhe.prioridade },
+        { label: "Motivo da prioridade", value: detalhe.prioridadeMotivo, wide: true },
+      ],
+    },
+    {
+      title: "Relatório e jurídico",
+      fields: [
+        { label: "Status do relatório", value: detalhe.relatorioStatus },
+        { label: "Relatório enviado", value: detalhe.relatorioEnviado },
+        { label: "Data do relatório", value: formatDateValue(detalhe.dataRelatorio) },
+        { label: "Data de envio", value: formatDateValue(detalhe.dataEnvioRelatorio) },
+        { label: "Medida protetiva", value: detalhe.medidaProtetiva },
+        { label: "Nº do processo da medida", value: detalhe.numeroProcessoMedida },
+        { label: "Representações vinculadas", value: detalhe.representacoesLegais },
+      ],
+    },
+    {
+      title: "Classificação complementar",
+      fields: [
+        { label: "Houve arma de fogo", value: detalhe.houveArmaFogo },
+        { label: "Arma utilizada", value: detalhe.armaUtilizada },
+        { label: "Vinculado à facção", value: detalhe.vinculadoFaccao },
+        { label: "Nome da facção", value: detalhe.nomeFaccao },
+      ],
+    },
+    {
+      title: "Diligências pendentes",
+      wide: true,
+      narrative: true,
+      fields: [{ label: "Registro", value: detalhe.diligenciasPendentes, wide: true }],
+    },
+    {
+      title: "Observações",
+      wide: true,
+      narrative: true,
+      fields: [{ label: "Registro", value: detalhe.observacoes, wide: true }],
+    },
+  ];
 
   return (
     <AppLayout>
       <div className="sipi-print-document mx-auto w-full max-w-[1480px] space-y-4 px-1 lg:px-2">
-        <div className="print-only sipi-print-header">
-          <div>
-            <p className="sipi-print-kicker">SIPI - Sistema de Inquéritos Policiais</p>
-            <h1>Ficha de Inquérito Policial</h1>
-            <p>Documento operacional para conferência e arquivamento interno.</p>
-          </div>
-          <div className="sipi-print-header-meta">
-            <span>PPE</span>
-            <strong>{detalhe.numeroPpe}</strong>
-            <small>Gerado em {new Date().toLocaleString("pt-BR")}</small>
-          </div>
-        </div>
-        <header className="sipi-print-hero rounded-xl border border-border/70 bg-card/65 p-4 lg:p-5">
-          <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-            <div className="min-w-0 flex-1 space-y-1.5">
+        <SipiPrintSheet
+          documentTitle="Ficha de Inquérito Policial"
+          documentSubtitle="Conferência, acompanhamento e arquivamento operacional"
+          identifierLabel={detalhe.numeroPpe !== FALLBACK ? "PPE" : "Identificação"}
+          identifier={headerIdentifier}
+          summary={[
+            { label: "Situação", value: detalhe.situacao },
+            { label: "Categoria", value: detalhe.gravidade },
+            { label: "Procedimento", value: detalhe.tipo },
+            { label: "Diligências", value: detalhe.statusDiligencias },
+            {
+              label: "Relatório",
+              value:
+                detalhe.relatorioStatus !== FALLBACK
+                  ? detalhe.relatorioStatus
+                  : detalhe.relatorioEnviado,
+            },
+          ]}
+          sections={printSections}
+        />
+        <header className="sipi-print-hidden flex flex-col gap-4 border-b border-border/65 pb-4 lg:flex-row lg:items-start lg:justify-between">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
               <Link
                 to="/inqueritos"
-                className="sipi-print-hidden inline-flex w-fit items-center gap-1 rounded-md border border-border/80 bg-background/70 px-2.5 py-1 text-xs text-muted-foreground hover:bg-accent"
+                aria-label="Voltar para inquéritos"
+                className="inline-flex items-center gap-2 text-sm font-semibold text-primary transition-colors hover:text-primary/80"
               >
-                ← Voltar
+                <ArrowLeft className="h-4 w-4" /> Voltar
               </Link>
-              <h1 className="sipi-print-hidden text-3xl font-extrabold tracking-tight text-foreground break-words">
-                {detalhe.numeroPpe}
+              <span className="hidden h-6 w-px bg-border/70 sm:block" />
+              <h1 className="text-2xl font-extrabold text-foreground sm:text-3xl">
+                Inquérito {headerIdentifier}
               </h1>
-              <p className="max-w-5xl text-sm leading-6 text-muted-foreground break-words">
-                {renderCrimeCode(detalhe.tipificacao)}
-              </p>
-              {detalhe.ultimaEdicao !== FALLBACK && (
-                <p className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-                  <CalendarClock className="h-3.5 w-3.5" /> Última edição em{" "}
-                  {formatDateTime(detalhe.ultimaEdicao)}
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-muted-foreground">
+                  {displayValue(detalhe.tipo)} · {displayValue(detalhe.gravidade)}
                 </p>
-              )}
+                {detalhe.ultimaEdicao !== FALLBACK && (
+                  <p className="mt-1 inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <CalendarClock className="h-3.5 w-3.5" /> Última atualização:{" "}
+                    {formatDateTime(detalhe.ultimaEdicao)}
+                  </p>
+                )}
+              </div>
+              <MissingInfoPopover items={pendingChecks} />
             </div>
-            <div className="sipi-print-actions flex w-full flex-wrap items-center justify-start gap-2 sm:justify-end lg:w-auto lg:flex-nowrap">
+          </div>
+
+          <div className="sipi-print-actions flex shrink-0 items-center gap-2">
+            <button
+              type="button"
+              onClick={() => window.print()}
+              className="inline-flex h-10 items-center gap-2 rounded-md border border-border bg-card px-3 text-xs font-semibold transition-colors hover:bg-accent"
+            >
+              <Printer className="h-4 w-4" /> Gerar PDF
+            </button>
+            {canEditCases(profile) ? (
               <button
-                onClick={() => window.print()}
-                className="px-3.5 py-2 text-xs rounded-md border border-border bg-card hover:bg-accent"
+                type="button"
+                onClick={() =>
+                  navigate({ to: "/inqueritos/$caseId/editar", params: { caseId: caso.id } })
+                }
+                className="inline-flex h-10 items-center gap-2 rounded-md bg-primary px-4 text-xs font-bold text-primary-foreground transition-colors hover:bg-primary/90"
               >
-                Gerar PDF
+                <Pencil className="h-4 w-4" /> Editar
               </button>
-              {canEditCases(profile) ? (
-                <button
-                  onClick={() =>
-                    navigate({ to: "/inqueritos/$caseId/editar", params: { caseId: caso.id } })
-                  }
-                  className="px-3.5 py-2 text-xs rounded-md bg-primary text-primary-foreground font-semibold"
+            ) : null}
+            {canDeleteCases(profile) ? (
+              <details className="group relative">
+                <summary
+                  aria-label="Mais ações"
+                  title="Mais ações"
+                  className="flex h-10 w-10 cursor-pointer list-none items-center justify-center rounded-md border border-border bg-card text-muted-foreground transition-colors hover:bg-accent hover:text-foreground [&::-webkit-details-marker]:hidden"
                 >
-                  Editar
-                </button>
-              ) : null}
-              {canDeleteCases(profile) ? (
-                <button
-                  onClick={() => {
-                    setDeleteError(null);
-                    setShowDeleteModal(true);
-                  }}
-                  disabled={deleting}
-                  className="px-3.5 py-2 text-xs rounded-md border border-destructive/30 bg-destructive/10 text-destructive disabled:cursor-not-allowed disabled:opacity-70"
-                >
-                  {deleting ? "Excluindo..." : "Excluir"}
-                </button>
-              ) : null}
-            </div>
+                  <MoreVertical className="h-4 w-4" />
+                </summary>
+                <div className="absolute right-0 top-12 z-20 min-w-40 rounded-md border border-border bg-popover p-1 shadow-xl">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDeleteError(null);
+                      setShowDeleteModal(true);
+                    }}
+                    disabled={deleting}
+                    className="flex w-full items-center gap-2 rounded-sm px-3 py-2 text-left text-xs font-semibold text-destructive transition-colors hover:bg-destructive/10 disabled:opacity-60"
+                  >
+                    <Trash2 className="h-4 w-4" /> {deleting ? "Excluindo..." : "Excluir inquérito"}
+                  </button>
+                </div>
+              </details>
+            ) : null}
           </div>
-          <div className="mt-3 flex flex-wrap gap-2.5">
-            {badges.map(([label, value]) => {
-              const hideOnPrint = label === "Prioridade operacional" || label === "Motivo";
-              return (
-                <span
-                  key={label}
-                  className={`${hideOnPrint ? "sipi-print-hidden " : ""}inline-flex items-center rounded-md border px-2.5 py-1 text-[10px] font-semibold ${badgeTone[label] ?? "border-border/70 bg-muted/30 text-foreground"}`}
-                >
-                  {label}: {value || FALLBACK}
-                </span>
-              );
-            })}
-            {isPrazoVencido(detalhe.prazo) && (
-              <span className="sipi-print-hidden rounded-md border border-red-500/40 bg-red-500/15 px-2.5 py-1 text-[10px] font-semibold text-red-200">
-                Vencido
-              </span>
-            )}
-          </div>
-          {deleteError && (
-            <p className="mt-3 rounded-lg border border-destructive/50 bg-destructive/10 px-3 py-1.5 text-xs text-destructive">
-              {deleteError}
-            </p>
-          )}
         </header>
 
-        <section className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-          <div className="space-y-4">
-            <InfoCard
-              title="Dados Gerais"
-              icon={<BookOpen className="h-4 w-4 text-primary" />}
-              hiddenOnPrintLabels={["Nº PPE"]}
-              items={[
-                ["Nº PPE", detalhe.numeroPpe],
-                ["Nº físico", detalhe.numeroFisico],
-                ["Nº BO", detalhe.numeroBo],
-                ["Data do fato", detalhe.dataFato],
-                ["Data de instauração", detalhe.dataInstauracao],
-                ["Data limite", detalhe.prazo],
-                ["Dias corridos", detalhe.diasDecorridos],
-                ["Elucidação", detalhe.elucidado],
-              ]}
-            />
-            <InfoCard
-              title="Pessoas Envolvidas"
-              icon={<UserRound className="h-4 w-4 text-primary" />}
-              stacked
-              items={[
-                ["Vítima", detalhe.vitima],
-                ["Autor / Investigado", detalhe.investigado],
-                ["Autoria determinada ou indeterminada", detalhe.autoriaDeterminada],
-                ["Réu preso", detalhe.reuPreso],
-                ["Motivação", detalhe.motivacao],
-              ]}
-            />
-            <InfoCard
-              title="Relatório e Jurídico"
-              icon={<Scale className="h-4 w-4 text-primary" />}
-              items={[
-                ["Relatório enviado?", detalhe.relatorioEnviado],
-                ["Data envio relatório", detalhe.dataEnvioRelatorio],
-                ["Medida protetiva?", detalhe.medidaProtetiva],
-                ["Nº processo medida", detalhe.numeroProcessoMedida],
-                ["Qtd. representações", detalhe.representacoesLegais],
-              ]}
-            />
-            <InfoCard
-              title="Diligências Pendentes"
-              icon={<NotebookPen className="h-4 w-4 text-primary" />}
-              items={[["Diligências pendentes", detalhe.diligenciasPendentes]]}
-              stacked
-              preWrapValues
-            />
+        <section className="sipi-print-hidden grid overflow-hidden rounded-lg border border-border/65 bg-card/55 sm:grid-cols-2 xl:grid-cols-5">
+          <OperationalMetric
+            icon={<FileText className="h-5 w-5" />}
+            label="Situação"
+            value={displayValue(detalhe.situacao)}
+            tone="emerald"
+          />
+          <OperationalMetric
+            icon={<CalendarDays className="h-5 w-5" />}
+            label="Prazo"
+            value={prazoSummary.label}
+            detail={prazoSummary.detail}
+            tone={prazoSummary.overdue ? "red" : "amber"}
+          />
+          <OperationalMetric
+            icon={<Flag className="h-5 w-5" />}
+            label="Prioridade"
+            value={displayValue(detalhe.prioridade)}
+            detail={
+              hasPrintableFieldValue(detalhe.prioridadeMotivo)
+                ? detalhe.prioridadeMotivo
+                : undefined
+            }
+            tone="amber"
+          />
+          <OperationalMetric
+            icon={<FolderOpen className="h-5 w-5" />}
+            label="Diligências"
+            value={displayValue(detalhe.statusDiligencias)}
+            tone="violet"
+          />
+          <OperationalMetric
+            icon={<FileSearch className="h-5 w-5" />}
+            label="Relatório"
+            value={
+              hasPrintableFieldValue(detalhe.relatorioEnviado)
+                ? detalhe.relatorioEnviado
+                : "Não informado"
+            }
+            tone="slate"
+          />
+        </section>
+
+        {deleteError && (
+          <p className="sipi-print-hidden rounded-lg border border-destructive/50 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+            {deleteError}
+          </p>
+        )}
+
+        <section className="grid grid-cols-1 items-start gap-4 xl:grid-cols-12">
+          <div className="space-y-4 xl:col-span-8">
+            <DetailSection title="Resumo do fato" icon={<BookOpen className="h-4 w-4" />}>
+              <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                <p
+                  className={`max-w-5xl break-words text-sm font-medium leading-7 text-foreground ${showFullClassification ? "" : "max-h-[5.25rem] overflow-hidden"}`}
+                >
+                  {renderCrimeCode(detalhe.tipificacao)}
+                </p>
+                {detalhe.tipificacao.length > 180 ? (
+                  <button
+                    type="button"
+                    onClick={() => setShowFullClassification((current) => !current)}
+                    className="sipi-print-hidden shrink-0 self-start rounded-md border border-border px-3 py-2 text-xs font-semibold text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                  >
+                    {showFullClassification ? "Recolher texto" : "Ver texto completo"}
+                  </button>
+                ) : null}
+              </div>
+              {hasPrintableFieldValue(detalhe.motivacao) ? (
+                <div className="mt-4 border-t border-border/55 pt-3">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
+                    Motivação
+                  </p>
+                  <p className="mt-1 text-sm text-foreground">{detalhe.motivacao}</p>
+                </div>
+              ) : null}
+            </DetailSection>
+
+            <DetailSection title="Pessoas envolvidas" icon={<UserRound className="h-4 w-4" />}>
+              {pessoasLoadWarning ? (
+                <div className="sipi-print-hidden mb-3 rounded-lg border border-amber-400/35 bg-amber-400/10 px-4 py-3 text-sm text-amber-200">
+                  Os dados do inquerito foram carregados, mas as pessoas adicionais estao
+                  temporariamente indisponiveis.
+                </div>
+              ) : null}
+              <DetailRows
+                items={[
+                  ...peopleRows,
+                  ["Autoria", detalhe.autoriaDeterminada],
+                  ["Réu preso", detalhe.reuPreso],
+                ]}
+              />
+            </DetailSection>
+
+            <DetailSection
+              title="Andamento operacional"
+              icon={<CalendarClock className="h-4 w-4" />}
+            >
+              <OperationalTimeline
+                items={[
+                  ["Data do fato", formatDateValue(detalhe.dataFato)],
+                  ["Instauração", formatDateValue(detalhe.dataInstauracao)],
+                  ["Data limite", prazoSummary.detail, prazoSummary.overdue ? "danger" : "default"],
+                  ["Última atualização", formatDateTime(detalhe.ultimaEdicao)],
+                ]}
+              />
+            </DetailSection>
+
+            <DetailSection
+              title="Diligências e observações"
+              icon={<NotebookPen className="h-4 w-4" />}
+            >
+              <div className="sipi-print-hidden mb-3 flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const expandAll = !(
+                      expandedNarratives.diligencias && expandedNarratives.observacoes
+                    );
+                    setExpandedNarratives({
+                      diligencias: expandAll,
+                      observacoes: expandAll,
+                    });
+                  }}
+                  className="rounded-md border border-border/70 px-3 py-1.5 text-[11px] font-semibold text-muted-foreground transition-colors hover:border-primary/45 hover:bg-primary/5 hover:text-primary"
+                >
+                  {expandedNarratives.diligencias && expandedNarratives.observacoes
+                    ? "Recolher tudo"
+                    : "Mostrar tudo"}
+                </button>
+              </div>
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                <TextPanel
+                  label="Diligências pendentes"
+                  value={detalhe.diligenciasPendentes}
+                  expanded={expandedNarratives.diligencias}
+                  onToggle={() =>
+                    setExpandedNarratives((current) => ({
+                      ...current,
+                      diligencias: !current.diligencias,
+                    }))
+                  }
+                />
+                <TextPanel
+                  label="Observações"
+                  value={detalhe.observacoes}
+                  expanded={expandedNarratives.observacoes}
+                  onToggle={() =>
+                    setExpandedNarratives((current) => ({
+                      ...current,
+                      observacoes: !current.observacoes,
+                    }))
+                  }
+                />
+              </div>
+            </DetailSection>
           </div>
-          <div className="space-y-4">
-            <InfoCard
-              title="Classificação"
-              icon={<FileSearch className="h-4 w-4 text-primary" />}
+
+          <aside className="space-y-4 xl:col-span-4">
+            <DetailSection title="Dados do procedimento" icon={<FileText className="h-4 w-4" />}>
+              <DetailRows
+                compact
+                items={[
+                  ["Nº físico", detalhe.numeroFisico],
+                  ["Nº BO", detalhe.numeroBo],
+                  ["Categoria", detalhe.gravidade],
+                  ["Tipo de procedimento", detalhe.tipo],
+                  ["Bairro", detalhe.bairro],
+                  ["Distrito", detalhe.distrito],
+                  ["Equipe", detalhe.equipe],
+                  ["Escrivão", detalhe.escrivao],
+                  ["Delegado responsável", detalhe.delegadoResponsavel],
+                  ["Elucidação", detalhe.elucidado],
+                ]}
+              />
+            </DetailSection>
+
+            <DetailSection title="Judicial e relatório" icon={<Gavel className="h-4 w-4" />}>
+              <DetailRows
+                compact
+                items={[
+                  ["Relatório enviado", detalhe.relatorioEnviado],
+                  ["Data do envio", formatDateValue(detalhe.dataEnvioRelatorio)],
+                  ["Medida protetiva", detalhe.medidaProtetiva],
+                  ["Nº processo da medida", detalhe.numeroProcessoMedida],
+                  ["Representações", detalhe.representacoesLegais],
+                ]}
+              />
+            </DetailSection>
+
+            {hasAdditionalClassification ? (
+              <DetailSection
+                title="Classificação complementar"
+                icon={<ShieldAlert className="h-4 w-4" />}
+              >
+                <DetailRows
+                  compact
+                  items={[
+                    ["Houve arma de fogo", detalhe.houveArmaFogo],
+                    ["Arma utilizada", detalhe.armaUtilizada],
+                    ["Vinculado à facção", detalhe.vinculadoFaccao],
+                    ["Nome da facção", detalhe.nomeFaccao],
+                  ]}
+                />
+              </DetailSection>
+            ) : null}
+
+            <DetailSection
+              title="Atalhos"
+              icon={<Link2 className="h-4 w-4" />}
               className="sipi-print-hidden"
-              items={[
-                ["Tipificação", detalhe.tipificacao],
-                ["Prioridade operacional", detalhe.prioridade],
-                ["Motivo da prioridade", detalhe.prioridadeMotivo],
-                ["Categoria do Caso", detalhe.gravidade],
-                ["Tipo de Procedimento", detalhe.tipo],
-                ["Situação", detalhe.situacao],
-                ["Elucidado", detalhe.elucidado],
-                ["Houve arma de fogo?", detalhe.houveArmaFogo],
-                ["Arma utilizada", detalhe.armaUtilizada],
-                ["Vinculado à facção?", detalhe.vinculadoFaccao],
-                ["Nome da facção", detalhe.nomeFaccao],
-              ]}
-              highlightFirst
-            />
-            <InfoCard
-              title="Dados Operacionais"
-              icon={<ShieldCheck className="h-4 w-4 text-primary" />}
-              items={[
-                ["Delegado responsável", detalhe.delegadoResponsavel],
-                ["Equipe", detalhe.equipe],
-                ["Escrivão", detalhe.escrivao],
-                ["Bairro", detalhe.bairro],
-                ["Distrito", detalhe.distrito],
-                ["Status diligências", detalhe.statusDiligencias],
-                ["Última atualização", formatDateTime(detalhe.ultimaEdicao)],
-              ]}
-            />
-            <InfoCard
-              title="Observações"
-              icon={<NotebookPen className="h-4 w-4 text-primary" />}
-              items={[["Observações", detalhe.observacoes]]}
-              stacked
-              preWrapValues
-            />
-          </div>
+            >
+              <div className="space-y-2">
+                <ShortcutLink
+                  to="/auditoria"
+                  icon={<ShieldCheck className="h-4 w-4" />}
+                  label="Abrir auditoria"
+                />
+                <ShortcutLink
+                  to="/representacoes"
+                  icon={<Scale className="h-4 w-4" />}
+                  label="Ver representações"
+                />
+              </div>
+            </DetailSection>
+          </aside>
         </section>
         {showDeleteModal && canDeleteCases(profile) && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
@@ -650,62 +1080,208 @@ function InqueritoDetalhes() {
   );
 }
 
-function InfoCard({
-  title,
-  items,
+const OPERATIONAL_TONES = {
+  emerald: "text-emerald-400",
+  red: "text-red-400",
+  amber: "text-amber-400",
+  violet: "text-violet-400",
+  slate: "text-slate-300",
+} as const;
+
+function OperationalMetric({
   icon,
+  label,
+  value,
+  detail,
+  tone,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  detail?: string;
+  tone: keyof typeof OPERATIONAL_TONES;
+}) {
+  return (
+    <div className="grid min-h-[6.5rem] min-w-0 grid-cols-[2.25rem_minmax(0,1fr)] items-start gap-3 border-b border-border/60 px-4 py-4 last:border-b-0 sm:[&:nth-child(odd)]:border-r xl:border-b-0 xl:border-r xl:last:border-r-0">
+      <span
+        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-current/20 bg-current/5 ${OPERATIONAL_TONES[tone]}`}
+      >
+        {icon}
+      </span>
+      <div className="grid min-h-[4.5rem] min-w-0 grid-rows-[1rem_minmax(1.5rem,auto)_1rem] content-start">
+        <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
+          {label}
+        </p>
+        <p
+          className={`self-center break-words text-sm font-bold leading-5 ${OPERATIONAL_TONES[tone]}`}
+        >
+          {value}
+        </p>
+        <p
+          aria-hidden={!detail}
+          className={`truncate text-[10px] leading-4 text-muted-foreground ${detail ? "" : "invisible"}`}
+        >
+          {detail || "Sem detalhe"}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function DetailSection({
+  title,
+  icon,
+  children,
   className = "",
-  hiddenOnPrintLabels = [],
-  stacked = false,
-  highlightFirst = false,
-  preWrapValues = false,
 }: {
   title: string;
-  items: [string, string][];
-  icon?: React.ReactNode;
+  icon: React.ReactNode;
+  children: React.ReactNode;
   className?: string;
-  hiddenOnPrintLabels?: string[];
-  stacked?: boolean;
-  highlightFirst?: boolean;
-  preWrapValues?: boolean;
 }) {
-  const hiddenOnPrint = new Set(hiddenOnPrintLabels);
-  const hasPrintableContent = items.some(
-    ([label, value]) => !hiddenOnPrint.has(label) && hasPrintableFieldValue(value),
-  );
-
   return (
     <article
-      className={`${hasPrintableContent ? "" : "sipi-print-empty-card "}self-start rounded-xl border border-border/60 bg-card/80 p-4 lg:p-5 ${className}`}
+      className={`self-start overflow-hidden rounded-lg border border-border/60 bg-card/70 ${className}`}
     >
-      <div className="flex items-center gap-2 pb-2">
+      <div className="flex items-center gap-2 border-b border-border/55 px-4 py-3 text-primary">
         {icon}
-        <h2 className="text-xs font-extrabold uppercase tracking-[0.16em] text-primary">{title}</h2>
+        <h2 className="text-xs font-extrabold uppercase tracking-[0.16em]">{title}</h2>
       </div>
-      <div className="mb-3 h-px w-full bg-border/70" />
-      <div
-        className={`${stacked ? "" : "sipi-print-field-grid "}grid grid-cols-1 gap-3 ${stacked ? "" : "md:grid-cols-2"}`}
-      >
-        {items.map(([k, v], idx) => {
-          const hasPrintValue = !hiddenOnPrint.has(k) && hasPrintableFieldValue(v);
-          return (
-            <div
-              key={k}
-              className={`${hasPrintValue ? "" : "sipi-print-empty-field "}min-w-0 space-y-1 ${highlightFirst && idx === 0 ? "md:col-span-2 rounded-lg border border-border/60 bg-background/30 p-3" : ""}`}
-            >
-              <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
-                {k}
-              </p>
-              <p
-                className={`text-sm text-foreground break-words ${preWrapValues ? "whitespace-pre-wrap" : ""} ${highlightFirst && idx === 0 ? "text-base font-semibold leading-7" : "leading-5"}`}
-              >
-                {v || FALLBACK}
-              </p>
-            </div>
-          );
-        })}
-      </div>
+      <div className="p-4">{children}</div>
     </article>
+  );
+}
+
+function DetailRows({ items, compact = false }: { items: [string, string][]; compact?: boolean }) {
+  const visibleItems = items.filter(([, value]) => hasPrintableFieldValue(value));
+
+  if (visibleItems.length === 0) {
+    return <p className="text-sm text-muted-foreground">Nenhuma informação registrada.</p>;
+  }
+
+  return (
+    <dl className="divide-y divide-border/50">
+      {visibleItems.map(([label, value]) => (
+        <div
+          key={label}
+          className={`${compact ? "grid gap-1 py-2.5 sm:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] sm:gap-4" : "grid gap-1 py-3 sm:grid-cols-[minmax(0,0.42fr)_minmax(0,1fr)] sm:gap-5"}`}
+        >
+          <dt className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
+            {label}
+          </dt>
+          <dd className="min-w-0 break-words text-sm font-medium leading-5 text-foreground">
+            {value}
+          </dd>
+        </div>
+      ))}
+    </dl>
+  );
+}
+
+function OperationalTimeline({ items }: { items: [string, string, ("danger" | "default")?][] }) {
+  return (
+    <ol className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      {items.map(([label, value, tone = "default"], index) => (
+        <li key={label} className="relative min-w-0 lg:pr-4">
+          {index < items.length - 1 ? (
+            <span className="absolute left-5 top-5 hidden h-px w-[calc(100%+0.5rem)] bg-primary/35 lg:block" />
+          ) : null}
+          <div className="relative z-10 flex h-10 w-10 items-center justify-center rounded-full border border-primary/50 bg-background text-primary">
+            {index === 0 ? <CalendarDays className="h-4 w-4" /> : null}
+            {index === 1 ? <FileText className="h-4 w-4" /> : null}
+            {index === 2 ? <CalendarClock className="h-4 w-4" /> : null}
+            {index === 3 ? <ShieldCheck className="h-4 w-4" /> : null}
+          </div>
+          <p className="mt-3 text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
+            {label}
+          </p>
+          <p
+            className={`mt-1 text-sm font-semibold ${tone === "danger" ? "text-red-400" : "text-foreground"}`}
+          >
+            {displayValue(value)}
+          </p>
+        </li>
+      ))}
+    </ol>
+  );
+}
+
+function TextPanel({
+  label,
+  value,
+  expanded,
+  onToggle,
+}: {
+  label: string;
+  value: string;
+  expanded: boolean;
+  onToggle: () => void;
+}) {
+  const hasValue = hasPrintableFieldValue(value);
+
+  return (
+    <div
+      className={`${hasValue ? "" : "sipi-print-empty-field "}self-start rounded-md border border-border/50 bg-background/25 p-3`}
+    >
+      <div className="flex min-h-7 items-start justify-between gap-3">
+        <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
+          {label}
+        </p>
+        {hasValue ? (
+          <button
+            type="button"
+            onClick={onToggle}
+            aria-expanded={expanded}
+            className="sipi-print-hidden shrink-0 text-[10px] font-semibold text-primary transition-colors hover:text-primary/75"
+          >
+            {expanded ? "Recolher" : "Mostrar tudo"}
+          </button>
+        ) : null}
+      </div>
+      {hasValue ? (
+        <button
+          type="button"
+          onClick={onToggle}
+          aria-expanded={expanded}
+          className="block w-full text-left"
+        >
+          <p
+            className={`whitespace-pre-wrap text-sm leading-6 text-foreground ${expanded ? "" : "max-h-40 overflow-hidden"}`}
+          >
+            {value}
+          </p>
+        </button>
+      ) : (
+        <div className="flex h-16 items-center gap-2 text-xs text-muted-foreground">
+          <FolderOpen className="h-4 w-4 text-primary/70" /> Nenhum registro informado.
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ShortcutLink({
+  to,
+  icon,
+  label,
+}: {
+  to: "/auditoria" | "/representacoes";
+  icon: React.ReactNode;
+  label: string;
+}) {
+  return (
+    <Link
+      to={to}
+      className="flex min-h-11 items-center justify-between gap-3 rounded-md border border-border/50 bg-background/25 px-3 text-sm font-semibold text-foreground transition-colors hover:border-primary/40 hover:bg-primary/5"
+    >
+      <span className="flex items-center gap-2 text-primary">
+        {icon}
+        <span className="text-foreground">{label}</span>
+      </span>
+      <span aria-hidden="true" className="text-muted-foreground">
+        →
+      </span>
+    </Link>
   );
 }
 

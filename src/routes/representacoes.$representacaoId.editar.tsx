@@ -9,30 +9,44 @@ import {
   useState,
 } from "react";
 import { AppLayout } from "@/components/AppLayout";
+import { FormFieldLabel } from "@/components/FormFieldLabel";
 import { PageHeader } from "@/components/PageHeader";
 import {
+  RepresentationPeopleEditor,
+  type RepresentationPersonFormValue,
+} from "@/components/RepresentationPeopleEditor";
+import {
   getRepresentacaoById,
+  listRepresentacaoPessoas,
+  replaceRepresentacaoPessoas,
   updateRepresentacao,
 } from "@/lib/repositories/representacoesRepository";
+import {
+  searchInqueritosForLink,
+  type InqueritoLinkOption,
+} from "@/lib/repositories/inqueritosRepository";
 import { logAuditoria } from "@/lib/repositories/auditoriaRepository";
 import { getCurrentProfile } from "@/lib/auth";
 import { canEditRepresentacoes, type UserProfile } from "@/lib/authz";
+import {
+  COMPLIANCE_RESULT_DESCRIPTIONS,
+  COMPLIANCE_RESULT_OPTIONS,
+  COMPLIANCE_STATUS_OPTIONS,
+  REPRESENTATION_TYPE_OPTIONS,
+  isYesValue,
+  normalizePriority,
+  normalizeRepresentationType,
+  representationTypeLabel,
+  type ComplianceResult,
+  type ComplianceStatus,
+  type SelectOption,
+} from "@/lib/operationalContracts";
 
 export const Route = createFileRoute("/representacoes/$representacaoId/editar")({
   head: () => ({ meta: [{ title: "Editar Representação — SIPI" }] }),
   component: EditarRepresentacao,
 });
 
-const tiposRepresentacao = [
-  "Prisão Temporária",
-  "Prisão Preventiva",
-  "Busca e Apreensão",
-  "Busca e Apreensão Domiciliar",
-  "Quebra de Sigilo / Interceptação",
-  "Interceptação Telefônica",
-  "Medida Protetiva",
-  "Outra",
-] as const;
 const statusRepresentacao = [
   "Em elaboração",
   "Em análise",
@@ -44,11 +58,16 @@ const statusRepresentacao = [
   "Cumprida parcialmente",
   "Indeferida",
   "Arquivada",
+  "Finalizada",
 ] as const;
 const statusComDataEnvioEVara = new Set(["Enviada ao Judiciário", "Aguardando decisão"]);
 const statusComDecisaoEPrazo = new Set(["Deferida", "Deferida parcialmente"]);
-const statusComCumprimento = new Set(["Cumprida", "Cumprida parcialmente"]);
 const statusComDecisaoEObservacoes = new Set(["Indeferida", "Arquivada"]);
+const INQUIRY_LINK_OPTIONS: readonly SelectOption[] = [
+  { value: "", label: "A definir" },
+  { value: "sim", label: "Sim, possui inquérito vinculado" },
+  { value: "nao", label: "Não possui inquérito vinculado" },
+];
 const normalizeText = (value?: string) =>
   (value ?? "")
     .normalize("NFD")
@@ -76,11 +95,18 @@ function EditarRepresentacao() {
   const [loadingInitial, setLoadingInitial] = useState(true);
   const [loadingSubmit, setLoadingSubmit] = useState(false);
   const [erro, setErro] = useState("");
+  const [pessoasCarregadas, setPessoasCarregadas] = useState(true);
   const [naoEncontrada, setNaoEncontrada] = useState(false);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [restricted, setRestricted] = useState(false);
 
   const [ppe, setPpe] = useState("");
+  const [legacyPpeReference, setLegacyPpeReference] = useState("");
+  const [vinculoInquerito, setVinculoInquerito] = useState<"sim" | "nao" | "">("");
+  const [inqueritoId, setInqueritoId] = useState<string | null>(null);
+  const [inqueritoMatches, setInqueritoMatches] = useState<InqueritoLinkOption[]>([]);
+  const [searchingInquerito, setSearchingInquerito] = useState(false);
+  const [justificativaSemInquerito, setJustificativaSemInquerito] = useState("");
   const [processo, setProcesso] = useState("");
   const [tipoRepresentacao, setTipoRepresentacao] = useState("");
   const [tipoOutra, setTipoOutra] = useState("");
@@ -89,6 +115,7 @@ function EditarRepresentacao() {
   const [vitima, setVitima] = useState("");
   const [investigado, setInvestigado] = useState("");
   const [autorPreso, setAutorPreso] = useState("");
+  const [pessoasAdicionais, setPessoasAdicionais] = useState<RepresentationPersonFormValue[]>([]);
   const [resumoFatos, setResumoFatos] = useState("");
   const [fundamentacao, setFundamentacao] = useState("");
   const [objetivo, setObjetivo] = useState("");
@@ -101,6 +128,7 @@ function EditarRepresentacao() {
   const [dataVencimento, setDataVencimento] = useState("");
   const [observacoesDecisao, setObservacoesDecisao] = useState("");
   const [dataCumprimento, setDataCumprimento] = useState("");
+  const [cumprimentoStatus, setCumprimentoStatus] = useState<ComplianceStatus>("pendente");
   const [equipeCumprimento, setEquipeCumprimento] = useState("");
   const [resultadoCumprimento, setResultadoCumprimento] = useState("");
   const [observacoesCumprimento, setObservacoesCumprimento] = useState("");
@@ -113,7 +141,13 @@ function EditarRepresentacao() {
   const exibeCampoOutra = tipoRepresentacao === "Outra";
   const exibeDataEnvioEVara = useMemo(() => statusComDataEnvioEVara.has(status), [status]);
   const exibeDecisaoEPrazo = useMemo(() => statusComDecisaoEPrazo.has(status), [status]);
-  const exibeBlocoCumprimento = useMemo(() => statusComCumprimento.has(status), [status]);
+  const exibeBlocoCumprimento = useMemo(
+    () =>
+      cumprimentoStatus !== "pendente" ||
+      status === "Deferida" ||
+      status === "Deferida parcialmente",
+    [cumprimentoStatus, status],
+  );
   const exibeDecisaoEObservacoes = useMemo(
     () => statusComDecisaoEObservacoes.has(status),
     [status],
@@ -136,7 +170,15 @@ function EditarRepresentacao() {
         }
         setRestricted(false);
 
-        const data = await getRepresentacaoById(representacaoId);
+        const [data, pessoasResult] = await Promise.all([
+          getRepresentacaoById(representacaoId),
+          listRepresentacaoPessoas(representacaoId)
+            .then((pessoas) => ({ pessoas, failed: false }))
+            .catch((error: unknown) => {
+              console.warn("[representacoes:editar] pessoas adicionais indisponiveis", error);
+              return { pessoas: [], failed: true };
+            }),
+        ]);
         if (!active) return;
 
         if (!data) {
@@ -145,19 +187,44 @@ function EditarRepresentacao() {
         }
 
         const tipoAtual = data.tipo ?? "";
-        const tipoConhecido = tiposRepresentacao.includes(
-          tipoAtual as (typeof tiposRepresentacao)[number],
-        );
+        const tipoNormalizado = normalizeRepresentationType(data.tipo_normalizado ?? tipoAtual);
 
+        const hasInquiryReference = Boolean(
+          data.inquerito_id || String(data.numero_ppe ?? "").trim(),
+        );
+        const hasNoInquiryJustification = Boolean(
+          String(data.justificativa_sem_inquerito ?? "").trim(),
+        );
         setPpe(data.numero_ppe ?? "");
+        setLegacyPpeReference(
+          !data.inquerito_id && String(data.numero_ppe ?? "").trim()
+            ? String(data.numero_ppe).trim()
+            : "",
+        );
+        setVinculoInquerito(hasInquiryReference ? "sim" : hasNoInquiryJustification ? "nao" : "");
+        setInqueritoId(data.inquerito_id ?? null);
+        setJustificativaSemInquerito(data.justificativa_sem_inquerito ?? "");
         setProcesso(data.processo_judicial ?? "");
-        setTipoRepresentacao(tipoConhecido ? tipoAtual : tipoAtual ? "Outra" : "");
-        setTipoOutra(tipoConhecido ? "" : tipoAtual);
+        setTipoRepresentacao(
+          tipoNormalizado === "outros" && tipoAtual && normalizeText(tipoAtual) !== "outra"
+            ? "Outra"
+            : representationTypeLabel(tipoNormalizado),
+        );
+        setTipoOutra(tipoNormalizado === "outros" ? tipoAtual : "");
         setDataRepresentacao(data.data_representacao ?? "");
         setResponsavel(data.responsavel ?? "");
         setVitima(data.vitima ?? "");
         setInvestigado(data.investigado ?? "");
         setAutorPreso(data.autor_preso ?? "");
+        setPessoasCarregadas(!pessoasResult.failed);
+        setPessoasAdicionais(
+          pessoasResult.pessoas.map((person) => ({
+            id: person.id,
+            papel: person.papel,
+            nome: person.nome,
+            observacao: person.observacao ?? "",
+          })),
+        );
         setResumoFatos(data.resumo_fatos ?? "");
         setFundamentacao(data.fundamentacao ?? "");
         setObjetivo(data.objetivo ?? "");
@@ -172,6 +239,18 @@ function EditarRepresentacao() {
         );
         setDataVencimento(data.data_vencimento ?? "");
         setDataCumprimento(data.data_cumprimento ?? "");
+        const savedComplianceStatus = String(data.cumprimento_status ?? "");
+        setCumprimentoStatus(
+          COMPLIANCE_STATUS_OPTIONS.some((option) => option.value === savedComplianceStatus)
+            ? (savedComplianceStatus as ComplianceStatus)
+            : normalizeText(data.status).includes("parcial")
+              ? "parcial"
+              : normalizeText(data.status).includes("cumprid")
+                ? "cumprido"
+                : normalizeText(data.status).includes("indefer")
+                  ? "indeferido"
+                  : "pendente",
+        );
         setEquipeCumprimento(data.equipe_cumprimento ?? "");
         setResultadoCumprimento(data.resultado_cumprimento ?? "");
         setObservacoesCumprimento(data.observacoes_cumprimento ?? "");
@@ -202,20 +281,70 @@ function EditarRepresentacao() {
     };
   }, [representacaoId]);
 
+  useEffect(() => {
+    const normalizedPpe = ppe.trim();
+    if (loadingInitial || vinculoInquerito !== "sim" || inqueritoId || normalizedPpe.length < 2) {
+      setInqueritoMatches([]);
+      setSearchingInquerito(false);
+      return;
+    }
+
+    let isCurrent = true;
+    const timer = window.setTimeout(() => {
+      setSearchingInquerito(true);
+      void searchInqueritosForLink(normalizedPpe)
+        .then((matches) => {
+          if (isCurrent) setInqueritoMatches(matches);
+        })
+        .catch(() => {
+          if (isCurrent) setInqueritoMatches([]);
+        })
+        .finally(() => {
+          if (isCurrent) setSearchingInquerito(false);
+        });
+    }, 350);
+
+    return () => {
+      isCurrent = false;
+      window.clearTimeout(timer);
+    };
+  }, [inqueritoId, loadingInitial, ppe, vinculoInquerito]);
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (loadingSubmit || naoEncontrada || !canEditRepresentacoes(profile)) return;
 
-    setLoadingSubmit(true);
     setErro("");
 
-    try {
-      const tipoFinal = tipoRepresentacao === "Outra" ? tipoOutra : tipoRepresentacao;
+    const tipoFinal = tipoRepresentacao === "Outra" ? tipoOutra : tipoRepresentacao;
+    if (!vinculoInquerito) {
+      setErro("Informe se a representação possui inquérito vinculado.");
+      return;
+    }
+    const preservesLegacyPpe =
+      !inqueritoId && Boolean(legacyPpeReference) && ppe.trim() === legacyPpeReference;
+    if (vinculoInquerito === "sim" && !inqueritoId && !preservesLegacyPpe) {
+      setErro("Selecione o inquérito vinculado antes de salvar.");
+      return;
+    }
+    if (vinculoInquerito === "nao" && !justificativaSemInquerito.trim()) {
+      setErro(
+        "Selecione o inquérito vinculado ou informe por que a representação ainda não possui vínculo formal.",
+      );
+      return;
+    }
 
+    setLoadingSubmit(true);
+
+    try {
       await updateRepresentacao(representacaoId, {
+        inquerito_id: vinculoInquerito === "sim" ? inqueritoId : null,
+        justificativa_sem_inquerito:
+          vinculoInquerito === "nao" ? justificativaSemInquerito.trim() : null,
         numero_ppe: ppe.trim() || null,
         processo_judicial: processo.trim() || null,
         tipo: tipoFinal.trim() || null,
+        tipo_normalizado: normalizeRepresentationType(tipoFinal),
         data_representacao: dataRepresentacao || null,
         responsavel: responsavel.trim() || null,
         vitima: vitima.trim() || null,
@@ -233,15 +362,30 @@ function EditarRepresentacao() {
         data_vencimento: dataVencimento || null,
         observacoes_decisao: observacoesDecisao.trim() || null,
         data_cumprimento: dataCumprimento || null,
+        cumprimento_status: cumprimentoStatus,
         equipe_cumprimento: equipeCumprimento.trim() || null,
         resultado_cumprimento: resultadoCumprimento.trim() || null,
         observacoes_cumprimento: observacoesCumprimento.trim() || null,
-        prioridade_operacional: prioridadeOperacional || null,
+        prioridade_operacional: prioridadeOperacional
+          ? normalizePriority(prioridadeOperacional)
+          : null,
         equipe_responsavel: equipeResponsavel.trim() || null,
         acompanhamento_especial: acompanhamentoEspecial ? acompanhamentoEspecial === "Sim" : null,
         pedido_sigiloso: pedidoSigiloso || null,
+        pedido_sigiloso_normalizado: pedidoSigiloso ? isYesValue(pedidoSigiloso) : null,
+        medida_protetiva_normalizada: normalizeRepresentationType(tipoFinal) === "medida_protetiva",
         observacoes_internas: observacoesInternas.trim() || null,
       });
+      if (pessoasCarregadas) {
+        try {
+          await replaceRepresentacaoPessoas(representacaoId, pessoasAdicionais);
+        } catch (pessoasError) {
+          console.warn(
+            "[representacoes:pessoas] Dados principais atualizados sem pessoas adicionais",
+            pessoasError,
+          );
+        }
+      }
       try {
         const auditResult = await logAuditoria({
           acao: "update",
@@ -335,11 +479,89 @@ function EditarRepresentacao() {
           title="Identificação Judicial"
           subtitle="Vinculação processual e dados principais da representação."
         >
-          <Field
-            label="PPE vinculado / Procedimento relacionado"
-            value={ppe}
-            onChange={(e) => setPpe(e.target.value)}
+          <OptionSelect
+            label="Possui inquérito vinculado?"
+            options={INQUIRY_LINK_OPTIONS}
+            value={vinculoInquerito}
+            onChange={(value) => {
+              const nextValue = value as "sim" | "nao" | "";
+              setVinculoInquerito(nextValue);
+              if (nextValue === "sim") {
+                setJustificativaSemInquerito("");
+              } else {
+                setInqueritoId(null);
+                setPpe("");
+                setInqueritoMatches([]);
+              }
+            }}
+            hint="O vínculo formal permite abrir o procedimento relacionado e evita cadastros judiciais isolados."
           />
+          {vinculoInquerito === "sim" && (
+            <Field
+              label="PPE vinculado / Procedimento relacionado"
+              value={ppe}
+              onChange={(e) => {
+                setPpe(e.target.value);
+                setInqueritoId(null);
+              }}
+            />
+          )}
+          {vinculoInquerito === "sim" && searchingInquerito && (
+            <InfoBox>Consultando inquéritos acessíveis com este PPE...</InfoBox>
+          )}
+          {vinculoInquerito === "sim" &&
+            !searchingInquerito &&
+            !inqueritoId &&
+            inqueritoMatches.length > 0 && (
+              <div className="md:col-span-2 lg:col-span-3 rounded-lg border border-primary/25 bg-card/70 p-3">
+                <p className="mb-2 text-xs font-bold uppercase tracking-wider text-primary">
+                  Selecione o inquérito correto
+                </p>
+                <div className="grid gap-2 md:grid-cols-2">
+                  {inqueritoMatches.map((item) => (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => {
+                        setInqueritoId(item.id);
+                        setPpe(item.numero_ppe ?? ppe);
+                        setJustificativaSemInquerito("");
+                      }}
+                      className="rounded-lg border border-border/70 bg-background px-3 py-2 text-left transition-colors hover:border-primary/60 hover:bg-primary/5"
+                    >
+                      <span className="block text-sm font-semibold text-foreground">
+                        PPE {item.numero_ppe || "não informado"}
+                      </span>
+                      <span className="mt-1 block text-xs text-muted-foreground">
+                        {item.tipo_procedimento_normalizado || item.tipo || "Procedimento"} ·{" "}
+                        {item.situacao || "Sem situação"} · {item.data_instauracao || "Sem data"}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          {vinculoInquerito === "sim" && inqueritoId && (
+            <div className="md:col-span-2 lg:col-span-3 flex items-center justify-between gap-3 rounded-lg border border-emerald-500/35 bg-emerald-500/10 px-4 py-3 text-xs text-emerald-100">
+              <span>Vínculo formal confirmado com o inquérito selecionado.</span>
+              <button
+                type="button"
+                onClick={() => setInqueritoId(null)}
+                className="font-semibold text-emerald-300 hover:text-emerald-200"
+              >
+                Alterar vínculo
+              </button>
+            </div>
+          )}
+          {vinculoInquerito === "nao" && (
+            <TextArea
+              label="Justificativa para representação sem inquérito vinculado"
+              placeholder="Ex.: medida autônoma, procedimento ainda não cadastrado ou vínculo pendente de confirmação."
+              value={justificativaSemInquerito}
+              onChange={(event) => setJustificativaSemInquerito(event.target.value)}
+              required
+            />
+          )}
           <Field
             label="Processo judicial"
             value={processo}
@@ -347,7 +569,7 @@ function EditarRepresentacao() {
           />
           <Select
             label="Tipo de Representação"
-            options={tiposRepresentacao}
+            options={REPRESENTATION_TYPE_OPTIONS.map((option) => option.value)}
             value={tipoRepresentacao}
             onChange={setTipoRepresentacao}
           />
@@ -375,6 +597,14 @@ function EditarRepresentacao() {
           title="Pessoas Envolvidas"
           subtitle="Partes relacionadas à medida representada."
         >
+          {pessoasCarregadas ? (
+            <RepresentationPeopleEditor value={pessoasAdicionais} onChange={setPessoasAdicionais} />
+          ) : (
+            <div className="rounded-lg border border-amber-400/35 bg-amber-400/10 px-4 py-3 text-sm text-amber-200">
+              Os dados principais foram carregados, mas as pessoas adicionais estao temporariamente
+              indisponiveis. Esta parte nao sera alterada ao salvar.
+            </div>
+          )}
           <Field label="Vítima" value={vitima} onChange={(e) => setVitima(e.target.value)} />
           <Field
             label="Investigado / Representado"
@@ -424,6 +654,12 @@ function EditarRepresentacao() {
             options={statusRepresentacao}
             value={status}
             onChange={setStatus}
+          />
+          <OptionSelect
+            label="Situação do cumprimento"
+            options={COMPLIANCE_STATUS_OPTIONS}
+            value={cumprimentoStatus}
+            onChange={(value) => setCumprimentoStatus(value as ComplianceStatus)}
           />
           <InfoBox>{getStatusHint(status)}</InfoBox>
           {exibeDataEnvioEVara && (
@@ -499,10 +735,16 @@ function EditarRepresentacao() {
               value={equipeCumprimento}
               onChange={(e) => setEquipeCumprimento(e.target.value)}
             />
-            <TextArea
+            <OptionSelect
               label="Resultado do cumprimento"
+              options={COMPLIANCE_RESULT_OPTIONS}
               value={resultadoCumprimento}
-              onChange={(e) => setResultadoCumprimento(e.target.value)}
+              onChange={setResultadoCumprimento}
+              hint={
+                resultadoCumprimento
+                  ? COMPLIANCE_RESULT_DESCRIPTIONS[resultadoCumprimento as ComplianceResult]
+                  : "Classifique o efeito efetivo da medida após a execução."
+              }
             />
             <TextArea
               label="Observações do cumprimento"
@@ -593,9 +835,7 @@ function SectionCard({
 function Field({ label, ...props }: { label: string } & InputHTMLAttributes<HTMLInputElement>) {
   return (
     <div>
-      <label className="block text-xs font-bold tracking-wider text-muted-foreground mb-2">
-        {label.toUpperCase()}
-      </label>
+      <FormFieldLabel label={label} />
       <input
         {...props}
         className="w-full bg-card border border-border rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-primary"
@@ -610,9 +850,7 @@ function TextArea({
 }: { label: string; rows?: number } & TextareaHTMLAttributes<HTMLTextAreaElement>) {
   return (
     <div className="md:col-span-2 lg:col-span-3">
-      <label className="block text-xs font-bold tracking-wider text-muted-foreground mb-2">
-        {label.toUpperCase()}
-      </label>
+      <FormFieldLabel label={label} />
       <textarea
         rows={rows}
         {...props}
@@ -634,9 +872,7 @@ function Select({
 }) {
   return (
     <div>
-      <label className="block text-xs font-bold tracking-wider text-muted-foreground mb-2">
-        {label.toUpperCase()}
-      </label>
+      <FormFieldLabel label={label} />
       <select
         value={value ?? ""}
         onChange={(e) => onChange?.(e.target.value)}
@@ -645,6 +881,41 @@ function Select({
         <option value="">Selecione…</option>
         {options.map((option) => (
           <option key={option}>{option}</option>
+        ))}
+      </select>
+    </div>
+  );
+}
+function OptionSelect({
+  label,
+  options,
+  value,
+  onChange,
+  hint,
+}: {
+  label: string;
+  options: readonly SelectOption[];
+  value?: string;
+  onChange?: (value: string) => void;
+  hint?: string;
+}) {
+  return (
+    <div>
+      <FormFieldLabel label={label} hint={hint} />
+      <select
+        value={value ?? ""}
+        onChange={(event) => onChange?.(event.target.value)}
+        className="w-full bg-card border border-border rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-primary"
+      >
+        {!options.some((option) => option.value === "") && (
+          <option value="" disabled>
+            Selecione...
+          </option>
+        )}
+        {options.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
         ))}
       </select>
     </div>

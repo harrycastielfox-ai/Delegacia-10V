@@ -5,6 +5,7 @@ export type RepresentacaoRecord = {
   id: string;
   codigo_interno: string | null;
   inquerito_id: string | null;
+  justificativa_sem_inquerito: string | null;
   numero_ppe: string | null;
   processo_judicial: string | null;
   tipo: string | null;
@@ -44,6 +45,28 @@ export type RepresentacaoRecord = {
 
 export type RepresentacaoPayload = Partial<
   Omit<RepresentacaoRecord, "id" | "created_at" | "updated_at" | "deleted_at">
+>;
+
+export type RepresentacaoPessoaPapel =
+  | "vitima"
+  | "investigado_representado"
+  | "testemunha"
+  | "outro";
+
+export type RepresentacaoPessoaRecord = {
+  id: string;
+  representacao_id: string;
+  papel: RepresentacaoPessoaPapel;
+  nome: string;
+  observacao: string | null;
+  ordem: number;
+  created_at: string;
+  updated_at: string;
+};
+
+export type RepresentacaoPessoaInput = Pick<
+  RepresentacaoPessoaRecord,
+  "papel" | "nome" | "observacao"
 >;
 
 const LIST_CACHE_TTL_MS = 10000;
@@ -100,6 +123,42 @@ export async function getRepresentacaoById(id: string) {
       .abortSignal(signal),
   );
   return data as RepresentacaoRecord | null;
+}
+
+export async function listRepresentacaoPessoas(representacaoId: string) {
+  const data = await runSupabaseQuery<RepresentacaoPessoaRecord[]>(
+    "pessoas adicionais da representação",
+    (signal) =>
+      supabase
+        .from("representacao_pessoas")
+        .select("id, representacao_id, papel, nome, observacao, ordem, created_at, updated_at")
+        .eq("representacao_id", representacaoId)
+        .order("ordem", { ascending: true })
+        .abortSignal(signal),
+  );
+  return (data ?? []) as RepresentacaoPessoaRecord[];
+}
+
+export async function replaceRepresentacaoPessoas(
+  representacaoId: string,
+  pessoas: RepresentacaoPessoaInput[],
+) {
+  const normalized = pessoas
+    .map((person) => ({
+      papel: person.papel,
+      nome: person.nome.trim(),
+      observacao: person.observacao?.trim() || null,
+    }))
+    .filter((person) => person.nome.length > 0);
+
+  await runSupabaseQuery<null>("atualização das pessoas da representação", (signal) =>
+    supabase
+      .rpc("replace_representacao_pessoas", {
+        p_representacao_id: representacaoId,
+        p_pessoas: normalized,
+      })
+      .abortSignal(signal),
+  );
 }
 
 export async function createRepresentacao(payload: RepresentacaoPayload) {
