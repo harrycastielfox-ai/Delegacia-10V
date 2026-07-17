@@ -408,7 +408,7 @@ function LoginPage() {
                 className="sipi-logo-sheen pointer-events-none absolute inset-y-[-20%] left-[-35%] w-[48%] bg-gradient-to-r from-transparent via-primary/45 to-transparent blur-[1px]"
               />
             </div>
-            <h1 className="text-2xl font-bold tracking-wide text-foreground">SIPI</h1>
+            <h1 className="text-2xl font-bold tracking-wide text-foreground">Bem-vindo ao SIPI</h1>
             <p className="text-xs text-muted-foreground mt-1">Sistema de Inquéritos Policiais</p>
             <p className="text-[10px] text-muted-foreground/80 mt-1 tracking-wider uppercase">
               DT Itabela · 23ª COORPIN
