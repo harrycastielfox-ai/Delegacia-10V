@@ -268,15 +268,16 @@ function AuditEventCard({ event }: { event: AuditoriaEvent }) {
   const eventTitle = getAuditEventTitle(event, action, target, changeSummary);
   const shouldShowDescription = normalizeText(description) !== normalizeText(eventTitle);
   const isNavigable = Boolean(eventHref) && !isDeleteEvent;
+  const destinationLabel = getAuditEventDestinationLabel(event);
 
   const cardBaseClassName =
-    "group relative block rounded-xl border border-transparent bg-transparent transition-colors";
+    "group relative block overflow-hidden rounded-xl border border-transparent bg-transparent transition-[background-color,border-color,box-shadow]";
   const cardContent = (
-    <div className="relative grid gap-3 px-3 py-4 sm:px-4 lg:grid-cols-[minmax(170px,205px)_minmax(0,1fr)] lg:items-start">
-      <div className="flex min-w-0 items-center gap-3 lg:self-center">
+    <div className="relative grid gap-4 px-4 py-4 sm:px-5 lg:grid-cols-[minmax(185px,220px)_minmax(0,1fr)] lg:items-stretch">
+      <div className="flex min-w-0 items-center gap-3 border-b border-border/35 pb-3 lg:border-b-0 lg:border-r lg:pb-0 lg:pr-5">
         <div className="relative shrink-0">
           <span
-            className="absolute -left-3 top-1/2 hidden h-2.5 w-2.5 -translate-y-1/2 rounded-full border border-primary/55 bg-[#070b0e] shadow-[0_0_0_5px_rgba(34,197,94,0.08)] sm:block"
+            className="absolute -left-3 top-1/2 hidden h-2.5 w-2.5 -translate-y-1/2 rounded-full border border-primary/55 bg-[#070b0e] shadow-[0_0_0_5px_rgba(34,197,94,0.1)] sm:block"
             aria-hidden="true"
           />
           {shouldShowAvatar ? (
@@ -310,7 +311,7 @@ function AuditEventCard({ event }: { event: AuditoriaEvent }) {
         </div>
       </div>
 
-      <div className="min-w-0 space-y-2.5">
+      <div className="min-w-0 space-y-3">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
           <div className="flex min-w-0 flex-wrap items-center gap-2">
             <span
@@ -318,6 +319,11 @@ function AuditEventCard({ event }: { event: AuditoriaEvent }) {
             >
               {moduleInfo.label}
             </span>
+            {isNavigable ? (
+              <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-[0.11em] text-primary/75">
+                Registro vinculado <ChevronRight className="h-3 w-3" aria-hidden="true" />
+              </span>
+            ) : null}
           </div>
           <div className="flex shrink-0 items-center gap-2 text-xs text-muted-foreground sm:justify-end">
             <time
@@ -336,13 +342,13 @@ function AuditEventCard({ event }: { event: AuditoriaEvent }) {
         </div>
 
         {changeSummary ? (
-          <div className="inline-flex max-w-full flex-wrap items-center gap-x-2 gap-y-1 rounded-full border border-border/35 bg-background/25 px-2.5 py-1 text-[11px] text-muted-foreground">
-            <span className="font-bold uppercase tracking-[0.12em] text-muted-foreground/75">
-              Última alteração
+          <div className="flex max-w-full flex-wrap items-center gap-x-2 gap-y-1 border-l-2 border-primary/65 bg-primary/[0.045] px-3 py-2 text-[11px] text-muted-foreground">
+            <span className="font-bold uppercase tracking-[0.12em] text-primary/80">
+              Alteração registrada
             </span>
-            <span className="font-semibold text-foreground/80">{changeSummary.field}</span>
+            <span className="font-semibold text-foreground/90">{changeSummary.field}</span>
             <span aria-hidden="true">→</span>
-            <span className="font-semibold text-primary/85">{changeSummary.value}</span>
+            <span className="font-semibold text-primary">{changeSummary.value}</span>
           </div>
         ) : null}
 
@@ -355,9 +361,9 @@ function AuditEventCard({ event }: { event: AuditoriaEvent }) {
           ) : null}
         </div>
 
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
           <span className="font-bold uppercase tracking-[0.12em] text-muted-foreground/70">
-            Alvo
+            Registro
           </span>
           <span className="font-semibold text-foreground/85" title={target.fullLabel}>
             {target.label}
@@ -392,6 +398,18 @@ function AuditEventCard({ event }: { event: AuditoriaEvent }) {
             ))}
           </div>
         ) : null}
+
+        {isNavigable ? (
+          <div className="flex items-center justify-between gap-3 border-t border-border/35 pt-3 text-xs">
+            <span className="text-muted-foreground">
+              Consulte o registro completo e o histórico relacionado.
+            </span>
+            <span className="inline-flex shrink-0 items-center gap-1.5 font-bold text-primary transition group-hover:translate-x-0.5">
+              Abrir {destinationLabel}
+              <ChevronRight className="h-4 w-4" aria-hidden="true" />
+            </span>
+          </div>
+        ) : null}
       </div>
     </div>
   );
@@ -402,9 +420,9 @@ function AuditEventCard({ event }: { event: AuditoriaEvent }) {
   return (
     <Link
       to={eventHref}
-      className={`${cardBaseClassName} cursor-pointer hover:border-primary/20 hover:bg-primary/5 focus-visible:border-primary/35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/15`}
-      title="Abrir item relacionado"
-      aria-label="Abrir item relacionado"
+      className={`${cardBaseClassName} cursor-pointer hover:border-primary/25 hover:bg-primary/[0.045] hover:shadow-[0_12px_32px_rgba(0,0,0,0.16)] focus-visible:border-primary/35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/15`}
+      title={`Abrir ${destinationLabel}`}
+      aria-label={`Abrir ${destinationLabel}`}
     >
       {cardContent}
     </Link>
@@ -752,6 +770,14 @@ function getEntityLabel(normalizedEntity: string, rawEntity?: string | null) {
   if (normalizedEntity.includes("profile") || normalizedEntity.includes("usuario"))
     return "Usuário";
   return rawEntity ? capitalize(String(rawEntity).replaceAll("_", " ")) : "Alvo não informado";
+}
+
+function getAuditEventDestinationLabel(event: AuditoriaEvent) {
+  const category = getModuleCategory(event);
+  if (category === "inqueritos") return "inquérito";
+  if (category === "representacoes") return "representação";
+  if (category === "usuarios_admin") return "perfil";
+  return "registro";
 }
 
 function shortenId(value: string) {
