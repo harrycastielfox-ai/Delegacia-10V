@@ -21,11 +21,16 @@ import {
   COMPLIANCE_RESULT_DESCRIPTIONS,
   COMPLIANCE_RESULT_OPTIONS,
   COMPLIANCE_STATUS_OPTIONS,
+  REPRESENTATION_STATUS_OPTIONS,
   REPRESENTATION_TYPE_OPTIONS,
   getRepresentationRegistrationChecks,
   isYesValue,
   normalizePriority,
   normalizeRepresentationType,
+  representationRequiresCompliance,
+  representationRequiresDeadline,
+  representationRequiresDecisionNotes,
+  representationRequiresJudicialSubmission,
   type ComplianceResult,
   type ComplianceStatus,
   type SelectOption,
@@ -36,21 +41,6 @@ export const Route = createFileRoute("/nova-representacao")({
   component: NovaRepresentacao,
 });
 
-const statusRepresentacao = [
-  "Em elaboração",
-  "Em análise",
-  "Enviada ao Judiciário",
-  "Aguardando decisão",
-  "Deferida",
-  "Deferida parcialmente",
-  "Indeferida",
-  "Arquivada",
-  "Finalizada",
-] as const;
-
-const statusComDataEnvioEVara = new Set(["Enviada ao Judiciário", "Aguardando decisão"]);
-const statusComDecisaoEPrazo = new Set(["Deferida", "Deferida parcialmente"]);
-const statusComDecisaoEObservacoes = new Set(["Indeferida", "Arquivada", "Finalizada"]);
 const INQUIRY_LINK_OPTIONS: readonly SelectOption[] = [
   { value: "", label: "A definir" },
   { value: "sim", label: "Sim, possui inquérito vinculado" },
@@ -121,17 +111,17 @@ function NovaRepresentacao() {
   const [acompanhamentoEspecial, setAcompanhamentoEspecial] = useState("");
 
   const exibeCampoOutra = tipoRepresentacao === "Outra";
-  const exibeDataEnvioEVara = useMemo(() => statusComDataEnvioEVara.has(status), [status]);
-  const exibeDecisaoEPrazo = useMemo(() => statusComDecisaoEPrazo.has(status), [status]);
+  const exibeDataEnvioEVara = useMemo(
+    () => representationRequiresJudicialSubmission(status),
+    [status],
+  );
+  const exibeDecisaoEPrazo = useMemo(() => representationRequiresDeadline(status), [status]);
   const exibeBlocoCumprimento = useMemo(
-    () =>
-      cumprimentoStatus !== "pendente" ||
-      status === "Deferida" ||
-      status === "Deferida parcialmente",
+    () => representationRequiresCompliance(status, cumprimentoStatus),
     [cumprimentoStatus, status],
   );
   const exibeDecisaoEObservacoes = useMemo(
-    () => statusComDecisaoEObservacoes.has(status),
+    () => representationRequiresDecisionNotes(status),
     [status],
   );
 
@@ -464,7 +454,7 @@ function NovaRepresentacao() {
         >
           <Select
             label="Status da Representação"
-            options={statusRepresentacao}
+            options={REPRESENTATION_STATUS_OPTIONS}
             value={status}
             onChange={setStatus}
           />

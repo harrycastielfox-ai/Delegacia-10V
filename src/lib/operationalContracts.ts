@@ -104,6 +104,24 @@ export const REPRESENTATION_TYPE_OPTIONS = [
 
 export type RepresentationTypeCode = (typeof REPRESENTATION_TYPE_OPTIONS)[number]["code"];
 
+export const REPRESENTATION_STATUS_OPTIONS = [
+  "Em elaboração",
+  "Em análise",
+  "Aguardando Análise Judicial",
+  "Enviada ao Judiciário",
+  "Aguardando decisão",
+  "Deferida",
+  "Deferida parcialmente",
+  "Deferida Aguardando Cumprimento",
+  "Cumprida",
+  "Cumprida parcialmente",
+  "Cumprida (Positiva)",
+  "Cumprida (Negativa)",
+  "Indeferida",
+  "Arquivada",
+  "Finalizada",
+] as const;
+
 export type RegistrationCheck = {
   id: string;
   label: string;
@@ -173,6 +191,65 @@ export type RepresentationRegistrationInput = {
 
 function hasValue(value: unknown) {
   return String(value ?? "").trim().length > 0;
+}
+
+function normalizedStatus(value?: string) {
+  return (value ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+}
+
+export function representationRequiresJudicialSubmission(status?: string) {
+  const normalized = normalizedStatus(status);
+  return (
+    normalized === "enviada ao judiciario" ||
+    normalized === "aguardando analise judicial" ||
+    normalized === "aguardando decisao"
+  );
+}
+
+export function representationRequiresDecision(status?: string) {
+  const normalized = normalizedStatus(status);
+  return [
+    "deferida",
+    "deferida parcialmente",
+    "deferida aguardando cumprimento",
+    "indeferida",
+    "arquivada",
+    "finalizada",
+  ].includes(normalized);
+}
+
+export function representationRequiresDeadline(status?: string) {
+  return ["deferida", "deferida parcialmente", "deferida aguardando cumprimento"].includes(
+    normalizedStatus(status),
+  );
+}
+
+export function representationRequiresDecisionNotes(status?: string) {
+  const normalized = normalizedStatus(status);
+  return (
+    normalized.includes("indeferida") ||
+    normalized.includes("arquivada") ||
+    normalized.includes("finalizada")
+  );
+}
+
+export function representationRequiresCompliance(
+  status?: string,
+  complianceStatus?: ComplianceStatus,
+) {
+  const normalized = normalizedStatus(status);
+  return (
+    normalized === "deferida" ||
+    normalized === "deferida parcialmente" ||
+    normalized === "deferida aguardando cumprimento" ||
+    normalized.includes("cumprida") ||
+    complianceStatus === "parcial" ||
+    complianceStatus === "cumprido"
+  );
 }
 
 function check(id: string, label: string, complete: boolean, blocking = false): RegistrationCheck {
@@ -307,14 +384,10 @@ export function getRepresentationRegistrationChecks(
         ? hasValue(input.justificativaSemInquerito)
         : false;
   const isOtherType = input.tipoRepresentacao === "Outra";
-  const requiresSendingData = ["Enviada ao Judiciário", "Aguardando decisão"].includes(
-    input.status ?? "",
-  );
-  const requiresDecisionAndDeadline = ["Deferida", "Deferida parcialmente"].includes(
-    input.status ?? "",
-  );
-  const requiresDecision = ["Indeferida", "Arquivada", "Finalizada"].includes(input.status ?? "");
-  const hasExecution = ["parcial", "cumprido"].includes(input.cumprimentoStatus);
+  const requiresSendingData = representationRequiresJudicialSubmission(input.status);
+  const requiresDecisionAndDeadline = representationRequiresDeadline(input.status);
+  const requiresDecision = representationRequiresDecision(input.status);
+  const hasExecution = representationRequiresCompliance(input.status, input.cumprimentoStatus);
 
   const checks = [
     check(

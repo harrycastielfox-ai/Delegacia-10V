@@ -11,6 +11,7 @@ import {
 import { AppLayout } from "@/components/AppLayout";
 import { FormFieldLabel } from "@/components/FormFieldLabel";
 import { PageHeader } from "@/components/PageHeader";
+import { RegistrationQualityPanel } from "@/components/RegistrationQualityPanel";
 import {
   RepresentationPeopleEditor,
   type RepresentationPersonFormValue,
@@ -32,10 +33,16 @@ import {
   COMPLIANCE_RESULT_DESCRIPTIONS,
   COMPLIANCE_RESULT_OPTIONS,
   COMPLIANCE_STATUS_OPTIONS,
+  getRepresentationRegistrationChecks,
+  REPRESENTATION_STATUS_OPTIONS,
   REPRESENTATION_TYPE_OPTIONS,
   isYesValue,
   normalizePriority,
   normalizeRepresentationType,
+  representationRequiresCompliance,
+  representationRequiresDeadline,
+  representationRequiresDecisionNotes,
+  representationRequiresJudicialSubmission,
   representationTypeLabel,
   type ComplianceResult,
   type ComplianceStatus,
@@ -47,22 +54,6 @@ export const Route = createFileRoute("/representacoes/$representacaoId/editar")(
   component: EditarRepresentacao,
 });
 
-const statusRepresentacao = [
-  "Em elaboração",
-  "Em análise",
-  "Enviada ao Judiciário",
-  "Aguardando decisão",
-  "Deferida",
-  "Deferida parcialmente",
-  "Cumprida",
-  "Cumprida parcialmente",
-  "Indeferida",
-  "Arquivada",
-  "Finalizada",
-] as const;
-const statusComDataEnvioEVara = new Set(["Enviada ao Judiciário", "Aguardando decisão"]);
-const statusComDecisaoEPrazo = new Set(["Deferida", "Deferida parcialmente"]);
-const statusComDecisaoEObservacoes = new Set(["Indeferida", "Arquivada"]);
 const INQUIRY_LINK_OPTIONS: readonly SelectOption[] = [
   { value: "", label: "A definir" },
   { value: "sim", label: "Sim, possui inquérito vinculado" },
@@ -139,18 +130,70 @@ function EditarRepresentacao() {
   const [acompanhamentoEspecial, setAcompanhamentoEspecial] = useState("");
 
   const exibeCampoOutra = tipoRepresentacao === "Outra";
-  const exibeDataEnvioEVara = useMemo(() => statusComDataEnvioEVara.has(status), [status]);
-  const exibeDecisaoEPrazo = useMemo(() => statusComDecisaoEPrazo.has(status), [status]);
+  const exibeDataEnvioEVara = useMemo(
+    () => representationRequiresJudicialSubmission(status),
+    [status],
+  );
+  const exibeDecisaoEPrazo = useMemo(() => representationRequiresDeadline(status), [status]);
   const exibeBlocoCumprimento = useMemo(
-    () =>
-      cumprimentoStatus !== "pendente" ||
-      status === "Deferida" ||
-      status === "Deferida parcialmente",
+    () => representationRequiresCompliance(status, cumprimentoStatus),
     [cumprimentoStatus, status],
   );
   const exibeDecisaoEObservacoes = useMemo(
-    () => statusComDecisaoEObservacoes.has(status),
+    () => representationRequiresDecisionNotes(status),
     [status],
+  );
+
+  const registrationChecks = useMemo(
+    () =>
+      getRepresentationRegistrationChecks({
+        vinculoInquerito,
+        inqueritoId,
+        justificativaSemInquerito,
+        ppe,
+        processo,
+        tipoRepresentacao,
+        tipoOutra,
+        dataRepresentacao,
+        vitima,
+        investigado,
+        resumoFatos,
+        status,
+        dataEnvioJudiciario,
+        dataDecisaoJudicial,
+        varaJuizo,
+        prazoConcedidoDias,
+        dataVencimento,
+        cumprimentoStatus,
+        dataCumprimento,
+        equipeCumprimento,
+        resultadoCumprimento,
+        prioridadeOperacional,
+      }),
+    [
+      cumprimentoStatus,
+      dataCumprimento,
+      dataDecisaoJudicial,
+      dataEnvioJudiciario,
+      dataRepresentacao,
+      dataVencimento,
+      equipeCumprimento,
+      inqueritoId,
+      investigado,
+      justificativaSemInquerito,
+      ppe,
+      prazoConcedidoDias,
+      prioridadeOperacional,
+      processo,
+      resultadoCumprimento,
+      resumoFatos,
+      status,
+      tipoOutra,
+      tipoRepresentacao,
+      varaJuizo,
+      vinculoInquerito,
+      vitima,
+    ],
   );
 
   useEffect(() => {
@@ -475,6 +518,7 @@ function EditarRepresentacao() {
         showActions={false}
       />
       <form className="space-y-5 max-w-6xl pb-6" onSubmit={handleSubmit}>
+        <RegistrationQualityPanel checks={registrationChecks} />
         <SectionCard
           title="Identificação Judicial"
           subtitle="Vinculação processual e dados principais da representação."
@@ -651,7 +695,7 @@ function EditarRepresentacao() {
         >
           <Select
             label="Status da Representação"
-            options={statusRepresentacao}
+            options={REPRESENTATION_STATUS_OPTIONS}
             value={status}
             onChange={setStatus}
           />
