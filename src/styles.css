@@ -501,6 +501,24 @@ html[data-theme="black"] {
     background-color: color-mix(in oklab, var(--alert-tone) 12%, #ffffff);
   }
 
+  html[data-theme="light"] .cvli-comparison-table th,
+  html[data-theme="light"] .cvli-comparison-table td {
+    border-color: #c8d4df;
+  }
+
+  html[data-theme="light"] .cvli-comparison-table thead tr,
+  html[data-theme="light"] .cvli-comparison-table tbody tr {
+    border-color: #b8c7d5;
+  }
+
+  html[data-theme="light"] .cvli-comparison-table .cvli-year-divider {
+    border-left-color: #879caf !important;
+  }
+
+  html[data-theme="light"] .cvli-comparison-table tbody tr:last-child {
+    border-top-color: var(--success);
+  }
+
   .stat-card {
     background: linear-gradient(
       145deg,

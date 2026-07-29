@@ -39,11 +39,11 @@ export function isValidCaseCategory(value: string | null | undefined) {
 
 type PrioritySource = Record<string, unknown>;
 
-function normalizeText(value?: string) {
+export function normalizeText(value?: string) {
   return (value ?? "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
 }
 
-function pick(record: PrioritySource, ...keys: string[]) {
+export function pick(record: PrioritySource, ...keys: string[]) {
   for (const key of keys) {
     const value = record[key];
     const text = String(value ?? "").trim();
@@ -64,7 +64,7 @@ function parseAnyDate(value?: string) {
   return Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(), 12, 0, 0, 0);
 }
 
-function isTruthyLike(value: unknown) {
+export function isTruthyLike(value: unknown) {
   return ["true", "t", "1", "sim", "s", "yes", "y"].includes(normalizeText(String(value ?? "")));
 }
 

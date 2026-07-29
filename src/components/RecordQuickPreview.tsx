@@ -254,9 +254,7 @@ export function InqueritoQuickPreview({
   const factSummary = pickUnknown(raw, "resumo_fato", "resumo_fatos", "resumoDoFato");
   const dueDate = firstValue(pickUnknown(raw, "data_limite", "dataLimite"), record.prazo);
   const linkedRepresentationsLabel =
-    linkedRepresentations.length > 0
-      ? `${linkedRepresentations.length} vinculada(s)`
-      : FALLBACK;
+    linkedRepresentations.length > 0 ? `${linkedRepresentations.length} vinculada(s)` : FALLBACK;
 
   const badges: PreviewBadge[] = [];
   if (procedureType !== FALLBACK) badges.push({ label: procedureType, tone: "emerald" });
@@ -328,11 +326,7 @@ export function RepresentacaoQuickPreview({
 }) {
   if (!record) return null;
 
-  const identifier = firstValue(
-    record.codigo_interno,
-    record.processo_judicial,
-    record.numero_ppe,
-  );
+  const identifier = firstValue(record.codigo_interno, record.processo_judicial, record.numero_ppe);
   const representationType = firstValue(record.tipo, record.tipo_normalizado);
   const situation = displayValue(record.status);
   const priority = displayValue(record.prioridade_operacional);

@@ -24,9 +24,7 @@ import { isAuthorized } from "@/lib/authz";
 import {
   AccessContextError,
   captureNetworkAccessContext,
-  getLatestUserAccessContext,
   registerOwnAccessContext,
-  requestPreciseLocation,
 } from "@/lib/accessContext";
 
 const POST_SIGNUP_LOGIN_KEY = "sipi:post-signup-login";
@@ -142,7 +140,7 @@ function readPostSignupLogin() {
   }
 }
 
-function PostSignupWelcomeOverlay({ message, onClose }: { message: string; onClose: () => void }) {
+function PostSignupWelcomeOverlay({ message }: { message: string }) {
   return (
     <div className="post-signup-welcome fixed inset-0 z-50 flex items-center justify-center overflow-hidden bg-background/96 px-4 text-foreground backdrop-blur-md">
       <div className="pointer-events-none absolute inset-0">
@@ -410,10 +408,7 @@ function LoginPage() {
       `}</style>
 
       {showSignupWelcome ? (
-        <PostSignupWelcomeOverlay
-          onClose={() => setShowSignupWelcome(false)}
-          message={postSignupMessage ?? POST_SIGNUP_MESSAGE}
-        />
+        <PostSignupWelcomeOverlay message={postSignupMessage ?? POST_SIGNUP_MESSAGE} />
       ) : null}
 
       <div className="pointer-events-none absolute inset-0 opacity-60">

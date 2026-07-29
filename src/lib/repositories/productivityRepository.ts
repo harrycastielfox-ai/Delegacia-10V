@@ -13,23 +13,47 @@ export type EscrivaoProductivityRow = {
   ultima_atividade: string | null;
 };
 
+const LIST_CACHE_TTL_MS = 10000;
+
+const productivityCache = new Map<number, { data: EscrivaoProductivityRow[]; fetchedAt: number }>();
+const productivityPending = new Map<number, Promise<EscrivaoProductivityRow[]>>();
+
 export async function listEscrivaoProductivity(
   days = 30,
-  _options: { forceRefresh?: boolean } = {},
+  options: { forceRefresh?: boolean } = {},
 ): Promise<EscrivaoProductivityRow[]> {
   const safeDays = Math.max(1, Math.min(365, Math.trunc(days)));
-  const data = await runSupabaseQuery<EscrivaoProductivityRow[]>(
+  const pending = productivityPending.get(safeDays);
+  if (pending) return pending;
+
+  const cached = productivityCache.get(safeDays);
+  if (!options.forceRefresh && cached && Date.now() - cached.fetchedAt < LIST_CACHE_TTL_MS) {
+    return cached.data;
+  }
+
+  const request = runSupabaseQuery<EscrivaoProductivityRow[]>(
     "produtividade dos escrivães",
     (signal) =>
       supabase.rpc("list_escrivao_productivity", { p_days: safeDays }).abortSignal(signal),
-  );
+  )
+    .then((data) =>
+      (data ?? []).map((row) => ({
+        ...row,
+        pontos: Number(row.pontos ?? 0),
+        cadastros: Number(row.cadastros ?? 0),
+        atualizacoes: Number(row.atualizacoes ?? 0),
+        relatorios_enviados: Number(row.relatorios_enviados ?? 0),
+        conclusoes: Number(row.conclusoes ?? 0),
+      })),
+    )
+    .then((rows) => {
+      productivityCache.set(safeDays, { data: rows, fetchedAt: Date.now() });
+      return rows;
+    })
+    .finally(() => {
+      productivityPending.delete(safeDays);
+    });
 
-  return (data ?? []).map((row) => ({
-    ...row,
-    pontos: Number(row.pontos ?? 0),
-    cadastros: Number(row.cadastros ?? 0),
-    atualizacoes: Number(row.atualizacoes ?? 0),
-    relatorios_enviados: Number(row.relatorios_enviados ?? 0),
-    conclusoes: Number(row.conclusoes ?? 0),
-  }));
+  productivityPending.set(safeDays, request);
+  return request;
 }

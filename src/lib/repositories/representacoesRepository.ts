@@ -48,10 +48,7 @@ export type RepresentacaoPayload = Partial<
 >;
 
 export type RepresentacaoPessoaPapel =
-  | "vitima"
-  | "investigado_representado"
-  | "testemunha"
-  | "outro";
+  "vitima" | "investigado_representado" | "testemunha" | "outro";
 
 export type RepresentacaoPessoaRecord = {
   id: string;
@@ -79,6 +76,10 @@ function invalidateRepresentacoesCache() {
 }
 
 export async function listRepresentacoes(options: { forceRefresh?: boolean } = {}) {
+  if (representacoesPending) {
+    return representacoesPending;
+  }
+
   const now = Date.now();
   if (
     !options.forceRefresh &&
@@ -86,10 +87,6 @@ export async function listRepresentacoes(options: { forceRefresh?: boolean } = {
     now - representacoesCache.fetchedAt < LIST_CACHE_TTL_MS
   ) {
     return representacoesCache.data;
-  }
-
-  if (!options.forceRefresh && representacoesPending) {
-    return representacoesPending;
   }
 
   representacoesPending = runSupabaseQuery<RepresentacaoRecord[]>("representações", (signal) =>
@@ -119,8 +116,8 @@ export async function getRepresentacaoById(id: string) {
       .select("*")
       .eq("id", id)
       .is("deleted_at", null)
-      .maybeSingle()
-      .abortSignal(signal),
+      .abortSignal(signal)
+      .maybeSingle(),
   );
   return data as RepresentacaoRecord | null;
 }
@@ -163,7 +160,7 @@ export async function replaceRepresentacaoPessoas(
 
 export async function createRepresentacao(payload: RepresentacaoPayload) {
   const data = await runSupabaseQuery<RepresentacaoRecord>("criação de representação", (signal) =>
-    supabase.from("representacoes").insert(payload).select("*").single().abortSignal(signal),
+    supabase.from("representacoes").insert(payload).select("*").abortSignal(signal).single(),
   );
   invalidateRepresentacoesCache();
   return data as RepresentacaoRecord;
@@ -179,8 +176,8 @@ export async function updateRepresentacao(id: string, payload: RepresentacaoPayl
         .eq("id", id)
         .is("deleted_at", null)
         .select("*")
-        .maybeSingle()
-        .abortSignal(signal),
+        .abortSignal(signal)
+        .maybeSingle(),
   );
 
   if (import.meta.env.DEV) {

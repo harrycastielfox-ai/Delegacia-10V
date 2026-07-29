@@ -463,7 +463,6 @@ function DetalheRepresentacao() {
     item.tipo,
     item.processo_judicial ? `Processo: ${item.processo_judicial}` : "",
   ].filter(Boolean);
-  const statusText = withFallback(item.status);
   const statusAlias = getStatusAlias(item.status);
   const situacaoOperacional = getSituacaoOperacional(item.status);
   const prioridadeText = withFallback(item.prioridade_operacional);

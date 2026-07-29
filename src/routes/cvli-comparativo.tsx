@@ -259,7 +259,7 @@ function CvliComparisonTable({
 }) {
   return (
     <div className="overflow-x-auto">
-      <table className="w-full min-w-[820px] border-collapse bg-[#080d10] text-sm">
+      <table className="cvli-comparison-table w-full min-w-[820px] border-collapse bg-[#080d10] text-sm">
         <thead>
           <tr className="border-b border-info/25 bg-[#0a1014]">
             <th
@@ -273,7 +273,9 @@ function CvliComparisonTable({
                 key={year}
                 colSpan={3}
                 className={`bg-[#0a1014] px-4 py-3 text-center text-sm font-black text-foreground ${
-                  index > 0 ? "border-l-2 border-l-slate-100/70" : "border-l border-l-info/20"
+                  index > 0
+                    ? "cvli-year-divider border-l-2 border-l-slate-100/70"
+                    : "border-l border-l-info/20"
                 } border-r border-r-info/20`}
               >
                 <span className="inline-flex items-center gap-2">
@@ -291,7 +293,7 @@ function CvliComparisonTable({
               <th
                 key={`${year}-registros`}
                 className={`border-r border-info/10 px-3 py-2 text-center text-[9px] font-bold uppercase tracking-[0.12em] text-info ${
-                  index > 0 ? "border-l-2 border-l-slate-100/70" : ""
+                  index > 0 ? "cvli-year-divider border-l-2 border-l-slate-100/70" : ""
                 }`}
               >
                 Registros
@@ -371,7 +373,7 @@ function renderMetricCells(
   const { year, isFirstYear, monthIndex, monthLabel, onOpenMetric, emphasized = false } = options;
   const valueClass = emphasized ? "font-black" : "font-semibold";
   const hasRecord = metric.registros > 0;
-  const yearDividerClass = isFirstYear ? "" : "border-l-2 border-l-slate-100/70";
+  const yearDividerClass = isFirstYear ? "" : "cvli-year-divider border-l-2 border-l-slate-100/70";
 
   return [
     <td

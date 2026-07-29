@@ -94,6 +94,10 @@ function invalidateInqueritosCache() {
 }
 
 export async function listInqueritos(options: { forceRefresh?: boolean } = {}) {
+  if (inqueritosPending) {
+    return inqueritosPending;
+  }
+
   const now = Date.now();
   if (
     !options.forceRefresh &&
@@ -101,10 +105,6 @@ export async function listInqueritos(options: { forceRefresh?: boolean } = {}) {
     now - inqueritosCache.fetchedAt < LIST_CACHE_TTL_MS
   ) {
     return inqueritosCache.data;
-  }
-
-  if (!options.forceRefresh && inqueritosPending) {
-    return inqueritosPending;
   }
 
   inqueritosPending = runSupabaseQuery<InqueritoRecord[]>("inquéritos", (signal) =>
@@ -134,8 +134,8 @@ export async function getInqueritoById(id: string) {
       .select("*")
       .eq("id", id)
       .is("deleted_at", null)
-      .maybeSingle()
-      .abortSignal(signal),
+      .abortSignal(signal)
+      .maybeSingle(),
   );
   return data as InqueritoRecord | null;
 }
@@ -218,7 +218,7 @@ export async function searchInqueritosForLink(query: string, limit = 20) {
 
 export async function createInquerito(payload: InqueritoPayload) {
   const data = await runSupabaseQuery<InqueritoRecord>("criação de inquérito", (signal) =>
-    supabase.from("inqueritos").insert(payload).select("*").single().abortSignal(signal),
+    supabase.from("inqueritos").insert(payload).select("*").abortSignal(signal).single(),
   );
   invalidateInqueritosCache();
   return data as InqueritoRecord;
@@ -232,8 +232,8 @@ export async function updateInquerito(id: string, payload: InqueritoPayload) {
       .eq("id", id)
       .is("deleted_at", null)
       .select("*")
-      .single()
-      .abortSignal(signal),
+      .abortSignal(signal)
+      .single(),
   );
   invalidateInqueritosCache();
   return data as InqueritoRecord;

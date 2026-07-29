@@ -58,7 +58,7 @@ function buildTimeoutError(label: string, timeoutMs: number) {
 
 export async function runSupabaseQuery<T>(
   label: string,
-  execute: (signal: AbortSignal) => Promise<SupabaseResult<T>>,
+  execute: (signal: AbortSignal) => PromiseLike<SupabaseResult<T>>,
   options: RunSupabaseQueryOptions = {},
 ): Promise<T> {
   const timeoutMs = options.timeoutMs ?? DEFAULT_QUERY_TIMEOUT_MS;

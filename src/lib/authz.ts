@@ -69,7 +69,7 @@ export function canManageUsers(
 export function isProtectedInstitutionalFunction(
   value: InstitutionalFunction | string | null | undefined,
 ): boolean {
-  return PROTECTED_INSTITUTIONAL_FUNCTIONS.includes(value as InstitutionalFunction);
+  return (PROTECTED_INSTITUTIONAL_FUNCTIONS as readonly string[]).includes(value ?? "");
 }
 
 export function canAssignProtectedInstitutionalFunction(
@@ -93,7 +93,7 @@ export function canOnlyViewPublicCases(profile: Pick<UserProfile, "cargo"> | nul
 export function canCreateCases(
   profile: Pick<UserProfile, "cargo" | "status_autorizacao"> | null,
 ): boolean {
-  if (!isAuthorized(profile)) return false;
+  if (!profile || !isAuthorized(profile)) return false;
   return profile.cargo !== "membro";
 }
 
@@ -118,14 +118,14 @@ export function canManageCases(
 export function canViewRepresentacoes(
   profile: Pick<UserProfile, "cargo" | "status_autorizacao"> | null,
 ): boolean {
-  if (!isAuthorized(profile)) return false;
+  if (!profile || !isAuthorized(profile)) return false;
   return profile.cargo !== "membro";
 }
 
 export function canViewAuditoria(
   profile: Pick<UserProfile, "cargo" | "status_autorizacao"> | null,
 ): boolean {
-  if (!isAuthorized(profile)) return false;
+  if (!profile || !isAuthorized(profile)) return false;
   return profile.cargo === "admin" || profile.cargo === "delegado";
 }
 

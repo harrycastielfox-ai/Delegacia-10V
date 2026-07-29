@@ -3,7 +3,6 @@ import { useEffect, useMemo, useState, type ComponentType, type ReactNode } from
 import {
   Activity,
   ArrowLeft,
-  BadgeCheck,
   BriefcaseBusiness,
   CalendarDays,
   Check,
@@ -854,7 +853,9 @@ function AuditEventCard({ event }: { event: AuditoriaEvent }) {
     </>
   );
 
-  if (!canNavigate) return <article className={cardBaseClassName}>{cardContent}</article>;
+  if (!eventHref || isDeleteEvent) {
+    return <article className={cardBaseClassName}>{cardContent}</article>;
+  }
 
   return (
     <Link

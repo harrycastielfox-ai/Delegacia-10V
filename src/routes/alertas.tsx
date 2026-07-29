@@ -19,12 +19,7 @@ import {
   listRepresentacoes,
   type RepresentacaoRecord,
 } from "@/lib/repositories/representacoesRepository";
-import {
-  buildModuleAlerts,
-  buildSmartAlerts,
-  moduleMeta,
-  type ModuleKey,
-} from "@/lib/alertasInteligentes";
+import { buildOperationalAlerts, moduleMeta, type ModuleKey } from "@/lib/alertasInteligentes";
 import {
   hasDiligenciasPendentes,
   hasRelatorioEnviado,
@@ -329,25 +324,38 @@ export function Alertas({ mode = "alertas" }: { mode?: "alertas" | "estatisticas
   const [dataFinal, setDataFinal] = useState("");
 
   useEffect(() => {
-    (async () => {
+    if (showAlertPanels && !isAlertasIndex) return;
+
+    let cancelled = false;
+
+    void (async () => {
       try {
         setLoading(true);
+        setError("");
         const [inq, rep] = await Promise.all([listInqueritos(), listRepresentacoes()]);
-        setInqueritos(inq);
-        setRepresentacoes(rep);
+        if (!cancelled) {
+          setInqueritos(inq);
+          setRepresentacoes(rep);
+        }
       } catch {
-        setError("Não foi possível carregar a central operacional de pendências.");
+        if (!cancelled) {
+          setError("Não foi possível carregar a central operacional de pendências.");
+        }
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     })();
-  }, []);
 
-  const smartAlerts = useMemo(
-    () => buildSmartAlerts(inqueritos, representacoes),
+    return () => {
+      cancelled = true;
+    };
+  }, [isAlertasIndex, showAlertPanels]);
+
+  const operationalAlerts = useMemo(
+    () => buildOperationalAlerts(inqueritos, representacoes),
     [inqueritos, representacoes],
   );
-  const moduleAlerts = useMemo(() => buildModuleAlerts(smartAlerts), [smartAlerts]);
+  const { smartAlerts, moduleAlerts } = operationalAlerts;
   const allRows = useMemo(
     () => toProcedureRows(inqueritos, representacoes),
     [inqueritos, representacoes],

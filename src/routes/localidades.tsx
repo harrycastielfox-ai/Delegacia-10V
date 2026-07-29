@@ -27,6 +27,18 @@ type LocalidadeStats = {
   alta: number;
 };
 
+type LocalidadeGroup = {
+  stats: LocalidadeStats;
+  inqueritos: InqueritoRecord[];
+  searchableRecords: string[];
+};
+
+type LocalidadeIndex = {
+  stats: LocalidadeStats[];
+  byLocalidade: Map<string, LocalidadeGroup>;
+  totals: Omit<LocalidadeStats, "localidade">;
+};
+
 const PAGE_SIZE = 20;
 
 function LocalidadesPage() {
@@ -58,7 +70,8 @@ function LocalidadesPage() {
     };
   }, []);
 
-  const stats = useMemo(() => buildLocalidadeStats(inqueritos), [inqueritos]);
+  const localidadeIndex = useMemo(() => buildLocalidadeIndex(inqueritos), [inqueritos]);
+  const stats = localidadeIndex.stats;
   const visibleStats = useMemo(() => {
     const normalizedSearch = normalizeText(searchTerm);
 
@@ -68,26 +81,13 @@ function LocalidadesPage() {
       if (!matchesLocalidade) return false;
       if (!normalizedSearch) return true;
 
-      return inqueritos
-        .filter((inquerito) => getLocalidade(inquerito) === item.localidade)
-        .some((inquerito) =>
-          normalizeText(
-            [
-              item.localidade,
-              inquerito.numero_ppe,
-              inquerito.tipo,
-              inquerito.situacao,
-              inquerito.gravidade,
-              inquerito.bairro,
-              inquerito.distrito,
-              inquerito.vitima,
-              inquerito.investigado,
-              inquerito.equipe,
-            ].join(" "),
-          ).includes(normalizedSearch),
-        );
+      return (
+        localidadeIndex.byLocalidade
+          .get(item.localidade)
+          ?.searchableRecords.some((record) => record.includes(normalizedSearch)) ?? false
+      );
     });
-  }, [inqueritos, searchTerm, selectedLocalidade, stats]);
+  }, [localidadeIndex, searchTerm, selectedLocalidade, stats]);
   useEffect(() => {
     setLocalidadePage(1);
   }, [searchTerm, selectedLocalidade]);
@@ -99,21 +99,21 @@ function LocalidadesPage() {
   }, [safeLocalidadePage, visibleStats]);
   const modalInqueritos = useMemo(() => {
     if (!openLocalidade) return [];
-    return inqueritos.filter((inquerito) => getLocalidade(inquerito) === openLocalidade);
-  }, [inqueritos, openLocalidade]);
+    return localidadeIndex.byLocalidade.get(openLocalidade)?.inqueritos ?? [];
+  }, [localidadeIndex, openLocalidade]);
   const selectedStats = useMemo(() => {
     if (selectedLocalidade === "todas") {
-      return {
-        total: inqueritos.length,
-        cvli: inqueritos.filter(isCvliRecord).length,
-        alta: inqueritos.filter(isHighPriority).length,
-      };
+      return localidadeIndex.totals;
     }
 
     return (
-      stats.find((item) => item.localidade === selectedLocalidade) ?? { total: 0, cvli: 0, alta: 0 }
+      localidadeIndex.byLocalidade.get(selectedLocalidade)?.stats ?? {
+        total: 0,
+        cvli: 0,
+        alta: 0,
+      }
     );
-  }, [inqueritos, selectedLocalidade, stats]);
+  }, [localidadeIndex, selectedLocalidade]);
 
   return (
     <AppLayout>
@@ -261,28 +261,67 @@ function LocalidadesPage() {
   );
 }
 
-function buildLocalidadeStats(inqueritos: InqueritoRecord[]): LocalidadeStats[] {
-  const byLocalidade = new Map<string, LocalidadeStats>();
+function buildLocalidadeIndex(inqueritos: InqueritoRecord[]): LocalidadeIndex {
+  const byLocalidade = new Map<string, LocalidadeGroup>();
+  const totals = {
+    total: 0,
+    cvli: 0,
+    alta: 0,
+  };
 
   inqueritos.forEach((inquerito) => {
     const localidade = getLocalidade(inquerito);
     const current = byLocalidade.get(localidade) ?? {
-      localidade,
-      total: 0,
-      cvli: 0,
-      alta: 0,
+      stats: {
+        localidade,
+        total: 0,
+        cvli: 0,
+        alta: 0,
+      },
+      inqueritos: [],
+      searchableRecords: [],
     };
+    const isCvli = isCvliRecord(inquerito);
+    const isAlta = isHighPriority(inquerito);
 
-    current.total += 1;
-    if (isCvliRecord(inquerito)) current.cvli += 1;
-    if (isHighPriority(inquerito)) current.alta += 1;
+    current.stats.total += 1;
+    totals.total += 1;
+    if (isCvli) {
+      current.stats.cvli += 1;
+      totals.cvli += 1;
+    }
+    if (isAlta) {
+      current.stats.alta += 1;
+      totals.alta += 1;
+    }
+    current.inqueritos.push(inquerito);
+    current.searchableRecords.push(
+      normalizeText(
+        [
+          localidade,
+          inquerito.numero_ppe,
+          inquerito.tipo,
+          inquerito.situacao,
+          inquerito.gravidade,
+          inquerito.bairro,
+          inquerito.distrito,
+          inquerito.vitima,
+          inquerito.investigado,
+          inquerito.equipe,
+        ].join(" "),
+      ),
+    );
     byLocalidade.set(localidade, current);
   });
 
-  return Array.from(byLocalidade.values()).sort(
-    (a, b) =>
-      b.total - a.total || b.cvli - a.cvli || a.localidade.localeCompare(b.localidade, "pt-BR"),
-  );
+  const stats = Array.from(byLocalidade.values())
+    .map((group) => group.stats)
+    .sort(
+      (a, b) =>
+        b.total - a.total || b.cvli - a.cvli || a.localidade.localeCompare(b.localidade, "pt-BR"),
+    );
+
+  return { stats, byLocalidade, totals };
 }
 
 function getLocalidade(inquerito: InqueritoRecord) {

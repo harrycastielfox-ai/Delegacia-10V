@@ -14,12 +14,7 @@ export type Severity = "critico" | "alto" | "medio" | "baixo";
 export type AlertModule = "Inquérito" | "Representação";
 export type AlertCategory = "criticos" | "prazo" | "operacional" | "judicial" | "dados_incompletos";
 export type ModuleKey =
-  | "criticos"
-  | "prazos"
-  | "operacionais"
-  | "judiciais"
-  | "dados-incompletos"
-  | "sigilosas";
+  "criticos" | "prazos" | "operacionais" | "judiciais" | "dados-incompletos" | "sigilosas";
 
 export type SmartAlert = {
   id: string;
@@ -464,6 +459,45 @@ export const buildModuleAlerts = (alerts: SmartAlert[]) => ({
 });
 
 export type ModuleAlerts = ReturnType<typeof buildModuleAlerts>;
+
+type OperationalAlerts = {
+  smartAlerts: SmartAlert[];
+  moduleAlerts: ModuleAlerts;
+};
+
+const moduleAlertsCache = new WeakMap<
+  InqueritoRecord[],
+  WeakMap<RepresentacaoRecord[], OperationalAlerts>
+>();
+
+export function buildOperationalAlerts(
+  inqueritos: InqueritoRecord[],
+  representacoes: RepresentacaoRecord[],
+) {
+  let byRepresentacoes = moduleAlertsCache.get(inqueritos);
+  if (!byRepresentacoes) {
+    byRepresentacoes = new WeakMap<RepresentacaoRecord[], OperationalAlerts>();
+    moduleAlertsCache.set(inqueritos, byRepresentacoes);
+  }
+
+  const cached = byRepresentacoes.get(representacoes);
+  if (cached) return cached;
+
+  const smartAlerts = buildSmartAlerts(inqueritos, representacoes);
+  const operationalAlerts = {
+    smartAlerts,
+    moduleAlerts: buildModuleAlerts(smartAlerts),
+  };
+  byRepresentacoes.set(representacoes, operationalAlerts);
+  return operationalAlerts;
+}
+
+export function buildOperationalModuleAlerts(
+  inqueritos: InqueritoRecord[],
+  representacoes: RepresentacaoRecord[],
+) {
+  return buildOperationalAlerts(inqueritos, representacoes).moduleAlerts;
+}
 
 export const countModuleAlertsTotal = (moduleAlerts: ModuleAlerts) =>
   new Set(

@@ -18,7 +18,10 @@ import {
 import { canAccessSigilosa, isRepresentacaoSigilosa } from "@/lib/representacoesSigilo";
 import {
   calculateInqueritoOperationalPriority,
+  isTruthyLike,
   normalizeCaseCategory,
+  normalizeText,
+  pick,
 } from "@/lib/inqueritosPriority";
 import { getCvliReferenceDate, isCvliElucidado, isCvliRecord } from "@/lib/cvliMetrics";
 import {
@@ -74,21 +77,6 @@ type InqueritoListRow = {
   fullText: string;
 };
 
-function pick(record: Record<string, unknown>, ...keys: string[]) {
-  for (const key of keys) {
-    const value = record[key];
-    const text = String(value ?? "").trim();
-    if (text && normalizeText(text) !== "selecione") return text;
-  }
-  return FALLBACK;
-}
-function normalizeText(value?: string) {
-  return (value ?? "")
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .trim();
-}
 function parseDateToUtc(value: string, endDay: boolean) {
   if (!value) return null;
   const [y, m, d] = value.split("-").map(Number);
@@ -147,9 +135,6 @@ function matchesSituacaoAlias(situacao: string, filter: string) {
     );
   return s === normalizeText(filter);
 }
-function isTruthyLike(value: unknown) {
-  return ["true", "t", "1", "sim", "s", "yes", "y"].includes(normalizeText(String(value ?? "")));
-}
 function isFalseyLike(value: unknown) {
   const n = normalizeText(String(value ?? "")).replace(/[-_]/g, " ");
   return ["false", "f", "0", "nao", "n", "no", "pendente", "nao elucidado"].includes(n);
@@ -175,9 +160,6 @@ function hasMedidaProtetiva(row: InqueritoListRow) {
 function hasDiligenciasPendentes(value: string) {
   const t = normalizeText(value);
   return Boolean(t) && !["nao", "não", "nenhuma", "sem", "n/a", "na", "false", "0"].includes(t);
-}
-function hasTextValue(value: string) {
-  return Boolean(normalizeText(value)) && value !== FALLBACK;
 }
 function getProcedureType(value: string) {
   const text = normalizeText(value);
@@ -292,11 +274,6 @@ function priorityToneClass(value: string) {
   if (["media", "média"].includes(normalized)) return priorTone.MÉDIA;
   if (normalized === "baixa") return priorTone.BAIXA;
   return "border-border/70 bg-muted/20 text-muted-foreground";
-}
-function daysUntilPrazo(prazo: string) {
-  const ts = parseAnyDate(prazo);
-  if (ts === null) return null;
-  return Math.ceil((ts - Date.now()) / (1000 * 60 * 60 * 24));
 }
 function calculateOperationalPriority(row: InqueritoListRow) {
   return calculateInqueritoOperationalPriority(row as unknown as Record<string, unknown>);
@@ -1057,9 +1034,7 @@ function Inqueritos() {
                         type="button"
                         onClick={(event) => {
                           event.stopPropagation();
-                          setGravidadeFilter(
-                            isEmpty(row.gravidade) ? EMPTY_FILTER : row.gravidade,
-                          );
+                          setGravidadeFilter(isEmpty(row.gravidade) ? EMPTY_FILTER : row.gravidade);
                         }}
                         className="mx-auto block max-w-full truncate text-center text-xs font-medium leading-5 text-muted-foreground hover:text-foreground/80"
                         title={gravidade}

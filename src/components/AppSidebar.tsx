@@ -17,11 +17,7 @@ import {
   canViewRepresentacoes,
   type UserProfile,
 } from "@/lib/authz";
-import {
-  buildModuleAlerts,
-  buildSmartAlerts,
-  countModuleAlertsTotal,
-} from "@/lib/alertasInteligentes";
+import { buildOperationalModuleAlerts, countModuleAlertsTotal } from "@/lib/alertasInteligentes";
 import { listInqueritos } from "@/lib/repositories/inqueritosRepository";
 import { listRepresentacoes } from "@/lib/repositories/representacoesRepository";
 import { AppearanceSwitcher } from "./AppearanceSwitcher";
@@ -51,7 +47,7 @@ export function AppSidebar({ profile }: { profile: UserProfile }) {
         ]);
         if (!cancelled) {
           setAlertasBadge(
-            countModuleAlertsTotal(buildModuleAlerts(buildSmartAlerts(inqueritos, representacoes))),
+            countModuleAlertsTotal(buildOperationalModuleAlerts(inqueritos, representacoes)),
           );
         }
       } catch {
@@ -135,7 +131,7 @@ export function AppSidebar({ profile }: { profile: UserProfile }) {
               <span className="flex-1">{item.title}</span>
               {"badge" in item ? (
                 <span className="text-[10px] font-semibold bg-destructive/20 text-destructive px-1.5 py-0.5 rounded">
-                  {item.badge}
+                  {Number(item.badge)}
                 </span>
               ) : null}
               {active && <span className="text-primary">›</span>}

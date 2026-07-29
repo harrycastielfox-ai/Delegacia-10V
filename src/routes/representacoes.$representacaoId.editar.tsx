@@ -57,7 +57,7 @@ const INQUIRY_LINK_OPTIONS: readonly SelectOption[] = [
   { value: "sim", label: "Sim, possui inquérito vinculado" },
   { value: "nao", label: "Não possui inquérito vinculado" },
 ];
-const normalizeText = (value?: string) =>
+const normalizeText = (value?: string | null) =>
   (value ?? "")
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")

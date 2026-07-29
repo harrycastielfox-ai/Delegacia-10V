@@ -35,7 +35,7 @@ import {
 
 export const Route = createFileRoute("/representacoes")({ component: Representacoes });
 
-const normalizeText = (v?: string) =>
+const normalizeText = (v?: string | null) =>
   (v ?? "")
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
@@ -100,7 +100,6 @@ function buildOperationalStatus(r: RepresentacaoRecord) {
 function getRepresentacaoState(r: RepresentacaoRecord) {
   const now = Date.now();
   const due = parseDateUtc(r.data_vencimento);
-  const statusN = normalizeText(r.status);
   const isCumprida = isRepresentacaoCumprida(r);
   const isSpecial = Boolean(r.acompanhamento_especial);
   const isSigilosa = isRepresentacaoSigilosaValue(
@@ -110,8 +109,8 @@ function getRepresentacaoState(r: RepresentacaoRecord) {
   const incomplete =
     !normalizeText(r.tipo) || !normalizeText(r.vitima) || !normalizeText(r.investigado);
   const daysToDue = due === null ? null : Math.ceil((due - now) / (1000 * 60 * 60 * 24));
-  const isOverdue = !isCumprida && due !== null && daysToDue < 0;
-  const isDueSoon = !isCumprida && due !== null && daysToDue >= 0 && daysToDue <= 7;
+  const isOverdue = !isCumprida && daysToDue !== null && daysToDue < 0;
+  const isDueSoon = !isCumprida && daysToDue !== null && daysToDue >= 0 && daysToDue <= 7;
 
   const priority = isOverdue
     ? 0
@@ -167,8 +166,9 @@ function Representacoes() {
   const [operationalFilter, setOperationalFilter] = useState("todas");
   const [currentPage, setCurrentPage] = useState(1);
   const [representacoes, setRepresentacoes] = useState<RepresentacaoRecord[]>([]);
-  const [selectedRepresentacao, setSelectedRepresentacao] =
-    useState<RepresentacaoRecord | null>(null);
+  const [selectedRepresentacao, setSelectedRepresentacao] = useState<RepresentacaoRecord | null>(
+    null,
+  );
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [restricted, setRestricted] = useState(false);
@@ -609,9 +609,7 @@ function Representacoes() {
                     : blockedSigilosaTitle
                 }
                 onClick={() =>
-                  canOpenThisRecord
-                    ? setSelectedRepresentacao(r)
-                    : alert(blockedSigilosaTitle)
+                  canOpenThisRecord ? setSelectedRepresentacao(r) : alert(blockedSigilosaTitle)
                 }
                 onKeyDown={(event) => {
                   if (event.key !== "Enter" && event.key !== " ") return;

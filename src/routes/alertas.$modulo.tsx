@@ -24,7 +24,7 @@ import { getCurrentProfile } from "@/lib/auth";
 import { canViewRepresentacoes, type UserProfile } from "@/lib/authz";
 import {
   buildModuleAlerts,
-  buildSmartAlerts,
+  buildOperationalModuleAlerts,
   isValidModulo,
   moduleMeta,
   normalizeText,
@@ -210,7 +210,7 @@ function AlertasModulo() {
       ]);
       setProfile(currentProfile);
       setCanOpenSigilosas(canAccessSigilosa(currentProfile));
-      setModuleAlerts(buildModuleAlerts(buildSmartAlerts(inq, rep)));
+      setModuleAlerts(buildOperationalModuleAlerts(inq, rep));
     } catch {
       setError("Não foi possível carregar os alertas do módulo.");
     } finally {

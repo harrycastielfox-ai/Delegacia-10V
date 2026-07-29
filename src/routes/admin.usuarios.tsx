@@ -128,10 +128,10 @@ function AdminUsuariosPage() {
       try {
         const { data, error: listError } = await supabase.rpc("list_profiles_for_admin");
         if (listError) throw listError;
-        const normalizedUsers = (data ?? []).map((user) => ({
+        const normalizedUsers = ((data ?? []) as AdminUserProfile[]).map((user) => ({
           ...user,
           updated_at: user.created_at,
-        })) as AdminUserProfile[];
+        }));
         if (cancelled) return;
         setUsuarios(normalizedUsers);
         setFormState((current) => {

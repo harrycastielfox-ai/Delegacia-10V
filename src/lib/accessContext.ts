@@ -103,8 +103,7 @@ export async function registerOwnAccessContext(
   const metadata = getDeviceMetadata();
   const { data: sessionData } = await supabase.auth.getSession();
   const authMetadata = sessionData.session?.user?.user_metadata as
-    | { access_context_consent?: unknown; terms_version?: unknown }
-    | undefined;
+    { access_context_consent?: unknown; terms_version?: unknown } | undefined;
   const consented = consent?.accessContextConsent ?? authMetadata?.access_context_consent === true;
   const termsVersion =
     consent?.termsVersion ??

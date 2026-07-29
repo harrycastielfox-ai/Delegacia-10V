@@ -4,6 +4,7 @@ import {
   createInquiryPerson,
   INQUIRY_PERSON_ROLE_OPTIONS,
   type InquiryPersonFormValue,
+  type InquiryPersonRole,
 } from "@/lib/operationalContracts";
 
 export type { InquiryPersonFormValue } from "@/lib/operationalContracts";

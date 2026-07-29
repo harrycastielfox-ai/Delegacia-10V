@@ -57,7 +57,7 @@ function NovoCaso() {
   const [origemRegistro, setOrigemRegistro] = useState<OccurrenceOrigin>("novo");
   const [ppeMatches, setPpeMatches] = useState<InqueritoLinkOption[]>([]);
   const [checkingPpe, setCheckingPpe] = useState(false);
-  const [prioridade, setPrioridade] = useState("MÉDIA");
+  const [prioridade] = useState("MÉDIA");
   const [gravidade, setGravidade] = useState("Outro");
   const [situacao, setSituacao] = useState("Instaurado");
   const [statusDiligencias, setStatusDiligencias] = useState("Pendente");
@@ -398,7 +398,6 @@ function NovoCaso() {
       />
 
       <form className="space-y-5 max-w-6xl pb-6" onSubmit={handleSubmit}>
-
         <SectionCard title="Identificação do Procedimento">
           <Field
             label="PPE"

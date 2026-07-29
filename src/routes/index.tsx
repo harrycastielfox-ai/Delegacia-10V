@@ -57,7 +57,7 @@ import {
   normalizeOperationalText,
   parseOperationalDate,
 } from "@/lib/operationalMetrics";
-import { buildModuleAlerts, buildSmartAlerts, type ModuleKey } from "@/lib/alertasInteligentes";
+import { buildOperationalModuleAlerts, type ModuleKey } from "@/lib/alertasInteligentes";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -333,6 +333,7 @@ function Dashboard() {
   const [escrivaoProductivityError, setEscrivaoProductivityError] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const loadRequestIdRef = useRef(0);
+  const refreshTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
     setIsClient(true);
@@ -405,18 +406,28 @@ function Dashboard() {
   }, []);
 
   useEffect(() => {
-    void loadDashboardData(true);
+    void loadDashboardData();
 
-    const refreshOnFocus = () => void loadDashboardData(true);
-    const refreshWhenVisible = () => {
-      if (document.visibilityState === "visible") void loadDashboardData(true);
+    const scheduleRefresh = () => {
+      if (document.visibilityState !== "visible") return;
+      if (refreshTimerRef.current !== null) {
+        window.clearTimeout(refreshTimerRef.current);
+      }
+      refreshTimerRef.current = window.setTimeout(() => {
+        refreshTimerRef.current = null;
+        void loadDashboardData(true);
+      }, 150);
     };
 
-    window.addEventListener("focus", refreshOnFocus);
-    document.addEventListener("visibilitychange", refreshWhenVisible);
+    window.addEventListener("focus", scheduleRefresh);
+    document.addEventListener("visibilitychange", scheduleRefresh);
     return () => {
-      window.removeEventListener("focus", refreshOnFocus);
-      document.removeEventListener("visibilitychange", refreshWhenVisible);
+      window.removeEventListener("focus", scheduleRefresh);
+      document.removeEventListener("visibilitychange", scheduleRefresh);
+      if (refreshTimerRef.current !== null) {
+        window.clearTimeout(refreshTimerRef.current);
+        refreshTimerRef.current = null;
+      }
       loadRequestIdRef.current += 1;
     };
   }, [loadDashboardData]);
@@ -424,7 +435,7 @@ function Dashboard() {
   const total = inqueritos.length;
   const totalRepresentacoes = representacoes.length;
   const alertasPorModulo = useMemo(
-    () => buildModuleAlerts(buildSmartAlerts(inqueritos, representacoes)),
+    () => buildOperationalModuleAlerts(inqueritos, representacoes),
     [inqueritos, representacoes],
   );
   const emAndamento = inqueritos.filter(isInqueritoEmAndamento).length;
@@ -1555,9 +1566,9 @@ function Dashboard() {
                             ))}
                           </Pie>
                           <Tooltip
-                            formatter={(value: number, name: string) => [
-                              `${value} inquérito(s)`,
-                              name,
+                            formatter={(value, name) => [
+                              `${Number(value ?? 0)} inquérito(s)`,
+                              String(name),
                             ]}
                             contentStyle={{
                               backgroundColor: "var(--card)",

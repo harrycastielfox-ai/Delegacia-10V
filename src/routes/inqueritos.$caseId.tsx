@@ -214,14 +214,6 @@ function formatElapsedDuration(value: string) {
   return parts.join(", ").replace(/, ([^,]*)$/u, " e $1");
 }
 
-function isPrazoVencido(value: string) {
-  const ts = parsePrazoToUtc(value.replace("Vencido — ", ""));
-  if (ts === null) return false;
-  const now = new Date();
-  const todayTs = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 12, 0, 0, 0);
-  return ts < todayTs;
-}
-
 function formatDateValue(value: string) {
   const timestamp = parsePrazoToUtc(value);
   return timestamp === null ? FALLBACK : formatDatePtBr(timestamp);
