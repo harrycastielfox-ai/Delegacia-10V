@@ -12,7 +12,6 @@ import { logAuditoria } from "@/lib/repositories/auditoriaRepository";
 import { AppLayout } from "@/components/AppLayout";
 import { FormFieldLabel } from "@/components/FormFieldLabel";
 import { PageHeader } from "@/components/PageHeader";
-import { RegistrationQualityPanel } from "@/components/RegistrationQualityPanel";
 import {
   RepresentationPeopleEditor,
   type RepresentationPersonFormValue,
@@ -23,7 +22,6 @@ import {
   COMPLIANCE_STATUS_OPTIONS,
   REPRESENTATION_STATUS_OPTIONS,
   REPRESENTATION_TYPE_OPTIONS,
-  getRepresentationRegistrationChecks,
   isYesValue,
   normalizePriority,
   normalizeRepresentationType,
@@ -125,60 +123,6 @@ function NovaRepresentacao() {
     [status],
   );
 
-  const registrationChecks = useMemo(
-    () =>
-      getRepresentationRegistrationChecks({
-        vinculoInquerito,
-        inqueritoId,
-        justificativaSemInquerito,
-        ppe,
-        processo,
-        tipoRepresentacao,
-        tipoOutra,
-        dataRepresentacao,
-        vitima,
-        investigado,
-        resumoFatos,
-        status,
-        dataEnvioJudiciario,
-        dataDecisaoJudicial,
-        varaJuizo,
-        prazoConcedidoDias,
-        dataVencimento,
-        cumprimentoStatus,
-        dataCumprimento,
-        equipeCumprimento,
-        resultadoCumprimento,
-        prioridadeOperacional,
-      }),
-    [
-      cumprimentoStatus,
-      dataCumprimento,
-      dataDecisaoJudicial,
-      dataEnvioJudiciario,
-      dataRepresentacao,
-      dataVencimento,
-      equipeCumprimento,
-      inqueritoId,
-      investigado,
-      justificativaSemInquerito,
-      ppe,
-      prazoConcedidoDias,
-      prioridadeOperacional,
-      processo,
-      resultadoCumprimento,
-      resumoFatos,
-      status,
-      tipoOutra,
-      tipoRepresentacao,
-      varaJuizo,
-      vinculoInquerito,
-      vitima,
-    ],
-  );
-
-  const blockingChecks = registrationChecks.filter((item) => item.blocking && !item.complete);
-
   useEffect(() => {
     const normalizedPpe = ppe.trim();
     if (vinculoInquerito !== "sim" || inqueritoId || normalizedPpe.length < 2) {
@@ -216,12 +160,6 @@ function NovaRepresentacao() {
     setFeedback("");
 
     const tipoFinal = tipoRepresentacao === "Outra" ? tipoOutra : tipoRepresentacao;
-    if (blockingChecks.length > 0) {
-      setErro(`Revise antes de salvar: ${blockingChecks.map((item) => item.label).join("; ")}.`);
-      window.scrollTo({ top: 0, behavior: "smooth" });
-      return;
-    }
-
     setLoading(true);
 
     try {
@@ -324,8 +262,6 @@ function NovaRepresentacao() {
         showActions={false}
       />
       <form className="space-y-5 max-w-6xl pb-6" onSubmit={handleSubmit}>
-        <RegistrationQualityPanel checks={registrationChecks} />
-
         <SectionCard
           title="Identificação Judicial"
           subtitle="Vinculação processual e dados principais da representação."

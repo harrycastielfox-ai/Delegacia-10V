@@ -4,7 +4,6 @@ import { AppLayout } from "@/components/AppLayout";
 import { FormFieldLabel } from "@/components/FormFieldLabel";
 import { PageHeader } from "@/components/PageHeader";
 import { InquiryPeopleEditor } from "@/components/InquiryPeopleEditor";
-import { RegistrationQualityPanel } from "@/components/RegistrationQualityPanel";
 import {
   createInquerito,
   findInqueritosByPpe,
@@ -399,7 +398,6 @@ function NovoCaso() {
       />
 
       <form className="space-y-5 max-w-6xl pb-6" onSubmit={handleSubmit}>
-        <RegistrationQualityPanel checks={registrationChecks} />
 
         <SectionCard title="Identificação do Procedimento">
           <Field

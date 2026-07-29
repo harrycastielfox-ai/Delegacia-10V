@@ -9,92 +9,32 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as RepresentacoesRouteImport } from './routes/representacoes'
-import { Route as PerfilRouteImport } from './routes/perfil'
-import { Route as NovoCasoRouteImport } from './routes/novo-caso'
-import { Route as NovaRepresentacaoRouteImport } from './routes/nova-representacao'
-import { Route as ModulosRouteImport } from './routes/modulos'
-import { Route as LoginRouteImport } from './routes/login'
-import { Route as LocalidadesRouteImport } from './routes/localidades'
-import { Route as InqueritosRouteImport } from './routes/inqueritos'
-import { Route as EstatisticasRouteImport } from './routes/estatisticas'
-import { Route as CvliComparativoRouteImport } from './routes/cvli-comparativo'
-import { Route as CriarContaRouteImport } from './routes/criar-conta'
-import { Route as AuditoriaRouteImport } from './routes/auditoria'
-import { Route as AlertasRouteImport } from './routes/alertas'
-import { Route as AguardandoAutorizacaoRouteImport } from './routes/aguardando-autorizacao'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as RepresentacoesRepresentacaoIdRouteImport } from './routes/representacoes.$representacaoId'
-import { Route as InqueritosCaseIdRouteImport } from './routes/inqueritos.$caseId'
-import { Route as AlertasModuloRouteImport } from './routes/alertas.$modulo'
+import { Route as AguardandoAutorizacaoRouteImport } from './routes/aguardando-autorizacao'
+import { Route as AlertasRouteImport } from './routes/alertas'
+import { Route as AuditoriaRouteImport } from './routes/auditoria'
+import { Route as CriarContaRouteImport } from './routes/criar-conta'
+import { Route as CvliComparativoRouteImport } from './routes/cvli-comparativo'
+import { Route as EstatisticasRouteImport } from './routes/estatisticas'
+import { Route as InqueritosRouteImport } from './routes/inqueritos'
+import { Route as LocalidadesRouteImport } from './routes/localidades'
+import { Route as LoginRouteImport } from './routes/login'
+import { Route as ModulosRouteImport } from './routes/modulos'
+import { Route as NovaRepresentacaoRouteImport } from './routes/nova-representacao'
+import { Route as NovoCasoRouteImport } from './routes/novo-caso'
+import { Route as PerfilRouteImport } from './routes/perfil'
+import { Route as RepresentacoesRouteImport } from './routes/representacoes'
 import { Route as AdminUsuariosRouteImport } from './routes/admin.usuarios'
-import { Route as RepresentacoesRepresentacaoIdEditarRouteImport } from './routes/representacoes.$representacaoId.editar'
-import { Route as InqueritosCaseIdEditarRouteImport } from './routes/inqueritos.$caseId.editar'
+import { Route as AlertasModuloRouteImport } from './routes/alertas.$modulo'
+import { Route as InqueritosCaseIdRouteImport } from './routes/inqueritos.$caseId'
+import { Route as RepresentacoesRepresentacaoIdRouteImport } from './routes/representacoes.$representacaoId'
 import { Route as AdminUsuariosUserIdRouteImport } from './routes/admin.usuarios.$userId'
+import { Route as InqueritosCaseIdEditarRouteImport } from './routes/inqueritos.$caseId.editar'
+import { Route as RepresentacoesRepresentacaoIdEditarRouteImport } from './routes/representacoes.$representacaoId.editar'
 
-const RepresentacoesRoute = RepresentacoesRouteImport.update({
-  id: '/representacoes',
-  path: '/representacoes',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PerfilRoute = PerfilRouteImport.update({
-  id: '/perfil',
-  path: '/perfil',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const NovoCasoRoute = NovoCasoRouteImport.update({
-  id: '/novo-caso',
-  path: '/novo-caso',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const NovaRepresentacaoRoute = NovaRepresentacaoRouteImport.update({
-  id: '/nova-representacao',
-  path: '/nova-representacao',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ModulosRoute = ModulosRouteImport.update({
-  id: '/modulos',
-  path: '/modulos',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const LoginRoute = LoginRouteImport.update({
-  id: '/login',
-  path: '/login',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const LocalidadesRoute = LocalidadesRouteImport.update({
-  id: '/localidades',
-  path: '/localidades',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const InqueritosRoute = InqueritosRouteImport.update({
-  id: '/inqueritos',
-  path: '/inqueritos',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const EstatisticasRoute = EstatisticasRouteImport.update({
-  id: '/estatisticas',
-  path: '/estatisticas',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const CvliComparativoRoute = CvliComparativoRouteImport.update({
-  id: '/cvli-comparativo',
-  path: '/cvli-comparativo',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const CriarContaRoute = CriarContaRouteImport.update({
-  id: '/criar-conta',
-  path: '/criar-conta',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AuditoriaRoute = AuditoriaRouteImport.update({
-  id: '/auditoria',
-  path: '/auditoria',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AlertasRoute = AlertasRouteImport.update({
-  id: '/alertas',
-  path: '/alertas',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AguardandoAutorizacaoRoute = AguardandoAutorizacaoRouteImport.update({
@@ -102,10 +42,85 @@ const AguardandoAutorizacaoRoute = AguardandoAutorizacaoRouteImport.update({
   path: '/aguardando-autorizacao',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const AlertasRoute = AlertasRouteImport.update({
+  id: '/alertas',
+  path: '/alertas',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AuditoriaRoute = AuditoriaRouteImport.update({
+  id: '/auditoria',
+  path: '/auditoria',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CriarContaRoute = CriarContaRouteImport.update({
+  id: '/criar-conta',
+  path: '/criar-conta',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CvliComparativoRoute = CvliComparativoRouteImport.update({
+  id: '/cvli-comparativo',
+  path: '/cvli-comparativo',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EstatisticasRoute = EstatisticasRouteImport.update({
+  id: '/estatisticas',
+  path: '/estatisticas',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const InqueritosRoute = InqueritosRouteImport.update({
+  id: '/inqueritos',
+  path: '/inqueritos',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LocalidadesRoute = LocalidadesRouteImport.update({
+  id: '/localidades',
+  path: '/localidades',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ModulosRoute = ModulosRouteImport.update({
+  id: '/modulos',
+  path: '/modulos',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const NovaRepresentacaoRoute = NovaRepresentacaoRouteImport.update({
+  id: '/nova-representacao',
+  path: '/nova-representacao',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const NovoCasoRoute = NovoCasoRouteImport.update({
+  id: '/novo-caso',
+  path: '/novo-caso',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PerfilRoute = PerfilRouteImport.update({
+  id: '/perfil',
+  path: '/perfil',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RepresentacoesRoute = RepresentacoesRouteImport.update({
+  id: '/representacoes',
+  path: '/representacoes',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminUsuariosRoute = AdminUsuariosRouteImport.update({
+  id: '/admin/usuarios',
+  path: '/admin/usuarios',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AlertasModuloRoute = AlertasModuloRouteImport.update({
+  id: '/$modulo',
+  path: '/$modulo',
+  getParentRoute: () => AlertasRoute,
+} as any)
+const InqueritosCaseIdRoute = InqueritosCaseIdRouteImport.update({
+  id: '/$caseId',
+  path: '/$caseId',
+  getParentRoute: () => InqueritosRoute,
 } as any)
 const RepresentacoesRepresentacaoIdRoute =
   RepresentacoesRepresentacaoIdRouteImport.update({
@@ -113,20 +128,15 @@ const RepresentacoesRepresentacaoIdRoute =
     path: '/$representacaoId',
     getParentRoute: () => RepresentacoesRoute,
   } as any)
-const InqueritosCaseIdRoute = InqueritosCaseIdRouteImport.update({
-  id: '/$caseId',
-  path: '/$caseId',
-  getParentRoute: () => InqueritosRoute,
+const AdminUsuariosUserIdRoute = AdminUsuariosUserIdRouteImport.update({
+  id: '/$userId',
+  path: '/$userId',
+  getParentRoute: () => AdminUsuariosRoute,
 } as any)
-const AlertasModuloRoute = AlertasModuloRouteImport.update({
-  id: '/$modulo',
-  path: '/$modulo',
-  getParentRoute: () => AlertasRoute,
-} as any)
-const AdminUsuariosRoute = AdminUsuariosRouteImport.update({
-  id: '/admin/usuarios',
-  path: '/admin/usuarios',
-  getParentRoute: () => rootRouteImport,
+const InqueritosCaseIdEditarRoute = InqueritosCaseIdEditarRouteImport.update({
+  id: '/editar',
+  path: '/editar',
+  getParentRoute: () => InqueritosCaseIdRoute,
 } as any)
 const RepresentacoesRepresentacaoIdEditarRoute =
   RepresentacoesRepresentacaoIdEditarRouteImport.update({
@@ -134,16 +144,6 @@ const RepresentacoesRepresentacaoIdEditarRoute =
     path: '/editar',
     getParentRoute: () => RepresentacoesRepresentacaoIdRoute,
   } as any)
-const InqueritosCaseIdEditarRoute = InqueritosCaseIdEditarRouteImport.update({
-  id: '/editar',
-  path: '/editar',
-  getParentRoute: () => InqueritosCaseIdRoute,
-} as any)
-const AdminUsuariosUserIdRoute = AdminUsuariosUserIdRouteImport.update({
-  id: '/$userId',
-  path: '/$userId',
-  getParentRoute: () => AdminUsuariosRoute,
-} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -314,95 +314,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/representacoes': {
-      id: '/representacoes'
-      path: '/representacoes'
-      fullPath: '/representacoes'
-      preLoaderRoute: typeof RepresentacoesRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/perfil': {
-      id: '/perfil'
-      path: '/perfil'
-      fullPath: '/perfil'
-      preLoaderRoute: typeof PerfilRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/novo-caso': {
-      id: '/novo-caso'
-      path: '/novo-caso'
-      fullPath: '/novo-caso'
-      preLoaderRoute: typeof NovoCasoRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/nova-representacao': {
-      id: '/nova-representacao'
-      path: '/nova-representacao'
-      fullPath: '/nova-representacao'
-      preLoaderRoute: typeof NovaRepresentacaoRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/modulos': {
-      id: '/modulos'
-      path: '/modulos'
-      fullPath: '/modulos'
-      preLoaderRoute: typeof ModulosRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/login': {
-      id: '/login'
-      path: '/login'
-      fullPath: '/login'
-      preLoaderRoute: typeof LoginRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/localidades': {
-      id: '/localidades'
-      path: '/localidades'
-      fullPath: '/localidades'
-      preLoaderRoute: typeof LocalidadesRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/inqueritos': {
-      id: '/inqueritos'
-      path: '/inqueritos'
-      fullPath: '/inqueritos'
-      preLoaderRoute: typeof InqueritosRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/estatisticas': {
-      id: '/estatisticas'
-      path: '/estatisticas'
-      fullPath: '/estatisticas'
-      preLoaderRoute: typeof EstatisticasRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/cvli-comparativo': {
-      id: '/cvli-comparativo'
-      path: '/cvli-comparativo'
-      fullPath: '/cvli-comparativo'
-      preLoaderRoute: typeof CvliComparativoRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/criar-conta': {
-      id: '/criar-conta'
-      path: '/criar-conta'
-      fullPath: '/criar-conta'
-      preLoaderRoute: typeof CriarContaRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/auditoria': {
-      id: '/auditoria'
-      path: '/auditoria'
-      fullPath: '/auditoria'
-      preLoaderRoute: typeof AuditoriaRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/alertas': {
-      id: '/alertas'
-      path: '/alertas'
-      fullPath: '/alertas'
-      preLoaderRoute: typeof AlertasRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/aguardando-autorizacao': {
@@ -412,33 +328,96 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AguardandoAutorizacaoRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/alertas': {
+      id: '/alertas'
+      path: '/alertas'
+      fullPath: '/alertas'
+      preLoaderRoute: typeof AlertasRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/representacoes/$representacaoId': {
-      id: '/representacoes/$representacaoId'
-      path: '/$representacaoId'
-      fullPath: '/representacoes/$representacaoId'
-      preLoaderRoute: typeof RepresentacoesRepresentacaoIdRouteImport
-      parentRoute: typeof RepresentacoesRoute
+    '/auditoria': {
+      id: '/auditoria'
+      path: '/auditoria'
+      fullPath: '/auditoria'
+      preLoaderRoute: typeof AuditoriaRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/inqueritos/$caseId': {
-      id: '/inqueritos/$caseId'
-      path: '/$caseId'
-      fullPath: '/inqueritos/$caseId'
-      preLoaderRoute: typeof InqueritosCaseIdRouteImport
-      parentRoute: typeof InqueritosRoute
+    '/criar-conta': {
+      id: '/criar-conta'
+      path: '/criar-conta'
+      fullPath: '/criar-conta'
+      preLoaderRoute: typeof CriarContaRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/alertas/$modulo': {
-      id: '/alertas/$modulo'
-      path: '/$modulo'
-      fullPath: '/alertas/$modulo'
-      preLoaderRoute: typeof AlertasModuloRouteImport
-      parentRoute: typeof AlertasRoute
+    '/cvli-comparativo': {
+      id: '/cvli-comparativo'
+      path: '/cvli-comparativo'
+      fullPath: '/cvli-comparativo'
+      preLoaderRoute: typeof CvliComparativoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/estatisticas': {
+      id: '/estatisticas'
+      path: '/estatisticas'
+      fullPath: '/estatisticas'
+      preLoaderRoute: typeof EstatisticasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/inqueritos': {
+      id: '/inqueritos'
+      path: '/inqueritos'
+      fullPath: '/inqueritos'
+      preLoaderRoute: typeof InqueritosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/localidades': {
+      id: '/localidades'
+      path: '/localidades'
+      fullPath: '/localidades'
+      preLoaderRoute: typeof LocalidadesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/modulos': {
+      id: '/modulos'
+      path: '/modulos'
+      fullPath: '/modulos'
+      preLoaderRoute: typeof ModulosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/nova-representacao': {
+      id: '/nova-representacao'
+      path: '/nova-representacao'
+      fullPath: '/nova-representacao'
+      preLoaderRoute: typeof NovaRepresentacaoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/novo-caso': {
+      id: '/novo-caso'
+      path: '/novo-caso'
+      fullPath: '/novo-caso'
+      preLoaderRoute: typeof NovoCasoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/perfil': {
+      id: '/perfil'
+      path: '/perfil'
+      fullPath: '/perfil'
+      preLoaderRoute: typeof PerfilRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/representacoes': {
+      id: '/representacoes'
+      path: '/representacoes'
+      fullPath: '/representacoes'
+      preLoaderRoute: typeof RepresentacoesRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/admin/usuarios': {
       id: '/admin/usuarios'
@@ -447,12 +426,33 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminUsuariosRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/representacoes/$representacaoId/editar': {
-      id: '/representacoes/$representacaoId/editar'
-      path: '/editar'
-      fullPath: '/representacoes/$representacaoId/editar'
-      preLoaderRoute: typeof RepresentacoesRepresentacaoIdEditarRouteImport
-      parentRoute: typeof RepresentacoesRepresentacaoIdRoute
+    '/alertas/$modulo': {
+      id: '/alertas/$modulo'
+      path: '/$modulo'
+      fullPath: '/alertas/$modulo'
+      preLoaderRoute: typeof AlertasModuloRouteImport
+      parentRoute: typeof AlertasRoute
+    }
+    '/inqueritos/$caseId': {
+      id: '/inqueritos/$caseId'
+      path: '/$caseId'
+      fullPath: '/inqueritos/$caseId'
+      preLoaderRoute: typeof InqueritosCaseIdRouteImport
+      parentRoute: typeof InqueritosRoute
+    }
+    '/representacoes/$representacaoId': {
+      id: '/representacoes/$representacaoId'
+      path: '/$representacaoId'
+      fullPath: '/representacoes/$representacaoId'
+      preLoaderRoute: typeof RepresentacoesRepresentacaoIdRouteImport
+      parentRoute: typeof RepresentacoesRoute
+    }
+    '/admin/usuarios/$userId': {
+      id: '/admin/usuarios/$userId'
+      path: '/$userId'
+      fullPath: '/admin/usuarios/$userId'
+      preLoaderRoute: typeof AdminUsuariosUserIdRouteImport
+      parentRoute: typeof AdminUsuariosRoute
     }
     '/inqueritos/$caseId/editar': {
       id: '/inqueritos/$caseId/editar'
@@ -461,12 +461,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof InqueritosCaseIdEditarRouteImport
       parentRoute: typeof InqueritosCaseIdRoute
     }
-    '/admin/usuarios/$userId': {
-      id: '/admin/usuarios/$userId'
-      path: '/$userId'
-      fullPath: '/admin/usuarios/$userId'
-      preLoaderRoute: typeof AdminUsuariosUserIdRouteImport
-      parentRoute: typeof AdminUsuariosRoute
+    '/representacoes/$representacaoId/editar': {
+      id: '/representacoes/$representacaoId/editar'
+      path: '/editar'
+      fullPath: '/representacoes/$representacaoId/editar'
+      preLoaderRoute: typeof RepresentacoesRepresentacaoIdEditarRouteImport
+      parentRoute: typeof RepresentacoesRepresentacaoIdRoute
     }
   }
 }

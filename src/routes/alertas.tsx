@@ -875,10 +875,11 @@ export function Alertas({ mode = "alertas" }: { mode?: "alertas" | "estatisticas
                     key={key}
                     to="/alertas/$modulo"
                     params={{ modulo: key }}
-                    className={`group relative min-h-[164px] overflow-hidden rounded-2xl border border-border/70 bg-gradient-to-br ${tone.surface} p-4 text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.02),0_12px_30px_rgba(0,0,0,0.16)] transition-all duration-200 cursor-pointer ${tone.hover}`}
+                    data-alert-tone={key}
+                    className={`alert-module-card group relative min-h-[164px] overflow-hidden rounded-2xl border border-border/70 bg-gradient-to-br ${tone.surface} p-4 text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.02),0_12px_30px_rgba(0,0,0,0.16)] transition-all duration-200 cursor-pointer ${tone.hover}`}
                   >
                     <span
-                      className={`absolute left-0 top-5 h-16 w-1 rounded-r-full ${tone.rail}`}
+                      className={`alert-module-rail absolute left-0 top-5 h-16 w-1 rounded-r-full ${tone.rail}`}
                     />
                     <span
                       className={`pointer-events-none absolute -right-12 -top-12 h-36 w-36 rounded-full blur-3xl ${tone.glow} opacity-45 transition-opacity duration-200 group-hover:opacity-70`}
@@ -887,12 +888,12 @@ export function Alertas({ mode = "alertas" }: { mode?: "alertas" | "estatisticas
 
                     <div className="relative mb-4 flex items-center justify-between">
                       <span
-                        className={`rounded-xl border p-2.5 shadow-[0_0_24px_rgba(0,0,0,0.2)] ${tone.icon}`}
+                        className={`alert-module-icon rounded-xl border p-2.5 shadow-[0_0_24px_rgba(0,0,0,0.2)] ${tone.icon}`}
                       >
                         <Icon className="h-5 w-5" />
                       </span>
                       <span
-                        className={`rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.1em] ${tone.badge}`}
+                        className={`alert-module-badge rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.1em] ${tone.badge}`}
                       >
                         {meta.badge}
                       </span>
@@ -909,13 +910,13 @@ export function Alertas({ mode = "alertas" }: { mode?: "alertas" | "estatisticas
                           Alertas
                         </p>
                         <p
-                          className={`mt-0.5 text-3xl font-black leading-none tabular-nums ${tone.count}`}
+                          className={`alert-module-count mt-0.5 text-3xl font-black leading-none tabular-nums ${tone.count}`}
                         >
                           {count}
                         </p>
                       </div>
                       <span
-                        className={`inline-flex items-center gap-1.5 rounded-full border border-current/25 bg-background/35 px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.08em] transition-colors ${tone.cta}`}
+                        className={`alert-module-cta inline-flex items-center gap-1.5 rounded-full border border-current/25 bg-background/35 px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.08em] transition-colors ${tone.cta}`}
                       >
                         Abrir{" "}
                         <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />

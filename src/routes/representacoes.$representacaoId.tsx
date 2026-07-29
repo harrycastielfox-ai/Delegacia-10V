@@ -8,13 +8,7 @@ import {
 } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { AppLayout } from "@/components/AppLayout";
-import { MissingInfoPopover } from "@/components/MissingInfoPopover";
-import { RegistrationQualityPanel } from "@/components/RegistrationQualityPanel";
 import { SipiPrintSheet, type SipiPrintSection } from "@/components/SipiPrintSheet";
-import {
-  getRepresentationRegistrationChecks,
-  type ComplianceStatus,
-} from "@/lib/operationalContracts";
 import {
   getRepresentacaoById,
   listRepresentacaoPessoas,
@@ -111,15 +105,6 @@ function hasPrintableRepresentacaoValue(value?: string | null) {
     Boolean(normalized) &&
     !["-", "—", "selecione", "sem informacao", "nao informado"].includes(normalized)
   );
-}
-
-function normalizeComplianceStatus(value?: string | null): ComplianceStatus {
-  const normalized = normalizeText(value);
-  if (normalized.includes("parcial")) return "parcial";
-  if (normalized.includes("cumpr")) return "cumprido";
-  if (normalized.includes("indefer") || normalized.includes("nao se aplica")) return "indeferido";
-  if (normalized.includes("cancel")) return "cancelado";
-  return "pendente";
 }
 
 function onlyPopulatedItems(items: Array<[string, string | null | undefined]>) {
@@ -562,36 +547,6 @@ function DetalheRepresentacao() {
   const visibleFundamentacaoCards = fundamentacaoCards.filter(([, value]) =>
     hasPrintableRepresentacaoValue(value),
   );
-  const hasInquiryReference = Boolean(item.inquerito_id || item.numero_ppe?.trim());
-  const hasNoInquiryJustification = Boolean(item.justificativa_sem_inquerito?.trim());
-  const registrationChecks = getRepresentationRegistrationChecks({
-    vinculoInquerito: hasInquiryReference ? "sim" : hasNoInquiryJustification ? "nao" : "",
-    inqueritoId: item.inquerito_id,
-    justificativaSemInquerito: item.justificativa_sem_inquerito ?? "",
-    ppe: item.numero_ppe ?? "",
-    processo: item.processo_judicial ?? "",
-    tipoRepresentacao: item.tipo ?? "",
-    tipoOutra: item.tipo_normalizado === "outros" ? (item.tipo ?? "") : "",
-    dataRepresentacao: item.data_representacao ?? "",
-    vitima: item.vitima ?? "",
-    investigado: item.investigado ?? "",
-    resumoFatos: item.resumo_fatos ?? "",
-    status: item.status ?? "",
-    dataEnvioJudiciario: item.data_envio_judiciario ?? "",
-    dataDecisaoJudicial: item.data_decisao_judicial ?? "",
-    varaJuizo: item.vara_juizo ?? "",
-    prazoConcedidoDias:
-      item.prazo_concedido_dias && item.prazo_concedido_dias > 0
-        ? String(item.prazo_concedido_dias)
-        : "",
-    dataVencimento: item.data_vencimento ?? "",
-    cumprimentoStatus: normalizeComplianceStatus(item.cumprimento_status),
-    dataCumprimento: item.data_cumprimento ?? "",
-    equipeCumprimento: item.equipe_cumprimento ?? "",
-    resultadoCumprimento: item.resultado_cumprimento ?? "",
-    prioridadeOperacional: item.prioridade_operacional ?? "",
-  });
-  const pendingRegistrationChecks = registrationChecks.filter((check) => !check.complete);
   const summaryItems: Array<[string, string]> = [];
   if (hasPrintableRepresentacaoValue(item.status)) {
     summaryItems.push(
@@ -671,7 +626,6 @@ function DetalheRepresentacao() {
                     Sigilo ativo
                   </span>
                 ) : null}
-                <MissingInfoPopover items={pendingRegistrationChecks} />
               </div>
               <p className="mt-1 text-sm break-words text-muted-foreground">
                 {subtitleParts.length > 0
@@ -721,10 +675,6 @@ function DetalheRepresentacao() {
             temporariamente indisponiveis.
           </div>
         ) : null}
-
-        <div className="sipi-print-hidden">
-          <RegistrationQualityPanel checks={registrationChecks} />
-        </div>
 
         {summaryItems.length > 0 ? (
           <section className="grid items-start gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">

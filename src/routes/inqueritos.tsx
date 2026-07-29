@@ -1,10 +1,21 @@
 import { Outlet, createFileRoute, useLocation, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { AppLayout } from "@/components/AppLayout";
+import { InqueritoQuickPreview } from "@/components/RecordQuickPreview";
 import { Search, Filter, Plus } from "lucide-react";
 import { listInqueritos, type InqueritoRecord } from "@/lib/repositories/inqueritosRepository";
+import {
+  listRepresentacoes,
+  type RepresentacaoRecord,
+} from "@/lib/repositories/representacoesRepository";
 import { getCurrentProfile } from "@/lib/auth";
-import { canCreateCases, canOnlyViewPublicCases, type UserProfile } from "@/lib/authz";
+import {
+  canCreateCases,
+  canOnlyViewPublicCases,
+  canViewRepresentacoes,
+  type UserProfile,
+} from "@/lib/authz";
+import { canAccessSigilosa, isRepresentacaoSigilosa } from "@/lib/representacoesSigilo";
 import {
   calculateInqueritoOperationalPriority,
   normalizeCaseCategory,
@@ -409,6 +420,8 @@ function Inqueritos() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [selectedInquerito, setSelectedInquerito] = useState<InqueritoRecord | null>(null);
+  const [representacoes, setRepresentacoes] = useState<RepresentacaoRecord[]>([]);
   const [showFilters, setShowFilters] = useState(false);
   const [situacaoFilter, setSituacaoFilter] = useState("todos");
   const [prioridadeFilter, setPrioridadeFilter] = useState("todos");
@@ -437,7 +450,18 @@ function Inqueritos() {
         setLoading(true);
         const currentProfile = await getCurrentProfile();
         setProfile(currentProfile);
-        setRows(await listInqueritos());
+        const [inqueritos, linkedRepresentacoes] = await Promise.all([
+          listInqueritos(),
+          canViewRepresentacoes(currentProfile)
+            ? listRepresentacoes().catch(() => [] as RepresentacaoRecord[])
+            : Promise.resolve([] as RepresentacaoRecord[]),
+        ]);
+        setRows(inqueritos);
+        setRepresentacoes(
+          canAccessSigilosa(currentProfile)
+            ? linkedRepresentacoes
+            : linkedRepresentacoes.filter((item) => !isRepresentacaoSigilosa(item)),
+        );
         setError("");
       } catch {
         setError("Não foi possível carregar inquéritos agora.");
@@ -552,6 +576,13 @@ function Inqueritos() {
   const normalizedRows = useMemo(
     () => visibleRows.map((r) => normalizeInqueritoForList(r)),
     [visibleRows],
+  );
+  const linkedRepresentacoes = useMemo(
+    () =>
+      selectedInquerito
+        ? representacoes.filter((item) => item.inquerito_id === selectedInquerito.id)
+        : [],
+    [representacoes, selectedInquerito],
   );
   const options = (items: string[]) =>
     Array.from(new Set(items.filter((v) => !isEmpty(v)))).sort((a, b) =>
@@ -979,7 +1010,17 @@ function Inqueritos() {
                 return (
                   <tr
                     key={row.id}
-                    className="border-t border-border/70 align-middle transition hover:bg-muted/20"
+                    role="button"
+                    tabIndex={0}
+                    aria-label={`Visualizar resumo do inquérito ${numeroPpe}`}
+                    onClick={() => setSelectedInquerito(row.source)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        setSelectedInquerito(row.source);
+                      }
+                    }}
+                    className="cursor-pointer border-t border-border/70 align-middle transition hover:bg-muted/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/60"
                   >
                     <td className="px-3 py-2.5 align-middle">
                       <p
@@ -992,7 +1033,10 @@ function Inqueritos() {
                     <td className="px-2.5 py-2.5 align-middle">
                       <button
                         type="button"
-                        onClick={() => setPrioridadeFilter(prioridadeOperacional || EMPTY_FILTER)}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          setPrioridadeFilter(prioridadeOperacional || EMPTY_FILTER);
+                        }}
                         className={`inline-flex min-h-6 max-w-full items-center justify-center rounded border px-2 py-0.5 text-[10px] font-extrabold uppercase leading-none tracking-wide ${priorityToneClass(prioridadeOperacional)}`}
                         title="Prioridade operacional calculada para exibição"
                       >
@@ -1011,9 +1055,12 @@ function Inqueritos() {
                     <td className="px-2 py-2.5 text-center align-middle">
                       <button
                         type="button"
-                        onClick={() =>
-                          setGravidadeFilter(isEmpty(row.gravidade) ? EMPTY_FILTER : row.gravidade)
-                        }
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          setGravidadeFilter(
+                            isEmpty(row.gravidade) ? EMPTY_FILTER : row.gravidade,
+                          );
+                        }}
                         className="mx-auto block max-w-full truncate text-center text-xs font-medium leading-5 text-muted-foreground hover:text-foreground/80"
                         title={gravidade}
                       >
@@ -1048,7 +1095,10 @@ function Inqueritos() {
                     <td className="px-2.5 py-2.5 text-center align-middle">
                       <button
                         type="button"
-                        onClick={() => setSituacaoFilter(situacao || EMPTY_FILTER)}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          setSituacaoFilter(situacao || EMPTY_FILTER);
+                        }}
                         className={`inline-flex min-h-6 max-w-full items-center justify-center overflow-hidden rounded border px-2 py-0.5 text-[10px] font-extrabold uppercase leading-none tracking-wide ${statusToneClass(situacao)}`}
                         title={statusTexto}
                       >
@@ -1060,7 +1110,10 @@ function Inqueritos() {
                     <td className="px-2.5 py-2.5 text-right align-middle">
                       <button
                         type="button"
-                        onClick={() => setPrazoFilter(prazoVencido ? "vencido" : "critico")}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          setPrazoFilter(prazoVencido ? "vencido" : "critico");
+                        }}
                         className={`inline-flex max-w-full items-center justify-center truncate whitespace-nowrap rounded px-1 py-0.5 text-[13px] font-medium tabular-nums ${prazoDisplay.tone}`}
                         title={prazoDisplay.title}
                       >
@@ -1070,9 +1123,10 @@ function Inqueritos() {
                     <td className="px-3 py-2.5 text-center align-middle">
                       <button
                         className="inline-flex min-h-8 items-center justify-center rounded-lg border border-info/40 bg-info/15 px-3 py-1.5 text-xs font-semibold text-info transition hover:bg-info/25 hover:text-info/90"
-                        onClick={() =>
-                          navigate({ to: "/inqueritos/$caseId", params: { caseId: row.id } })
-                        }
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          setSelectedInquerito(row.source);
+                        }}
                       >
                         Abrir
                       </button>
@@ -1084,6 +1138,18 @@ function Inqueritos() {
           </table>
         </div>
       </div>
+      <InqueritoQuickPreview
+        record={selectedInquerito}
+        linkedRepresentations={linkedRepresentacoes}
+        onClose={() => setSelectedInquerito(null)}
+        onOpenFull={() => {
+          if (!selectedInquerito) return;
+          navigate({
+            to: "/inqueritos/$caseId",
+            params: { caseId: selectedInquerito.id },
+          });
+        }}
+      />
     </AppLayout>
   );
 }

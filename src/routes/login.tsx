@@ -33,6 +33,36 @@ const POST_SIGNUP_LOGIN_KEY = "sipi:post-signup-login";
 const POST_SIGNUP_MESSAGE =
   "Conta criada com sucesso. Aguarde autorização de um administrador para acessar o SIPI.";
 
+const PROFILE_RETRY_DELAYS_MS = [0, 200, 500, 900];
+
+function sleep(ms: number) {
+  return new Promise<void>((resolve) => window.setTimeout(resolve, ms));
+}
+
+function clearLoginErrorQueryParam() {
+  const url = new URL(window.location.href);
+  if (!url.searchParams.has("erro")) return;
+  url.searchParams.delete("erro");
+  window.history.replaceState(null, "", `${url.pathname}${url.search}${url.hash}`);
+}
+
+async function getCurrentProfileWithRetry() {
+  let lastError: unknown = null;
+
+  for (const delay of PROFILE_RETRY_DELAYS_MS) {
+    if (delay > 0) await sleep(delay);
+
+    try {
+      const profile = await getCurrentProfile();
+      if (profile) return profile;
+    } catch (error) {
+      lastError = error;
+    }
+  }
+
+  if (lastError) throw lastError;
+  return null;
+}
 function registerAccessContextInBackground() {
   return registerOwnAccessContext()
     .then(() => captureNetworkAccessContext())
@@ -195,7 +225,7 @@ function LoginPage() {
       try {
         const session = await getSession();
         if (!session) return;
-        const profile = await getCurrentProfile();
+        const profile = await getCurrentProfileWithRetry();
         if (!profile) return;
 
         if (profile.status_autorizacao === "bloqueado") {
@@ -221,15 +251,18 @@ function LoginPage() {
     const erroCode = new URLSearchParams(window.location.search).get("erro");
     if (erroCode === "profile_load_failed" || erroCode === "profile_missing") {
       setErro(
-        "Login autenticado, mas não foi possível carregar o perfil. Verifique RLS/policies da tabela profiles.",
+        "Login autenticado, mas o perfil não carregou nesta tentativa. Tente entrar novamente; se persistir, verifique o vínculo do usuário em profiles.",
       );
+      clearLoginErrorQueryParam();
     } else if (erroCode === "access_blocked") {
       setErro("Seu acesso está bloqueado. Procure um administrador do sistema.");
+      clearLoginErrorQueryParam();
     }
   }, []);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
+    clearLoginErrorQueryParam();
     setErro(null);
     setLoading(true);
 
@@ -237,7 +270,7 @@ function LoginPage() {
       const loginOrEmail = usuario.trim();
       await authenticateWithLoginOrEmail(loginOrEmail, senha);
 
-      const profile = await getCurrentProfile();
+      const profile = await getCurrentProfileWithRetry();
       if (!profile) {
         throw new AuthFlowError("PROFILE_FETCH_FAILED", "Perfil não encontrado após autenticação.");
       }

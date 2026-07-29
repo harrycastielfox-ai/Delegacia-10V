@@ -1,6 +1,7 @@
 import { Outlet, createFileRoute, Link, useLocation, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { AppLayout } from "@/components/AppLayout";
+import { RepresentacaoQuickPreview } from "@/components/RecordQuickPreview";
 import {
   AlertTriangle,
   CalendarDays,
@@ -166,6 +167,8 @@ function Representacoes() {
   const [operationalFilter, setOperationalFilter] = useState("todas");
   const [currentPage, setCurrentPage] = useState(1);
   const [representacoes, setRepresentacoes] = useState<RepresentacaoRecord[]>([]);
+  const [selectedRepresentacao, setSelectedRepresentacao] =
+    useState<RepresentacaoRecord | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [restricted, setRestricted] = useState(false);
@@ -607,21 +610,18 @@ function Representacoes() {
                 }
                 onClick={() =>
                   canOpenThisRecord
-                    ? navigate({
-                        to: "/representacoes/$representacaoId",
-                        params: { representacaoId: r.id },
-                      })
+                    ? setSelectedRepresentacao(r)
                     : alert(blockedSigilosaTitle)
                 }
-                onKeyDown={(e) =>
-                  (e.key === "Enter" || e.key === " ") &&
-                  (canOpenThisRecord
-                    ? navigate({
-                        to: "/representacoes/$representacaoId",
-                        params: { representacaoId: r.id },
-                      })
-                    : alert(blockedSigilosaTitle))
-                }
+                onKeyDown={(event) => {
+                  if (event.key !== "Enter" && event.key !== " ") return;
+                  event.preventDefault();
+                  if (canOpenThisRecord) {
+                    setSelectedRepresentacao(r);
+                  } else {
+                    alert(blockedSigilosaTitle);
+                  }
+                }}
                 className={`group grid min-h-[76px] grid-cols-1 gap-3 border-b border-l-[3px] border-b-border/70 px-4 py-3 text-left transition-colors last:border-b-0 lg:grid-cols-[minmax(270px,2fr)_minmax(180px,1.35fr)_minmax(150px,1.1fr)_120px_150px_minmax(120px,0.8fr)_32px] lg:items-center lg:gap-4 ${canOpenThisRecord ? "cursor-pointer hover:bg-accent/20" : "cursor-not-allowed opacity-75"} ${rowTone}`}
               >
                 <div className="flex min-w-0 items-start gap-3">
@@ -764,6 +764,17 @@ function Representacoes() {
           )}
         </section>
       </div>
+      <RepresentacaoQuickPreview
+        record={selectedRepresentacao}
+        onClose={() => setSelectedRepresentacao(null)}
+        onOpenFull={() => {
+          if (!selectedRepresentacao) return;
+          navigate({
+            to: "/representacoes/$representacaoId",
+            params: { representacaoId: selectedRepresentacao.id },
+          });
+        }}
+      />
     </AppLayout>
   );
 }

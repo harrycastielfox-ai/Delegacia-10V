@@ -744,30 +744,41 @@ function InqueritoDetalhes() {
           ]}
           sections={printSections}
         />
-        <header className="sipi-print-hidden flex flex-col gap-4 border-b border-border/65 pb-4 lg:flex-row lg:items-start lg:justify-between">
-          <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+        <header className="sipi-print-hidden flex flex-col gap-3 border-b border-border/65 pb-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex min-w-0 flex-1 items-center gap-3 rounded-xl border border-border/70 bg-gradient-to-r from-card/90 via-card/55 to-card/20 p-3 shadow-[0_10px_30px_rgba(0,0,0,0.12)]">
+            <span className="h-10 w-1 shrink-0 rounded-full bg-primary shadow-[0_0_14px_rgba(52,211,153,0.45)]" />
+            <div className="flex min-w-0 flex-1 items-center gap-3">
               <Link
                 to="/inqueritos"
                 aria-label="Voltar para inquéritos"
-                className="inline-flex items-center gap-2 text-sm font-semibold text-primary transition-colors hover:text-primary/80"
+                className="inline-flex h-9 shrink-0 items-center gap-2 rounded-lg border border-primary/25 bg-primary/[0.06] px-3 text-xs font-bold text-primary transition-colors hover:border-primary/45 hover:bg-primary/10"
               >
                 <ArrowLeft className="h-4 w-4" /> Voltar
               </Link>
-              <span className="hidden h-6 w-px bg-border/70 sm:block" />
-              <h1 className="text-2xl font-extrabold text-foreground sm:text-3xl">
-                Inquérito {headerIdentifier}
-              </h1>
+              <span className="hidden h-9 w-px shrink-0 bg-border/70 sm:block" />
               <div className="min-w-0">
-                <p className="text-sm font-semibold text-muted-foreground">
-                  {displayValue(detalhe.tipo)} · {displayValue(detalhe.gravidade)}
-                </p>
-                {detalhe.ultimaEdicao !== FALLBACK && (
-                  <p className="mt-1 inline-flex items-center gap-1.5 text-xs text-muted-foreground">
-                    <CalendarClock className="h-3.5 w-3.5" /> Última atualização:{" "}
-                    {formatDateTime(detalhe.ultimaEdicao)}
-                  </p>
-                )}
+                <div className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-1">
+                  <span className="text-sm font-extrabold text-muted-foreground sm:text-base">
+                    Inquérito N°:
+                  </span>
+                  <h1 className="truncate font-mono text-base font-black tracking-tight text-foreground sm:text-lg">
+                    {headerIdentifier}
+                  </h1>
+                </div>
+                <div className="mt-1 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-[11px] font-medium text-muted-foreground">
+                  <span className="truncate">{displayValue(detalhe.tipo)}</span>
+                  <span className="text-border">•</span>
+                  <span className="truncate">{displayValue(detalhe.gravidade)}</span>
+                  {detalhe.ultimaEdicao !== FALLBACK && (
+                    <>
+                      <span className="hidden text-border sm:inline">•</span>
+                      <span className="hidden items-center gap-1 sm:inline-flex">
+                        <CalendarClock className="h-3 w-3 text-primary/75" />
+                        {formatDateTime(detalhe.ultimaEdicao)}
+                      </span>
+                    </>
+                  )}
+                </div>
               </div>
               <MissingInfoPopover items={pendingChecks} />
             </div>
