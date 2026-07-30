@@ -1,4 +1,4 @@
-﻿import { Outlet, createFileRoute, Link, useLocation } from "@tanstack/react-router";
+﻿import { Outlet, createFileRoute, useLocation } from "@tanstack/react-router";
 import { useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -10,9 +10,11 @@ import {
   Gavel,
   ShieldAlert,
   SlidersHorizontal,
+  X,
 } from "lucide-react";
 import { AppLayout } from "@/components/AppLayout";
 import { PageHeader } from "@/components/PageHeader";
+import { AlertasModuloPanel } from "@/components/AlertasModuloPanel";
 import { isCvliElucidado, isCvliRecord } from "@/lib/cvliMetrics";
 import { listInqueritos, type InqueritoRecord } from "@/lib/repositories/inqueritosRepository";
 import {
@@ -322,6 +324,7 @@ export function Alertas({ mode = "alertas" }: { mode?: "alertas" | "estatisticas
   const [representacoes, setRepresentacoes] = useState<RepresentacaoRecord[]>([]);
   const [dataInicial, setDataInicial] = useState("");
   const [dataFinal, setDataFinal] = useState("");
+  const [selectedModule, setSelectedModule] = useState<ModuleKey | null>(null);
 
   useEffect(() => {
     if (showAlertPanels && !isAlertasIndex) return;
@@ -878,13 +881,15 @@ export function Alertas({ mode = "alertas" }: { mode?: "alertas" | "estatisticas
                 const Icon = icons[key];
                 const count = moduleAlerts[key].length;
                 const tone = moduleTone[key];
+                const isSelected = selectedModule === key;
                 return (
-                  <Link
+                  <button
                     key={key}
-                    to="/alertas/$modulo"
-                    params={{ modulo: key }}
+                    type="button"
+                    onClick={() => setSelectedModule(isSelected ? null : key)}
+                    aria-pressed={isSelected}
                     data-alert-tone={key}
-                    className={`alert-module-card group relative min-h-[164px] overflow-hidden rounded-2xl border border-border/70 bg-gradient-to-br ${tone.surface} p-4 text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.02),0_12px_30px_rgba(0,0,0,0.16)] transition-all duration-200 cursor-pointer ${tone.hover}`}
+                    className={`alert-module-card group relative min-h-[164px] overflow-hidden rounded-2xl border bg-gradient-to-br ${tone.surface} p-4 text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.02),0_12px_30px_rgba(0,0,0,0.16)] transition-all duration-200 cursor-pointer ${isSelected ? "border-primary/60 ring-2 ring-primary/30" : "border-border/70"} ${tone.hover}`}
                   >
                     <span
                       className={`alert-module-rail absolute left-0 top-5 h-16 w-1 rounded-r-full ${tone.rail}`}
@@ -926,14 +931,35 @@ export function Alertas({ mode = "alertas" }: { mode?: "alertas" | "estatisticas
                       <span
                         className={`alert-module-cta inline-flex items-center gap-1.5 rounded-full border border-current/25 bg-background/35 px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.08em] transition-colors ${tone.cta}`}
                       >
-                        Abrir{" "}
-                        <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+                        {isSelected ? "Fechar" : "Abrir"}{" "}
+                        <ArrowRight
+                          className={`h-3.5 w-3.5 transition-transform ${isSelected ? "rotate-90" : "group-hover:translate-x-0.5"}`}
+                        />
                       </span>
                     </div>
-                  </Link>
+                  </button>
                 );
               })}
             </div>
+
+            {selectedModule ? (
+              <div className="mt-4 border-t border-border/60 pt-4">
+                <div className="mb-3 flex items-center justify-between">
+                  <p className="text-xs font-bold uppercase tracking-[0.12em] text-muted-foreground">
+                    Detalhes — {moduleMeta[selectedModule].title}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedModule(null)}
+                    className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background/40 px-2.5 py-1 text-[11px] font-semibold text-muted-foreground transition-colors hover:border-primary/40 hover:text-primary"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                    Fechar
+                  </button>
+                </div>
+                <AlertasModuloPanel modulo={selectedModule} />
+              </div>
+            ) : null}
           </section>
         ) : null}
 
