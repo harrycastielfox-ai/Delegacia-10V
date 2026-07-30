@@ -29,7 +29,7 @@ function dayLabel(days: number) {
 
 function DueSoonRow({ item }: { item: DueSoonItem }) {
   const text = `${item.label} — vence em ${dayLabel(item.days)}`;
-  const className = "block truncate transition-colors hover:text-amber-300";
+  const className = "block truncate transition-colors hover:text-red-400";
 
   if (item.kind === "inquerito") {
     return (
@@ -137,14 +137,14 @@ export function DueSoonNotification() {
     <div
       role="status"
       aria-live="polite"
-      className="animate-in slide-in-from-bottom-4 fade-in fixed bottom-4 right-4 z-50 w-[320px] max-w-[calc(100vw-2rem)] rounded-xl border border-amber-500/30 bg-card/95 p-4 shadow-[0_18px_45px_rgba(0,0,0,0.35)] duration-300"
+      className="animate-in slide-in-from-bottom-4 fade-in fixed bottom-4 right-4 z-50 w-[320px] max-w-[calc(100vw-2rem)] rounded-xl border border-red-500/50 bg-card/95 p-4 shadow-[0_0_0_1px_rgba(239,68,68,0.25),0_0_32px_rgba(248,113,113,0.35),0_18px_45px_rgba(0,0,0,0.4)] duration-300"
     >
       <div className="flex items-start gap-3">
-        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-amber-500/30 bg-amber-500/10 text-amber-300">
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-red-500/40 bg-red-500/15 text-red-400 shadow-[0_0_14px_rgba(248,113,113,0.45)]">
           <Clock3 className="h-5 w-5" />
         </span>
         <div className="min-w-0 flex-1">
-          <p className="text-xs font-black uppercase tracking-[0.1em] text-amber-300">
+          <p className="text-xs font-black uppercase tracking-[0.1em] text-red-400 drop-shadow-[0_0_6px_rgba(248,113,113,0.55)]">
             Prazos se aproximando
           </p>
           <p className="mt-1 text-sm text-foreground">
@@ -163,7 +163,7 @@ export function DueSoonNotification() {
           ) : null}
           <Link
             to="/alertas"
-            className="mt-2 inline-block text-[11px] font-semibold text-amber-300 hover:text-amber-200"
+            className="mt-2 inline-block text-[11px] font-semibold text-red-400 hover:text-red-300"
           >
             Ver Central de Alertas →
           </Link>
