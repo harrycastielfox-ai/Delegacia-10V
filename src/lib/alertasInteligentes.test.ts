@@ -202,6 +202,15 @@ describe("buildSmartAlerts — representações", () => {
     const alerts = buildSmartAlerts([], [makeRepresentacao({ processo_judicial: null })]);
     expect(alerts.find((a) => a.id === "rep-rep-1-incompleta")?.severity).toBe("baixo");
   });
+
+  it("does not flag 'Deferida Aguardando Cumprimento' as also aguardando decisão", () => {
+    const alerts = buildSmartAlerts(
+      [],
+      [makeRepresentacao({ status: "Deferida Aguardando Cumprimento" })],
+    );
+    expect(alerts.some((a) => a.id === "rep-rep-1-aguardando")).toBe(false);
+    expect(alerts.find((a) => a.id === "rep-rep-1-deferida")?.severity).toBe("alto");
+  });
 });
 
 describe("buildModuleAlerts / countModuleAlertsTotal", () => {
