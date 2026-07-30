@@ -5,6 +5,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { getCurrentProfile, getSession, logout } from "@/lib/auth";
 import { isAuthorized, type UserProfile } from "@/lib/authz";
 import { AppearanceSwitcher } from "./AppearanceSwitcher";
+import { DueSoonNotification } from "./DueSoonNotification";
 
 export function AppLayout({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
@@ -88,6 +89,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
       <div className="fixed right-4 top-4 z-40 md:hidden">
         <AppearanceSwitcher />
       </div>
+      <DueSoonNotification />
       <main className="flex-1 min-w-0 p-6 lg:p-8 overflow-x-hidden">{children}</main>
     </div>
   );
