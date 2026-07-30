@@ -9,9 +9,9 @@ import {
   isRepresentacaoCumprida,
 } from "@/lib/operationalMetrics";
 
-const SESSION_STARTED_KEY = "sipi:session-started-at";
-const TOAST_SHOWN_KEY = "sipi:due-soon-toast-shown";
-const SHOW_AFTER_MS = 20_000;
+const NEXT_CHECK_KEY = "sipi:due-soon-next-check-at";
+const FIRST_CHECK_DELAY_MS = 20_000;
+const REPEAT_INTERVAL_MS = 60 * 60 * 1000;
 const AUTO_DISMISS_MS = 10_000;
 const MIN_DAYS = 1;
 const MAX_DAYS = 10;
@@ -55,22 +55,24 @@ export function DueSoonNotification() {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    if (sessionStorage.getItem(TOAST_SHOWN_KEY)) return;
+    let timeoutId: number;
 
-    let startedAt = Number(sessionStorage.getItem(SESSION_STARTED_KEY));
-    if (!startedAt) {
-      startedAt = Date.now();
-      sessionStorage.setItem(SESSION_STARTED_KEY, String(startedAt));
+    function scheduleNextCheck() {
+      let nextCheckAt = Number(sessionStorage.getItem(NEXT_CHECK_KEY));
+      if (!nextCheckAt) {
+        nextCheckAt = Date.now() + FIRST_CHECK_DELAY_MS;
+        sessionStorage.setItem(NEXT_CHECK_KEY, String(nextCheckAt));
+      }
+
+      const remaining = Math.max(0, nextCheckAt - Date.now());
+      timeoutId = window.setTimeout(() => {
+        sessionStorage.setItem(NEXT_CHECK_KEY, String(Date.now() + REPEAT_INTERVAL_MS));
+        void loadDueSoon();
+        scheduleNextCheck();
+      }, remaining);
     }
 
-    const remaining = Math.max(0, SHOW_AFTER_MS - (Date.now() - startedAt));
-
-    const timeoutId = window.setTimeout(() => {
-      if (sessionStorage.getItem(TOAST_SHOWN_KEY)) return;
-      sessionStorage.setItem(TOAST_SHOWN_KEY, "1");
-      void loadDueSoon();
-    }, remaining);
-
+    scheduleNextCheck();
     return () => window.clearTimeout(timeoutId);
   }, []);
 
