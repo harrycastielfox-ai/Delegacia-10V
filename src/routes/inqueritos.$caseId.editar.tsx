@@ -225,10 +225,12 @@ function EditarInquerito() {
         setRepresentacoesLegais(inquerito.representacoes_legais ?? "");
         const savedVisibilidade = (inquerito.visibilidade ?? "").trim();
         setVisibilidade(savedVisibilidade);
-        console.debug("[DEV][Inqueritos][Editar] visibilidade carregada", {
-          inqueritoId: caseId,
-          visibilidade: savedVisibilidade || null,
-        });
+        if (import.meta.env.DEV) {
+          console.debug("[Inqueritos][Editar] visibilidade carregada", {
+            inqueritoId: caseId,
+            visibilidade: savedVisibilidade || null,
+          });
+        }
       } catch (error) {
         if (!ativo) return;
         setErro(getErrorMessage(error, "Erro ao carregar"));
