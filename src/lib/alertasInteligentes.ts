@@ -120,12 +120,13 @@ const hasRelatorioEnviado = (item: InqueritoRecord) => hasRelatorioEnviadoCentra
 const isInqueritoEmFluxo = (item: InqueritoRecord) => isInqueritoEmAndamentoCentral(item);
 const isRepresentacaoSigilosa = (item: RepresentacaoRecord) =>
   isRepresentacaoSigilosaValue(item.pedido_sigiloso_normalizado ?? item.pedido_sigiloso);
-const isRepresentacaoPendente = (item: RepresentacaoRecord) =>
-  ["pend", "aguard", "analise"].some((w) => normalizeText(item.status).includes(w));
 const isRepresentacaoDeferida = (item: RepresentacaoRecord) => {
   const decision = normalizeText(`${item.status} ${item.observacoes_decisao}`);
   return !decision.includes("indeferid") && decision.includes("deferid");
 };
+const isRepresentacaoPendente = (item: RepresentacaoRecord) =>
+  ["pend", "aguard", "analise"].some((w) => normalizeText(item.status).includes(w)) &&
+  !isRepresentacaoDeferida(item);
 const isRepresentacaoCumprida = (item: RepresentacaoRecord) => isRepresentacaoCumpridaCentral(item);
 const isRepresentacaoVencida = (item: RepresentacaoRecord) =>
   isOverdue(item.data_vencimento) && !isRepresentacaoCumprida(item);
