@@ -244,6 +244,58 @@ function LoginSplash() {
           animation: loginSplashGlow ${LOGIN_SPLASH_DURATION_MS}ms ease forwards;
         }
 
+        .login-splash-ring {
+          border-radius: 9999px;
+          will-change: transform, opacity;
+        }
+
+        .login-splash-ring-1 {
+          inset: -16%;
+          border: 2px solid rgba(250, 204, 21, 0.75);
+          box-shadow: 0 0 18px rgba(250, 204, 21, 0.35);
+          animation: loginSplashRing1 ${LOGIN_SPLASH_DURATION_MS}ms ease forwards;
+        }
+
+        .login-splash-ring-2 {
+          inset: -32%;
+          border: 1.5px solid rgba(234, 179, 8, 0.55);
+          animation: loginSplashRing2 ${LOGIN_SPLASH_DURATION_MS}ms ease forwards;
+        }
+
+        @keyframes loginSplashRing1 {
+          0% {
+            opacity: 0;
+            transform: rotate(0deg) scale(0.7);
+          }
+          25% {
+            opacity: 1;
+          }
+          70% {
+            opacity: 0.75;
+          }
+          100% {
+            opacity: 0;
+            transform: rotate(130deg) scale(1.18);
+          }
+        }
+
+        @keyframes loginSplashRing2 {
+          0% {
+            opacity: 0;
+            transform: rotate(0deg) scale(0.75);
+          }
+          25% {
+            opacity: 0.8;
+          }
+          70% {
+            opacity: 0.5;
+          }
+          100% {
+            opacity: 0;
+            transform: rotate(-110deg) scale(1.22);
+          }
+        }
+
         @keyframes loginSplashBadge {
           0% {
             transform: scale(0.55);
@@ -294,7 +346,9 @@ function LoginSplash() {
         @media (prefers-reduced-motion: reduce) {
           .login-splash,
           .login-splash-badge,
-          .login-splash-glow {
+          .login-splash-glow,
+          .login-splash-ring-1,
+          .login-splash-ring-2 {
             animation: none;
           }
         }
@@ -302,6 +356,8 @@ function LoginSplash() {
 
       <div className="login-splash-badge relative">
         <span className="login-splash-glow pointer-events-none absolute inset-0 rounded-full blur-3xl" />
+        <span className="login-splash-ring login-splash-ring-1 pointer-events-none absolute" />
+        <span className="login-splash-ring login-splash-ring-2 pointer-events-none absolute" />
         <img
           src="/sipi-badge.png"
           alt="Polícia Civil"
