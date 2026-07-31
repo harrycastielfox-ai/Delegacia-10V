@@ -42,7 +42,7 @@ interface Modulo {
 const MODULOS: Modulo[] = [
   {
     id: "inqueritos",
-    titulo: "INQUÉRITOS",
+    titulo: "PROCEDIMENTOS POLICIAIS",
     hint: "Procedimentos investigativos",
     descricao: "IP, APF, TCO, BOC e AIAI — controle de prazos, situações e equipes.",
     icon: FileText,
