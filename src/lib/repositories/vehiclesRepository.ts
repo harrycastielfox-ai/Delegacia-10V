@@ -4,6 +4,7 @@ import { compressVehicleImage } from "@/features/vehicles/imageCompression";
 import type {
   VehicleListFilters,
   VehicleListRecord,
+  VehicleIdentifierConflict,
   VehicleMovementRecord,
   VehicleOverviewStats,
   VehiclePayload,
@@ -52,6 +53,29 @@ export async function getVehicleOverviewStats() {
     supabase.rpc("vehicle_overview_stats").abortSignal(signal),
   );
   return data as VehicleOverviewStats;
+}
+
+export async function findVehicleIdentifierConflicts(input: {
+  plate?: string | null;
+  renavam?: string | null;
+  engineNumber?: string | null;
+  chassis?: string | null;
+  excludeVehicleId?: string | null;
+}) {
+  const data = await runSupabaseQuery<VehicleIdentifierConflict[]>(
+    "verificação de identificadores do veículo",
+    (signal) =>
+      supabase
+        .rpc("find_vehicle_identifier_conflicts", {
+          p_plate: input.plate || null,
+          p_renavam: input.renavam || null,
+          p_engine_number: input.engineNumber || null,
+          p_chassis: input.chassis || null,
+          p_exclude_vehicle_id: input.excludeVehicleId || null,
+        })
+        .abortSignal(signal),
+  );
+  return (data ?? []) as VehicleIdentifierConflict[];
 }
 
 export async function createVehicle(payload: VehiclePayload) {

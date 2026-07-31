@@ -106,6 +106,16 @@ export type VehicleListRecord = Pick<
   | "updated_at"
 > & { total_count: number };
 
+export type VehicleIdentifierKind = "plate" | "renavam" | "engine_number" | "chassis";
+
+export type VehicleIdentifierConflict = Pick<
+  VehicleRecord,
+  "id" | "internal_id" | "vehicle_type" | "brand_model" | "situation"
+> & {
+  identifier_kind: VehicleIdentifierKind;
+  identifier_value: string;
+};
+
 export type VehiclePayload = Partial<
   Omit<
     VehicleRecord,

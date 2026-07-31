@@ -1,12 +1,23 @@
 import { useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { ArrowLeft, ArrowRight, Camera, Check, Link2, LoaderCircle, Save, X } from "lucide-react";
+import {
+  AlertTriangle,
+  ArrowLeft,
+  ArrowRight,
+  Camera,
+  Check,
+  Link2,
+  LoaderCircle,
+  Save,
+  X,
+} from "lucide-react";
 import {
   searchInqueritosForLink,
   type InqueritoLinkOption,
 } from "@/lib/repositories/inqueritosRepository";
 import {
   createVehicle,
+  findVehicleIdentifierConflicts,
   getVehicleById,
   updateVehicle,
   uploadVehiclePhotos,
@@ -20,8 +31,19 @@ import {
   VEHICLE_TYPE_LABELS,
 } from "../vehicleConstants";
 import { useDebouncedValue } from "../useDebouncedValue";
+import {
+  normalizeVehicleChassis,
+  normalizeVehicleEngineNumber,
+  normalizeVehicleIdentifiers,
+  normalizeVehiclePlate,
+  normalizeVehicleRenavam,
+  statusForIdentifier,
+  validateVehicleIdentifiers,
+  VEHICLE_IDENTIFIER_LABELS,
+} from "../vehicleIdentifiers";
 import type {
   IdentificationStatus,
+  VehicleIdentifierConflict,
   VehiclePayload,
   VehicleRecord,
   VehicleSituation,
@@ -191,6 +213,7 @@ function stateFromVehicle(vehicle: VehicleRecord): FormState {
 
 function toPayload(state: FormState): VehiclePayload {
   const identificationFieldsVisible = state.vehicleType !== "bicicleta" || state.isMotorized;
+  const identifiers = normalizeVehicleIdentifiers(state);
   return {
     vehicle_type: state.vehicleType,
     brand: textOrNull(state.brand),
@@ -205,14 +228,22 @@ function toPayload(state: FormState): VehiclePayload {
     bodywork_type: ["caminhao", "onibus"].includes(state.vehicleType)
       ? textOrNull(state.bodyworkType)
       : null,
-    plate: identificationFieldsVisible ? textOrNull(state.plate.toUpperCase()) : null,
-    plate_status: identificationFieldsVisible ? state.plateStatus : "ausente",
-    renavam: identificationFieldsVisible ? textOrNull(state.renavam) : null,
-    renavam_status: identificationFieldsVisible ? state.renavamStatus : "ausente",
-    engine_number: identificationFieldsVisible ? textOrNull(state.engineNumber) : null,
-    engine_status: identificationFieldsVisible ? state.engineStatus : "ausente",
-    chassis: identificationFieldsVisible ? textOrNull(state.chassis.toUpperCase()) : null,
-    chassis_status: identificationFieldsVisible ? state.chassisStatus : "ausente",
+    plate: identificationFieldsVisible ? identifiers.plate || null : null,
+    plate_status: identificationFieldsVisible
+      ? statusForIdentifier(identifiers.plate, state.plateStatus)
+      : "ausente",
+    renavam: identificationFieldsVisible ? identifiers.renavam || null : null,
+    renavam_status: identificationFieldsVisible
+      ? statusForIdentifier(identifiers.renavam, state.renavamStatus)
+      : "ausente",
+    engine_number: identificationFieldsVisible ? identifiers.engineNumber || null : null,
+    engine_status: identificationFieldsVisible
+      ? statusForIdentifier(identifiers.engineNumber, state.engineStatus)
+      : "ausente",
+    chassis: identificationFieldsVisible ? identifiers.chassis || null : null,
+    chassis_status: identificationFieldsVisible
+      ? statusForIdentifier(identifiers.chassis, state.chassisStatus)
+      : "ausente",
     situation: state.situation,
     occurrence_type: textOrNull(state.occurrenceType),
     status: textOrNull(state.status),
@@ -243,6 +274,18 @@ function toPayload(state: FormState): VehiclePayload {
   };
 }
 
+const DUPLICATE_IDENTIFIER_MESSAGE =
+  "Já existe um veículo ativo com um ou mais identificadores informados.";
+
+function isVehicleIdentifierUniqueViolation(error: unknown) {
+  const candidate = error as { code?: string; message?: string; details?: string } | null;
+  const details = `${candidate?.message ?? ""} ${candidate?.details ?? ""}`;
+  return (
+    candidate?.code === "23505" &&
+    /vehicles_(plate|renavam|engine_number|chassis)_unique_active_idx/.test(details)
+  );
+}
+
 export function VehicleFormPage({ mode, vehicleId }: { mode: FormMode; vehicleId?: string }) {
   const navigate = useNavigate();
   const [form, setForm] = useState<FormState>(INITIAL_STATE);
@@ -250,6 +293,7 @@ export function VehicleFormPage({ mode, vehicleId }: { mode: FormMode; vehicleId
   const [loading, setLoading] = useState(mode === "edit");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [identifierConflicts, setIdentifierConflicts] = useState<VehicleIdentifierConflict[]>([]);
   const [photos, setPhotos] = useState<File[]>([]);
   const [photoError, setPhotoError] = useState("");
   const [inquiryQuery, setInquiryQuery] = useState("");
@@ -299,6 +343,21 @@ export function VehicleFormPage({ mode, vehicleId }: { mode: FormMode; vehicleId
   const chosenPhotoNames = useMemo(() => photos.map((file) => file.name).join(", "), [photos]);
 
   function update<K extends keyof FormState>(key: K, value: FormState[K]) {
+    if (
+      [
+        "plate",
+        "plateStatus",
+        "renavam",
+        "renavamStatus",
+        "engineNumber",
+        "engineStatus",
+        "chassis",
+        "chassisStatus",
+      ].includes(key)
+    ) {
+      setIdentifierConflicts([]);
+      setError((current) => (current === DUPLICATE_IDENTIFIER_MESSAGE ? "" : current));
+    }
     setForm((current) => ({ ...current, [key]: value }));
   }
 
@@ -319,10 +378,38 @@ export function VehicleFormPage({ mode, vehicleId }: { mode: FormMode; vehicleId
       setStep(0);
       return;
     }
+    const normalizedIdentifiers = normalizeVehicleIdentifiers(form);
+    const normalizedForm = { ...form, ...normalizedIdentifiers };
+    const identifierErrors = validateVehicleIdentifiers(normalizedForm);
+    if (identifierErrors.length) {
+      setForm(normalizedForm);
+      setIdentifierConflicts([]);
+      setError(identifierErrors.join(" "));
+      setStep(0);
+      return;
+    }
+
     setSaving(true);
     setError("");
+    setIdentifierConflicts([]);
     try {
-      const payload = toPayload(form);
+      setForm(normalizedForm);
+      const payload = toPayload(normalizedForm);
+      const conflicts = await findVehicleIdentifierConflicts({
+        plate: payload.plate_status === "informado" ? (payload.plate ?? null) : null,
+        renavam: payload.renavam_status === "informado" ? (payload.renavam ?? null) : null,
+        engineNumber:
+          payload.engine_status === "informado" ? (payload.engine_number ?? null) : null,
+        chassis: payload.chassis_status === "informado" ? (payload.chassis ?? null) : null,
+        excludeVehicleId: mode === "edit" ? (vehicleId ?? null) : null,
+      });
+      if (conflicts.length) {
+        setIdentifierConflicts(conflicts);
+        setError(DUPLICATE_IDENTIFIER_MESSAGE);
+        setStep(0);
+        return;
+      }
+
       const saved =
         mode === "edit" && vehicleId
           ? await updateVehicle(vehicleId, payload)
@@ -331,7 +418,12 @@ export function VehicleFormPage({ mode, vehicleId }: { mode: FormMode; vehicleId
       navigate({ to: "/veiculos/$vehicleId", params: { vehicleId: saved.id }, replace: true });
     } catch (submissionError) {
       console.error("[VehicleForm] Falha ao salvar", submissionError);
-      setError("Não foi possível salvar o veículo. Revise os dados e tente novamente.");
+      setError(
+        isVehicleIdentifierUniqueViolation(submissionError)
+          ? DUPLICATE_IDENTIFIER_MESSAGE
+          : "Não foi possível salvar o veículo. Revise os dados e tente novamente.",
+      );
+      if (isVehicleIdentifierUniqueViolation(submissionError)) setStep(0);
     } finally {
       setSaving(false);
     }
@@ -382,6 +474,43 @@ export function VehicleFormPage({ mode, vehicleId }: { mode: FormMode; vehicleId
         <p className="rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
           {error}
         </p>
+      ) : null}
+
+      {identifierConflicts.length ? (
+        <section className="rounded-xl border border-warning/35 bg-warning/10 p-4">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-warning" />
+            <div className="min-w-0 flex-1">
+              <h2 className="text-sm font-bold text-warning">Cadastro possivelmente duplicado</h2>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Abra o registro existente para conferir antes de alterar o identificador.
+              </p>
+              <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                {identifierConflicts.map((conflict) => (
+                  <button
+                    key={`${conflict.id}-${conflict.identifier_kind}`}
+                    type="button"
+                    onClick={() =>
+                      navigate({
+                        to: "/veiculos/$vehicleId",
+                        params: { vehicleId: conflict.id },
+                      })
+                    }
+                    className="rounded-lg border border-warning/25 bg-background/65 p-3 text-left transition hover:border-warning/55"
+                  >
+                    <span className="block text-xs font-bold">
+                      {conflict.internal_id} · {conflict.brand_model || "Veículo sem marca/modelo"}
+                    </span>
+                    <span className="mt-1 block text-[11px] text-muted-foreground">
+                      {VEHICLE_IDENTIFIER_LABELS[conflict.identifier_kind]}:{" "}
+                      {conflict.identifier_value}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
       ) : null}
 
       <form
@@ -466,29 +595,42 @@ export function VehicleFormPage({ mode, vehicleId }: { mode: FormMode; vehicleId
                   label="Placa"
                   value={form.plate}
                   status={form.plateStatus}
-                  onValueChange={(value) => update("plate", value)}
+                  onValueChange={(value) => update("plate", normalizeVehiclePlate(value))}
                   onStatusChange={(value) => update("plateStatus", value)}
+                  placeholder="ABC1D23"
+                  maxLength={7}
+                  hint="7 caracteres; pontuação e espaços são removidos."
                 />
                 <IdentificationField
                   label="Renavam"
                   value={form.renavam}
                   status={form.renavamStatus}
-                  onValueChange={(value) => update("renavam", value)}
+                  onValueChange={(value) => update("renavam", normalizeVehicleRenavam(value))}
                   onStatusChange={(value) => update("renavamStatus", value)}
+                  inputMode="numeric"
+                  placeholder="Somente números"
+                  maxLength={11}
+                  hint="Entre 9 e 11 dígitos."
                 />
                 <IdentificationField
                   label="Número do motor"
                   value={form.engineNumber}
                   status={form.engineStatus}
-                  onValueChange={(value) => update("engineNumber", value)}
+                  onValueChange={(value) =>
+                    update("engineNumber", normalizeVehicleEngineNumber(value))
+                  }
                   onStatusChange={(value) => update("engineStatus", value)}
+                  maxLength={30}
+                  hint="Letras e números, sem pontuação."
                 />
                 <IdentificationField
                   label="Chassi"
                   value={form.chassis}
                   status={form.chassisStatus}
-                  onValueChange={(value) => update("chassis", value)}
+                  onValueChange={(value) => update("chassis", normalizeVehicleChassis(value))}
                   onStatusChange={(value) => update("chassisStatus", value)}
+                  maxLength={30}
+                  hint="Letras e números, sem pontuação."
                 />
               </>
             ) : (
@@ -938,12 +1080,20 @@ function IdentificationField({
   status,
   onValueChange,
   onStatusChange,
+  inputMode,
+  placeholder,
+  maxLength,
+  hint,
 }: {
   label: string;
   value: string;
   status: IdentificationStatus;
   onValueChange: (value: string) => void;
   onStatusChange: (value: IdentificationStatus) => void;
+  inputMode?: "numeric" | "text";
+  placeholder?: string;
+  maxLength?: number;
+  hint?: string;
 }) {
   return (
     <div>
@@ -953,6 +1103,9 @@ function IdentificationField({
           value={value}
           disabled={status !== "informado"}
           onChange={(event) => onValueChange(event.target.value)}
+          inputMode={inputMode}
+          placeholder={placeholder}
+          maxLength={maxLength}
           className="h-11 min-w-0 rounded-xl border border-border bg-background/70 px-3 text-sm uppercase outline-none focus:border-info/50 disabled:opacity-45"
         />
         <select
@@ -967,6 +1120,9 @@ function IdentificationField({
           ))}
         </select>
       </div>
+      {hint && status === "informado" ? (
+        <span className="mt-1 block text-[10px] text-muted-foreground">{hint}</span>
+      ) : null}
     </div>
   );
 }
