@@ -24,6 +24,7 @@ import {
   type UserRole,
 } from "@/lib/authz";
 import { supabase } from "@/lib/supabaseClient";
+import { MobileNavigation } from "@/components/MobileNavigation";
 
 export const Route = createFileRoute("/admin/usuarios")({
   component: AdminUsuariosPage,
@@ -247,7 +248,8 @@ function AdminUsuariosPage() {
   if (checkingAccess) return <PageState title="Verificando permissões..." />;
   if (!hasAccess) {
     return (
-      <section className="min-h-screen bg-background px-4 py-8 text-foreground sm:px-6 lg:px-8">
+      <section className="min-h-screen bg-background px-4 pb-24 pt-20 text-foreground sm:px-6 md:py-8 lg:px-8">
+        {currentProfile ? <MobileNavigation profile={currentProfile} /> : null}
         <div className="mx-auto max-w-3xl rounded-2xl border border-border bg-card/80 p-8 shadow-2xl">
           <div className="mb-4 flex items-center gap-3">
             <div className="rounded-lg border border-warning/40 bg-warning/10 p-2">
@@ -271,7 +273,8 @@ function AdminUsuariosPage() {
   }
 
   return (
-    <main className="min-h-screen bg-background px-4 py-6 text-foreground sm:px-6 lg:px-8">
+    <main className="min-h-screen bg-background px-4 pb-24 pt-20 text-foreground sm:px-6 md:py-6 lg:px-8">
+      {currentProfile ? <MobileNavigation profile={currentProfile} /> : null}
       <div className="mx-auto max-w-7xl space-y-6">
         <div>
           <Link

@@ -4,6 +4,7 @@ import { Clock3, LogOut, ShieldCheck, Sparkles, UserCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getCurrentProfile, getSession, logout } from "@/lib/auth";
 import { isAuthorized } from "@/lib/authz";
+import { getPostAuthDestination } from "@/lib/mobileExperience";
 
 export const Route = createFileRoute("/aguardando-autorizacao")({
   component: PendingAuthorizationPage,
@@ -36,7 +37,7 @@ function PendingAuthorizationPage() {
           return;
         }
         if (isAuthorized(profile)) {
-          if (!cancelled) navigate({ to: "/modulos", replace: true });
+          if (!cancelled) navigate({ to: getPostAuthDestination(), replace: true });
         }
       } catch {
         if (!cancelled)
