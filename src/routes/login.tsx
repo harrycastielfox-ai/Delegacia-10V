@@ -31,6 +31,11 @@ const POST_SIGNUP_LOGIN_KEY = "sipi:post-signup-login";
 const POST_SIGNUP_MESSAGE =
   "Conta criada com sucesso. Aguarde autorização de um administrador para acessar o SIPI.";
 
+const PASSWORD_RECOVERY_WHATSAPP_NUMBER = "5573981907374";
+const PASSWORD_RECOVERY_WHATSAPP_MESSAGE =
+  "Olá, infelizmente esqueci ou perdi minha senha do SIPI, vou fornecer meu e-mail e nome para recuperar minha senha.";
+const PASSWORD_RECOVERY_WHATSAPP_URL = `https://wa.me/${PASSWORD_RECOVERY_WHATSAPP_NUMBER}?text=${encodeURIComponent(PASSWORD_RECOVERY_WHATSAPP_MESSAGE)}`;
+
 const PROFILE_RETRY_DELAYS_MS = [0, 200, 500, 900];
 
 function sleep(ms: number) {
@@ -466,12 +471,22 @@ function LoginPage() {
             </div>
 
             <div className="space-y-2">
-              <Label
-                htmlFor="senha"
-                className="text-xs tracking-wider uppercase text-muted-foreground font-semibold"
-              >
-                Senha
-              </Label>
+              <div className="flex items-center justify-between gap-2">
+                <Label
+                  htmlFor="senha"
+                  className="text-xs tracking-wider uppercase text-muted-foreground font-semibold"
+                >
+                  Senha
+                </Label>
+                <a
+                  href={PASSWORD_RECOVERY_WHATSAPP_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[11px] font-medium text-primary underline-offset-2 hover:underline"
+                >
+                  Recuperar senha
+                </a>
+              </div>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
