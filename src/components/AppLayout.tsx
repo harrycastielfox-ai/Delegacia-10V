@@ -6,11 +6,21 @@ import { isAuthorized, type UserProfile } from "@/lib/authz";
 import { getMobileRouteRedirect, MOBILE_VIEWPORT_QUERY } from "@/lib/mobileExperience";
 import { MobileNavigation } from "./MobileNavigation";
 
+type AppModule = "inqueritos" | "veiculos";
+
 const AppSidebar = lazy(() =>
   import("./AppSidebar").then((module) => ({ default: module.AppSidebar })),
 );
 const DueSoonNotification = lazy(() =>
   import("./DueSoonNotification").then((module) => ({ default: module.DueSoonNotification })),
+);
+const VehiclesSidebar = lazy(() =>
+  import("./VehiclesSidebar").then((module) => ({ default: module.VehiclesSidebar })),
+);
+const VehiclesMobileNavigation = lazy(() =>
+  import("./VehiclesMobileNavigation").then((module) => ({
+    default: module.VehiclesMobileNavigation,
+  })),
 );
 
 function useMobileViewport() {
@@ -27,7 +37,13 @@ function useMobileViewport() {
   return mobile;
 }
 
-export function AppLayout({ children }: { children: ReactNode }) {
+export function AppLayout({
+  children,
+  module = "inqueritos",
+}: {
+  children: ReactNode;
+  module?: AppModule;
+}) {
   const navigate = useNavigate();
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const mobile = useMobileViewport();
@@ -114,14 +130,22 @@ export function AppLayout({ children }: { children: ReactNode }) {
 
   return (
     <div className="min-h-screen flex w-full bg-background text-foreground">
-      {mobile ? (
-        <MobileNavigation profile={profile} />
-      ) : (
-        <Suspense fallback={null}>
-          <AppSidebar profile={profile} />
-          <DueSoonNotification />
-        </Suspense>
-      )}
+      <Suspense fallback={null}>
+        {mobile ? (
+          module === "veiculos" ? (
+            <VehiclesMobileNavigation profile={profile} />
+          ) : (
+            <MobileNavigation profile={profile} />
+          )
+        ) : module === "veiculos" ? (
+          <VehiclesSidebar profile={profile} />
+        ) : (
+          <>
+            <AppSidebar profile={profile} />
+            <DueSoonNotification />
+          </>
+        )}
+      </Suspense>
       <main
         className={`flex-1 min-w-0 overflow-x-hidden ${mobile ? "px-4 pb-24 pt-20" : "p-6 lg:p-8"}`}
       >

@@ -24,13 +24,30 @@ import { Route as NovaRepresentacaoRouteImport } from './routes/nova-representac
 import { Route as NovoCasoRouteImport } from './routes/novo-caso'
 import { Route as PerfilRouteImport } from './routes/perfil'
 import { Route as RepresentacoesRouteImport } from './routes/representacoes'
+import { Route as VeiculosRouteImport } from './routes/veiculos'
 import { Route as AdminUsuariosRouteImport } from './routes/admin.usuarios'
 import { Route as AlertasModuloRouteImport } from './routes/alertas.$modulo'
 import { Route as InqueritosCaseIdRouteImport } from './routes/inqueritos.$caseId'
 import { Route as RepresentacoesRepresentacaoIdRouteImport } from './routes/representacoes.$representacaoId'
+import { Route as VeiculosIndexRouteImport } from './routes/veiculos.index'
+import { Route as VeiculosVehicleIdRouteImport } from './routes/veiculos.$vehicleId'
+import { Route as VeiculosAdulteradosRouteImport } from './routes/veiculos.adulterados'
+import { Route as VeiculosApreendidosRouteImport } from './routes/veiculos.apreendidos'
+import { Route as VeiculosAutomoveisRouteImport } from './routes/veiculos.automoveis'
+import { Route as VeiculosBicicletasRouteImport } from './routes/veiculos.bicicletas'
+import { Route as VeiculosCaminhoesRouteImport } from './routes/veiculos.caminhoes'
+import { Route as VeiculosLiberadosRouteImport } from './routes/veiculos.liberados'
+import { Route as VeiculosMotocicletasRouteImport } from './routes/veiculos.motocicletas'
+import { Route as VeiculosNovoRouteImport } from './routes/veiculos.novo'
+import { Route as VeiculosOnibusRouteImport } from './routes/veiculos.onibus'
+import { Route as VeiculosOutrosRouteImport } from './routes/veiculos.outros'
+import { Route as VeiculosRecuperadosRouteImport } from './routes/veiculos.recuperados'
+import { Route as VeiculosRelatoriosRouteImport } from './routes/veiculos.relatorios'
+import { Route as VeiculosTodosRouteImport } from './routes/veiculos.todos'
 import { Route as AdminUsuariosUserIdRouteImport } from './routes/admin.usuarios.$userId'
 import { Route as InqueritosCaseIdEditarRouteImport } from './routes/inqueritos.$caseId.editar'
 import { Route as RepresentacoesRepresentacaoIdEditarRouteImport } from './routes/representacoes.$representacaoId.editar'
+import { Route as VeiculosVehicleIdEditarRouteImport } from './routes/veiculos.$vehicleId.editar'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -107,6 +124,11 @@ const RepresentacoesRoute = RepresentacoesRouteImport.update({
   path: '/representacoes',
   getParentRoute: () => rootRouteImport,
 } as any)
+const VeiculosRoute = VeiculosRouteImport.update({
+  id: '/veiculos',
+  path: '/veiculos',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminUsuariosRoute = AdminUsuariosRouteImport.update({
   id: '/admin/usuarios',
   path: '/admin/usuarios',
@@ -128,6 +150,81 @@ const RepresentacoesRepresentacaoIdRoute =
     path: '/$representacaoId',
     getParentRoute: () => RepresentacoesRoute,
   } as any)
+const VeiculosIndexRoute = VeiculosIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => VeiculosRoute,
+} as any)
+const VeiculosVehicleIdRoute = VeiculosVehicleIdRouteImport.update({
+  id: '/$vehicleId',
+  path: '/$vehicleId',
+  getParentRoute: () => VeiculosRoute,
+} as any)
+const VeiculosAdulteradosRoute = VeiculosAdulteradosRouteImport.update({
+  id: '/adulterados',
+  path: '/adulterados',
+  getParentRoute: () => VeiculosRoute,
+} as any)
+const VeiculosApreendidosRoute = VeiculosApreendidosRouteImport.update({
+  id: '/apreendidos',
+  path: '/apreendidos',
+  getParentRoute: () => VeiculosRoute,
+} as any)
+const VeiculosAutomoveisRoute = VeiculosAutomoveisRouteImport.update({
+  id: '/automoveis',
+  path: '/automoveis',
+  getParentRoute: () => VeiculosRoute,
+} as any)
+const VeiculosBicicletasRoute = VeiculosBicicletasRouteImport.update({
+  id: '/bicicletas',
+  path: '/bicicletas',
+  getParentRoute: () => VeiculosRoute,
+} as any)
+const VeiculosCaminhoesRoute = VeiculosCaminhoesRouteImport.update({
+  id: '/caminhoes',
+  path: '/caminhoes',
+  getParentRoute: () => VeiculosRoute,
+} as any)
+const VeiculosLiberadosRoute = VeiculosLiberadosRouteImport.update({
+  id: '/liberados',
+  path: '/liberados',
+  getParentRoute: () => VeiculosRoute,
+} as any)
+const VeiculosMotocicletasRoute = VeiculosMotocicletasRouteImport.update({
+  id: '/motocicletas',
+  path: '/motocicletas',
+  getParentRoute: () => VeiculosRoute,
+} as any)
+const VeiculosNovoRoute = VeiculosNovoRouteImport.update({
+  id: '/novo',
+  path: '/novo',
+  getParentRoute: () => VeiculosRoute,
+} as any)
+const VeiculosOnibusRoute = VeiculosOnibusRouteImport.update({
+  id: '/onibus',
+  path: '/onibus',
+  getParentRoute: () => VeiculosRoute,
+} as any)
+const VeiculosOutrosRoute = VeiculosOutrosRouteImport.update({
+  id: '/outros',
+  path: '/outros',
+  getParentRoute: () => VeiculosRoute,
+} as any)
+const VeiculosRecuperadosRoute = VeiculosRecuperadosRouteImport.update({
+  id: '/recuperados',
+  path: '/recuperados',
+  getParentRoute: () => VeiculosRoute,
+} as any)
+const VeiculosRelatoriosRoute = VeiculosRelatoriosRouteImport.update({
+  id: '/relatorios',
+  path: '/relatorios',
+  getParentRoute: () => VeiculosRoute,
+} as any)
+const VeiculosTodosRoute = VeiculosTodosRouteImport.update({
+  id: '/todos',
+  path: '/todos',
+  getParentRoute: () => VeiculosRoute,
+} as any)
 const AdminUsuariosUserIdRoute = AdminUsuariosUserIdRouteImport.update({
   id: '/$userId',
   path: '/$userId',
@@ -144,6 +241,11 @@ const RepresentacoesRepresentacaoIdEditarRoute =
     path: '/editar',
     getParentRoute: () => RepresentacoesRepresentacaoIdRoute,
   } as any)
+const VeiculosVehicleIdEditarRoute = VeiculosVehicleIdEditarRouteImport.update({
+  id: '/editar',
+  path: '/editar',
+  getParentRoute: () => VeiculosVehicleIdRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -161,13 +263,30 @@ export interface FileRoutesByFullPath {
   '/novo-caso': typeof NovoCasoRoute
   '/perfil': typeof PerfilRoute
   '/representacoes': typeof RepresentacoesRouteWithChildren
+  '/veiculos': typeof VeiculosRouteWithChildren
   '/admin/usuarios': typeof AdminUsuariosRouteWithChildren
   '/alertas/$modulo': typeof AlertasModuloRoute
   '/inqueritos/$caseId': typeof InqueritosCaseIdRouteWithChildren
   '/representacoes/$representacaoId': typeof RepresentacoesRepresentacaoIdRouteWithChildren
+  '/veiculos/$vehicleId': typeof VeiculosVehicleIdRouteWithChildren
+  '/veiculos/adulterados': typeof VeiculosAdulteradosRoute
+  '/veiculos/apreendidos': typeof VeiculosApreendidosRoute
+  '/veiculos/automoveis': typeof VeiculosAutomoveisRoute
+  '/veiculos/bicicletas': typeof VeiculosBicicletasRoute
+  '/veiculos/caminhoes': typeof VeiculosCaminhoesRoute
+  '/veiculos/liberados': typeof VeiculosLiberadosRoute
+  '/veiculos/motocicletas': typeof VeiculosMotocicletasRoute
+  '/veiculos/novo': typeof VeiculosNovoRoute
+  '/veiculos/onibus': typeof VeiculosOnibusRoute
+  '/veiculos/outros': typeof VeiculosOutrosRoute
+  '/veiculos/recuperados': typeof VeiculosRecuperadosRoute
+  '/veiculos/relatorios': typeof VeiculosRelatoriosRoute
+  '/veiculos/todos': typeof VeiculosTodosRoute
+  '/veiculos/': typeof VeiculosIndexRoute
   '/admin/usuarios/$userId': typeof AdminUsuariosUserIdRoute
   '/inqueritos/$caseId/editar': typeof InqueritosCaseIdEditarRoute
   '/representacoes/$representacaoId/editar': typeof RepresentacoesRepresentacaoIdEditarRoute
+  '/veiculos/$vehicleId/editar': typeof VeiculosVehicleIdEditarRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -189,9 +308,25 @@ export interface FileRoutesByTo {
   '/alertas/$modulo': typeof AlertasModuloRoute
   '/inqueritos/$caseId': typeof InqueritosCaseIdRouteWithChildren
   '/representacoes/$representacaoId': typeof RepresentacoesRepresentacaoIdRouteWithChildren
+  '/veiculos/$vehicleId': typeof VeiculosVehicleIdRouteWithChildren
+  '/veiculos/adulterados': typeof VeiculosAdulteradosRoute
+  '/veiculos/apreendidos': typeof VeiculosApreendidosRoute
+  '/veiculos/automoveis': typeof VeiculosAutomoveisRoute
+  '/veiculos/bicicletas': typeof VeiculosBicicletasRoute
+  '/veiculos/caminhoes': typeof VeiculosCaminhoesRoute
+  '/veiculos/liberados': typeof VeiculosLiberadosRoute
+  '/veiculos/motocicletas': typeof VeiculosMotocicletasRoute
+  '/veiculos/novo': typeof VeiculosNovoRoute
+  '/veiculos/onibus': typeof VeiculosOnibusRoute
+  '/veiculos/outros': typeof VeiculosOutrosRoute
+  '/veiculos/recuperados': typeof VeiculosRecuperadosRoute
+  '/veiculos/relatorios': typeof VeiculosRelatoriosRoute
+  '/veiculos/todos': typeof VeiculosTodosRoute
+  '/veiculos': typeof VeiculosIndexRoute
   '/admin/usuarios/$userId': typeof AdminUsuariosUserIdRoute
   '/inqueritos/$caseId/editar': typeof InqueritosCaseIdEditarRoute
   '/representacoes/$representacaoId/editar': typeof RepresentacoesRepresentacaoIdEditarRoute
+  '/veiculos/$vehicleId/editar': typeof VeiculosVehicleIdEditarRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -210,13 +345,30 @@ export interface FileRoutesById {
   '/novo-caso': typeof NovoCasoRoute
   '/perfil': typeof PerfilRoute
   '/representacoes': typeof RepresentacoesRouteWithChildren
+  '/veiculos': typeof VeiculosRouteWithChildren
   '/admin/usuarios': typeof AdminUsuariosRouteWithChildren
   '/alertas/$modulo': typeof AlertasModuloRoute
   '/inqueritos/$caseId': typeof InqueritosCaseIdRouteWithChildren
   '/representacoes/$representacaoId': typeof RepresentacoesRepresentacaoIdRouteWithChildren
+  '/veiculos/$vehicleId': typeof VeiculosVehicleIdRouteWithChildren
+  '/veiculos/adulterados': typeof VeiculosAdulteradosRoute
+  '/veiculos/apreendidos': typeof VeiculosApreendidosRoute
+  '/veiculos/automoveis': typeof VeiculosAutomoveisRoute
+  '/veiculos/bicicletas': typeof VeiculosBicicletasRoute
+  '/veiculos/caminhoes': typeof VeiculosCaminhoesRoute
+  '/veiculos/liberados': typeof VeiculosLiberadosRoute
+  '/veiculos/motocicletas': typeof VeiculosMotocicletasRoute
+  '/veiculos/novo': typeof VeiculosNovoRoute
+  '/veiculos/onibus': typeof VeiculosOnibusRoute
+  '/veiculos/outros': typeof VeiculosOutrosRoute
+  '/veiculos/recuperados': typeof VeiculosRecuperadosRoute
+  '/veiculos/relatorios': typeof VeiculosRelatoriosRoute
+  '/veiculos/todos': typeof VeiculosTodosRoute
+  '/veiculos/': typeof VeiculosIndexRoute
   '/admin/usuarios/$userId': typeof AdminUsuariosUserIdRoute
   '/inqueritos/$caseId/editar': typeof InqueritosCaseIdEditarRoute
   '/representacoes/$representacaoId/editar': typeof RepresentacoesRepresentacaoIdEditarRoute
+  '/veiculos/$vehicleId/editar': typeof VeiculosVehicleIdEditarRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -236,13 +388,30 @@ export interface FileRouteTypes {
     | '/novo-caso'
     | '/perfil'
     | '/representacoes'
+    | '/veiculos'
     | '/admin/usuarios'
     | '/alertas/$modulo'
     | '/inqueritos/$caseId'
     | '/representacoes/$representacaoId'
+    | '/veiculos/$vehicleId'
+    | '/veiculos/adulterados'
+    | '/veiculos/apreendidos'
+    | '/veiculos/automoveis'
+    | '/veiculos/bicicletas'
+    | '/veiculos/caminhoes'
+    | '/veiculos/liberados'
+    | '/veiculos/motocicletas'
+    | '/veiculos/novo'
+    | '/veiculos/onibus'
+    | '/veiculos/outros'
+    | '/veiculos/recuperados'
+    | '/veiculos/relatorios'
+    | '/veiculos/todos'
+    | '/veiculos/'
     | '/admin/usuarios/$userId'
     | '/inqueritos/$caseId/editar'
     | '/representacoes/$representacaoId/editar'
+    | '/veiculos/$vehicleId/editar'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -264,9 +433,25 @@ export interface FileRouteTypes {
     | '/alertas/$modulo'
     | '/inqueritos/$caseId'
     | '/representacoes/$representacaoId'
+    | '/veiculos/$vehicleId'
+    | '/veiculos/adulterados'
+    | '/veiculos/apreendidos'
+    | '/veiculos/automoveis'
+    | '/veiculos/bicicletas'
+    | '/veiculos/caminhoes'
+    | '/veiculos/liberados'
+    | '/veiculos/motocicletas'
+    | '/veiculos/novo'
+    | '/veiculos/onibus'
+    | '/veiculos/outros'
+    | '/veiculos/recuperados'
+    | '/veiculos/relatorios'
+    | '/veiculos/todos'
+    | '/veiculos'
     | '/admin/usuarios/$userId'
     | '/inqueritos/$caseId/editar'
     | '/representacoes/$representacaoId/editar'
+    | '/veiculos/$vehicleId/editar'
   id:
     | '__root__'
     | '/'
@@ -284,13 +469,30 @@ export interface FileRouteTypes {
     | '/novo-caso'
     | '/perfil'
     | '/representacoes'
+    | '/veiculos'
     | '/admin/usuarios'
     | '/alertas/$modulo'
     | '/inqueritos/$caseId'
     | '/representacoes/$representacaoId'
+    | '/veiculos/$vehicleId'
+    | '/veiculos/adulterados'
+    | '/veiculos/apreendidos'
+    | '/veiculos/automoveis'
+    | '/veiculos/bicicletas'
+    | '/veiculos/caminhoes'
+    | '/veiculos/liberados'
+    | '/veiculos/motocicletas'
+    | '/veiculos/novo'
+    | '/veiculos/onibus'
+    | '/veiculos/outros'
+    | '/veiculos/recuperados'
+    | '/veiculos/relatorios'
+    | '/veiculos/todos'
+    | '/veiculos/'
     | '/admin/usuarios/$userId'
     | '/inqueritos/$caseId/editar'
     | '/representacoes/$representacaoId/editar'
+    | '/veiculos/$vehicleId/editar'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -309,6 +511,7 @@ export interface RootRouteChildren {
   NovoCasoRoute: typeof NovoCasoRoute
   PerfilRoute: typeof PerfilRoute
   RepresentacoesRoute: typeof RepresentacoesRouteWithChildren
+  VeiculosRoute: typeof VeiculosRouteWithChildren
   AdminUsuariosRoute: typeof AdminUsuariosRouteWithChildren
 }
 
@@ -419,6 +622,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RepresentacoesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/veiculos': {
+      id: '/veiculos'
+      path: '/veiculos'
+      fullPath: '/veiculos'
+      preLoaderRoute: typeof VeiculosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/usuarios': {
       id: '/admin/usuarios'
       path: '/admin/usuarios'
@@ -447,6 +657,111 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RepresentacoesRepresentacaoIdRouteImport
       parentRoute: typeof RepresentacoesRoute
     }
+    '/veiculos/': {
+      id: '/veiculos/'
+      path: '/'
+      fullPath: '/veiculos/'
+      preLoaderRoute: typeof VeiculosIndexRouteImport
+      parentRoute: typeof VeiculosRoute
+    }
+    '/veiculos/$vehicleId': {
+      id: '/veiculos/$vehicleId'
+      path: '/$vehicleId'
+      fullPath: '/veiculos/$vehicleId'
+      preLoaderRoute: typeof VeiculosVehicleIdRouteImport
+      parentRoute: typeof VeiculosRoute
+    }
+    '/veiculos/adulterados': {
+      id: '/veiculos/adulterados'
+      path: '/adulterados'
+      fullPath: '/veiculos/adulterados'
+      preLoaderRoute: typeof VeiculosAdulteradosRouteImport
+      parentRoute: typeof VeiculosRoute
+    }
+    '/veiculos/apreendidos': {
+      id: '/veiculos/apreendidos'
+      path: '/apreendidos'
+      fullPath: '/veiculos/apreendidos'
+      preLoaderRoute: typeof VeiculosApreendidosRouteImport
+      parentRoute: typeof VeiculosRoute
+    }
+    '/veiculos/automoveis': {
+      id: '/veiculos/automoveis'
+      path: '/automoveis'
+      fullPath: '/veiculos/automoveis'
+      preLoaderRoute: typeof VeiculosAutomoveisRouteImport
+      parentRoute: typeof VeiculosRoute
+    }
+    '/veiculos/bicicletas': {
+      id: '/veiculos/bicicletas'
+      path: '/bicicletas'
+      fullPath: '/veiculos/bicicletas'
+      preLoaderRoute: typeof VeiculosBicicletasRouteImport
+      parentRoute: typeof VeiculosRoute
+    }
+    '/veiculos/caminhoes': {
+      id: '/veiculos/caminhoes'
+      path: '/caminhoes'
+      fullPath: '/veiculos/caminhoes'
+      preLoaderRoute: typeof VeiculosCaminhoesRouteImport
+      parentRoute: typeof VeiculosRoute
+    }
+    '/veiculos/liberados': {
+      id: '/veiculos/liberados'
+      path: '/liberados'
+      fullPath: '/veiculos/liberados'
+      preLoaderRoute: typeof VeiculosLiberadosRouteImport
+      parentRoute: typeof VeiculosRoute
+    }
+    '/veiculos/motocicletas': {
+      id: '/veiculos/motocicletas'
+      path: '/motocicletas'
+      fullPath: '/veiculos/motocicletas'
+      preLoaderRoute: typeof VeiculosMotocicletasRouteImport
+      parentRoute: typeof VeiculosRoute
+    }
+    '/veiculos/novo': {
+      id: '/veiculos/novo'
+      path: '/novo'
+      fullPath: '/veiculos/novo'
+      preLoaderRoute: typeof VeiculosNovoRouteImport
+      parentRoute: typeof VeiculosRoute
+    }
+    '/veiculos/onibus': {
+      id: '/veiculos/onibus'
+      path: '/onibus'
+      fullPath: '/veiculos/onibus'
+      preLoaderRoute: typeof VeiculosOnibusRouteImport
+      parentRoute: typeof VeiculosRoute
+    }
+    '/veiculos/outros': {
+      id: '/veiculos/outros'
+      path: '/outros'
+      fullPath: '/veiculos/outros'
+      preLoaderRoute: typeof VeiculosOutrosRouteImport
+      parentRoute: typeof VeiculosRoute
+    }
+    '/veiculos/recuperados': {
+      id: '/veiculos/recuperados'
+      path: '/recuperados'
+      fullPath: '/veiculos/recuperados'
+      preLoaderRoute: typeof VeiculosRecuperadosRouteImport
+      parentRoute: typeof VeiculosRoute
+    }
+    '/veiculos/relatorios': {
+      id: '/veiculos/relatorios'
+      path: '/relatorios'
+      fullPath: '/veiculos/relatorios'
+      preLoaderRoute: typeof VeiculosRelatoriosRouteImport
+      parentRoute: typeof VeiculosRoute
+    }
+    '/veiculos/todos': {
+      id: '/veiculos/todos'
+      path: '/todos'
+      fullPath: '/veiculos/todos'
+      preLoaderRoute: typeof VeiculosTodosRouteImport
+      parentRoute: typeof VeiculosRoute
+    }
     '/admin/usuarios/$userId': {
       id: '/admin/usuarios/$userId'
       path: '/$userId'
@@ -467,6 +782,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/representacoes/$representacaoId/editar'
       preLoaderRoute: typeof RepresentacoesRepresentacaoIdEditarRouteImport
       parentRoute: typeof RepresentacoesRepresentacaoIdRoute
+    }
+    '/veiculos/$vehicleId/editar': {
+      id: '/veiculos/$vehicleId/editar'
+      path: '/editar'
+      fullPath: '/veiculos/$vehicleId/editar'
+      preLoaderRoute: typeof VeiculosVehicleIdEditarRouteImport
+      parentRoute: typeof VeiculosVehicleIdRoute
     }
   }
 }
@@ -533,6 +855,57 @@ const RepresentacoesRouteWithChildren = RepresentacoesRoute._addFileChildren(
   RepresentacoesRouteChildren,
 )
 
+interface VeiculosVehicleIdRouteChildren {
+  VeiculosVehicleIdEditarRoute: typeof VeiculosVehicleIdEditarRoute
+}
+
+const VeiculosVehicleIdRouteChildren: VeiculosVehicleIdRouteChildren = {
+  VeiculosVehicleIdEditarRoute: VeiculosVehicleIdEditarRoute,
+}
+
+const VeiculosVehicleIdRouteWithChildren =
+  VeiculosVehicleIdRoute._addFileChildren(VeiculosVehicleIdRouteChildren)
+
+interface VeiculosRouteChildren {
+  VeiculosVehicleIdRoute: typeof VeiculosVehicleIdRouteWithChildren
+  VeiculosAdulteradosRoute: typeof VeiculosAdulteradosRoute
+  VeiculosApreendidosRoute: typeof VeiculosApreendidosRoute
+  VeiculosAutomoveisRoute: typeof VeiculosAutomoveisRoute
+  VeiculosBicicletasRoute: typeof VeiculosBicicletasRoute
+  VeiculosCaminhoesRoute: typeof VeiculosCaminhoesRoute
+  VeiculosLiberadosRoute: typeof VeiculosLiberadosRoute
+  VeiculosMotocicletasRoute: typeof VeiculosMotocicletasRoute
+  VeiculosNovoRoute: typeof VeiculosNovoRoute
+  VeiculosOnibusRoute: typeof VeiculosOnibusRoute
+  VeiculosOutrosRoute: typeof VeiculosOutrosRoute
+  VeiculosRecuperadosRoute: typeof VeiculosRecuperadosRoute
+  VeiculosRelatoriosRoute: typeof VeiculosRelatoriosRoute
+  VeiculosTodosRoute: typeof VeiculosTodosRoute
+  VeiculosIndexRoute: typeof VeiculosIndexRoute
+}
+
+const VeiculosRouteChildren: VeiculosRouteChildren = {
+  VeiculosVehicleIdRoute: VeiculosVehicleIdRouteWithChildren,
+  VeiculosAdulteradosRoute: VeiculosAdulteradosRoute,
+  VeiculosApreendidosRoute: VeiculosApreendidosRoute,
+  VeiculosAutomoveisRoute: VeiculosAutomoveisRoute,
+  VeiculosBicicletasRoute: VeiculosBicicletasRoute,
+  VeiculosCaminhoesRoute: VeiculosCaminhoesRoute,
+  VeiculosLiberadosRoute: VeiculosLiberadosRoute,
+  VeiculosMotocicletasRoute: VeiculosMotocicletasRoute,
+  VeiculosNovoRoute: VeiculosNovoRoute,
+  VeiculosOnibusRoute: VeiculosOnibusRoute,
+  VeiculosOutrosRoute: VeiculosOutrosRoute,
+  VeiculosRecuperadosRoute: VeiculosRecuperadosRoute,
+  VeiculosRelatoriosRoute: VeiculosRelatoriosRoute,
+  VeiculosTodosRoute: VeiculosTodosRoute,
+  VeiculosIndexRoute: VeiculosIndexRoute,
+}
+
+const VeiculosRouteWithChildren = VeiculosRoute._addFileChildren(
+  VeiculosRouteChildren,
+)
+
 interface AdminUsuariosRouteChildren {
   AdminUsuariosUserIdRoute: typeof AdminUsuariosUserIdRoute
 }
@@ -561,6 +934,7 @@ const rootRouteChildren: RootRouteChildren = {
   NovoCasoRoute: NovoCasoRoute,
   PerfilRoute: PerfilRoute,
   RepresentacoesRoute: RepresentacoesRouteWithChildren,
+  VeiculosRoute: VeiculosRouteWithChildren,
   AdminUsuariosRoute: AdminUsuariosRouteWithChildren,
 }
 export const routeTree = rootRouteImport

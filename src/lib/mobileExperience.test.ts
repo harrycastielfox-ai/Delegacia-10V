@@ -22,6 +22,9 @@ describe("mobile experience", () => {
     "/admin/usuarios",
     "/admin/usuarios/user-1",
     "/perfil",
+    "/veiculos/todos",
+    "/veiculos/motocicletas",
+    "/veiculos/vehicle-id",
   ])("allows the mobile consultation path %s", (pathname) => {
     expect(isMobilePathAllowed(pathname)).toBe(true);
     expect(getMobileRouteRedirect(pathname, true)).toBeNull();
@@ -42,4 +45,11 @@ describe("mobile experience", () => {
     expect(getMobileRouteRedirect(pathname, true)).toBe("/inqueritos");
     expect(getMobileRouteRedirect(pathname, false)).toBeNull();
   });
+
+  it.each(["/veiculos", "/veiculos/novo", "/veiculos/vehicle-id/editar"])(
+    "redirects restricted vehicle path %s to the mobile vehicle list",
+    (pathname) => {
+      expect(getMobileRouteRedirect(pathname, true)).toBe("/veiculos/todos");
+    },
+  );
 });

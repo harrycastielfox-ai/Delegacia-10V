@@ -1,0 +1,702 @@
+import { Link, useParams } from "@tanstack/react-router";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
+import {
+  ArrowLeft,
+  CalendarClock,
+  Camera,
+  ClipboardCheck,
+  FileDown,
+  FileSignature,
+  History,
+  Link2,
+  LoaderCircle,
+  MapPin,
+  Pencil,
+  Repeat2,
+  RotateCcw,
+  ShieldCheck,
+  X,
+} from "lucide-react";
+import { SipiPrintSheet, type SipiPrintSection } from "@/components/SipiPrintSheet";
+import {
+  getVehicleDetailBundle,
+  registerVehicleMovement,
+} from "@/lib/repositories/vehiclesRepository";
+import { VehicleStatusBadge } from "../components/VehicleStatusBadge";
+import {
+  IDENTIFICATION_STATUS_LABELS,
+  VEHICLE_TYPE_LABELS,
+  displayVehicleValue,
+  formatVehicleDate,
+} from "../vehicleConstants";
+import type { VehicleMovementRecord, VehiclePhotoRecord, VehicleRecord } from "../vehicleTypes";
+
+type DetailBundle = {
+  vehicle: VehicleRecord;
+  photos: VehiclePhotoRecord[];
+  movements: VehicleMovementRecord[];
+};
+
+type MovementDraft = {
+  movementType: VehicleMovementRecord["movement_type"];
+  occurredAt: string;
+  fromLocation: string;
+  toLocation: string;
+  notes: string;
+  releasedTo: string;
+  releaseDocument: string;
+  releaseAuthority: string;
+};
+
+const INITIAL_MOVEMENT: MovementDraft = {
+  movementType: "transferencia",
+  occurredAt: new Date().toISOString().slice(0, 16),
+  fromLocation: "",
+  toLocation: "",
+  notes: "",
+  releasedTo: "",
+  releaseDocument: "",
+  releaseAuthority: "",
+};
+
+const movementLabels: Record<VehicleMovementRecord["movement_type"], string> = {
+  entrada: "Entrada",
+  apreensao: "Apreensão",
+  transferencia: "Transferência",
+  pericia: "Perícia",
+  liberacao: "Liberação",
+  devolucao: "Devolução",
+  atualizacao: "Atualização",
+};
+
+export default function VehicleDetailsPage() {
+  const { vehicleId } = useParams({ from: "/veiculos/$vehicleId" });
+  const [bundle, setBundle] = useState<DetailBundle | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [movementOpen, setMovementOpen] = useState(false);
+  const [movement, setMovement] = useState<MovementDraft>(INITIAL_MOVEMENT);
+  const [movementSaving, setMovementSaving] = useState(false);
+  const [printMode, setPrintMode] = useState<"ficha" | "termo">("ficha");
+
+  const loadDetails = useCallback(async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const data = await getVehicleDetailBundle(vehicleId);
+      if (!data) throw new Error("Veículo não encontrado.");
+      setBundle(data);
+    } catch {
+      setError("Não foi possível carregar os detalhes do veículo.");
+    } finally {
+      setLoading(false);
+    }
+  }, [vehicleId]);
+
+  useEffect(() => {
+    void loadDetails();
+  }, [loadDetails]);
+
+  function printDocument(mode: "ficha" | "termo") {
+    setPrintMode(mode);
+    window.setTimeout(() => window.print(), 0);
+  }
+
+  async function saveMovement() {
+    setMovementSaving(true);
+    setError("");
+    try {
+      await registerVehicleMovement({
+        vehicleId,
+        movementType: movement.movementType,
+        occurredAt: new Date(movement.occurredAt).toISOString(),
+        fromLocation: movement.fromLocation,
+        toLocation: movement.toLocation,
+        notes: movement.notes,
+        details: {
+          released_to: movement.releasedTo,
+          release_document: movement.releaseDocument,
+          release_authority: movement.releaseAuthority,
+        },
+      });
+      setMovementOpen(false);
+      setMovement(INITIAL_MOVEMENT);
+      await loadDetails();
+    } catch {
+      setError("Não foi possível registrar a movimentação.");
+    } finally {
+      setMovementSaving(false);
+    }
+  }
+
+  if (loading)
+    return (
+      <div className="flex min-h-[50vh] items-center justify-center">
+        <LoaderCircle className="h-6 w-6 animate-spin text-info" />
+      </div>
+    );
+  if (error && !bundle)
+    return (
+      <div className="rounded-xl border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive">
+        {error}
+      </div>
+    );
+  if (!bundle) return null;
+  const { vehicle, photos, movements } = bundle;
+  const printSections = buildPrintSections(vehicle, printMode);
+
+  return (
+    <div className="space-y-5">
+      <header className="rounded-2xl border border-border/70 bg-card/60 p-5 lg:p-6">
+        <button
+          type="button"
+          onClick={() => history.back()}
+          className="mb-4 inline-flex items-center gap-2 text-xs font-semibold text-muted-foreground hover:text-info"
+        >
+          <ArrowLeft className="h-4 w-4" /> Voltar
+        </button>
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div>
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="font-mono text-sm font-black tracking-wide text-info">
+                {vehicle.internal_id}
+              </p>
+              <VehicleStatusBadge situation={vehicle.situation} />
+            </div>
+            <h1 className="mt-2 text-3xl font-black tracking-tight">
+              {displayVehicleValue(vehicle.brand_model)}
+            </h1>
+            <p className="mt-1 font-mono text-sm text-muted-foreground">
+              Placa: {displayVehicleValue(vehicle.plate)} · Chassi:{" "}
+              {displayVehicleValue(vehicle.chassis)}
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => printDocument("ficha")}
+              className="inline-flex items-center gap-2 rounded-xl bg-info px-4 py-2.5 text-sm font-semibold text-white"
+            >
+              <FileDown className="h-4 w-4" /> Gerar ficha
+            </button>
+            <button
+              type="button"
+              onClick={() => printDocument("termo")}
+              className="inline-flex items-center gap-2 rounded-xl border border-info/35 bg-info/10 px-4 py-2.5 text-sm font-semibold text-info"
+            >
+              <FileSignature className="h-4 w-4" /> Gerar termo
+            </button>
+            <Link
+              to="/veiculos/$vehicleId/editar"
+              params={{ vehicleId }}
+              className="hidden items-center gap-2 rounded-xl border border-border px-4 py-2.5 text-sm font-semibold hover:border-info/35 md:inline-flex"
+            >
+              <Pencil className="h-4 w-4" /> Editar
+            </Link>
+          </div>
+        </div>
+      </header>
+
+      {error ? (
+        <p className="rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
+          {error}
+        </p>
+      ) : null}
+
+      <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
+        <div className="space-y-5">
+          <DetailSection title="1. IDENTIFICAÇÃO" icon={<ClipboardCheck className="h-4 w-4" />}>
+            <DetailField label="Tipo" value={VEHICLE_TYPE_LABELS[vehicle.vehicle_type]} />
+            <DetailField label="Marca" value={vehicle.brand} />
+            <DetailField label="Modelo" value={vehicle.model} />
+            <DetailField label="Cor" value={vehicle.color} />
+            <DetailField label="Ano de fabricação" value={vehicle.manufacture_year} />
+            <DetailField label="Ano do modelo" value={vehicle.model_year} />
+            <IdentificationDetail
+              label="Placa"
+              value={vehicle.plate}
+              status={vehicle.plate_status}
+            />
+            <IdentificationDetail
+              label="Renavam"
+              value={vehicle.renavam}
+              status={vehicle.renavam_status}
+            />
+            <IdentificationDetail
+              label="Número do motor"
+              value={vehicle.engine_number}
+              status={vehicle.engine_status}
+            />
+            <IdentificationDetail
+              label="Chassi"
+              value={vehicle.chassis}
+              status={vehicle.chassis_status}
+            />
+            <DetailField label="Motorizado" value={vehicle.is_motorized} />
+            <DetailField label="Conservação" value={vehicle.conservation_state} />
+          </DetailSection>
+
+          <DetailSection title="2. SITUAÇÃO POLICIAL" icon={<ShieldCheck className="h-4 w-4" />}>
+            <DetailField label="Situação" value={vehicle.situation.replaceAll("_", " ")} />
+            <DetailField label="Tipo de ocorrência" value={vehicle.occurrence_type} />
+            <DetailField label="B.O." value={vehicle.police_report_number} />
+            <DetailField
+              label="Procedimento"
+              value={[vehicle.procedure_type, vehicle.procedure_number].filter(Boolean).join(" ")}
+            />
+            <DetailField label="Processo judicial" value={vehicle.court_process_number} />
+            {vehicle.inquerito_id ? (
+              <div className="md:col-span-2">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                  Inquérito vinculado
+                </span>
+                <Link
+                  to="/inqueritos/$caseId"
+                  params={{ caseId: vehicle.inquerito_id }}
+                  className="mt-1 flex items-center gap-2 text-sm font-semibold text-info hover:underline"
+                >
+                  <Link2 className="h-4 w-4" /> Abrir procedimento no SIPI
+                </Link>
+              </div>
+            ) : null}
+            <DetailField label="Envolvidos" value={vehicle.involved_people} wide />
+            <DetailField label="Observações" value={vehicle.observations} wide />
+          </DetailSection>
+
+          <DetailSection title="3. APREENSÃO E CUSTÓDIA" icon={<MapPin className="h-4 w-4" />}>
+            <DetailField
+              label="Data da apreensão"
+              value={formatVehicleDate(vehicle.seizure_date)}
+            />
+            <DetailField label="Local da apreensão" value={vehicle.seizure_location} />
+            <DetailField label="Local de custódia" value={vehicle.custody_location} />
+            <DetailField label="Depósito" value={vehicle.storage_location} />
+            <DetailField label="Responsável pelo recebimento" value={vehicle.custody_responsible} />
+            <DetailField label="Possui chave" value={vehicle.has_key} />
+            <DetailField label="Possui documento" value={vehicle.has_document} />
+            <DetailField
+              label="Observações da custódia"
+              value={vehicle.custody_observations}
+              wide
+            />
+          </DetailSection>
+
+          <DetailSection title="4. LIBERAÇÃO OU DEVOLUÇÃO" icon={<RotateCcw className="h-4 w-4" />}>
+            <DetailField
+              label="Situação da liberação"
+              value={vehicle.release_status?.replaceAll("_", " ")}
+            />
+            <DetailField label="Data" value={formatVehicleDate(vehicle.release_date)} />
+            <DetailField label="Pessoa que recebeu" value={vehicle.released_to} />
+            <DetailField label="Documento apresentado" value={vehicle.release_document} />
+            <DetailField label="Autoridade responsável" value={vehicle.release_authority} />
+            <DetailField label="Termo de entrega" value={vehicle.delivery_term} />
+            <DetailField label="Observações da saída" value={vehicle.release_observations} wide />
+          </DetailSection>
+        </div>
+
+        <aside className="space-y-5">
+          <section className="rounded-2xl border border-border bg-card p-5">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="font-bold">Fotografias</h2>
+                <p className="text-xs text-muted-foreground">Miniaturas comprimidas</p>
+              </div>
+              <Camera className="h-5 w-5 text-info" />
+            </div>
+            {photos.length ? (
+              <div className="mt-4 grid grid-cols-2 gap-2">
+                {photos.map((photo) => (
+                  <a
+                    key={photo.id}
+                    href={photo.original_url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="overflow-hidden rounded-xl border border-border bg-background"
+                  >
+                    <img
+                      src={photo.thumbnail_url}
+                      alt={photo.caption || `Fotografia de ${vehicle.internal_id}`}
+                      loading="lazy"
+                      className="aspect-[4/3] h-full w-full object-cover"
+                    />
+                  </a>
+                ))}
+              </div>
+            ) : (
+              <p className="mt-4 rounded-xl border border-dashed border-border p-5 text-center text-xs text-muted-foreground">
+                Nenhuma fotografia cadastrada.
+              </p>
+            )}
+          </section>
+
+          <section className="rounded-2xl border border-border bg-card p-5">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="font-bold">Histórico</h2>
+                <p className="text-xs text-muted-foreground">Movimentações registradas</p>
+              </div>
+              <History className="h-5 w-5 text-info" />
+            </div>
+            <div className="mt-4 space-y-4">
+              {movements.length ? (
+                movements.map((item) => (
+                  <div key={item.id} className="relative border-l border-info/30 pl-4">
+                    <span className="absolute -left-1.5 top-0 h-3 w-3 rounded-full border-2 border-card bg-info" />
+                    <p className="text-xs font-bold text-foreground">
+                      {movementLabels[item.movement_type]}
+                    </p>
+                    <p className="mt-0.5 text-[11px] text-muted-foreground">
+                      {formatVehicleDate(item.occurred_at, true)}
+                    </p>
+                    {item.from_location || item.to_location ? (
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {displayVehicleValue(item.from_location)} →{" "}
+                        {displayVehicleValue(item.to_location)}
+                      </p>
+                    ) : null}
+                    {item.notes ? (
+                      <p className="mt-1 text-xs leading-relaxed">{item.notes}</p>
+                    ) : null}
+                  </div>
+                ))
+              ) : (
+                <p className="text-xs text-muted-foreground">Nenhuma movimentação registrada.</p>
+              )}
+            </div>
+          </section>
+
+          <button
+            type="button"
+            onClick={() => {
+              setMovement({ ...INITIAL_MOVEMENT, fromLocation: vehicle.custody_location ?? "" });
+              setMovementOpen(true);
+            }}
+            className="hidden w-full items-center justify-center gap-2 rounded-xl bg-info px-4 py-3 text-sm font-semibold text-white md:inline-flex"
+          >
+            <Repeat2 className="h-4 w-4" /> Registrar movimentação
+          </button>
+        </aside>
+      </div>
+
+      <SipiPrintSheet
+        documentTitle={
+          printMode === "ficha" ? "Ficha de Veículo Apreendido" : "Termo de Entrega de Veículo"
+        }
+        documentSubtitle={
+          printMode === "ficha"
+            ? "Cadastro, identificação e situação de custódia"
+            : "Registro de liberação ou devolução"
+        }
+        identifierLabel="Identificação"
+        identifier={vehicle.internal_id}
+        summary={[
+          { label: "Placa", value: vehicle.plate },
+          { label: "Veículo", value: vehicle.brand_model },
+          { label: "Situação", value: vehicle.situation.replaceAll("_", " ") },
+        ]}
+        sections={printSections}
+      />
+
+      {movementOpen ? (
+        <MovementDialog
+          draft={movement}
+          saving={movementSaving}
+          onChange={setMovement}
+          onClose={() => setMovementOpen(false)}
+          onSave={saveMovement}
+        />
+      ) : null}
+    </div>
+  );
+}
+
+function DetailSection({
+  title,
+  icon,
+  children,
+}: {
+  title: string;
+  icon: ReactNode;
+  children: ReactNode;
+}) {
+  return (
+    <section className="rounded-2xl border border-border bg-card">
+      <div className="flex items-center gap-2 border-b border-border px-5 py-4 text-info">
+        {icon}
+        <h2 className="text-xs font-black tracking-[0.14em]">{title}</h2>
+      </div>
+      <div className="grid grid-cols-1 gap-x-6 gap-y-5 p-5 md:grid-cols-2">{children}</div>
+    </section>
+  );
+}
+
+function DetailField({
+  label,
+  value,
+  wide = false,
+}: {
+  label: string;
+  value: string | number | boolean | null | undefined;
+  wide?: boolean;
+}) {
+  return (
+    <div className={wide ? "md:col-span-2" : ""}>
+      <dt className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+        {label}
+      </dt>
+      <dd className="mt-1 whitespace-pre-wrap text-sm leading-relaxed text-foreground">
+        {displayVehicleValue(value)}
+      </dd>
+    </div>
+  );
+}
+
+function IdentificationDetail({
+  label,
+  value,
+  status,
+}: {
+  label: string;
+  value: string | null;
+  status: VehicleRecord["plate_status"];
+}) {
+  return (
+    <div>
+      <dt className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+        {label}
+      </dt>
+      <dd className="mt-1 flex flex-wrap items-center gap-2 text-sm">
+        <span className="font-mono font-semibold">{displayVehicleValue(value)}</span>
+        {status && status !== "informado" ? (
+          <span className="rounded border border-warning/30 bg-warning/10 px-1.5 py-0.5 text-[9px] font-bold uppercase text-warning">
+            {IDENTIFICATION_STATUS_LABELS[status]}
+          </span>
+        ) : null}
+      </dd>
+    </div>
+  );
+}
+
+function buildPrintSections(vehicle: VehicleRecord, mode: "ficha" | "termo"): SipiPrintSection[] {
+  if (mode === "termo")
+    return [
+      {
+        title: "LIBERAÇÃO OU DEVOLUÇÃO",
+        fields: [
+          { label: "Situação", value: vehicle.release_status },
+          { label: "Data", value: formatVehicleDate(vehicle.release_date) },
+          { label: "Pessoa que recebeu", value: vehicle.released_to },
+          { label: "Documento apresentado", value: vehicle.release_document },
+          { label: "Autoridade responsável", value: vehicle.release_authority },
+          { label: "Termo de entrega", value: vehicle.delivery_term },
+          { label: "Observações", value: vehicle.release_observations, wide: true },
+        ],
+      },
+      {
+        title: "IDENTIFICAÇÃO DO VEÍCULO",
+        fields: [
+          { label: "Tipo", value: VEHICLE_TYPE_LABELS[vehicle.vehicle_type] },
+          { label: "Marca / Modelo", value: vehicle.brand_model },
+          { label: "Cor", value: vehicle.color },
+          { label: "Placa", value: vehicle.plate },
+          { label: "Renavam", value: vehicle.renavam },
+          { label: "Chassi", value: vehicle.chassis },
+        ],
+      },
+    ];
+  return [
+    {
+      title: "IDENTIFICAÇÃO",
+      fields: [
+        { label: "Tipo", value: VEHICLE_TYPE_LABELS[vehicle.vehicle_type] },
+        { label: "Marca / Modelo", value: vehicle.brand_model },
+        { label: "Cor", value: vehicle.color },
+        {
+          label: "Ano",
+          value: [vehicle.manufacture_year, vehicle.model_year].filter(Boolean).join("/"),
+        },
+        { label: "Placa", value: vehicle.plate },
+        { label: "Renavam", value: vehicle.renavam },
+        { label: "Motor", value: vehicle.engine_number },
+        { label: "Chassi", value: vehicle.chassis },
+      ],
+    },
+    {
+      title: "SITUAÇÃO POLICIAL",
+      fields: [
+        { label: "Ocorrência", value: vehicle.occurrence_type },
+        { label: "B.O.", value: vehicle.police_report_number },
+        {
+          label: "Procedimento",
+          value: [vehicle.procedure_type, vehicle.procedure_number].filter(Boolean).join(" "),
+        },
+        { label: "Processo judicial", value: vehicle.court_process_number },
+        { label: "Envolvidos", value: vehicle.involved_people, wide: true },
+      ],
+    },
+    {
+      title: "APREENSÃO E CUSTÓDIA",
+      fields: [
+        { label: "Data", value: formatVehicleDate(vehicle.seizure_date) },
+        { label: "Local da apreensão", value: vehicle.seizure_location },
+        { label: "Custódia", value: vehicle.custody_location },
+        { label: "Depósito", value: vehicle.storage_location },
+        { label: "Responsável", value: vehicle.custody_responsible },
+        { label: "Observações", value: vehicle.custody_observations, wide: true },
+      ],
+    },
+  ];
+}
+
+function MovementDialog({
+  draft,
+  saving,
+  onChange,
+  onClose,
+  onSave,
+}: {
+  draft: MovementDraft;
+  saving: boolean;
+  onChange: (value: MovementDraft) => void;
+  onClose: () => void;
+  onSave: () => void;
+}) {
+  const isRelease = draft.movementType === "liberacao" || draft.movementType === "devolucao";
+  const set = <K extends keyof MovementDraft>(key: K, value: MovementDraft[K]) =>
+    onChange({ ...draft, [key]: value });
+  return (
+    <div className="fixed inset-0 z-[80] flex items-end justify-center bg-black/70 p-0 backdrop-blur-sm md:items-center md:p-4">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="Registrar movimentação"
+        className="max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-t-2xl border border-border bg-card p-5 shadow-2xl md:rounded-2xl"
+      >
+        <div className="flex items-start justify-between">
+          <div>
+            <h2 className="text-lg font-bold">Registrar movimentação</h2>
+            <p className="text-xs text-muted-foreground">
+              A atualização do veículo e o histórico serão gravados juntos.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="text-muted-foreground hover:text-foreground"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+        <div className="mt-5 grid gap-4 md:grid-cols-2">
+          <label>
+            <span className="mb-1 block text-xs text-muted-foreground">Tipo</span>
+            <select
+              value={draft.movementType}
+              onChange={(event) =>
+                set("movementType", event.target.value as MovementDraft["movementType"])
+              }
+              className="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm"
+            >
+              {Object.entries(movementLabels).map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            <span className="mb-1 block text-xs text-muted-foreground">Data e hora</span>
+            <input
+              type="datetime-local"
+              value={draft.occurredAt}
+              onChange={(event) => set("occurredAt", event.target.value)}
+              className="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm"
+            />
+          </label>
+          <MovementInput
+            label="Origem"
+            value={draft.fromLocation}
+            onChange={(value) => set("fromLocation", value)}
+          />
+          <MovementInput
+            label="Destino"
+            value={draft.toLocation}
+            onChange={(value) => set("toLocation", value)}
+          />
+          {isRelease ? (
+            <>
+              <MovementInput
+                label="Pessoa que recebeu"
+                value={draft.releasedTo}
+                onChange={(value) => set("releasedTo", value)}
+              />
+              <MovementInput
+                label="Documento apresentado"
+                value={draft.releaseDocument}
+                onChange={(value) => set("releaseDocument", value)}
+              />
+              <MovementInput
+                label="Autoridade responsável"
+                value={draft.releaseAuthority}
+                onChange={(value) => set("releaseAuthority", value)}
+              />
+            </>
+          ) : null}
+          <label className="md:col-span-2">
+            <span className="mb-1 block text-xs text-muted-foreground">Observações</span>
+            <textarea
+              rows={4}
+              value={draft.notes}
+              onChange={(event) => set("notes", event.target.value)}
+              className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm"
+            />
+          </label>
+        </div>
+        <div className="mt-5 flex justify-end gap-2">
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-xl border border-border px-4 py-2.5 text-sm font-semibold"
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            disabled={saving}
+            onClick={onSave}
+            className="inline-flex items-center gap-2 rounded-xl bg-info px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
+          >
+            {saving ? (
+              <LoaderCircle className="h-4 w-4 animate-spin" />
+            ) : (
+              <CalendarClock className="h-4 w-4" />
+            )}{" "}
+            Registrar
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function MovementInput({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <label>
+      <span className="mb-1 block text-xs text-muted-foreground">{label}</span>
+      <input
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        className="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm"
+      />
+    </label>
+  );
+}

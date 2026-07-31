@@ -57,7 +57,8 @@ const MODULOS: Modulo[] = [
     descricao: "Registro de veículos apreendidos, vínculo a procedimentos e devoluções.",
     icon: Car,
     tone: "info",
-    disponivel: false,
+    to: "/veiculos",
+    disponivel: true,
   },
   {
     id: "objetos",

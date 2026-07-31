@@ -147,6 +147,19 @@ export function canDeleteRepresentacoes(
   return canViewRepresentacoes(profile);
 }
 
+export function canViewVehicles(
+  profile: Pick<UserProfile, "cargo" | "status_autorizacao"> | null,
+): boolean {
+  if (!profile || !isAuthorized(profile)) return false;
+  return profile.cargo !== "membro";
+}
+
+export function canManageVehicles(
+  profile: Pick<UserProfile, "cargo" | "status_autorizacao"> | null,
+): boolean {
+  return canViewVehicles(profile);
+}
+
 export const canSeePrivateRecords = canViewPrivateCases;
 export const canCreateRecords = canCreateCases;
 export const canEditRecords = canEditCases;

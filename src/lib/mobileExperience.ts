@@ -2,6 +2,20 @@ export const MOBILE_VIEWPORT_QUERY = "(max-width: 767px)";
 
 const MOBILE_PUBLIC_PATHS = ["/login", "/criar-conta", "/aguardando-autorizacao"] as const;
 const MOBILE_UTILITY_PATHS = ["/admin/usuarios", "/perfil"] as const;
+const MOBILE_VEHICLE_LIST_PATHS = new Set([
+  "todos",
+  "automoveis",
+  "motocicletas",
+  "caminhoes",
+  "onibus",
+  "bicicletas",
+  "outros",
+  "apreendidos",
+  "recuperados",
+  "adulterados",
+  "liberados",
+  "relatorios",
+]);
 
 function isPathOrChild(pathname: string, root: string) {
   return pathname === root || pathname.startsWith(`${root}/`);
@@ -24,6 +38,12 @@ export function getPostAuthDestination(mobile = isMobileViewport()) {
 }
 
 export function isMobilePathAllowed(pathname: string) {
+  if (pathname.startsWith("/veiculos/")) {
+    const vehiclePath = pathname.slice("/veiculos/".length);
+    if (!vehiclePath || vehiclePath.includes("/") || vehiclePath === "novo") return false;
+    return MOBILE_VEHICLE_LIST_PATHS.has(vehiclePath) || vehiclePath.length > 0;
+  }
+
   return (
     MOBILE_PUBLIC_PATHS.some((path) => pathname === path) ||
     isReadOnlyRecordPath(pathname, "/inqueritos") ||
@@ -33,6 +53,11 @@ export function isMobilePathAllowed(pathname: string) {
 }
 
 export function getMobileRouteRedirect(pathname: string, mobile = isMobileViewport()) {
-  if (!mobile || isMobilePathAllowed(pathname)) return null;
+  if (!mobile) return null;
+  if (pathname === "/veiculos") return "/veiculos/todos" as const;
+  if (pathname.startsWith("/veiculos") && !isMobilePathAllowed(pathname)) {
+    return "/veiculos/todos" as const;
+  }
+  if (isMobilePathAllowed(pathname)) return null;
   return "/inqueritos" as const;
 }
