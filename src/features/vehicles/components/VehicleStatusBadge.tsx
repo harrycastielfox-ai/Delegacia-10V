@@ -12,7 +12,9 @@ const tones: Record<VehicleSituation, string> = {
   pendente_identificacao: "border-warning/35 bg-warning/15 text-warning",
 };
 
-export function VehicleStatusBadge({ situation }: { situation: VehicleSituation }) {
+export function VehicleStatusBadge({ situation }: { situation: VehicleSituation | null }) {
+  if (!situation) return null;
+
   return (
     <span
       className={`inline-flex max-w-full items-center rounded-md border px-2 py-1 text-[10px] font-bold uppercase tracking-wide ${tones[situation]}`}

@@ -1,4 +1,9 @@
-import type { IdentificationStatus, VehicleSituation, VehicleType } from "./vehicleTypes";
+import type {
+  IdentificationStatus,
+  VehicleSituation,
+  VehicleSituationFilter,
+  VehicleType,
+} from "./vehicleTypes";
 
 export const VEHICLE_TYPE_LABELS: Record<VehicleType, string> = {
   automovel: "Automóvel",
@@ -18,6 +23,11 @@ export const VEHICLE_SITUATION_LABELS: Record<VehicleSituation, string> = {
   recuperado: "Recuperado",
   periciado: "Periciado",
   pendente_identificacao: "Pendente de identificação",
+};
+
+export const VEHICLE_SITUATION_FILTER_LABELS: Record<VehicleSituationFilter, string> = {
+  ...VEHICLE_SITUATION_LABELS,
+  nao_informada: "Não informada",
 };
 
 export const IDENTIFICATION_STATUS_LABELS: Record<IdentificationStatus, string> = {

@@ -7,7 +7,7 @@ import { VehicleStatusBadge } from "../components/VehicleStatusBadge";
 import {
   OCCURRENCE_TYPES,
   VEHICLE_PAGE_SIZE,
-  VEHICLE_SITUATION_LABELS,
+  VEHICLE_SITUATION_FILTER_LABELS,
   VEHICLE_TYPE_LABELS,
   displayVehicleValue,
   formatVehicleDate,
@@ -17,6 +17,7 @@ import type {
   VehicleListFilters,
   VehicleListRecord,
   VehicleSituation,
+  VehicleSituationFilter,
   VehicleType,
 } from "../vehicleTypes";
 
@@ -25,6 +26,8 @@ export type VehicleListPreset = {
   subtitle: string;
   vehicleType?: VehicleType;
   situation?: VehicleSituation;
+  initialSituation?: VehicleSituationFilter;
+  initialPendingIdentification?: boolean;
 };
 
 type Cursor = NonNullable<VehicleListFilters["cursor"]>;
@@ -35,13 +38,17 @@ export default function VehicleListPage({ preset }: { preset: VehicleListPreset 
   const debouncedSearch = useDebouncedValue(search, 400);
   const [showFilters, setShowFilters] = useState(false);
   const [vehicleType, setVehicleType] = useState<VehicleType | "">(preset.vehicleType ?? "");
-  const [situation, setSituation] = useState<VehicleSituation | "">(preset.situation ?? "");
+  const [situation, setSituation] = useState<VehicleSituationFilter | "">(
+    preset.situation ?? preset.initialSituation ?? "",
+  );
   const [occurrenceType, setOccurrenceType] = useState("");
   const [status, setStatus] = useState("");
   const [custodyLocation, setCustodyLocation] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
-  const [pendingIdentification, setPendingIdentification] = useState(false);
+  const [pendingIdentification, setPendingIdentification] = useState(
+    preset.initialPendingIdentification ?? false,
+  );
   const [cursorStack, setCursorStack] = useState<Array<Cursor | null>>([null]);
   const [pageIndex, setPageIndex] = useState(0);
   const [rawRows, setRawRows] = useState<VehicleListRecord[]>([]);
@@ -64,8 +71,14 @@ export default function VehicleListPage({ preset }: { preset: VehicleListPreset 
 
   useEffect(() => {
     setVehicleType(preset.vehicleType ?? "");
-    setSituation(preset.situation ?? "");
-  }, [preset.situation, preset.vehicleType]);
+    setSituation(preset.situation ?? preset.initialSituation ?? "");
+    setPendingIdentification(preset.initialPendingIdentification ?? false);
+  }, [
+    preset.initialPendingIdentification,
+    preset.initialSituation,
+    preset.situation,
+    preset.vehicleType,
+  ]);
 
   useEffect(() => {
     setCursorStack([null]);
@@ -213,11 +226,13 @@ export default function VehicleListPage({ preset }: { preset: VehicleListPreset 
             {!preset.situation ? (
               <select
                 value={situation}
-                onChange={(event) => setSituation(event.target.value as VehicleSituation | "")}
+                onChange={(event) =>
+                  setSituation(event.target.value as VehicleSituationFilter | "")
+                }
                 className="h-11 rounded-xl border border-border bg-background/70 px-3 text-sm"
               >
                 <option value="">Todas as situações</option>
-                {Object.entries(VEHICLE_SITUATION_LABELS).map(([value, label]) => (
+                {Object.entries(VEHICLE_SITUATION_FILTER_LABELS).map(([value, label]) => (
                   <option key={value} value={value}>
                     {label}
                   </option>

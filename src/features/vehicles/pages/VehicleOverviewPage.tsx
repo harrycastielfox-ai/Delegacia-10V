@@ -13,7 +13,16 @@ import {
   Truck,
   Warehouse,
 } from "lucide-react";
-import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 import { StatCard } from "@/components/StatCard";
 import { getVehicleOverviewStats } from "@/lib/repositories/vehiclesRepository";
 import { VEHICLE_TYPE_LABELS } from "../vehicleConstants";
@@ -25,19 +34,66 @@ const EMPTY_STATS: VehicleOverviewStats = {
   recovered: 0,
   adulterated: 0,
   pendingIdentification: 0,
+  unassignedSituation: 0,
+  releasedTotal: 0,
   releasedThisMonth: 0,
+  withPlate: 0,
+  withProcedure: 0,
+  withCustodyLocation: 0,
   byType: {},
   bySituation: {},
   monthly: [],
 };
 
-const categoryCards: Array<{ type: VehicleType; label: string; to: string; icon: typeof Car }> = [
-  { type: "automovel", label: "Automóveis", to: "/veiculos/automoveis", icon: Car },
-  { type: "motocicleta", label: "Motocicletas", to: "/veiculos/motocicletas", icon: CarFront },
-  { type: "caminhao", label: "Caminhões", to: "/veiculos/caminhoes", icon: Truck },
-  { type: "onibus", label: "Ônibus", to: "/veiculos/onibus", icon: BusFront },
-  { type: "bicicleta", label: "Bicicletas", to: "/veiculos/bicicletas", icon: Bike },
-  { type: "outro", label: "Outros", to: "/veiculos/outros", icon: Warehouse },
+const categoryCards: Array<{
+  type: VehicleType;
+  label: string;
+  to: string;
+  icon: typeof Car;
+  color: string;
+}> = [
+  {
+    type: "automovel",
+    label: "Automóveis",
+    to: "/veiculos/automoveis",
+    icon: Car,
+    color: "var(--info)",
+  },
+  {
+    type: "motocicleta",
+    label: "Motocicletas",
+    to: "/veiculos/motocicletas",
+    icon: CarFront,
+    color: "var(--purple)",
+  },
+  {
+    type: "caminhao",
+    label: "Caminhões",
+    to: "/veiculos/caminhoes",
+    icon: Truck,
+    color: "var(--warning)",
+  },
+  {
+    type: "onibus",
+    label: "Ônibus",
+    to: "/veiculos/onibus",
+    icon: BusFront,
+    color: "var(--destructive)",
+  },
+  {
+    type: "bicicleta",
+    label: "Bicicletas",
+    to: "/veiculos/bicicletas",
+    icon: Bike,
+    color: "var(--success)",
+  },
+  {
+    type: "outro",
+    label: "Outros",
+    to: "/veiculos/outros",
+    icon: Warehouse,
+    color: "var(--muted-foreground)",
+  },
 ];
 
 export default function VehicleOverviewPage() {
@@ -65,8 +121,10 @@ export default function VehicleOverviewPage() {
   const typeChart = useMemo(
     () =>
       categoryCards.map((category) => ({
+        type: category.type,
         name: VEHICLE_TYPE_LABELS[category.type],
         total: Number(stats.byType[category.type] ?? 0),
+        color: category.color,
       })),
     [stats.byType],
   );
@@ -200,7 +258,11 @@ export default function VehicleOverviewPage() {
                     borderRadius: 10,
                   }}
                 />
-                <Bar dataKey="total" name="Veículos" fill="var(--info)" radius={[6, 6, 0, 0]} />
+                <Bar dataKey="total" name="Veículos" radius={[6, 6, 0, 0]}>
+                  {typeChart.map((category) => (
+                    <Cell key={category.type} fill={category.color} />
+                  ))}
+                </Bar>
               </BarChart>
             </ResponsiveContainer>
           </div>

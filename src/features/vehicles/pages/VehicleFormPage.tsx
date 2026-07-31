@@ -71,7 +71,7 @@ type FormState = {
   engineStatus: IdentificationStatus;
   chassis: string;
   chassisStatus: IdentificationStatus;
-  situation: VehicleSituation;
+  situation: VehicleSituation | "";
   occurrenceType: string;
   status: string;
   pendingIdentification: boolean;
@@ -118,7 +118,7 @@ const INITIAL_STATE: FormState = {
   engineStatus: "informado",
   chassis: "",
   chassisStatus: "informado",
-  situation: "apreendido",
+  situation: "",
   occurrenceType: "",
   status: "",
   pendingIdentification: false,
@@ -232,7 +232,7 @@ function stateFromVehicle(vehicle: VehicleRecord): FormState {
     engineStatus: vehicle.engine_status ?? "informado",
     chassis: vehicle.chassis ?? "",
     chassisStatus: vehicle.chassis_status ?? "informado",
-    situation: vehicle.situation,
+    situation: vehicle.situation ?? "",
     occurrenceType: vehicle.occurrence_type ?? "",
     status: vehicle.status ?? "",
     pendingIdentification: vehicle.pending_identification,
@@ -295,7 +295,7 @@ function toPayload(state: FormState): VehiclePayload {
     chassis_status: identificationFieldsVisible
       ? statusForIdentifier(identifiers.chassis, state.chassisStatus)
       : "ausente",
-    situation: state.situation,
+    situation: state.situation || null,
     occurrence_type: textOrNull(state.occurrenceType),
     status: textOrNull(state.status),
     pending_identification: state.pendingIdentification,
@@ -709,8 +709,9 @@ export function VehicleFormPage({ mode, vehicleId }: { mode: FormMode; vehicleId
             <SelectField
               label="Situação"
               value={form.situation}
-              onChange={(value) => update("situation", value as VehicleSituation)}
+              onChange={(value) => update("situation", value as VehicleSituation | "")}
             >
+              <option value="">Não informada</option>
               {Object.entries(VEHICLE_SITUATION_LABELS).map(([value, label]) => (
                 <option key={value} value={value}>
                   {label}

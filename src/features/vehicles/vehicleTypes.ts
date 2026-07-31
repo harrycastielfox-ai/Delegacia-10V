@@ -21,6 +21,7 @@ export const VEHICLE_SITUATIONS = [
 ] as const;
 
 export type VehicleSituation = (typeof VEHICLE_SITUATIONS)[number];
+export type VehicleSituationFilter = VehicleSituation | "nao_informada";
 
 export const IDENTIFICATION_STATUSES = [
   "informado",
@@ -54,7 +55,7 @@ export type VehicleRecord = {
   model_year: number | null;
   heavy_category: string | null;
   bodywork_type: string | null;
-  situation: VehicleSituation;
+  situation: VehicleSituation | null;
   occurrence_type: string | null;
   status: string | null;
   pending_identification: boolean;
@@ -164,16 +165,21 @@ export type VehicleOverviewStats = {
   recovered: number;
   adulterated: number;
   pendingIdentification: number;
+  unassignedSituation: number;
+  releasedTotal: number;
   releasedThisMonth: number;
+  withPlate: number;
+  withProcedure: number;
+  withCustodyLocation: number;
   byType: Partial<Record<VehicleType, number>>;
-  bySituation: Partial<Record<VehicleSituation, number>>;
+  bySituation: Partial<Record<VehicleSituationFilter, number>>;
   monthly: Array<{ month: string; total: number }>;
 };
 
 export type VehicleListFilters = {
   search?: string;
   vehicleType?: VehicleType | null;
-  situation?: VehicleSituation | null;
+  situation?: VehicleSituationFilter | null;
   occurrenceType?: string | null;
   status?: string | null;
   custodyLocation?: string | null;

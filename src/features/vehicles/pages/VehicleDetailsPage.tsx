@@ -25,6 +25,7 @@ import {
 import { VehicleStatusBadge } from "../components/VehicleStatusBadge";
 import {
   IDENTIFICATION_STATUS_LABELS,
+  VEHICLE_SITUATION_LABELS,
   VEHICLE_TYPE_LABELS,
   displayVehicleValue,
   formatVehicleDate,
@@ -237,7 +238,10 @@ export default function VehicleDetailsPage() {
           </DetailSection>
 
           <DetailSection title="2. SITUAÇÃO POLICIAL" icon={<ShieldCheck className="h-4 w-4" />}>
-            <DetailField label="Situação" value={vehicle.situation.replaceAll("_", " ")} />
+            <DetailField
+              label="Situação"
+              value={vehicle.situation ? VEHICLE_SITUATION_LABELS[vehicle.situation] : null}
+            />
             <DetailField label="Tipo de ocorrência" value={vehicle.occurrence_type} />
             <DetailField label="B.O." value={vehicle.police_report_number} />
             <DetailField
@@ -393,7 +397,10 @@ export default function VehicleDetailsPage() {
         summary={[
           { label: "Placa", value: vehicle.plate },
           { label: "Veículo", value: vehicle.brand_model },
-          { label: "Situação", value: vehicle.situation.replaceAll("_", " ") },
+          {
+            label: "Situação",
+            value: vehicle.situation ? VEHICLE_SITUATION_LABELS[vehicle.situation] : null,
+          },
         ]}
         sections={printSections}
       />
