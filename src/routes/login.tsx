@@ -551,7 +551,7 @@ function LoginPage() {
                 src="/sipi-badge.png"
                 alt="Logo SIPI"
                 className="mx-auto h-[118px] w-auto object-contain"
-                style={{ transform: "translateY(1px)" }}
+                style={{ transform: "translateY(2px)" }}
               />
               <span
                 aria-hidden="true"
