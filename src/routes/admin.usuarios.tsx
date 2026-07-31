@@ -279,7 +279,7 @@ function AdminUsuariosPage() {
         <div>
           <Link
             to="/modulos"
-            className="inline-flex items-center gap-2 rounded-md border border-primary/30 bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary hover:bg-primary/20"
+            className="hidden items-center gap-2 rounded-md border border-primary/30 bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary hover:bg-primary/20 md:inline-flex"
           >
             <ArrowLeft className="h-4 w-4" />
             Voltar
@@ -297,13 +297,13 @@ function AdminUsuariosPage() {
                 Controle institucional de acesso, cargos e autorizações do SIPI.
               </p>
             </div>
-            <div className="rounded-full border border-primary/20 bg-primary/10 px-4 py-2 text-xs font-medium text-primary/85">
+            <div className="hidden rounded-full border border-primary/20 bg-primary/10 px-4 py-2 text-xs font-medium text-primary/85 md:block">
               {usuarios.length} perfil(is) carregado(s)
             </div>
           </div>
         </header>
 
-        <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+        <section className="hidden gap-4 md:grid md:grid-cols-2 xl:grid-cols-5">
           <SummaryCard icon={Users} label="Total usuários" value={usuarios.length} tone="primary" />
           <SummaryCard icon={Clock3} label="Aguardando" value={pendentes.length} tone="warning" />
           <SummaryCard icon={UserCheck} label="Autorizados" value={autorizados} tone="success" />

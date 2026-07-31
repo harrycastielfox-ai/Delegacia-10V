@@ -18,6 +18,7 @@ import {
   type InqueritoRecord,
 } from "@/lib/repositories/inqueritosRepository";
 import { getCurrentProfile } from "@/lib/auth";
+import { isMobileViewport } from "@/lib/mobileExperience";
 import {
   canDeleteCases,
   canEditCases,
@@ -528,7 +529,7 @@ function InqueritoDetalhes() {
     );
 
   const remove = async () => {
-    if (!caso || deleting || !canDeleteCases(profile)) return;
+    if (!caso || deleting || !canDeleteCases(profile) || isMobileViewport()) return;
     try {
       setDeleting(true);
       setDeleteError(null);
@@ -772,13 +773,13 @@ function InqueritoDetalhes() {
                 onClick={() =>
                   navigate({ to: "/inqueritos/$caseId/editar", params: { caseId: caso.id } })
                 }
-                className="inline-flex h-10 items-center gap-2 rounded-md bg-primary px-4 text-xs font-bold text-primary-foreground transition-colors hover:bg-primary/90"
+                className="hidden h-10 items-center gap-2 rounded-md bg-primary px-4 text-xs font-bold text-primary-foreground transition-colors hover:bg-primary/90 md:inline-flex"
               >
                 <Pencil className="h-4 w-4" /> Editar
               </button>
             ) : null}
             {canDeleteCases(profile) ? (
-              <details className="group relative">
+              <details className="group relative hidden md:block">
                 <summary
                   aria-label="Mais ações"
                   title="Mais ações"
@@ -1032,7 +1033,7 @@ function InqueritoDetalhes() {
           </aside>
         </section>
         {showDeleteModal && canDeleteCases(profile) && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 max-md:hidden">
             <div className="w-full max-w-md rounded-xl border border-border bg-card p-5 shadow-2xl">
               <h2 className="text-lg font-bold text-foreground">Excluir inquérito</h2>
               <p className="mt-2 text-sm text-muted-foreground">

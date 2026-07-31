@@ -18,6 +18,7 @@ import {
 } from "@/lib/repositories/representacoesRepository";
 import { getCurrentProfile } from "@/lib/auth";
 import { canViewRepresentacoes } from "@/lib/authz";
+import { isMobileViewport } from "@/lib/mobileExperience";
 import { canAccessSigilosa, isRepresentacaoSigilosa } from "@/lib/representacoesSigilo";
 import { Scale, UserRound, BellRing, FileText, Gavel, ShieldCheck, Clock3 } from "lucide-react";
 
@@ -445,7 +446,7 @@ function DetalheRepresentacao() {
     );
 
   const remove = async () => {
-    if (!item || isDeleting) return;
+    if (!item || isDeleting || isMobileViewport()) return;
 
     setIsDeleting(true);
     try {
@@ -654,13 +655,13 @@ function DetalheRepresentacao() {
                     params: { representacaoId: item.id },
                   })
                 }
-                className="px-3.5 py-2 text-xs rounded-md bg-primary text-primary-foreground font-semibold"
+                className="hidden rounded-md bg-primary px-3.5 py-2 text-xs font-semibold text-primary-foreground md:inline-flex"
               >
                 Editar
               </button>
               <button
                 onClick={() => setShowDeleteModal(true)}
-                className="px-3.5 py-2 text-xs rounded-md border border-destructive/30 bg-destructive/10 text-destructive"
+                className="hidden rounded-md border border-destructive/30 bg-destructive/10 px-3.5 py-2 text-xs text-destructive md:inline-flex"
               >
                 Excluir
               </button>
@@ -897,7 +898,7 @@ function DetalheRepresentacao() {
       </div>
 
       {showDeleteModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 max-md:hidden">
           <div className="w-full max-w-md rounded-xl border border-border bg-card p-5 shadow-2xl">
             <h2 className="text-lg font-bold text-foreground">Excluir representação</h2>
             <p className="mt-2 text-sm text-muted-foreground">
