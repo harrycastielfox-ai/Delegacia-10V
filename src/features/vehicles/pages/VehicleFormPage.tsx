@@ -11,6 +11,7 @@ import {
   Save,
   X,
 } from "lucide-react";
+import { FormFieldLabel } from "@/components/FormFieldLabel";
 import {
   searchInqueritosForLink,
   type InqueritoLinkOption,
@@ -152,6 +153,56 @@ const steps = [
   "Apreensão e custódia",
   "Liberação e arquivos",
 ];
+
+const VEHICLE_FIELD_HINTS: Record<string, string> = {
+  "Tipo do veículo":
+    "Define os campos específicos do cadastro e a categoria em que o veículo aparecerá nas consultas.",
+  "Categoria do veículo pesado":
+    "Classificação operacional do caminhão ou ônibus, como carga, passageiro, trator ou implemento.",
+  "Carroceria / característica":
+    "Descreva a carroceria ou configuração relevante para reconhecer o veículo.",
+  Placa:
+    "Informe letras e números. Espaços e pontuação são removidos automaticamente. Se a placa já existir, o sistema permitirá conferir e continuar.",
+  Renavam:
+    "Informe entre 9 e 11 dígitos. Use o seletor ao lado quando estiver ausente, suprimido, raspado, ilegível ou incompatível.",
+  "Número do motor":
+    "Identificador gravado no motor. Use o seletor ao lado para registrar a condição constatada.",
+  Chassi:
+    "Identificador estrutural do veículo. Registre ao lado se estiver ausente, suprimido, raspado, ilegível ou incompatível.",
+  Situação: "Condição policial atual do veículo, usada nos painéis e filtros de custódia.",
+  "Tipo de ocorrência":
+    "Natureza da ocorrência que levou ao registro, apreensão, recuperação ou investigação do veículo.",
+  "Status operacional": "Complemento livre para indicar a etapa interna de tratamento do veículo.",
+  "Tipo do procedimento":
+    "Espécie do procedimento relacionado ao veículo, como IP, APF, TCO, BOC ou outro.",
+  "Número do procedimento": "Número formal do procedimento policial relacionado ao veículo.",
+  "Número do B.O.": "Número do boletim de ocorrência relacionado ao veículo.",
+  "Processo judicial": "Número do processo judicial relacionado, quando existir.",
+  Envolvidos:
+    "Pessoas relacionadas ao veículo, como proprietário, condutor, possuidor, vítima ou investigado.",
+  "Vincular a Inquérito do SIPI":
+    "Pesquise e selecione um procedimento já cadastrado para criar o vínculo direto com o veículo.",
+  "Data da apreensão": "Data em que o veículo entrou em apreensão ou custódia policial.",
+  "Local da apreensão": "Local onde o veículo foi localizado ou formalmente apreendido.",
+  "Local de custódia": "Unidade ou endereço responsável pela custódia atual do veículo.",
+  "Depósito / pátio": "Setor, pátio, vaga ou posição física onde o veículo está armazenado.",
+  "Responsável pelo recebimento":
+    "Servidor ou responsável que recebeu o veículo no local de custódia.",
+  "Estado de conservação": "Condição física observada no momento do recebimento ou vistoria.",
+  "Observações da custódia":
+    "Registre avarias, objetos, lacres, condições de armazenamento e outras informações de guarda.",
+  "Situação da liberação":
+    "Indica se o veículo permanece retido, foi liberado, devolvido ou aguarda providência.",
+  "Data da devolução": "Data em que o veículo foi efetivamente entregue ou devolvido.",
+  "Pessoa que recebeu": "Nome da pessoa que recebeu o veículo na saída da custódia.",
+  "Documento apresentado":
+    "Documento usado para comprovar identidade, propriedade ou autorização para recebimento.",
+  "Autoridade responsável": "Autoridade que autorizou ou determinou a liberação do veículo.",
+  "Termo de entrega": "Número, referência ou descrição do termo que formalizou a entrega.",
+  "Observações da saída": "Informações complementares sobre a liberação ou devolução.",
+  "Fotografias do veículo":
+    "Anexe até 8 imagens. O sistema cria versões comprimidas e miniaturas automaticamente.",
+};
 
 function textOrNull(value: string) {
   return value.trim() || null;
@@ -708,9 +759,7 @@ export function VehicleFormPage({ mode, vehicleId }: { mode: FormMode; vehicleId
               onChange={(value) => update("courtProcessNumber", value)}
             />
             <div className="relative md:col-span-2">
-              <label className="mb-1.5 block text-xs font-semibold text-muted-foreground">
-                Vincular a Inquérito do SIPI
-              </label>
+              <VehicleFieldLabel label="Vincular a Inquérito do SIPI" />
               {form.inqueritoId ? (
                 <div className="flex h-11 items-center justify-between rounded-xl border border-info/35 bg-info/10 px-3 text-sm">
                   <span className="flex min-w-0 items-center gap-2">
@@ -885,24 +934,24 @@ export function VehicleFormPage({ mode, vehicleId }: { mode: FormMode; vehicleId
               onChange={(value) => update("releaseObservations", value)}
               className="md:col-span-2"
             />
-            <label className="md:col-span-2">
-              <span className="mb-1.5 block text-xs font-semibold text-muted-foreground">
-                Fotografias do veículo
-              </span>
-              <span className="flex min-h-28 cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed border-info/35 bg-info/5 px-4 py-5 text-center hover:bg-info/10">
-                <Camera className="h-6 w-6 text-info" />
-                <span className="mt-2 text-sm font-semibold">Selecionar até 8 fotografias</span>
-                <span className="mt-1 text-xs text-muted-foreground">
-                  O original e a miniatura serão convertidos e comprimidos em WebP.
+            <div className="md:col-span-2">
+              <VehicleFieldLabel label="Fotografias do veículo" />
+              <label>
+                <span className="flex min-h-28 cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed border-info/35 bg-info/5 px-4 py-5 text-center hover:bg-info/10">
+                  <Camera className="h-6 w-6 text-info" />
+                  <span className="mt-2 text-sm font-semibold">Selecionar até 8 fotografias</span>
+                  <span className="mt-1 text-xs text-muted-foreground">
+                    O original e a miniatura serão convertidos e comprimidos em WebP.
+                  </span>
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    multiple
+                    onChange={(event) => handlePhotos(event.target.files)}
+                    className="sr-only"
+                  />
                 </span>
-                <input
-                  type="file"
-                  accept="image/jpeg,image/png,image/webp"
-                  multiple
-                  onChange={(event) => handlePhotos(event.target.files)}
-                  className="sr-only"
-                />
-              </span>
+              </label>
               {chosenPhotoNames ? (
                 <span className="mt-2 block truncate text-xs text-muted-foreground">
                   {chosenPhotoNames}
@@ -911,7 +960,7 @@ export function VehicleFormPage({ mode, vehicleId }: { mode: FormMode; vehicleId
               {photoError ? (
                 <span className="mt-2 block text-xs text-destructive">{photoError}</span>
               ) : null}
-            </label>
+            </div>
           </FormSection>
         ) : null}
 
@@ -979,6 +1028,17 @@ function FormSection({
   );
 }
 
+function VehicleFieldLabel({ label, required = false }: { label: string; required?: boolean }) {
+  return (
+    <FormFieldLabel
+      label={`${label}${required ? " *" : ""}`}
+      hint={VEHICLE_FIELD_HINTS[label] ?? ""}
+      uppercase={false}
+      className="mb-1.5 text-xs font-semibold tracking-normal"
+    />
+  );
+}
+
 function TextField({
   label,
   value,
@@ -994,7 +1054,7 @@ function TextField({
 }) {
   return (
     <label>
-      <span className="mb-1.5 block text-xs font-semibold text-muted-foreground">{label}</span>
+      <VehicleFieldLabel label={label} />
       <input
         type={type}
         value={value}
@@ -1021,10 +1081,7 @@ function SelectField({
 }) {
   return (
     <label>
-      <span className="mb-1.5 block text-xs font-semibold text-muted-foreground">
-        {label}
-        {required ? " *" : ""}
-      </span>
+      <VehicleFieldLabel label={label} required={required} />
       <select
         value={value}
         required={required}
@@ -1050,7 +1107,7 @@ function TextAreaField({
 }) {
   return (
     <label className={className}>
-      <span className="mb-1.5 block text-xs font-semibold text-muted-foreground">{label}</span>
+      <VehicleFieldLabel label={label} />
       <textarea
         value={value}
         onChange={(event) => onChange(event.target.value)}
@@ -1106,7 +1163,7 @@ function IdentificationField({
 }) {
   return (
     <div>
-      <span className="mb-1.5 block text-xs font-semibold text-muted-foreground">{label}</span>
+      <VehicleFieldLabel label={label} />
       <div className="grid grid-cols-[minmax(0,1fr)_132px] gap-2">
         <input
           value={value}
