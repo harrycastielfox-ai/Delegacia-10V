@@ -16,7 +16,6 @@ import {
   replaceInqueritoPessoas,
   updateInquerito,
 } from "@/lib/repositories/inqueritosRepository";
-import { logAuditoria } from "@/lib/repositories/auditoriaRepository";
 import { getCurrentProfile } from "@/lib/auth";
 import { canEditCases, canOnlyViewPublicCases, type UserProfile } from "@/lib/authz";
 import { CASE_CATEGORY_OPTIONS, normalizeCaseCategory } from "@/lib/inqueritosPriority";
@@ -327,33 +326,6 @@ function EditarInquerito() {
           );
         }
       }
-      try {
-        const auditResult = await logAuditoria({
-          acao: "update",
-          modulo: "inqueritos",
-          entidade: "inquerito",
-          entidade_id: caseId,
-          descricao: "Editou inquérito",
-          metadata: {
-            ppe: numeroPpe.trim() || "",
-            campos_possivelmente_atualizados: [
-              "numero_ppe",
-              "numero_fisico",
-              "numero_bo",
-              "tipificacao",
-              "gravidade",
-              "tipo",
-              "prioridade",
-              "situacao",
-              "status_diligencias",
-            ],
-          },
-        });
-        if (auditResult.error) console.warn("[auditoria]", auditResult.error);
-      } catch (auditError) {
-        console.warn("[auditoria]", auditError);
-      }
-
       setFeedback(
         pessoasWarning
           ? "Inquérito atualizado. As pessoas adicionais não puderam ser atualizadas agora."

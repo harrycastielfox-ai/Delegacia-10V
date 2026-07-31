@@ -107,16 +107,12 @@ function CreateAccountPage() {
           : "Conta criada com sucesso. Aguarde autorização de um administrador para acessar o SIPI. Não foi possível salvar a foto de perfil neste momento; você poderá adicionar a foto depois no perfil."
         : "Conta criada com sucesso. Aguarde autorização de um administrador para acessar o SIPI.";
 
-      sessionStorage.setItem(
-        POST_SIGNUP_LOGIN_KEY,
-        JSON.stringify({ login: cleanLogin, password: senha, message }),
-      );
+      sessionStorage.setItem(POST_SIGNUP_LOGIN_KEY, JSON.stringify({ login: cleanLogin, message }));
       navigate({ to: "/login", replace: true });
     } catch (err: unknown) {
       const errorMessage = String((err as { message?: string }).message ?? "");
       console.error("[CreateAccountPage] Erro ao criar conta", err);
-      if (errorMessage === "LOGIN_ALREADY_EXISTS") setError("Este login já está em uso.");
-      else if (errorMessage === "EMAIL_ALREADY_EXISTS") setError("Este e-mail já está em uso.");
+      if (errorMessage === "EMAIL_ALREADY_EXISTS") setError("Este e-mail já está em uso.");
       else if (errorMessage === "LOGIN_REQUIRED") setError("Informe um login válido.");
       else if (errorMessage === "AVATAR_INVALID_TYPE")
         setError("A foto precisa ser um arquivo de imagem válido.");
@@ -126,7 +122,7 @@ function CreateAccountPage() {
         setError("Este e-mail já está em uso.");
       else if ((errorMessage || "").toLowerCase().includes("database error saving new user"))
         setError(
-          "Não foi possível concluir o cadastro. Verifique se login/e-mail já existem ou se o trigger de perfil está configurado.",
+          "Não foi possível concluir o cadastro. Verifique se o login ou e-mail já estão em uso.",
         );
       else setError("Não foi possível criar a conta. Tente novamente em instantes.");
     } finally {
