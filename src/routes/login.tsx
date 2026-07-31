@@ -27,6 +27,9 @@ import {
   registerOwnAccessContext,
 } from "@/lib/accessContext";
 
+const LOGIN_SPLASH_KEY = "sipi:login-splash-shown";
+const LOGIN_SPLASH_DURATION_MS = 2200;
+
 const POST_SIGNUP_LOGIN_KEY = "sipi:post-signup-login";
 const POST_SIGNUP_MESSAGE =
   "Conta criada com sucesso. Aguarde autorização de um administrador para acessar o SIPI.";
@@ -194,6 +197,117 @@ function PostSignupWelcomeOverlay({ message }: { message: string }) {
           Retornando ao login em instantes...
         </p>
       </section>
+    </div>
+  );
+}
+
+function LoginSplash() {
+  const [visible, setVisible] = useState(() => {
+    if (typeof window === "undefined") return false;
+    if (sessionStorage.getItem(LOGIN_SPLASH_KEY)) return false;
+
+    sessionStorage.setItem(LOGIN_SPLASH_KEY, "1");
+
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return false;
+    return true;
+  });
+
+  useEffect(() => {
+    if (!visible) return;
+    const timeoutId = window.setTimeout(() => setVisible(false), LOGIN_SPLASH_DURATION_MS);
+    return () => window.clearTimeout(timeoutId);
+  }, [visible]);
+
+  if (!visible) return null;
+
+  return (
+    <div
+      className="login-splash pointer-events-none fixed inset-0 z-[60] flex items-center justify-center bg-background/75 backdrop-blur-2xl"
+      aria-hidden="true"
+    >
+      <style>{`
+        .login-splash {
+          animation: loginSplashBackdrop ${LOGIN_SPLASH_DURATION_MS}ms ease forwards;
+        }
+
+        .login-splash-badge {
+          animation: loginSplashBadge ${LOGIN_SPLASH_DURATION_MS}ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+          will-change: transform, opacity;
+        }
+
+        .login-splash-glow {
+          background: radial-gradient(
+            circle,
+            color-mix(in oklab, var(--primary) 55%, transparent) 0%,
+            transparent 70%
+          );
+          animation: loginSplashGlow ${LOGIN_SPLASH_DURATION_MS}ms ease forwards;
+        }
+
+        @keyframes loginSplashBadge {
+          0% {
+            transform: scale(0.55);
+            opacity: 0;
+          }
+          22% {
+            transform: scale(1.06);
+            opacity: 1;
+          }
+          34% {
+            transform: scale(1);
+            opacity: 1;
+          }
+          70% {
+            transform: scale(1) translateY(0);
+            opacity: 1;
+          }
+          100% {
+            transform: scale(0.22) translateY(-32vh);
+            opacity: 0;
+          }
+        }
+
+        @keyframes loginSplashGlow {
+          0% {
+            opacity: 0;
+          }
+          30% {
+            opacity: 0.9;
+          }
+          70% {
+            opacity: 0.55;
+          }
+          100% {
+            opacity: 0;
+          }
+        }
+
+        @keyframes loginSplashBackdrop {
+          0%, 68% {
+            opacity: 1;
+          }
+          100% {
+            opacity: 0;
+          }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .login-splash,
+          .login-splash-badge,
+          .login-splash-glow {
+            animation: none;
+          }
+        }
+      `}</style>
+
+      <div className="login-splash-badge relative">
+        <span className="login-splash-glow pointer-events-none absolute inset-0 rounded-full blur-3xl" />
+        <img
+          src="/sipi-badge-splash.png"
+          alt="Polícia Civil"
+          className="relative h-40 w-40 object-contain drop-shadow-[0_0_40px_rgba(34,197,94,0.45)] sm:h-48 sm:w-48"
+        />
+      </div>
     </div>
   );
 }
@@ -414,7 +528,9 @@ function LoginPage() {
 
       {showSignupWelcome ? (
         <PostSignupWelcomeOverlay message={postSignupMessage ?? POST_SIGNUP_MESSAGE} />
-      ) : null}
+      ) : (
+        <LoginSplash />
+      )}
 
       <div className="pointer-events-none absolute inset-0 opacity-60">
         <div className="absolute -top-32 -left-32 h-96 w-96 rounded-full bg-primary/20 blur-3xl" />
