@@ -1,7 +1,8 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, Filter, Plus, RotateCcw, Search } from "lucide-react";
-import { listVehiclesPage } from "@/lib/repositories/vehiclesRepository";
+import { VehicleQuickPreview } from "@/components/RecordQuickPreview";
+import { getVehicleById, listVehiclesPage } from "@/lib/repositories/vehiclesRepository";
 import { VehicleEmptyState } from "../components/VehicleEmptyState";
 import { VehicleStatusBadge } from "../components/VehicleStatusBadge";
 import {
@@ -16,6 +17,7 @@ import { useDebouncedValue } from "../useDebouncedValue";
 import type {
   VehicleListFilters,
   VehicleListRecord,
+  VehicleRecord,
   VehicleSituation,
   VehicleSituationFilter,
   VehicleType,
@@ -31,6 +33,10 @@ export type VehicleListPreset = {
 };
 
 type Cursor = NonNullable<VehicleListFilters["cursor"]>;
+
+function displayPoliceReportNumber(value: string | null) {
+  return value?.trim() || "NÃO INFORMADO";
+}
 
 export default function VehicleListPage({ preset }: { preset: VehicleListPreset }) {
   const navigate = useNavigate();
@@ -55,6 +61,10 @@ export default function VehicleListPage({ preset }: { preset: VehicleListPreset 
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [previewRow, setPreviewRow] = useState<VehicleListRecord | null>(null);
+  const [previewRecord, setPreviewRecord] = useState<VehicleRecord | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [previewError, setPreviewError] = useState("");
 
   const cursor = cursorStack[pageIndex] ?? null;
   const filtersKey = JSON.stringify({
@@ -152,6 +162,39 @@ export default function VehicleListPage({ preset }: { preset: VehicleListPreset 
     pendingIdentification,
   );
 
+  useEffect(() => {
+    if (!previewRow) {
+      setPreviewRecord(null);
+      setPreviewLoading(false);
+      setPreviewError("");
+      return;
+    }
+
+    let cancelled = false;
+    setPreviewRecord(null);
+    setPreviewLoading(true);
+    setPreviewError("");
+
+    void getVehicleById(previewRow.id)
+      .then((record) => {
+        if (cancelled) return;
+        if (record) setPreviewRecord(record);
+        else setPreviewError("Não foi possível localizar os detalhes deste veículo.");
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setPreviewError("Não foi possível carregar as informações complementares agora.");
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setPreviewLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [previewRow]);
+
   function clearFilters() {
     setSearch("");
     setVehicleType(preset.vehicleType ?? "");
@@ -164,8 +207,8 @@ export default function VehicleListPage({ preset }: { preset: VehicleListPreset 
     setPendingIdentification(false);
   }
 
-  function openVehicle(id: string) {
-    navigate({ to: "/veiculos/$vehicleId", params: { vehicleId: id } });
+  function openVehicle(row: VehicleListRecord) {
+    setPreviewRow(row);
   }
 
   return (
@@ -313,7 +356,7 @@ export default function VehicleListPage({ preset }: { preset: VehicleListPreset 
         <table className="w-full min-w-[1120px] table-fixed text-sm">
           <thead className="bg-muted/25 text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
             <tr>
-              <th className="w-[13%] px-4 py-3 text-left">Identificação</th>
+              <th className="w-[13%] px-4 py-3 text-left">Nº do B.O.</th>
               <th className="w-[10%] px-3 py-3 text-left">Tipo</th>
               <th className="w-[19%] px-3 py-3 text-left">Marca / Modelo</th>
               <th className="w-[9%] px-3 py-3 text-left">Cor</th>
@@ -345,14 +388,18 @@ export default function VehicleListPage({ preset }: { preset: VehicleListPreset 
                   key={row.id}
                   tabIndex={0}
                   role="button"
-                  onClick={() => openVehicle(row.id)}
+                  aria-label={`Visualizar resumo do veículo ${displayPoliceReportNumber(row.police_report_number)}`}
+                  onClick={() => openVehicle(row)}
                   onKeyDown={(event) => {
-                    if (event.key === "Enter" || event.key === " ") openVehicle(row.id);
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      openVehicle(row);
+                    }
                   }}
                   className="cursor-pointer border-t border-border/70 transition hover:bg-info/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-info/60"
                 >
                   <td className="px-4 py-3 font-mono text-xs font-bold text-info">
-                    {row.internal_id}
+                    {displayPoliceReportNumber(row.police_report_number)}
                   </td>
                   <td className="px-3 py-3 text-xs">{VEHICLE_TYPE_LABELS[row.vehicle_type]}</td>
                   <td className="px-3 py-3">
@@ -407,12 +454,14 @@ export default function VehicleListPage({ preset }: { preset: VehicleListPreset 
             <button
               key={row.id}
               type="button"
-              onClick={() => openVehicle(row.id)}
+              onClick={() => openVehicle(row)}
               className="w-full rounded-xl border border-border bg-card p-4 text-left transition active:border-info/50"
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="font-mono text-xs font-bold text-info">{row.internal_id}</p>
+                  <p className="font-mono text-xs font-bold text-info">
+                    {displayPoliceReportNumber(row.police_report_number)}
+                  </p>
                   <p className="mt-1 truncate font-semibold">
                     {displayVehicleValue(row.brand_model)}
                   </p>
@@ -466,6 +515,20 @@ export default function VehicleListPage({ preset }: { preset: VehicleListPreset 
           </button>
         </div>
       </footer>
+
+      <VehicleQuickPreview
+        record={previewRecord ?? previewRow}
+        loading={previewLoading}
+        error={previewError}
+        onClose={() => setPreviewRow(null)}
+        onOpenFull={() => {
+          if (!previewRow) return;
+          navigate({
+            to: "/veiculos/$vehicleId",
+            params: { vehicleId: previewRow.id },
+          });
+        }}
+      />
     </div>
   );
 }

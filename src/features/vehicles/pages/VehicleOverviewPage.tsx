@@ -154,48 +154,85 @@ export default function VehicleOverviewPage() {
         aria-label="Indicadores de veículos"
         className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6"
       >
-        <StatCard
-          label="TOTAL"
-          value={loading ? "—" : stats.total}
-          hint="Veículos cadastrados"
-          icon={CircleParking}
-          tone="info"
-        />
-        <StatCard
-          label="APREENDIDOS"
-          value={loading ? "—" : stats.seized}
-          hint="Atualmente em custódia"
-          icon={CarFront}
-          tone="info"
-        />
-        <StatCard
-          label="RECUPERADOS"
-          value={loading ? "—" : stats.recovered}
-          hint="Localizados pela unidade"
-          icon={ShieldCheck}
-          tone="success"
-        />
-        <StatCard
-          label="ADULTERADOS"
-          value={loading ? "—" : stats.adulterated}
-          hint="Com sinais registrados"
-          icon={SearchCheck}
-          tone="destructive"
-        />
-        <StatCard
-          label="IDENTIFICAÇÃO"
-          value={loading ? "—" : stats.pendingIdentification}
-          hint="Com pendências"
-          icon={AlertTriangle}
-          tone="warning"
-        />
-        <StatCard
-          label="LIBERADOS NO MÊS"
-          value={loading ? "—" : stats.releasedThisMonth}
-          hint="Liberados ou devolvidos"
-          icon={CheckCircle2}
-          tone="success"
-        />
+        <Link
+          to="/veiculos/todos"
+          aria-label="Abrir todos os veículos"
+          className="block rounded-2xl transition hover:-translate-y-0.5 hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-info"
+        >
+          <StatCard
+            label="TOTAL"
+            value={loading ? "—" : stats.total}
+            hint="Veículos cadastrados"
+            icon={CircleParking}
+            tone="info"
+          />
+        </Link>
+        <Link
+          to="/veiculos/apreendidos"
+          aria-label="Abrir veículos apreendidos"
+          className="block rounded-2xl transition hover:-translate-y-0.5 hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-info"
+        >
+          <StatCard
+            label="APREENDIDOS"
+            value={loading ? "—" : stats.seized}
+            hint="Atualmente em custódia"
+            icon={CarFront}
+            tone="info"
+          />
+        </Link>
+        <Link
+          to="/veiculos/recuperados"
+          aria-label="Abrir veículos recuperados"
+          className="block rounded-2xl transition hover:-translate-y-0.5 hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-success"
+        >
+          <StatCard
+            label="RECUPERADOS"
+            value={loading ? "—" : stats.recovered}
+            hint="Localizados pela unidade"
+            icon={ShieldCheck}
+            tone="success"
+          />
+        </Link>
+        <Link
+          to="/veiculos/adulterados"
+          aria-label="Abrir veículos adulterados"
+          className="block rounded-2xl transition hover:-translate-y-0.5 hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive"
+        >
+          <StatCard
+            label="ADULTERADOS"
+            value={loading ? "—" : stats.adulterated}
+            hint="Com sinais registrados"
+            icon={SearchCheck}
+            tone="destructive"
+          />
+        </Link>
+        <Link
+          to="/veiculos/todos"
+          search={{ pending: true }}
+          aria-label="Abrir veículos com identificação pendente"
+          className="block rounded-2xl transition hover:-translate-y-0.5 hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-warning"
+        >
+          <StatCard
+            label="IDENTIFICAÇÃO"
+            value={loading ? "—" : stats.pendingIdentification}
+            hint="Com pendências"
+            icon={AlertTriangle}
+            tone="warning"
+          />
+        </Link>
+        <Link
+          to="/veiculos/liberados"
+          aria-label="Abrir veículos liberados ou devolvidos"
+          className="block rounded-2xl transition hover:-translate-y-0.5 hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-success"
+        >
+          <StatCard
+            label="LIBERADOS NO MÊS"
+            value={loading ? "—" : stats.releasedThisMonth}
+            hint="Liberados ou devolvidos"
+            icon={CheckCircle2}
+            tone="success"
+          />
+        </Link>
       </section>
 
       <section>

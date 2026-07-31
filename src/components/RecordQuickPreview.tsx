@@ -2,6 +2,11 @@ import * as Dialog from "@radix-ui/react-dialog";
 import { ArrowUpRight, X } from "lucide-react";
 import type { ReactNode } from "react";
 import { calculateInqueritoOperationalPriority } from "@/lib/inqueritosPriority";
+import {
+  VEHICLE_SITUATION_LABELS,
+  VEHICLE_TYPE_LABELS,
+} from "@/features/vehicles/vehicleConstants";
+import type { VehicleListRecord, VehicleRecord } from "@/features/vehicles/vehicleTypes";
 import type { InqueritoRecord } from "@/lib/repositories/inqueritosRepository";
 import type { RepresentacaoRecord } from "@/lib/repositories/representacoesRepository";
 
@@ -169,7 +174,7 @@ function RecordQuickPreview({
             </div>
           </header>
 
-          <div className="min-h-0 flex-1 overflow-hidden px-5 py-5 sm:px-6">
+          <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5 sm:px-6">
             <div className="space-y-4">{children}</div>
           </div>
 
@@ -369,6 +374,95 @@ export function RepresentacaoQuickPreview({
       onOpenFull={onOpenFull}
     >
       <PreviewSection title="Informações principais" items={mainItems} />
+    </RecordQuickPreview>
+  );
+}
+
+export function VehicleQuickPreview({
+  record,
+  loading = false,
+  error,
+  onClose,
+  onOpenFull,
+}: {
+  record: VehicleRecord | VehicleListRecord | null;
+  loading?: boolean;
+  error?: string;
+  onClose: () => void;
+  onOpenFull: () => void;
+}) {
+  if (!record) return null;
+
+  const vehicle = record as Partial<VehicleRecord>;
+  const brandModel = firstValue(
+    vehicle.brand_model,
+    [vehicle.brand, vehicle.model].filter(Boolean).join(" "),
+  );
+  const procedure = firstValue(
+    [vehicle.procedure_type, vehicle.procedure_number].filter(Boolean).join(" "),
+  );
+  const years = firstValue(
+    vehicle.manufacture_year && vehicle.model_year
+      ? `${vehicle.manufacture_year}/${vehicle.model_year}`
+      : (vehicle.manufacture_year ?? vehicle.model_year),
+  );
+  const identifier = vehicle.police_report_number?.trim()
+    ? `B.O. ${vehicle.police_report_number.trim()}`
+    : firstValue(vehicle.plate, "Veículo sem B.O. informado");
+
+  const badges: PreviewBadge[] = [{ label: VEHICLE_TYPE_LABELS[record.vehicle_type], tone: "sky" }];
+  if (vehicle.situation) {
+    const situation = VEHICLE_SITUATION_LABELS[vehicle.situation];
+    badges.push({ label: situation, tone: statusTone(situation) });
+  }
+  if (vehicle.occurrence_type?.trim()) {
+    badges.push({ label: vehicle.occurrence_type, tone: "violet" });
+  }
+  if (vehicle.pending_identification) {
+    badges.push({ label: "Identificação pendente", tone: "amber" });
+  }
+
+  const mainItems: SummaryItem[] = [
+    { label: "Número do B.O.", value: displayValue(vehicle.police_report_number) },
+    { label: "Placa", value: displayValue(vehicle.plate) },
+    { label: "Renavam", value: displayValue(vehicle.renavam) },
+    { label: "Chassi", value: displayValue(vehicle.chassis) },
+    { label: "Número do motor", value: displayValue(vehicle.engine_number) },
+    { label: "Cor", value: displayValue(vehicle.color) },
+    { label: "Ano fabricação/modelo", value: years },
+    { label: "Procedimento", value: procedure },
+    { label: "Processo judicial", value: displayValue(vehicle.court_process_number) },
+    { label: "Data da apreensão", value: formatDate(vehicle.seizure_date) },
+    { label: "Local da apreensão", value: displayValue(vehicle.seizure_location) },
+    {
+      label: "Custódia / depósito",
+      value: firstValue(vehicle.custody_location, vehicle.storage_location),
+    },
+    { label: "Responsável", value: displayValue(vehicle.custody_responsible) },
+    { label: "Conservação", value: displayValue(vehicle.conservation_state) },
+    { label: "Envolvidos", value: displayValue(vehicle.involved_people) },
+    { label: "Observações", value: displayValue(vehicle.observations) },
+  ]
+    .filter((item) => item.value !== FALLBACK)
+    .slice(0, 11);
+
+  return (
+    <RecordQuickPreview
+      open
+      onOpenChange={(open) => !open && onClose()}
+      eyebrow="Visualização rápida · Veículo"
+      identifier={identifier}
+      title={brandModel}
+      badges={badges}
+      onOpenFull={onOpenFull}
+    >
+      <PreviewSection title="Informações preenchidas" items={mainItems} />
+      {loading ? (
+        <p className="text-xs font-medium text-zinc-500">
+          Carregando informações complementares...
+        </p>
+      ) : null}
+      {error ? <p className="text-xs font-medium text-amber-300">{error}</p> : null}
     </RecordQuickPreview>
   );
 }
