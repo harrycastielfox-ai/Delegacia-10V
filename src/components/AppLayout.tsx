@@ -4,6 +4,7 @@ import { useNavigate, useRouterState } from "@tanstack/react-router";
 import { getCurrentProfile, getSession, logout } from "@/lib/auth";
 import { isAuthorized, type UserProfile } from "@/lib/authz";
 import { getMobileRouteRedirect, MOBILE_VIEWPORT_QUERY } from "@/lib/mobileExperience";
+import { AppProfileContext } from "./AppProfileContext";
 import { MobileNavigation } from "./MobileNavigation";
 
 type AppModule = "inqueritos" | "veiculos";
@@ -129,28 +130,30 @@ export function AppLayout({
   }
 
   return (
-    <div className="min-h-screen flex w-full bg-background text-foreground">
-      <Suspense fallback={null}>
-        {mobile ? (
-          module === "veiculos" ? (
-            <VehiclesMobileNavigation profile={profile} />
+    <AppProfileContext.Provider value={profile}>
+      <div className="min-h-screen flex w-full bg-background text-foreground">
+        <Suspense fallback={null}>
+          {mobile ? (
+            module === "veiculos" ? (
+              <VehiclesMobileNavigation profile={profile} />
+            ) : (
+              <MobileNavigation profile={profile} />
+            )
+          ) : module === "veiculos" ? (
+            <VehiclesSidebar profile={profile} />
           ) : (
-            <MobileNavigation profile={profile} />
-          )
-        ) : module === "veiculos" ? (
-          <VehiclesSidebar profile={profile} />
-        ) : (
-          <>
-            <AppSidebar profile={profile} />
-            <DueSoonNotification />
-          </>
-        )}
-      </Suspense>
-      <main
-        className={`flex-1 min-w-0 overflow-x-hidden ${mobile ? "px-4 pb-24 pt-20" : "p-6 lg:p-8"}`}
-      >
-        {children}
-      </main>
-    </div>
+            <>
+              <AppSidebar profile={profile} />
+              <DueSoonNotification />
+            </>
+          )}
+        </Suspense>
+        <main
+          className={`flex-1 min-w-0 overflow-x-hidden ${mobile ? "px-4 pb-24 pt-20" : "p-6 lg:p-8"}`}
+        >
+          {children}
+        </main>
+      </div>
+    </AppProfileContext.Provider>
   );
 }

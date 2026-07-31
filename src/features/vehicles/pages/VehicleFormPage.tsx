@@ -9,9 +9,12 @@ import {
   Link2,
   LoaderCircle,
   Save,
+  ShieldAlert,
   X,
 } from "lucide-react";
+import { useAppProfile } from "@/components/AppProfileContext";
 import { FormFieldLabel } from "@/components/FormFieldLabel";
+import { canCreateVehicles, canEditVehicles, canReleaseVehicles } from "@/lib/authz";
 import {
   searchInqueritosForLink,
   type InqueritoLinkOption,
@@ -327,6 +330,9 @@ function toPayload(state: FormState): VehiclePayload {
 
 export function VehicleFormPage({ mode, vehicleId }: { mode: FormMode; vehicleId?: string }) {
   const navigate = useNavigate();
+  const profile = useAppProfile();
+  const canModify = mode === "create" ? canCreateVehicles(profile) : canEditVehicles(profile);
+  const canRelease = canReleaseVehicles(profile);
   const [form, setForm] = useState<FormState>(INITIAL_STATE);
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(mode === "edit");
@@ -411,6 +417,10 @@ export function VehicleFormPage({ mode, vehicleId }: { mode: FormMode; vehicleId
   }
 
   async function submit(skipDuplicateCheck = false) {
+    if (!canModify) {
+      setError("Seu perfil não possui permissão para salvar veículos.");
+      return;
+    }
     if (!form.vehicleType) {
       setError("Informe o tipo do veículo.");
       setStep(0);
@@ -468,6 +478,19 @@ export function VehicleFormPage({ mode, vehicleId }: { mode: FormMode; vehicleId
       <div className="flex min-h-[45vh] items-center justify-center">
         <LoaderCircle className="h-6 w-6 animate-spin text-info" />
       </div>
+    );
+
+  if (!canModify)
+    return (
+      <section className="mx-auto mt-10 max-w-xl rounded-2xl border border-warning/30 bg-card p-6 text-center">
+        <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-warning/10 text-warning">
+          <ShieldAlert className="h-6 w-6" />
+        </span>
+        <h1 className="mt-4 text-xl font-black">Alteração não autorizada</h1>
+        <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+          Seu perfil possui acesso para consulta, mas não pode cadastrar ou editar veículos.
+        </p>
+      </section>
     );
 
   return (
@@ -712,11 +735,13 @@ export function VehicleFormPage({ mode, vehicleId }: { mode: FormMode; vehicleId
               onChange={(value) => update("situation", value as VehicleSituation | "")}
             >
               <option value="">Não informada</option>
-              {Object.entries(VEHICLE_SITUATION_LABELS).map(([value, label]) => (
-                <option key={value} value={value}>
-                  {label}
-                </option>
-              ))}
+              {Object.entries(VEHICLE_SITUATION_LABELS)
+                .filter(([value]) => canRelease || value !== "liberado")
+                .map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
             </SelectField>
             <SelectField
               label="Tipo de ocorrência"
@@ -893,48 +918,65 @@ export function VehicleFormPage({ mode, vehicleId }: { mode: FormMode; vehicleId
             title="4. LIBERAÇÃO E ARQUIVOS"
             description="Preencha a saída somente quando houver e anexe fotografias comprimidas."
           >
-            <SelectField
-              label="Situação da liberação"
-              value={form.releaseStatus}
-              onChange={(value) => update("releaseStatus", value)}
-            >
-              <option value="nao_liberado">Não liberado</option>
-              <option value="autorizado">Autorizado</option>
-              <option value="liberado">Liberado</option>
-              <option value="devolvido">Devolvido</option>
-            </SelectField>
-            <TextField
-              label="Data da devolução"
-              type="date"
-              value={form.releaseDate}
-              onChange={(value) => update("releaseDate", value)}
-            />
-            <TextField
-              label="Pessoa que recebeu"
-              value={form.releasedTo}
-              onChange={(value) => update("releasedTo", value)}
-            />
-            <TextField
-              label="Documento apresentado"
-              value={form.releaseDocument}
-              onChange={(value) => update("releaseDocument", value)}
-            />
-            <TextField
-              label="Autoridade responsável"
-              value={form.releaseAuthority}
-              onChange={(value) => update("releaseAuthority", value)}
-            />
-            <TextField
-              label="Termo de entrega"
-              value={form.deliveryTerm}
-              onChange={(value) => update("deliveryTerm", value)}
-            />
-            <TextAreaField
-              label="Observações da saída"
-              value={form.releaseObservations}
-              onChange={(value) => update("releaseObservations", value)}
-              className="md:col-span-2"
-            />
+            {canRelease ? (
+              <>
+                <SelectField
+                  label="Situação da liberação"
+                  value={form.releaseStatus}
+                  onChange={(value) => update("releaseStatus", value)}
+                >
+                  <option value="nao_liberado">Não liberado</option>
+                  <option value="autorizado">Autorizado</option>
+                  <option value="liberado">Liberado</option>
+                  <option value="devolvido">Devolvido</option>
+                </SelectField>
+                <TextField
+                  label="Data da devolução"
+                  type="date"
+                  value={form.releaseDate}
+                  onChange={(value) => update("releaseDate", value)}
+                />
+                <TextField
+                  label="Pessoa que recebeu"
+                  value={form.releasedTo}
+                  onChange={(value) => update("releasedTo", value)}
+                />
+                <TextField
+                  label="Documento apresentado"
+                  value={form.releaseDocument}
+                  onChange={(value) => update("releaseDocument", value)}
+                />
+                <TextField
+                  label="Autoridade responsável"
+                  value={form.releaseAuthority}
+                  onChange={(value) => update("releaseAuthority", value)}
+                />
+                <TextField
+                  label="Termo de entrega"
+                  value={form.deliveryTerm}
+                  onChange={(value) => update("deliveryTerm", value)}
+                />
+                <TextAreaField
+                  label="Observações da saída"
+                  value={form.releaseObservations}
+                  onChange={(value) => update("releaseObservations", value)}
+                  className="md:col-span-2"
+                />
+              </>
+            ) : (
+              <div className="rounded-xl border border-warning/25 bg-warning/5 p-4 md:col-span-2">
+                <div className="flex items-start gap-3">
+                  <ShieldAlert className="mt-0.5 h-5 w-5 shrink-0 text-warning" />
+                  <div>
+                    <h3 className="text-sm font-bold">Liberação restrita</h3>
+                    <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                      Somente Delegado ou Administrador pode autorizar a saída, alterar os dados da
+                      entrega e emitir a movimentação de liberação ou devolução.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
             <div className="md:col-span-2">
               <VehicleFieldLabel label="Fotografias do veículo" />
               <label>

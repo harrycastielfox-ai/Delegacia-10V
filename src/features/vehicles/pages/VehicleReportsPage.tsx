@@ -8,9 +8,9 @@ import {
   CheckCircle2,
   CircleParking,
   FileCheck2,
+  FileDown,
   LoaderCircle,
   MapPinned,
-  Printer,
   SearchCheck,
   ShieldCheck,
   Truck,
@@ -276,7 +276,7 @@ export default function VehicleReportsPage() {
   ];
 
   return (
-    <div className="space-y-5">
+    <div className="sipi-print-document space-y-5">
       <header className="flex flex-col gap-4 rounded-2xl border border-border/70 bg-card/60 p-5 lg:flex-row lg:items-center lg:justify-between lg:p-6">
         <div>
           <p className="text-[10px] font-bold tracking-[0.2em] text-info">VEÍCULOS APREENDIDOS</p>
@@ -295,9 +295,17 @@ export default function VehicleReportsPage() {
           <button
             type="button"
             onClick={() => window.print()}
-            className="inline-flex items-center justify-center gap-2 rounded-xl bg-info px-4 py-2.5 text-sm font-semibold text-white transition hover:brightness-110"
+            className="group inline-flex min-w-52 items-center gap-3 rounded-xl bg-info px-3 py-2.5 text-left text-white shadow-lg shadow-info/10 transition hover:-translate-y-0.5 hover:brightness-110"
           >
-            <Printer className="h-4 w-4" /> Imprimir resumo
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/15">
+              <FileDown className="h-4 w-4" />
+            </span>
+            <span>
+              <strong className="block text-sm">Gerar resumo em PDF</strong>
+              <small className="block text-[10px] font-medium text-white/75">
+                Relatório consolidado A4
+              </small>
+            </span>
           </button>
         </div>
       </header>
@@ -453,6 +461,7 @@ export default function VehicleReportsPage() {
         documentSubtitle="Situação operacional, cobertura cadastral e distribuição da base"
         identifierLabel="Emissão"
         identifier={emittedAt}
+        variant="summary"
         summary={[
           { label: "Total", value: String(stats.total) },
           { label: "Apreendidos", value: String(stats.seized) },

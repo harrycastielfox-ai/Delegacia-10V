@@ -1,9 +1,11 @@
 import { Link, useParams } from "@tanstack/react-router";
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import {
+  AlertTriangle,
   ArrowLeft,
   CalendarClock,
   Camera,
+  CheckCircle2,
   ClipboardCheck,
   FileDown,
   FileSignature,
@@ -17,7 +19,9 @@ import {
   ShieldCheck,
   X,
 } from "lucide-react";
+import { useAppProfile } from "@/components/AppProfileContext";
 import { SipiPrintSheet, type SipiPrintSection } from "@/components/SipiPrintSheet";
+import { canEditVehicles, canRegisterVehicleMovements, canReleaseVehicles } from "@/lib/authz";
 import {
   getVehicleDetailBundle,
   registerVehicleMovement,
@@ -60,6 +64,19 @@ const INITIAL_MOVEMENT: MovementDraft = {
   releaseAuthority: "",
 };
 
+function createInitialMovement(fromLocation = ""): MovementDraft {
+  const now = new Date();
+  const localDateTime = new Date(now.getTime() - now.getTimezoneOffset() * 60_000)
+    .toISOString()
+    .slice(0, 16);
+
+  return {
+    ...INITIAL_MOVEMENT,
+    occurredAt: localDateTime,
+    fromLocation,
+  };
+}
+
 const movementLabels: Record<VehicleMovementRecord["movement_type"], string> = {
   entrada: "Entrada",
   apreensao: "Apreensão",
@@ -70,14 +87,48 @@ const movementLabels: Record<VehicleMovementRecord["movement_type"], string> = {
   atualizacao: "Atualização",
 };
 
+const movementDescriptions: Record<VehicleMovementRecord["movement_type"], string> = {
+  entrada: "Entrada do veículo em uma unidade ou depósito.",
+  apreensao: "Formaliza a apreensão e define o local de custódia.",
+  transferencia: "Move o veículo entre unidades, pátios ou depósitos.",
+  pericia: "Registra o encaminhamento ou realização de perícia.",
+  liberacao: "Entrega o veículo à pessoa autorizada.",
+  devolucao: "Registra a devolução ao proprietário ou responsável.",
+  atualizacao: "Acrescenta uma ocorrência ao histórico sem alterar a situação.",
+};
+
+function getMovementValidationErrors(draft: MovementDraft) {
+  const errors: string[] = [];
+  const requiresDestination = ["entrada", "apreensao", "transferencia"].includes(
+    draft.movementType,
+  );
+  const isRelease = draft.movementType === "liberacao" || draft.movementType === "devolucao";
+
+  if (!draft.occurredAt) errors.push("Informe a data e a hora.");
+  if (requiresDestination && !draft.toLocation.trim()) errors.push("Informe o local de destino.");
+  if (draft.movementType === "atualizacao" && !draft.notes.trim())
+    errors.push("Descreva a atualização que será registrada.");
+  if (isRelease && !draft.releasedTo.trim()) errors.push("Informe quem receberá o veículo.");
+  if (isRelease && !draft.releaseDocument.trim()) errors.push("Informe o documento apresentado.");
+  if (isRelease && !draft.releaseAuthority.trim()) errors.push("Informe a autoridade responsável.");
+
+  return errors;
+}
+
 export default function VehicleDetailsPage() {
   const { vehicleId } = useParams({ from: "/veiculos/$vehicleId" });
+  const profile = useAppProfile();
+  const canEdit = canEditVehicles(profile);
+  const canMove = canRegisterVehicleMovements(profile);
+  const canRelease = canReleaseVehicles(profile);
   const [bundle, setBundle] = useState<DetailBundle | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [movementOpen, setMovementOpen] = useState(false);
   const [movement, setMovement] = useState<MovementDraft>(INITIAL_MOVEMENT);
   const [movementSaving, setMovementSaving] = useState(false);
+  const [movementError, setMovementError] = useState("");
+  const [movementSuccess, setMovementSuccess] = useState("");
   const [printMode, setPrintMode] = useState<"ficha" | "termo">("ficha");
 
   const loadDetails = useCallback(async () => {
@@ -104,8 +155,22 @@ export default function VehicleDetailsPage() {
   }
 
   async function saveMovement() {
+    const isReleaseMovement =
+      movement.movementType === "liberacao" || movement.movementType === "devolucao";
+    if (!canMove || (isReleaseMovement && !canRelease)) {
+      setMovementError("Seu perfil não possui permissão para esta movimentação.");
+      return;
+    }
+
+    const validationErrors = getMovementValidationErrors(movement);
+    if (validationErrors.length) {
+      setMovementError(validationErrors[0]);
+      return;
+    }
+
     setMovementSaving(true);
-    setError("");
+    setMovementError("");
+    setMovementSuccess("");
     try {
       await registerVehicleMovement({
         vehicleId,
@@ -121,10 +186,13 @@ export default function VehicleDetailsPage() {
         },
       });
       setMovementOpen(false);
-      setMovement(INITIAL_MOVEMENT);
+      setMovement(createInitialMovement());
+      setMovementSuccess(`${movementLabels[movement.movementType]} registrada com sucesso.`);
       await loadDetails();
     } catch {
-      setError("Não foi possível registrar a movimentação.");
+      setMovementError(
+        "Não foi possível registrar a movimentação. Revise os dados e tente novamente.",
+      );
     } finally {
       setMovementSaving(false);
     }
@@ -147,7 +215,7 @@ export default function VehicleDetailsPage() {
   const printSections = buildPrintSections(vehicle, printMode);
 
   return (
-    <div className="space-y-5">
+    <div className="sipi-print-document space-y-5">
       <header className="rounded-2xl border border-border/70 bg-card/60 p-5 lg:p-6">
         <button
           type="button"
@@ -172,28 +240,46 @@ export default function VehicleDetailsPage() {
               {displayVehicleValue(vehicle.chassis)}
             </p>
           </div>
-          <div className="flex flex-wrap gap-2">
+          <div className="grid w-full gap-2 sm:grid-cols-2 lg:w-auto">
             <button
               type="button"
               onClick={() => printDocument("ficha")}
-              className="inline-flex items-center gap-2 rounded-xl bg-info px-4 py-2.5 text-sm font-semibold text-white"
+              className="group inline-flex min-w-48 items-center gap-3 rounded-xl bg-info px-3 py-2.5 text-left text-white shadow-lg shadow-info/10 transition hover:-translate-y-0.5 hover:brightness-110"
             >
-              <FileDown className="h-4 w-4" /> Gerar ficha
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/15">
+                <FileDown className="h-4 w-4" />
+              </span>
+              <span>
+                <strong className="block text-sm">Gerar ficha em PDF</strong>
+                <small className="block text-[10px] font-medium text-white/75">
+                  Documento completo A4
+                </small>
+              </span>
             </button>
             <button
               type="button"
               onClick={() => printDocument("termo")}
-              className="inline-flex items-center gap-2 rounded-xl border border-info/35 bg-info/10 px-4 py-2.5 text-sm font-semibold text-info"
+              className="group inline-flex min-w-48 items-center gap-3 rounded-xl border border-success/35 bg-success/10 px-3 py-2.5 text-left text-success transition hover:-translate-y-0.5 hover:border-success/55 hover:bg-success/15"
             >
-              <FileSignature className="h-4 w-4" /> Gerar termo
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-success/15">
+                <FileSignature className="h-4 w-4" />
+              </span>
+              <span>
+                <strong className="block text-sm">Gerar termo</strong>
+                <small className="block text-[10px] font-medium text-muted-foreground">
+                  Entrega e assinaturas
+                </small>
+              </span>
             </button>
-            <Link
-              to="/veiculos/$vehicleId/editar"
-              params={{ vehicleId }}
-              className="hidden items-center gap-2 rounded-xl border border-border px-4 py-2.5 text-sm font-semibold hover:border-info/35 md:inline-flex"
-            >
-              <Pencil className="h-4 w-4" /> Editar
-            </Link>
+            {canEdit ? (
+              <Link
+                to="/veiculos/$vehicleId/editar"
+                params={{ vehicleId }}
+                className="hidden items-center justify-center gap-2 rounded-xl border border-border px-4 py-2.5 text-sm font-semibold hover:border-info/35 md:inline-flex sm:col-span-2"
+              >
+                <Pencil className="h-4 w-4" /> Editar
+              </Link>
+            ) : null}
           </div>
         </div>
       </header>
@@ -201,6 +287,12 @@ export default function VehicleDetailsPage() {
       {error ? (
         <p className="rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
           {error}
+        </p>
+      ) : null}
+
+      {movementSuccess ? (
+        <p className="flex items-center gap-2 rounded-xl border border-success/30 bg-success/10 p-3 text-sm font-semibold text-success">
+          <CheckCircle2 className="h-4 w-4" /> {movementSuccess}
         </p>
       ) : null}
 
@@ -370,16 +462,20 @@ export default function VehicleDetailsPage() {
             </div>
           </section>
 
-          <button
-            type="button"
-            onClick={() => {
-              setMovement({ ...INITIAL_MOVEMENT, fromLocation: vehicle.custody_location ?? "" });
-              setMovementOpen(true);
-            }}
-            className="hidden w-full items-center justify-center gap-2 rounded-xl bg-info px-4 py-3 text-sm font-semibold text-white md:inline-flex"
-          >
-            <Repeat2 className="h-4 w-4" /> Registrar movimentação
-          </button>
+          {canMove ? (
+            <button
+              type="button"
+              onClick={() => {
+                setMovement(createInitialMovement(vehicle.custody_location ?? ""));
+                setMovementError("");
+                setMovementSuccess("");
+                setMovementOpen(true);
+              }}
+              className="hidden w-full items-center justify-center gap-2 rounded-xl bg-info px-4 py-3 text-sm font-semibold text-white md:inline-flex"
+            >
+              <Repeat2 className="h-4 w-4" /> Registrar movimentação
+            </button>
+          ) : null}
         </aside>
       </div>
 
@@ -392,9 +488,11 @@ export default function VehicleDetailsPage() {
             ? "Cadastro, identificação e situação de custódia"
             : "Registro de liberação ou devolução"
         }
-        identifierLabel="Identificação"
-        identifier={vehicle.internal_id}
+        identifierLabel="Número do B.O."
+        identifier={vehicle.police_report_number?.trim() || "NÃO INFORMADO"}
+        variant={printMode === "ficha" ? "vehicle" : "term"}
         summary={[
+          { label: "Cadastro SIPI", value: vehicle.internal_id },
           { label: "Placa", value: vehicle.plate },
           { label: "Veículo", value: vehicle.brand_model },
           {
@@ -409,8 +507,20 @@ export default function VehicleDetailsPage() {
         <MovementDialog
           draft={movement}
           saving={movementSaving}
-          onChange={setMovement}
-          onClose={() => setMovementOpen(false)}
+          error={movementError}
+          canRelease={canRelease}
+          currentLocation={vehicle.custody_location || vehicle.storage_location}
+          currentSituation={
+            vehicle.situation ? VEHICLE_SITUATION_LABELS[vehicle.situation] : "Não informada"
+          }
+          onChange={(value) => {
+            setMovement(value);
+            setMovementError("");
+          }}
+          onClose={() => {
+            setMovementOpen(false);
+            setMovementError("");
+          }}
           onSave={saveMovement}
         />
       ) : null}
@@ -486,12 +596,22 @@ function IdentificationDetail({
 }
 
 function buildPrintSections(vehicle: VehicleRecord, mode: "ficha" | "termo"): SipiPrintSection[] {
-  if (mode === "termo")
+  if (mode === "termo") {
+    const vehicleDescription = [
+      VEHICLE_TYPE_LABELS[vehicle.vehicle_type],
+      vehicle.brand_model,
+      vehicle.color ? `cor ${vehicle.color}` : null,
+      vehicle.plate ? `placa ${vehicle.plate}` : null,
+      vehicle.chassis ? `chassi ${vehicle.chassis}` : null,
+    ]
+      .filter(Boolean)
+      .join(", ");
+
     return [
       {
-        title: "LIBERAÇÃO OU DEVOLUÇÃO",
+        title: "DADOS DA ENTREGA",
         fields: [
-          { label: "Situação", value: vehicle.release_status },
+          { label: "Situação", value: vehicle.release_status?.replaceAll("_", " ") },
           { label: "Data", value: formatVehicleDate(vehicle.release_date) },
           { label: "Pessoa que recebeu", value: vehicle.released_to },
           { label: "Documento apresentado", value: vehicle.release_document },
@@ -511,7 +631,39 @@ function buildPrintSections(vehicle: VehicleRecord, mode: "ficha" | "termo"): Si
           { label: "Chassi", value: vehicle.chassis },
         ],
       },
+      {
+        title: "DECLARAÇÃO DE RECEBIMENTO",
+        wide: true,
+        narrative: true,
+        fields: [
+          {
+            label: "Declaração",
+            value: `Declaro, para os devidos fins, o recebimento do veículo ${vehicleDescription}, nas condições registradas neste termo. Confirmo que os dados acima foram conferidos no ato da entrega.`,
+            wide: true,
+          },
+        ],
+      },
+      {
+        title: "ASSINATURAS",
+        wide: true,
+        fields: [
+          {
+            label: "Pessoa que recebeu",
+            value: `____________________________________________\n${vehicle.released_to?.trim() || "Nome e assinatura"}`,
+          },
+          {
+            label: "Responsável pela entrega",
+            value: `____________________________________________\n${vehicle.release_authority?.trim() || "Nome, matrícula e assinatura"}`,
+          },
+          {
+            label: "Local e data",
+            value: "____________________________________________",
+            wide: true,
+          },
+        ],
+      },
     ];
+  }
   return [
     {
       title: "IDENTIFICAÇÃO",
@@ -559,99 +711,180 @@ function buildPrintSections(vehicle: VehicleRecord, mode: "ficha" | "termo"): Si
 function MovementDialog({
   draft,
   saving,
+  error,
+  canRelease,
+  currentLocation,
+  currentSituation,
   onChange,
   onClose,
   onSave,
 }: {
   draft: MovementDraft;
   saving: boolean;
+  error: string;
+  canRelease: boolean;
+  currentLocation: string | null;
+  currentSituation: string;
   onChange: (value: MovementDraft) => void;
   onClose: () => void;
   onSave: () => void;
 }) {
+  const [releaseConfirmed, setReleaseConfirmed] = useState(false);
   const isRelease = draft.movementType === "liberacao" || draft.movementType === "devolucao";
+  const hasLocationChange = ["entrada", "apreensao", "transferencia"].includes(draft.movementType);
+  const validationErrors = getMovementValidationErrors(draft);
+  const canSubmit = validationErrors.length === 0 && (!isRelease || releaseConfirmed) && !saving;
+  const nextSituation =
+    draft.movementType === "entrada" || draft.movementType === "apreensao"
+      ? "Apreendido"
+      : draft.movementType === "pericia"
+        ? "Periciado"
+        : isRelease
+          ? "Liberado"
+          : currentSituation;
+  const nextLocation = isRelease
+    ? "Fora da custódia"
+    : hasLocationChange
+      ? draft.toLocation.trim() || "Aguardando destino"
+      : currentLocation || "Não informado";
   const set = <K extends keyof MovementDraft>(key: K, value: MovementDraft[K]) =>
     onChange({ ...draft, [key]: value });
+
   return (
     <div className="fixed inset-0 z-[80] flex items-end justify-center bg-black/70 p-0 backdrop-blur-sm md:items-center md:p-4">
       <div
         role="dialog"
         aria-modal="true"
         aria-label="Registrar movimentação"
-        className="max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-t-2xl border border-border bg-card p-5 shadow-2xl md:rounded-2xl"
+        className="max-h-[92vh] w-full max-w-3xl overflow-y-auto rounded-t-2xl border border-border bg-card shadow-2xl md:rounded-2xl"
       >
-        <div className="flex items-start justify-between">
-          <div>
-            <h2 className="text-lg font-bold">Registrar movimentação</h2>
-            <p className="text-xs text-muted-foreground">
-              A atualização do veículo e o histórico serão gravados juntos.
-            </p>
+        <div className="flex items-start justify-between border-b border-border p-5">
+          <div className="flex items-start gap-3">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-info/10 text-info">
+              <Repeat2 className="h-5 w-5" />
+            </span>
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-[0.16em] text-info">
+                Custódia e histórico
+              </p>
+              <h2 className="mt-1 text-lg font-bold">Registrar movimentação</h2>
+              <p className="text-xs text-muted-foreground">
+                A situação do veículo e o histórico serão atualizados juntos.
+              </p>
+            </div>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="text-muted-foreground hover:text-foreground"
+            aria-label="Fechar janela"
+            className="rounded-lg border border-border p-2 text-muted-foreground transition hover:border-info/40 hover:text-foreground"
           >
             <X className="h-5 w-5" />
           </button>
         </div>
-        <div className="mt-5 grid gap-4 md:grid-cols-2">
-          <label>
-            <span className="mb-1 block text-xs text-muted-foreground">Tipo</span>
-            <select
-              value={draft.movementType}
-              onChange={(event) =>
-                set("movementType", event.target.value as MovementDraft["movementType"])
-              }
-              className="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm"
-            >
-              {Object.entries(movementLabels).map(([value, label]) => (
-                <option key={value} value={value}>
-                  {label}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            <span className="mb-1 block text-xs text-muted-foreground">Data e hora</span>
-            <input
-              type="datetime-local"
-              value={draft.occurredAt}
-              onChange={(event) => set("occurredAt", event.target.value)}
-              className="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm"
-            />
-          </label>
-          <MovementInput
-            label="Origem"
-            value={draft.fromLocation}
-            onChange={(value) => set("fromLocation", value)}
-          />
-          <MovementInput
-            label="Destino"
-            value={draft.toLocation}
-            onChange={(value) => set("toLocation", value)}
-          />
+
+        <div className="space-y-5 p-5">
+          <section className="grid gap-4 md:grid-cols-2">
+            <label>
+              <span className="mb-1.5 block text-xs font-semibold text-muted-foreground">
+                Tipo de movimentação
+              </span>
+              <select
+                value={draft.movementType}
+                onChange={(event) => {
+                  set("movementType", event.target.value as MovementDraft["movementType"]);
+                  setReleaseConfirmed(false);
+                }}
+                className="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm"
+              >
+                {Object.entries(movementLabels)
+                  .filter(
+                    ([value]) => canRelease || (value !== "liberacao" && value !== "devolucao"),
+                  )
+                  .map(([value, label]) => (
+                    <option key={value} value={value}>
+                      {label}
+                    </option>
+                  ))}
+              </select>
+            </label>
+            <label>
+              <span className="mb-1.5 block text-xs font-semibold text-muted-foreground">
+                Data e hora <strong className="text-destructive">*</strong>
+              </span>
+              <input
+                type="datetime-local"
+                value={draft.occurredAt}
+                onChange={(event) => set("occurredAt", event.target.value)}
+                className="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm"
+              />
+            </label>
+          </section>
+
+          <p className="rounded-xl border border-info/20 bg-info/5 px-4 py-3 text-xs leading-relaxed text-muted-foreground">
+            <strong className="text-foreground">{movementLabels[draft.movementType]}:</strong>{" "}
+            {movementDescriptions[draft.movementType]}
+          </p>
+
+          {hasLocationChange ? (
+            <section className="grid gap-4 rounded-xl border border-border bg-background/35 p-4 md:grid-cols-2">
+              <div className="md:col-span-2">
+                <h3 className="text-xs font-black uppercase tracking-[0.12em] text-info">
+                  Localização
+                </h3>
+              </div>
+              <MovementInput
+                label="Origem"
+                value={draft.fromLocation}
+                onChange={(value) => set("fromLocation", value)}
+              />
+              <MovementInput
+                label="Destino"
+                value={draft.toLocation}
+                required
+                onChange={(value) => set("toLocation", value)}
+              />
+            </section>
+          ) : null}
+
           {isRelease ? (
-            <>
+            <section className="grid gap-4 rounded-xl border border-success/25 bg-success/5 p-4 md:grid-cols-2">
+              <div className="md:col-span-2">
+                <h3 className="text-xs font-black uppercase tracking-[0.12em] text-success">
+                  Dados de quem receberá
+                </h3>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Estes dados serão usados automaticamente no termo de entrega.
+                </p>
+              </div>
               <MovementInput
                 label="Pessoa que recebeu"
                 value={draft.releasedTo}
+                required
                 onChange={(value) => set("releasedTo", value)}
               />
               <MovementInput
                 label="Documento apresentado"
                 value={draft.releaseDocument}
+                required
                 onChange={(value) => set("releaseDocument", value)}
               />
               <MovementInput
                 label="Autoridade responsável"
                 value={draft.releaseAuthority}
+                required
                 onChange={(value) => set("releaseAuthority", value)}
               />
-            </>
+            </section>
           ) : null}
+
           <label className="md:col-span-2">
-            <span className="mb-1 block text-xs text-muted-foreground">Observações</span>
+            <span className="mb-1.5 block text-xs font-semibold text-muted-foreground">
+              Observações
+              {draft.movementType === "atualizacao" ? (
+                <strong className="ml-1 text-destructive">*</strong>
+              ) : null}
+            </span>
             <textarea
               rows={4}
               value={draft.notes}
@@ -659,8 +892,54 @@ function MovementDialog({
               className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm"
             />
           </label>
+
+          <section className="rounded-xl border border-border bg-background/45 p-4">
+            <div className="mb-3 flex items-center gap-2">
+              <ClipboardCheck className="h-4 w-4 text-info" />
+              <h3 className="text-xs font-black uppercase tracking-[0.12em]">Resultado previsto</h3>
+            </div>
+            <div className="grid gap-3 text-xs sm:grid-cols-2">
+              <div className="rounded-lg border border-border bg-card/60 p-3">
+                <span className="text-muted-foreground">Situação</span>
+                <p className="mt-1 font-bold">
+                  {currentSituation} <span className="px-1 text-info">→</span> {nextSituation}
+                </p>
+              </div>
+              <div className="rounded-lg border border-border bg-card/60 p-3">
+                <span className="text-muted-foreground">Custódia</span>
+                <p className="mt-1 font-bold">
+                  {currentLocation || "Não informada"} <span className="px-1 text-info">→</span>{" "}
+                  {nextLocation}
+                </p>
+              </div>
+            </div>
+          </section>
+
+          {isRelease ? (
+            <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-warning/30 bg-warning/5 p-4">
+              <input
+                type="checkbox"
+                checked={releaseConfirmed}
+                onChange={(event) => setReleaseConfirmed(event.target.checked)}
+                className="mt-0.5 h-4 w-4 accent-[var(--success)]"
+              />
+              <span className="text-xs leading-relaxed">
+                <strong className="block text-warning">Confirmar saída da custódia</strong>
+                Confirmo que a autorização e os dados da pessoa que receberá o veículo foram
+                conferidos.
+              </span>
+            </label>
+          ) : null}
+
+          {error || validationErrors.length ? (
+            <div className="flex items-start gap-2 rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-xs text-destructive">
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+              <span>{error || validationErrors[0]}</span>
+            </div>
+          ) : null}
         </div>
-        <div className="mt-5 flex justify-end gap-2">
+
+        <div className="flex justify-end gap-2 border-t border-border bg-background/25 p-5">
           <button
             type="button"
             onClick={onClose}
@@ -670,16 +949,18 @@ function MovementDialog({
           </button>
           <button
             type="button"
-            disabled={saving}
+            disabled={!canSubmit}
             onClick={onSave}
-            className="inline-flex items-center gap-2 rounded-xl bg-info px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
+            className="inline-flex items-center gap-2 rounded-xl bg-info px-4 py-2.5 text-sm font-semibold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"
           >
             {saving ? (
               <LoaderCircle className="h-4 w-4 animate-spin" />
             ) : (
               <CalendarClock className="h-4 w-4" />
             )}{" "}
-            Registrar
+            {isRelease
+              ? `Confirmar ${movementLabels[draft.movementType].toLowerCase()}`
+              : "Registrar"}
           </button>
         </div>
       </div>
@@ -690,17 +971,23 @@ function MovementDialog({
 function MovementInput({
   label,
   value,
+  required = false,
   onChange,
 }: {
   label: string;
   value: string;
+  required?: boolean;
   onChange: (value: string) => void;
 }) {
   return (
     <label>
-      <span className="mb-1 block text-xs text-muted-foreground">{label}</span>
+      <span className="mb-1.5 block text-xs font-semibold text-muted-foreground">
+        {label}
+        {required ? <strong className="ml-1 text-destructive">*</strong> : null}
+      </span>
       <input
         value={value}
+        required={required}
         onChange={(event) => onChange(event.target.value)}
         className="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm"
       />

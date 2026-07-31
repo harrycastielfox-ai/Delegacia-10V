@@ -154,10 +154,43 @@ export function canViewVehicles(
   return profile.cargo !== "membro";
 }
 
+const VEHICLE_EDITOR_ROLES: UserRole[] = ["sipi_access", "delegado", "admin"];
+const VEHICLE_RELEASE_ROLES: UserRole[] = ["delegado", "admin"];
+
+export function canCreateVehicles(
+  profile: Pick<UserProfile, "cargo" | "status_autorizacao"> | null,
+): boolean {
+  return Boolean(profile && isAuthorized(profile) && VEHICLE_EDITOR_ROLES.includes(profile.cargo));
+}
+
+export function canEditVehicles(
+  profile: Pick<UserProfile, "cargo" | "status_autorizacao"> | null,
+): boolean {
+  return canCreateVehicles(profile);
+}
+
+export function canRegisterVehicleMovements(
+  profile: Pick<UserProfile, "cargo" | "status_autorizacao"> | null,
+): boolean {
+  return canCreateVehicles(profile);
+}
+
+export function canReleaseVehicles(
+  profile: Pick<UserProfile, "cargo" | "status_autorizacao"> | null,
+): boolean {
+  return Boolean(profile && isAuthorized(profile) && VEHICLE_RELEASE_ROLES.includes(profile.cargo));
+}
+
+export function canDeleteVehicles(
+  profile: Pick<UserProfile, "cargo" | "status_autorizacao"> | null,
+): boolean {
+  return canReleaseVehicles(profile);
+}
+
 export function canManageVehicles(
   profile: Pick<UserProfile, "cargo" | "status_autorizacao"> | null,
 ): boolean {
-  return canViewVehicles(profile);
+  return canCreateVehicles(profile) || canReleaseVehicles(profile) || canDeleteVehicles(profile);
 }
 
 export const canSeePrivateRecords = canViewPrivateCases;

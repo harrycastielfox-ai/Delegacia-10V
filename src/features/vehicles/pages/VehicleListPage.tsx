@@ -2,6 +2,8 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, Filter, Plus, RotateCcw, Search } from "lucide-react";
 import { VehicleQuickPreview } from "@/components/RecordQuickPreview";
+import { useAppProfile } from "@/components/AppProfileContext";
+import { canCreateVehicles } from "@/lib/authz";
 import { getVehicleById, listVehiclesPage } from "@/lib/repositories/vehiclesRepository";
 import { VehicleEmptyState } from "../components/VehicleEmptyState";
 import { VehicleStatusBadge } from "../components/VehicleStatusBadge";
@@ -40,6 +42,8 @@ function displayPoliceReportNumber(value: string | null) {
 
 export default function VehicleListPage({ preset }: { preset: VehicleListPreset }) {
   const navigate = useNavigate();
+  const profile = useAppProfile();
+  const canCreate = canCreateVehicles(profile);
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebouncedValue(search, 400);
   const [showFilters, setShowFilters] = useState(false);
@@ -219,7 +223,7 @@ export default function VehicleListPage({ preset }: { preset: VehicleListPreset 
           <h1 className="mt-1 text-3xl font-black tracking-tight">{preset.title}</h1>
           <p className="mt-1 text-sm text-muted-foreground">{preset.subtitle}</p>
         </div>
-        {preset.vehicleType ? (
+        {preset.vehicleType && canCreate ? (
           <Link
             to="/veiculos/novo"
             className="hidden items-center gap-2 rounded-xl bg-info px-5 py-2.5 text-sm font-semibold text-white transition hover:brightness-110 md:inline-flex"

@@ -4,14 +4,20 @@ import {
   canAtlasAssignRole,
   canAtlasEditTargetRole,
   canCreateCases,
+  canCreateVehicles,
   canDeleteCases,
+  canDeleteVehicles,
   canEditCases,
   canEditUserAccess,
+  canEditVehicles,
   canManageUsers,
   canOnlyViewPublicCases,
+  canRegisterVehicleMovements,
+  canReleaseVehicles,
   canViewAuditoria,
   canViewPrivateCases,
   canViewRepresentacoes,
+  canViewVehicles,
   isAdmin,
   isAuthorized,
   isProtectedInstitutionalFunction,
@@ -154,6 +160,48 @@ describe("representacoes and auditoria permissions", () => {
     expect(canViewAuditoria(makeProfile({ cargo: "admin", status_autorizacao: "bloqueado" }))).toBe(
       false,
     );
+  });
+});
+
+describe("vehicle permissions", () => {
+  it("keeps consultation available to every authorized module role", () => {
+    expect(canViewVehicles(makeProfile({ cargo: "sipi_access" }))).toBe(true);
+    expect(canViewVehicles(makeProfile({ cargo: "atlas_access" }))).toBe(true);
+    expect(canViewVehicles(makeProfile({ cargo: "delegado" }))).toBe(true);
+    expect(canViewVehicles(makeProfile({ cargo: "admin" }))).toBe(true);
+  });
+
+  it("allows operational vehicle writes to SIPI, delegado and admin roles", () => {
+    for (const cargo of ["sipi_access", "delegado", "admin"] as const) {
+      const profile = makeProfile({ cargo });
+      expect(canCreateVehicles(profile)).toBe(true);
+      expect(canEditVehicles(profile)).toBe(true);
+      expect(canRegisterVehicleMovements(profile)).toBe(true);
+    }
+  });
+
+  it("keeps atlas_access and membro in consultation-only mode", () => {
+    for (const cargo of ["atlas_access", "membro"] as const) {
+      const profile = makeProfile({ cargo });
+      expect(canCreateVehicles(profile)).toBe(false);
+      expect(canEditVehicles(profile)).toBe(false);
+      expect(canRegisterVehicleMovements(profile)).toBe(false);
+    }
+  });
+
+  it("reserves release and deletion for delegado or admin", () => {
+    expect(canReleaseVehicles(makeProfile({ cargo: "sipi_access" }))).toBe(false);
+    expect(canDeleteVehicles(makeProfile({ cargo: "sipi_access" }))).toBe(false);
+    expect(canReleaseVehicles(makeProfile({ cargo: "delegado" }))).toBe(true);
+    expect(canDeleteVehicles(makeProfile({ cargo: "admin" }))).toBe(true);
+  });
+
+  it("denies every mutation while authorization is not active", () => {
+    const profile = makeProfile({ cargo: "admin", status_autorizacao: "bloqueado" });
+    expect(canCreateVehicles(profile)).toBe(false);
+    expect(canEditVehicles(profile)).toBe(false);
+    expect(canRegisterVehicleMovements(profile)).toBe(false);
+    expect(canReleaseVehicles(profile)).toBe(false);
   });
 });
 

@@ -18,6 +18,7 @@ type SipiPrintSheetProps = {
   documentSubtitle: string;
   identifierLabel: string;
   identifier: string;
+  variant?: "default" | "vehicle" | "term" | "summary";
   summary?: SipiPrintField[];
   sections: SipiPrintSection[];
 };
@@ -40,6 +41,7 @@ export function SipiPrintSheet({
   documentSubtitle,
   identifierLabel,
   identifier,
+  variant = "default",
   summary = [],
   sections,
 }: SipiPrintSheetProps) {
@@ -71,7 +73,7 @@ export function SipiPrintSheet({
   );
 
   return (
-    <div className="print-only sipi-print-sheet" aria-hidden="true">
+    <div className={`print-only sipi-print-sheet sipi-print-sheet-${variant}`} aria-hidden="true">
       <header className="sipi-print-masthead">
         <img className="sipi-print-logo" src="/sipi-logo.png" alt="" />
         <div className="sipi-print-heading">

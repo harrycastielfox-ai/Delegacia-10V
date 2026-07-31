@@ -882,11 +882,28 @@ html[data-theme="black"] {
   }
 
   .sipi-print-document .sipi-print-sheet {
+    --sipi-print-accent: #1f4f7a;
+    --sipi-print-accent-soft: #eef5fa;
     display: block !important;
     width: 100% !important;
     min-height: 272mm !important;
     background: #fff !important;
     color: #111827 !important;
+  }
+
+  .sipi-print-document .sipi-print-sheet-vehicle {
+    --sipi-print-accent: #0b6fa4;
+    --sipi-print-accent-soft: #edf7fc;
+  }
+
+  .sipi-print-document .sipi-print-sheet-term {
+    --sipi-print-accent: #177154;
+    --sipi-print-accent-soft: #eef8f3;
+  }
+
+  .sipi-print-document .sipi-print-sheet-summary {
+    --sipi-print-accent: #5b4a91;
+    --sipi-print-accent-soft: #f4f1fa;
   }
 
   .sipi-print-masthead {
@@ -895,7 +912,8 @@ html[data-theme="black"] {
     align-items: center !important;
     gap: 5mm !important;
     margin: 0 0 2.5mm !important;
-    padding: 0 0 3mm !important;
+    padding: 3mm 0 !important;
+    border-top: 2.2mm solid var(--sipi-print-accent) !important;
     border-bottom: 1px solid #cbd5e1 !important;
   }
 
@@ -914,7 +932,7 @@ html[data-theme="black"] {
 
   .sipi-print-heading .sipi-print-agency {
     margin: 0 0 1mm !important;
-    color: #111827 !important;
+    color: var(--sipi-print-accent) !important;
     font-size: 7.5pt !important;
     font-weight: 800 !important;
     letter-spacing: 0.16em !important;
@@ -945,9 +963,10 @@ html[data-theme="black"] {
 
   .sipi-print-identifier {
     padding: 3mm !important;
-    border: 1px solid #9ca3af !important;
+    border: 1px solid var(--sipi-print-accent) !important;
+    border-left: 1.8mm solid var(--sipi-print-accent) !important;
     border-radius: 2mm !important;
-    background: #fff !important;
+    background: var(--sipi-print-accent-soft) !important;
     text-align: right !important;
   }
 
@@ -964,7 +983,7 @@ html[data-theme="black"] {
   .sipi-print-identifier strong {
     display: block !important;
     margin: 1.2mm 0 !important;
-    color: #030712 !important;
+    color: var(--sipi-print-accent) !important;
     font-size: 12pt !important;
     font-weight: 900 !important;
     overflow-wrap: anywhere !important;
@@ -977,7 +996,8 @@ html[data-theme="black"] {
     margin-bottom: 3mm !important;
     padding: 1.4mm 2.4mm !important;
     border: 1px solid #cbd5e1 !important;
-    background: #f8fafc !important;
+    border-left: 1.2mm solid var(--sipi-print-accent) !important;
+    background: var(--sipi-print-accent-soft) !important;
     color: #374151 !important;
     font-size: 6.8pt !important;
     letter-spacing: 0.12em !important;
@@ -994,7 +1014,8 @@ html[data-theme="black"] {
     grid-template-columns: repeat(auto-fit, minmax(28mm, 1fr)) !important;
     margin-bottom: 4mm !important;
     border: 1px solid #cbd5e1 !important;
-    background: #f8fafc !important;
+    border-top: 1.2mm solid var(--sipi-print-accent) !important;
+    background: var(--sipi-print-accent-soft) !important;
   }
 
   .sipi-print-summary > div {
@@ -1020,7 +1041,7 @@ html[data-theme="black"] {
   .sipi-print-summary strong {
     display: block !important;
     margin-top: 1mm !important;
-    color: #111827 !important;
+    color: var(--sipi-print-accent) !important;
     font-size: 8.7pt !important;
     font-weight: 800 !important;
     overflow-wrap: anywhere !important;
@@ -1040,7 +1061,7 @@ html[data-theme="black"] {
     break-inside: avoid !important;
     page-break-inside: avoid !important;
     border: 1px solid #cbd5e1 !important;
-    border-top: 1px solid #94a3b8 !important;
+    border-top: 1.2mm solid var(--sipi-print-accent) !important;
     border-radius: 1.5mm !important;
     background: rgba(255, 255, 255, 0.96) !important;
     overflow: hidden !important;
@@ -1059,8 +1080,8 @@ html[data-theme="black"] {
     margin: 0 !important;
     padding: 2.2mm 3mm !important;
     border-bottom: 1px solid #d7dde5 !important;
-    background: #f3f4f6 !important;
-    color: #111827 !important;
+    background: var(--sipi-print-accent-soft) !important;
+    color: var(--sipi-print-accent) !important;
     font-size: 7.3pt !important;
     font-weight: 900 !important;
     letter-spacing: 0.13em !important;
@@ -1123,7 +1144,7 @@ html[data-theme="black"] {
     align-items: center !important;
     justify-content: space-between !important;
     padding-top: 2mm !important;
-    border-top: 1px solid #9ca3af !important;
+    border-top: 1px solid var(--sipi-print-accent) !important;
     color: #6b7280 !important;
     font-size: 6.3pt !important;
     letter-spacing: 0.04em !important;
