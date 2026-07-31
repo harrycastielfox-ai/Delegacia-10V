@@ -41,6 +41,7 @@ import {
   getLatestUserAccessContext,
   type UserAccessContext,
 } from "@/lib/accessContext";
+import { MobileNavigation } from "@/components/MobileNavigation";
 
 export const Route = createFileRoute("/admin/usuarios/$userId")({
   component: AdminUserProfilePage,
@@ -357,7 +358,7 @@ function AdminUserProfilePage() {
 
   if (checkingAccess) {
     return (
-      <PageShell>
+      <PageShell profile={currentProfile}>
         <StateBox text="Verificando permissões..." />
       </PageShell>
     );
@@ -365,7 +366,7 @@ function AdminUserProfilePage() {
 
   if (!hasAccess) {
     return (
-      <PageShell>
+      <PageShell profile={currentProfile}>
         <section className="rounded-2xl border border-border bg-card/80 p-8 shadow-2xl">
           <div className="mb-4 flex items-center gap-3">
             <div className="rounded-lg border border-warning/40 bg-warning/10 p-2">
@@ -388,7 +389,7 @@ function AdminUserProfilePage() {
   }
 
   return (
-    <PageShell>
+    <PageShell profile={currentProfile}>
       <section className="rounded-2xl border border-primary/25 bg-card/80 p-6 shadow-[0_0_30px_rgba(34,197,94,0.07)]">
         <Link
           to="/admin/usuarios"
@@ -653,11 +654,14 @@ function formatCoordinates(context: UserAccessContext) {
   return `${context.latitude.toFixed(6)}, ${context.longitude.toFixed(6)}`;
 }
 
-function PageShell({ children }: { children: ReactNode }) {
+function PageShell({ children, profile }: { children: ReactNode; profile?: UserProfile | null }) {
   return (
-    <main className="min-h-screen bg-background px-4 py-6 text-foreground sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-6xl space-y-6">{children}</div>
-    </main>
+    <>
+      {profile ? <MobileNavigation profile={profile} /> : null}
+      <main className="min-h-screen bg-background px-4 pb-24 pt-20 text-foreground sm:px-6 md:py-6 lg:px-8">
+        <div className="mx-auto max-w-6xl space-y-6">{children}</div>
+      </main>
+    </>
   );
 }
 

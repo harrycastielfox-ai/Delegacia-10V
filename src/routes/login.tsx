@@ -21,6 +21,7 @@ import {
   logout,
 } from "@/lib/auth";
 import { isAuthorized } from "@/lib/authz";
+import { getPostAuthDestination } from "@/lib/mobileExperience";
 import {
   AccessContextError,
   captureNetworkAccessContext,
@@ -413,7 +414,7 @@ function LoginPage() {
           return;
         }
 
-        navigate({ to: "/modulos", replace: true });
+        navigate({ to: getPostAuthDestination(), replace: true });
       } catch (error) {
         console.error("[LoginPage] Falha ao validar sessão existente", error);
       }
@@ -461,7 +462,7 @@ function LoginPage() {
         return;
       }
 
-      navigate({ to: "/modulos" });
+      navigate({ to: getPostAuthDestination() });
     } catch (err) {
       console.error("[LoginPage] Falha no fluxo de login", err);
       setErro(getFriendlyLoginError(err));

@@ -432,12 +432,15 @@ function Representacoes() {
             </span>
             <div className="min-w-0">
               <h1 className="text-2xl font-bold">Representações Judiciais</h1>
-              <p className="text-sm text-muted-foreground">Gestão de medidas e pedidos judiciais</p>
+              <p className="text-sm text-muted-foreground">
+                <span className="md:hidden">Consulta de medidas e pedidos judiciais</span>
+                <span className="hidden md:inline">Gestão de medidas e pedidos judiciais</span>
+              </p>
             </div>
           </div>
           <Link
             to="/nova-representacao"
-            className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-[0_0_18px_rgba(52,211,153,0.12)] transition hover:bg-primary/90"
+            className="hidden h-10 items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-[0_0_18px_rgba(52,211,153,0.12)] transition hover:bg-primary/90 md:inline-flex"
           >
             <Plus className="h-4 w-4" aria-hidden="true" />
             Nova representação
@@ -445,7 +448,7 @@ function Representacoes() {
         </header>
         {error && <p className="text-xs text-destructive">{error}</p>}
 
-        <section className="grid grid-cols-2 gap-3 lg:grid-cols-5">
+        <section className="hidden grid-cols-2 gap-3 md:grid lg:grid-cols-5">
           {summaryCards.map(({ key, label, value, helper, icon: Icon, className }) => (
             <button
               key={key}

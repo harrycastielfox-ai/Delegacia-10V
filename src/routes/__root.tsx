@@ -1,7 +1,15 @@
-import { Outlet, Link, createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
+import {
+  Outlet,
+  Link,
+  createRootRoute,
+  HeadContent,
+  Scripts,
+  redirect,
+} from "@tanstack/react-router";
 
 import appCss from "../styles.css?url";
 import { appearanceInitScript } from "@/lib/appearance";
+import { getMobileRouteRedirect } from "@/lib/mobileExperience";
 
 function NotFoundComponent() {
   return (
@@ -26,6 +34,10 @@ function NotFoundComponent() {
 }
 
 export const Route = createRootRoute({
+  beforeLoad: ({ location }) => {
+    const mobileRedirect = getMobileRouteRedirect(location.pathname);
+    if (mobileRedirect) throw redirect({ to: mobileRedirect });
+  },
   head: () => ({
     meta: [
       { charSet: "utf-8" },

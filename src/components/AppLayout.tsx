@@ -1,14 +1,36 @@
-import { AppSidebar } from "./AppSidebar";
 import type { ReactNode } from "react";
-import { useEffect, useState } from "react";
-import { useNavigate } from "@tanstack/react-router";
+import { lazy, Suspense, useEffect, useState } from "react";
+import { useNavigate, useRouterState } from "@tanstack/react-router";
 import { getCurrentProfile, getSession, logout } from "@/lib/auth";
 import { isAuthorized, type UserProfile } from "@/lib/authz";
-import { AppearanceSwitcher } from "./AppearanceSwitcher";
-import { DueSoonNotification } from "./DueSoonNotification";
+import { getMobileRouteRedirect, MOBILE_VIEWPORT_QUERY } from "@/lib/mobileExperience";
+import { MobileNavigation } from "./MobileNavigation";
+
+const AppSidebar = lazy(() =>
+  import("./AppSidebar").then((module) => ({ default: module.AppSidebar })),
+);
+const DueSoonNotification = lazy(() =>
+  import("./DueSoonNotification").then((module) => ({ default: module.DueSoonNotification })),
+);
+
+function useMobileViewport() {
+  const [mobile, setMobile] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    const media = window.matchMedia(MOBILE_VIEWPORT_QUERY);
+    const update = () => setMobile(media.matches);
+    update();
+    media.addEventListener("change", update);
+    return () => media.removeEventListener("change", update);
+  }, []);
+
+  return mobile;
+}
 
 export function AppLayout({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
+  const mobile = useMobileViewport();
   const [ready, setReady] = useState(false);
   const [profile, setProfile] = useState<UserProfile | null>(null);
 
@@ -75,7 +97,14 @@ export function AppLayout({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  if (!ready || !profile) {
+  const mobileRedirect = mobile === null ? null : getMobileRouteRedirect(pathname, mobile);
+
+  useEffect(() => {
+    if (!ready || !mobileRedirect) return;
+    navigate({ to: mobileRedirect, replace: true });
+  }, [mobileRedirect, navigate, ready]);
+
+  if (!ready || !profile || mobile === null || mobileRedirect) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background text-muted-foreground">
         <p className="text-sm">Carregando sessão...</p>
@@ -85,12 +114,19 @@ export function AppLayout({ children }: { children: ReactNode }) {
 
   return (
     <div className="min-h-screen flex w-full bg-background text-foreground">
-      <AppSidebar profile={profile} />
-      <div className="fixed right-4 top-4 z-40 md:hidden">
-        <AppearanceSwitcher />
-      </div>
-      <DueSoonNotification />
-      <main className="flex-1 min-w-0 p-6 lg:p-8 overflow-x-hidden">{children}</main>
+      {mobile ? (
+        <MobileNavigation profile={profile} />
+      ) : (
+        <Suspense fallback={null}>
+          <AppSidebar profile={profile} />
+          <DueSoonNotification />
+        </Suspense>
+      )}
+      <main
+        className={`flex-1 min-w-0 overflow-x-hidden ${mobile ? "px-4 pb-24 pt-20" : "p-6 lg:p-8"}`}
+      >
+        {children}
+      </main>
     </div>
   );
 }

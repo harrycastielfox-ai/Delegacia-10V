@@ -24,6 +24,7 @@ import {
   type UserRole,
 } from "@/lib/authz";
 import { supabase } from "@/lib/supabaseClient";
+import { MobileNavigation } from "@/components/MobileNavigation";
 
 export const Route = createFileRoute("/admin/usuarios")({
   component: AdminUsuariosPage,
@@ -247,7 +248,8 @@ function AdminUsuariosPage() {
   if (checkingAccess) return <PageState title="Verificando permissões..." />;
   if (!hasAccess) {
     return (
-      <section className="min-h-screen bg-background px-4 py-8 text-foreground sm:px-6 lg:px-8">
+      <section className="min-h-screen bg-background px-4 pb-24 pt-20 text-foreground sm:px-6 md:py-8 lg:px-8">
+        {currentProfile ? <MobileNavigation profile={currentProfile} /> : null}
         <div className="mx-auto max-w-3xl rounded-2xl border border-border bg-card/80 p-8 shadow-2xl">
           <div className="mb-4 flex items-center gap-3">
             <div className="rounded-lg border border-warning/40 bg-warning/10 p-2">
@@ -271,12 +273,13 @@ function AdminUsuariosPage() {
   }
 
   return (
-    <main className="min-h-screen bg-background px-4 py-6 text-foreground sm:px-6 lg:px-8">
+    <main className="min-h-screen bg-background px-4 pb-24 pt-20 text-foreground sm:px-6 md:py-6 lg:px-8">
+      {currentProfile ? <MobileNavigation profile={currentProfile} /> : null}
       <div className="mx-auto max-w-7xl space-y-6">
         <div>
           <Link
             to="/modulos"
-            className="inline-flex items-center gap-2 rounded-md border border-primary/30 bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary hover:bg-primary/20"
+            className="hidden items-center gap-2 rounded-md border border-primary/30 bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary hover:bg-primary/20 md:inline-flex"
           >
             <ArrowLeft className="h-4 w-4" />
             Voltar
@@ -294,13 +297,13 @@ function AdminUsuariosPage() {
                 Controle institucional de acesso, cargos e autorizações do SIPI.
               </p>
             </div>
-            <div className="rounded-full border border-primary/20 bg-primary/10 px-4 py-2 text-xs font-medium text-primary/85">
+            <div className="hidden rounded-full border border-primary/20 bg-primary/10 px-4 py-2 text-xs font-medium text-primary/85 md:block">
               {usuarios.length} perfil(is) carregado(s)
             </div>
           </div>
         </header>
 
-        <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+        <section className="hidden gap-4 md:grid md:grid-cols-2 xl:grid-cols-5">
           <SummaryCard icon={Users} label="Total usuários" value={usuarios.length} tone="primary" />
           <SummaryCard icon={Clock3} label="Aguardando" value={pendentes.length} tone="warning" />
           <SummaryCard icon={UserCheck} label="Autorizados" value={autorizados} tone="success" />
