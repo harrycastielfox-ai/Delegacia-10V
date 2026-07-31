@@ -546,11 +546,12 @@ function LoginPage() {
 
         <div className="bg-card border border-border rounded-2xl shadow-2xl shadow-black/40">
           <div className="px-8 pt-8 pb-6 text-center border-b border-border bg-gradient-to-b from-primary/5 to-transparent">
-            <div className="relative mx-auto -mt-2 h-[84px] w-[88px] rounded-lg bg-primary/12 border border-primary/25 shadow-[0_0_12px_rgba(34,197,94,0.16)] flex items-center justify-center mb-3">
+            <div className="relative mx-auto -mt-2 h-[85px] w-[88px] rounded-lg bg-primary/12 border border-primary/25 shadow-[0_0_12px_rgba(34,197,94,0.16)] flex items-center justify-center mb-3">
               <img
                 src="/sipi-badge.png"
                 alt="Logo SIPI"
                 className="mx-auto h-[118px] w-auto object-contain"
+                style={{ transform: "translateY(2px)" }}
               />
               <span
                 aria-hidden="true"
