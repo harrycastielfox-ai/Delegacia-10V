@@ -8,7 +8,6 @@ import {
   CarFront,
   CheckCircle2,
   CircleParking,
-  Plus,
   SearchCheck,
   ShieldCheck,
   Truck,
@@ -85,12 +84,6 @@ export default function VehicleOverviewPage() {
             e procedimentos policiais.
           </p>
         </div>
-        <Link
-          to="/veiculos/novo"
-          className="hidden items-center gap-2 rounded-xl bg-info px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-info/15 transition hover:brightness-110 md:inline-flex"
-        >
-          <Plus className="h-4 w-4" /> Novo Veículo
-        </Link>
       </header>
 
       {error ? (

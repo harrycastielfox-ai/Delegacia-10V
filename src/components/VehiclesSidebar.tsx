@@ -22,9 +22,20 @@ import { AppearanceSwitcher } from "./AppearanceSwitcher";
 
 const sections = [
   {
-    label: "VEÍCULOS",
+    label: "CUSTÓDIA",
     items: [
       { title: "Visão Geral", url: "/veiculos", icon: ChartNoAxesCombined, exact: true },
+      { title: "Apreendidos", url: "/veiculos/apreendidos", icon: KeyRound },
+      { title: "Recuperados", url: "/veiculos/recuperados", icon: ShieldCheck },
+      { title: "Adulterados", url: "/veiculos/adulterados", icon: SearchCheck },
+      { title: "Liberados / Devolvidos", url: "/veiculos/liberados", icon: PackageCheck },
+      { title: "Relatórios", url: "/veiculos/relatorios", icon: FileChartColumn },
+    ],
+  },
+  {
+    label: "VEÍCULOS",
+    separated: true,
+    items: [
       { title: "Todos os Veículos", url: "/veiculos/todos", icon: CircleParking },
       { title: "Automóveis", url: "/veiculos/automoveis", icon: Car },
       { title: "Motocicletas", url: "/veiculos/motocicletas", icon: Siren },
@@ -32,22 +43,6 @@ const sections = [
       { title: "Ônibus", url: "/veiculos/onibus", icon: BusFront },
       { title: "Bicicletas", url: "/veiculos/bicicletas", icon: Bike },
       { title: "Outros", url: "/veiculos/outros", icon: Warehouse },
-    ],
-  },
-  {
-    label: "CUSTÓDIA",
-    items: [
-      { title: "Apreendidos", url: "/veiculos/apreendidos", icon: KeyRound },
-      { title: "Recuperados", url: "/veiculos/recuperados", icon: ShieldCheck },
-      { title: "Adulterados", url: "/veiculos/adulterados", icon: SearchCheck },
-      { title: "Liberados / Devolvidos", url: "/veiculos/liberados", icon: PackageCheck },
-    ],
-  },
-  {
-    label: "AÇÕES",
-    items: [
-      { title: "Novo Veículo", url: "/veiculos/novo", icon: Car },
-      { title: "Relatórios", url: "/veiculos/relatorios", icon: FileChartColumn },
     ],
   },
 ] as const;
@@ -87,7 +82,10 @@ export function VehiclesSidebar({ profile }: { profile: UserProfile }) {
 
       <nav className="min-h-0 flex-1 overflow-y-auto px-3 pb-3 pt-2">
         {sections.map((section) => (
-          <div key={section.label} className="mt-3 first:mt-0">
+          <div
+            key={section.label}
+            className={"separated" in section && section.separated ? "mt-8" : "mt-3 first:mt-0"}
+          >
             <div className="mb-1.5 px-2 text-[10px] font-semibold tracking-[0.2em] text-muted-foreground">
               {section.label}
             </div>

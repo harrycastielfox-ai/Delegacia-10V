@@ -163,12 +163,14 @@ export default function VehicleListPage({ preset }: { preset: VehicleListPreset 
           <h1 className="mt-1 text-3xl font-black tracking-tight">{preset.title}</h1>
           <p className="mt-1 text-sm text-muted-foreground">{preset.subtitle}</p>
         </div>
-        <Link
-          to="/veiculos/novo"
-          className="hidden items-center gap-2 rounded-xl bg-info px-5 py-2.5 text-sm font-semibold text-white transition hover:brightness-110 md:inline-flex"
-        >
-          <Plus className="h-4 w-4" /> Novo Veículo
-        </Link>
+        {preset.vehicleType ? (
+          <Link
+            to="/veiculos/novo"
+            className="hidden items-center gap-2 rounded-xl bg-info px-5 py-2.5 text-sm font-semibold text-white transition hover:brightness-110 md:inline-flex"
+          >
+            <Plus className="h-4 w-4" /> Novo Veículo
+          </Link>
+        ) : null}
       </header>
 
       <section className="rounded-2xl border border-border/80 bg-card/70 p-4 md:p-5">
