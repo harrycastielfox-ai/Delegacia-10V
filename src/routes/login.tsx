@@ -165,7 +165,7 @@ function PostSignupWelcomeOverlay({ message }: { message: string }) {
         />
 
         <div className="relative z-10 mx-auto h-36 w-36 overflow-hidden drop-shadow-[0_0_30px_rgba(34,197,94,0.2)]">
-          <img src="/sipi-logo.png" alt="Logo SIPI" className="h-full w-full object-contain" />
+          <img src="/sipi-badge.png" alt="Logo SIPI" className="h-full w-full object-contain" />
         </div>
 
         <div
@@ -303,9 +303,9 @@ function LoginSplash() {
       <div className="login-splash-badge relative">
         <span className="login-splash-glow pointer-events-none absolute inset-0 rounded-full blur-3xl" />
         <img
-          src="/sipi-badge-splash.png"
+          src="/sipi-badge.png"
           alt="Polícia Civil"
-          className="relative h-40 w-40 object-contain drop-shadow-[0_0_40px_rgba(34,197,94,0.45)] sm:h-48 sm:w-48"
+          className="relative h-60 w-60 object-contain drop-shadow-[0_0_50px_rgba(34,197,94,0.5)] sm:h-80 sm:w-80"
         />
       </div>
     </div>
@@ -546,11 +546,11 @@ function LoginPage() {
 
         <div className="bg-card border border-border rounded-2xl shadow-2xl shadow-black/40">
           <div className="px-8 pt-8 pb-6 text-center border-b border-border bg-gradient-to-b from-primary/5 to-transparent">
-            <div className="relative mx-auto h-[88px] w-[88px] rounded-lg bg-primary/12 border border-primary/25 shadow-[0_0_12px_rgba(34,197,94,0.16)] flex items-center justify-center mb-3 p-2 overflow-hidden">
+            <div className="relative mx-auto h-[152px] w-[112px] rounded-lg bg-primary/12 border border-primary/25 shadow-[0_0_12px_rgba(34,197,94,0.16)] flex items-center justify-center mb-3 p-1 overflow-hidden">
               <img
-                src="/sipi-logo.png"
+                src="/sipi-badge.png"
                 alt="Logo SIPI"
-                className="mx-auto h-[100px] w-[100px] max-w-none scale-[1.35] object-contain"
+                className="mx-auto h-full w-full object-contain"
               />
               <span
                 aria-hidden="true"
