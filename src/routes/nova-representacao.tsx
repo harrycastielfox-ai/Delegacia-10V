@@ -8,7 +8,6 @@ import {
   searchInqueritosForLink,
   type InqueritoLinkOption,
 } from "@/lib/repositories/inqueritosRepository";
-import { logAuditoria } from "@/lib/repositories/auditoriaRepository";
 import { AppLayout } from "@/components/AppLayout";
 import { FormFieldLabel } from "@/components/FormFieldLabel";
 import { PageHeader } from "@/components/PageHeader";
@@ -213,24 +212,6 @@ function NovaRepresentacao() {
             pessoasError,
           );
         }
-      }
-      try {
-        const auditResult = await logAuditoria({
-          acao: "create",
-          modulo: "representacoes",
-          entidade: "representacao",
-          entidade_id: created.id,
-          descricao: "Criou representação",
-          metadata: {
-            tipo: tipoFinal.trim() || "",
-            status: status || "",
-            ppe: ppe.trim() || "",
-            numero_processo: processo.trim() || "",
-          },
-        });
-        if (auditResult.error) console.warn("[auditoria]", auditResult.error);
-      } catch (auditError) {
-        console.warn("[auditoria]", auditError);
       }
       setFeedback(
         pessoasWarning

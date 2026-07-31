@@ -23,7 +23,6 @@ import {
   type UserProfile,
   type UserRole,
 } from "@/lib/authz";
-import { logAuditoria } from "@/lib/repositories/auditoriaRepository";
 import { supabase } from "@/lib/supabaseClient";
 
 export const Route = createFileRoute("/admin/usuarios")({
@@ -223,27 +222,6 @@ function AdminUsuariosPage() {
       ...current,
       [user.id]: { kind: "success", message: "Alterações salvas com sucesso." },
     }));
-    try {
-      const auditResult = await logAuditoria({
-        acao: "admin_update",
-        modulo: "admin_usuarios",
-        entidade: "profiles",
-        entidade_id: user.id,
-        descricao: `Atualizou acesso do usuário alvo: ${user.nome} (${user.email} / ${user.login})`,
-        metadata: {
-          target_user_id: user.id,
-          target_nome: user.nome,
-          target_email: user.email,
-          old_cargo: user.cargo,
-          new_cargo: role,
-          old_status: user.status_autorizacao,
-          new_status: status,
-        },
-      });
-      if (auditResult.error) console.warn("[auditoria]", auditResult.error);
-    } catch (auditError) {
-      console.warn("[auditoria]", auditError);
-    }
     setLoadingByUser((current) => ({ ...current, [user.id]: null }));
   };
 

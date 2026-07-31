@@ -25,7 +25,6 @@ import {
   searchInqueritosForLink,
   type InqueritoLinkOption,
 } from "@/lib/repositories/inqueritosRepository";
-import { logAuditoria } from "@/lib/repositories/auditoriaRepository";
 import { getCurrentProfile } from "@/lib/auth";
 import { canEditRepresentacoes, type UserProfile } from "@/lib/authz";
 import {
@@ -375,32 +374,6 @@ function EditarRepresentacao() {
           );
         }
       }
-      try {
-        const auditResult = await logAuditoria({
-          acao: "update",
-          modulo: "representacoes",
-          entidade: "representacao",
-          entidade_id: representacaoId,
-          descricao: "Editou representação",
-          metadata: {
-            tipo: tipoFinal.trim() || "",
-            status: status || "",
-            ppe: ppe.trim() || "",
-            numero_processo: processo.trim() || "",
-            campos_possivelmente_atualizados: [
-              "tipo",
-              "status",
-              "numero_ppe",
-              "processo_judicial",
-              "data_representacao",
-            ],
-          },
-        });
-        if (auditResult.error) console.warn("[auditoria]", auditResult.error);
-      } catch (auditError) {
-        console.warn("[auditoria]", auditError);
-      }
-
       await navigate({ to: "/representacoes/$representacaoId", params: { representacaoId } });
     } catch (error) {
       const err = error as {

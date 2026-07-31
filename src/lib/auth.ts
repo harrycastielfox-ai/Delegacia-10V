@@ -1,3 +1,4 @@
+import { FunctionsHttpError } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabaseClient";
 import {
   PUBLIC_SIGNUP_INSTITUTIONAL_FUNCTIONS,
@@ -52,9 +53,26 @@ function normalizePublicSignupInstitutionalFunction(
     : null;
 }
 
+type SecureLoginResponse = {
+  access_token?: unknown;
+  refresh_token?: unknown;
+};
+
+async function getFunctionErrorCode(error: unknown): Promise<string | null> {
+  if (!(error instanceof FunctionsHttpError)) return null;
+
+  try {
+    const payload = (await error.context.clone().json()) as { code?: unknown };
+    return typeof payload.code === "string" ? payload.code : null;
+  } catch {
+    return null;
+  }
+}
+
 function isAuthDuplicateEmailError(error: unknown): boolean {
+  const code = String((error as { code?: string } | undefined)?.code || "").toLowerCase();
   const message = String((error as { message?: string } | undefined)?.message || "").toLowerCase();
-  return message.includes("already registered") || message.includes("already exists");
+  return code === "user_already_exists" || message.includes("already registered");
 }
 
 function isRlsError(error: unknown): boolean {
@@ -143,25 +161,47 @@ export async function getCurrentProfile(): Promise<CurrentUserProfile | null> {
   return data as CurrentUserProfile;
 }
 
-export async function resolveEmailFromLoginOrEmail(loginOrEmail: string): Promise<string> {
-  const input = normalizeIdentifier(loginOrEmail);
-  if (input.includes("@")) return normalizeEmail(input);
-
-  const { data, error } = await supabase.rpc("resolve_login_to_email", {
-    input_login: normalizeLogin(input),
-  });
-
-  if (error)
-    throw new AuthFlowError("LOGIN_RESOLVE_FAILED", "Falha ao resolver login para e-mail.", error);
-  if (!data) throw new AuthFlowError("LOGIN_NOT_FOUND", "Login não encontrado.");
-  return normalizeEmail(String(data));
-}
-
 export async function authenticateWithLoginOrEmail(loginOrEmail: string, password: string) {
-  const email = await resolveEmailFromLoginOrEmail(loginOrEmail);
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
-  if (error) throw new AuthFlowError("AUTH_INVALID_CREDENTIALS", "Credenciais inválidas.", error);
-  return { email };
+  const identifier = normalizeIdentifier(loginOrEmail);
+  const { data, error } = await withAuthTimeout(
+    supabase.functions.invoke<SecureLoginResponse>("secure-login", {
+      body: { identifier, password },
+    }),
+    "AUTH_SERVICE_UNAVAILABLE",
+    "Tempo limite ao validar credenciais.",
+  );
+
+  if (error) {
+    const errorCode = await getFunctionErrorCode(error);
+    if (errorCode === "too_many_attempts") {
+      throw new AuthFlowError("AUTH_RATE_LIMITED", "Muitas tentativas de login.", error);
+    }
+    if (errorCode === "email_not_confirmed") {
+      throw new AuthFlowError("AUTH_EMAIL_NOT_CONFIRMED", "E-mail ainda não confirmado.", error);
+    }
+    if (errorCode === "invalid_credentials" || errorCode === "invalid_request") {
+      throw new AuthFlowError("AUTH_INVALID_CREDENTIALS", "Credenciais inválidas.", error);
+    }
+    throw new AuthFlowError("AUTH_SERVICE_UNAVAILABLE", "Serviço de login indisponível.", error);
+  }
+
+  if (typeof data?.access_token !== "string" || typeof data.refresh_token !== "string") {
+    throw new AuthFlowError("AUTH_SERVICE_UNAVAILABLE", "Resposta de login inválida.");
+  }
+
+  const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
+    access_token: data.access_token,
+    refresh_token: data.refresh_token,
+  });
+  if (sessionError || !sessionData.session) {
+    throw new AuthFlowError(
+      "AUTH_SERVICE_UNAVAILABLE",
+      "Não foi possível iniciar a sessão.",
+      sessionError,
+    );
+  }
+
+  return sessionData.session;
 }
 
 export async function signInWithLoginOrEmail(loginOrEmail: string, password: string) {
@@ -255,18 +295,6 @@ export async function signUpUser(payload: {
 
   if (!cleanLogin) throw new Error("LOGIN_REQUIRED");
   if (!accessContextConsent || !termsAcceptedAt || !termsVersion) throw new Error("TERMS_REQUIRED");
-
-  const { data: existingLogin, error: loginCheckError } = await supabase.rpc(
-    "resolve_login_to_email",
-    {
-      input_login: cleanLogin,
-    },
-  );
-  if (loginCheckError) {
-    console.error("[signUpUser] Falha ao verificar login", loginCheckError);
-    throw loginCheckError;
-  }
-  if (existingLogin) throw new Error("LOGIN_ALREADY_EXISTS");
 
   const { data, error } = await supabase.auth.signUp({
     email: cleanEmail,

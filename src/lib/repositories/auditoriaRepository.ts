@@ -1,7 +1,5 @@
 import { supabase } from "@/lib/supabaseClient";
 
-export type AuditoriaMetadata = Record<string, string | number | boolean | null | string[]>;
-
 export type AuditoriaEvent = {
   id: string;
   executor_user_id: string;
@@ -17,15 +15,6 @@ export type AuditoriaEvent = {
   descricao: string;
   metadata: Record<string, unknown>;
   created_at: string;
-};
-
-type LogAuditoriaPayload = {
-  acao: string;
-  modulo: string;
-  entidade: string;
-  entidade_id?: string | null;
-  descricao: string;
-  metadata?: AuditoriaMetadata;
 };
 
 type ListAuditoriaOptions = { limit?: number };
@@ -56,15 +45,6 @@ function getRpcError(error: unknown, fallback: string): RpcErrorDetails {
 function isUuid(value: string): boolean {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
     value.trim(),
-  );
-}
-
-function sanitizeMetadata(metadata?: AuditoriaMetadata): AuditoriaMetadata {
-  if (!metadata) return {};
-  return Object.fromEntries(
-    Object.entries(metadata)
-      .filter(([, value]) => value !== undefined)
-      .slice(0, 20),
   );
 }
 
@@ -111,28 +91,6 @@ async function debugRpcError(
       raw: maybeError,
     },
   });
-}
-
-export async function logAuditoria(
-  payload: LogAuditoriaPayload,
-): Promise<{ eventId: string | null; error: string | null }> {
-  try {
-    const { data, error } = await supabase.rpc("log_auditoria", {
-      p_acao: payload.acao,
-      p_modulo: payload.modulo,
-      p_entidade: payload.entidade,
-      p_entidade_id: payload.entidade_id ?? null,
-      p_descricao: payload.descricao,
-      p_metadata: sanitizeMetadata(payload.metadata),
-    });
-    if (error) return { eventId: null, error: error.message };
-    return { eventId: data ? String(data) : null, error: null };
-  } catch (error) {
-    return {
-      eventId: null,
-      error: error instanceof Error ? error.message : "Erro inesperado ao registrar auditoria",
-    };
-  }
 }
 
 export async function listAuditoria(

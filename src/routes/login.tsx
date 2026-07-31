@@ -95,17 +95,19 @@ function getFriendlyLoginError(err: unknown): string {
   const msg = String(errorLike.message || errorLike.cause?.message || "").toLowerCase();
 
   if (err instanceof AuthFlowError) {
-    if (err.code === "LOGIN_NOT_FOUND") return "Login inexistente. Verifique o usuário informado.";
     if (err.code === "PROFILE_NOT_FOUND")
       return "Autenticação concluída, mas o perfil não foi encontrado.";
     if (err.code === "PROFILE_RLS_DENIED")
       return "Seu perfil existe, mas a policy (RLS) bloqueou a leitura.";
     if (err.code === "PROFILE_FETCH_FAILED")
       return "Autenticação concluída, mas houve falha ao carregar o perfil.";
-    if (err.code === "LOGIN_RESOLVE_FAILED")
-      return "Falha ao validar login. Tente novamente em instantes.";
-    if (err.code === "AUTH_INVALID_CREDENTIALS")
-      return "Credenciais inválidas. Confira usuário/e-mail e senha.";
+    if (err.code === "AUTH_RATE_LIMITED")
+      return "Muitas tentativas de login. Aguarde alguns minutos e tente novamente.";
+    if (err.code === "AUTH_EMAIL_NOT_CONFIRMED")
+      return "Seu e-mail ainda não foi confirmado. Verifique sua caixa de entrada.";
+    if (err.code === "AUTH_SERVICE_UNAVAILABLE")
+      return "O serviço de login está temporariamente indisponível. Tente novamente em instantes.";
+    if (err.code === "AUTH_INVALID_CREDENTIALS") return "Usuário/e-mail ou senha inválidos.";
   }
 
   if (msg.includes("email not confirmed") || msg.includes("not confirmed")) {
@@ -121,7 +123,7 @@ function getFriendlyLoginError(err: unknown): string {
     msg.includes("invalid grant") ||
     msg.includes("invalid login")
   ) {
-    return "Credenciais inválidas. Confira usuário/e-mail e senha.";
+    return "Usuário/e-mail ou senha inválidos.";
   }
 
   return "Falha no login. Verifique suas credenciais e permissões.";
@@ -132,10 +134,9 @@ function readPostSignupLogin() {
     const raw = sessionStorage.getItem(POST_SIGNUP_LOGIN_KEY);
     if (!raw) return null;
     sessionStorage.removeItem(POST_SIGNUP_LOGIN_KEY);
-    const parsed = JSON.parse(raw) as { login?: unknown; password?: unknown; message?: unknown };
+    const parsed = JSON.parse(raw) as { login?: unknown; message?: unknown };
     return {
       login: typeof parsed.login === "string" ? parsed.login : "",
-      password: typeof parsed.password === "string" ? parsed.password : "",
       message:
         typeof parsed.message === "string" && parsed.message.trim()
           ? parsed.message
@@ -382,7 +383,6 @@ function LoginPage() {
     const postSignup = readPostSignupLogin();
     if (!postSignup) return;
     setUsuario(postSignup.login);
-    setSenha(postSignup.password);
     setPostSignupMessage(postSignup.message);
     setShowSignupWelcome(true);
   }, []);
