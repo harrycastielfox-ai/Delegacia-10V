@@ -396,7 +396,14 @@ export function VehicleFormPage({ mode, vehicleId }: { mode: FormMode; vehicleId
             <SelectField
               label="Tipo do veículo"
               value={form.vehicleType}
-              onChange={(value) => update("vehicleType", value as VehicleType)}
+              onChange={(value) => {
+                const vehicleType = value as VehicleType;
+                setForm((current) => ({
+                  ...current,
+                  vehicleType,
+                  isMotorized: vehicleType !== "bicicleta",
+                }));
+              }}
               required
             >
               {Object.entries(VEHICLE_TYPE_LABELS).map(([value, label]) => (
