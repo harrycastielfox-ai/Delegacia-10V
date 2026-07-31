@@ -274,18 +274,6 @@ function toPayload(state: FormState): VehiclePayload {
   };
 }
 
-const DUPLICATE_IDENTIFIER_MESSAGE =
-  "Já existe um veículo ativo com um ou mais identificadores informados.";
-
-function isVehicleIdentifierUniqueViolation(error: unknown) {
-  const candidate = error as { code?: string; message?: string; details?: string } | null;
-  const details = `${candidate?.message ?? ""} ${candidate?.details ?? ""}`;
-  return (
-    candidate?.code === "23505" &&
-    /vehicles_(plate|renavam|engine_number|chassis)_unique_active_idx/.test(details)
-  );
-}
-
 export function VehicleFormPage({ mode, vehicleId }: { mode: FormMode; vehicleId?: string }) {
   const navigate = useNavigate();
   const [form, setForm] = useState<FormState>(INITIAL_STATE);
@@ -356,7 +344,6 @@ export function VehicleFormPage({ mode, vehicleId }: { mode: FormMode; vehicleId
       ].includes(key)
     ) {
       setIdentifierConflicts([]);
-      setError((current) => (current === DUPLICATE_IDENTIFIER_MESSAGE ? "" : current));
     }
     setForm((current) => ({ ...current, [key]: value }));
   }
@@ -372,7 +359,7 @@ export function VehicleFormPage({ mode, vehicleId }: { mode: FormMode; vehicleId
     setPhotos(selected);
   }
 
-  async function submit() {
+  async function submit(skipDuplicateCheck = false) {
     if (!form.vehicleType) {
       setError("Informe o tipo do veículo.");
       setStep(0);
@@ -395,19 +382,20 @@ export function VehicleFormPage({ mode, vehicleId }: { mode: FormMode; vehicleId
     try {
       setForm(normalizedForm);
       const payload = toPayload(normalizedForm);
-      const conflicts = await findVehicleIdentifierConflicts({
-        plate: payload.plate_status === "informado" ? (payload.plate ?? null) : null,
-        renavam: payload.renavam_status === "informado" ? (payload.renavam ?? null) : null,
-        engineNumber:
-          payload.engine_status === "informado" ? (payload.engine_number ?? null) : null,
-        chassis: payload.chassis_status === "informado" ? (payload.chassis ?? null) : null,
-        excludeVehicleId: mode === "edit" ? (vehicleId ?? null) : null,
-      });
-      if (conflicts.length) {
-        setIdentifierConflicts(conflicts);
-        setError(DUPLICATE_IDENTIFIER_MESSAGE);
-        setStep(0);
-        return;
+      if (!skipDuplicateCheck) {
+        const conflicts = await findVehicleIdentifierConflicts({
+          plate: payload.plate_status === "informado" ? (payload.plate ?? null) : null,
+          renavam: payload.renavam_status === "informado" ? (payload.renavam ?? null) : null,
+          engineNumber:
+            payload.engine_status === "informado" ? (payload.engine_number ?? null) : null,
+          chassis: payload.chassis_status === "informado" ? (payload.chassis ?? null) : null,
+          excludeVehicleId: mode === "edit" ? (vehicleId ?? null) : null,
+        });
+        if (conflicts.length) {
+          setIdentifierConflicts(conflicts);
+          setStep(0);
+          return;
+        }
       }
 
       const saved =
@@ -418,12 +406,7 @@ export function VehicleFormPage({ mode, vehicleId }: { mode: FormMode; vehicleId
       navigate({ to: "/veiculos/$vehicleId", params: { vehicleId: saved.id }, replace: true });
     } catch (submissionError) {
       console.error("[VehicleForm] Falha ao salvar", submissionError);
-      setError(
-        isVehicleIdentifierUniqueViolation(submissionError)
-          ? DUPLICATE_IDENTIFIER_MESSAGE
-          : "Não foi possível salvar o veículo. Revise os dados e tente novamente.",
-      );
-      if (isVehicleIdentifierUniqueViolation(submissionError)) setStep(0);
+      setError("Não foi possível salvar o veículo. Revise os dados e tente novamente.");
     } finally {
       setSaving(false);
     }
@@ -481,9 +464,14 @@ export function VehicleFormPage({ mode, vehicleId }: { mode: FormMode; vehicleId
           <div className="flex items-start gap-3">
             <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-warning" />
             <div className="min-w-0 flex-1">
-              <h2 className="text-sm font-bold text-warning">Cadastro possivelmente duplicado</h2>
+              <h2 className="text-sm font-bold text-warning">
+                {identifierConflicts.some((conflict) => conflict.identifier_kind === "plate")
+                  ? `A placa ${identifierConflicts.find((conflict) => conflict.identifier_kind === "plate")?.identifier_value} já está cadastrada`
+                  : "Um ou mais identificadores já estão cadastrados"}
+              </h2>
               <p className="mt-1 text-xs text-muted-foreground">
-                Abra o registro existente para conferir antes de alterar o identificador.
+                O veículo pode estar retornando à unidade. Confira os registros encontrados e
+                escolha se deseja revisar os dados ou salvar um novo cadastro mesmo assim.
               </p>
               <div className="mt-3 grid gap-2 sm:grid-cols-2">
                 {identifierConflicts.map((conflict) => (
@@ -507,6 +495,27 @@ export function VehicleFormPage({ mode, vehicleId }: { mode: FormMode; vehicleId
                     </span>
                   </button>
                 ))}
+              </div>
+              <div className="mt-4 flex flex-wrap justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIdentifierConflicts([]);
+                    setStep(0);
+                  }}
+                  className="inline-flex h-10 items-center justify-center rounded-lg border border-border bg-background px-4 text-xs font-semibold hover:border-warning/45"
+                >
+                  Revisar dados
+                </button>
+                <button
+                  type="button"
+                  disabled={saving}
+                  onClick={() => void submit(true)}
+                  className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-warning px-4 text-xs font-bold text-background disabled:opacity-50"
+                >
+                  {saving ? <LoaderCircle className="h-4 w-4 animate-spin" /> : null}
+                  Salvar mesmo assim
+                </button>
               </div>
             </div>
           </div>
@@ -933,7 +942,7 @@ export function VehicleFormPage({ mode, vehicleId }: { mode: FormMode; vehicleId
             <button
               type="button"
               disabled={saving || Boolean(photoError)}
-              onClick={submit}
+              onClick={() => void submit()}
               className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-info px-5 text-sm font-semibold text-white disabled:opacity-50"
             >
               {saving ? (
