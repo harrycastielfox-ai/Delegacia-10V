@@ -1055,6 +1055,22 @@ html[data-theme="black"] {
     padding-bottom: 12mm !important;
   }
 
+  .sipi-print-sheet-vehicle .sipi-print-sections {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .sipi-print-sheet-term .sipi-print-sections {
+    display: flex !important;
+    flex-direction: column !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 5mm !important;
+    min-height: 160mm !important;
+  }
+
+  .sipi-print-sheet-term .sipi-print-section {
+    width: 100% !important;
+  }
+
   .sipi-print-document .sipi-print-section {
     display: block !important;
     min-width: 0 !important;
@@ -1133,6 +1149,54 @@ html[data-theme="black"] {
     break-inside: auto !important;
     page-break-inside: auto !important;
     border: 0 !important;
+  }
+
+  .sipi-print-document .sipi-print-sheet-term .sipi-print-section-signatures {
+    margin-top: auto !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    overflow: visible !important;
+  }
+
+  .sipi-print-section-signatures h2 {
+    display: none !important;
+  }
+
+  .sipi-print-section-signatures dl {
+    display: block !important;
+  }
+
+  .sipi-print-section-signatures dl > div {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    width: 110mm !important;
+    margin: 0 auto !important;
+    padding: 12mm 0 0 !important;
+    border: 0 !important;
+    text-align: center !important;
+  }
+
+  .sipi-print-section-signatures dl > div + div {
+    margin-top: 3mm !important;
+  }
+
+  .sipi-print-section-signatures dt {
+    order: 2 !important;
+    margin-top: 1.4mm !important;
+    color: #4b5563 !important;
+    font-size: 6.8pt !important;
+  }
+
+  .sipi-print-section-signatures dd {
+    order: 1 !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 1.6mm 3mm 0 !important;
+    border-top: 1px solid #374151 !important;
+    font-size: 8pt !important;
+    font-weight: 600 !important;
   }
 
   .sipi-print-footer {

@@ -9,7 +9,6 @@ import {
   ClipboardCheck,
   FileDown,
   FileSignature,
-  History,
   Link2,
   LoaderCircle,
   MapPin,
@@ -27,6 +26,7 @@ import {
   registerVehicleMovement,
 } from "@/lib/repositories/vehiclesRepository";
 import { VehicleStatusBadge } from "../components/VehicleStatusBadge";
+import { VehicleTimeline } from "../components/VehicleTimeline";
 import {
   IDENTIFICATION_STATUS_LABELS,
   VEHICLE_SITUATION_LABELS,
@@ -34,12 +34,18 @@ import {
   displayVehicleValue,
   formatVehicleDate,
 } from "../vehicleConstants";
-import type { VehicleMovementRecord, VehiclePhotoRecord, VehicleRecord } from "../vehicleTypes";
+import { formatVehicleInvolvedPeople } from "../vehiclePeople";
+import type {
+  VehicleMovementRecord,
+  VehiclePhotoRecord,
+  VehicleRecord,
+  VehicleTimelineEvent,
+} from "../vehicleTypes";
 
 type DetailBundle = {
   vehicle: VehicleRecord;
   photos: VehiclePhotoRecord[];
-  movements: VehicleMovementRecord[];
+  timeline: VehicleTimelineEvent[];
 };
 
 type MovementDraft = {
@@ -211,7 +217,7 @@ export default function VehicleDetailsPage() {
       </div>
     );
   if (!bundle) return null;
-  const { vehicle, photos, movements } = bundle;
+  const { vehicle, photos, timeline } = bundle;
   const printSections = buildPrintSections(vehicle, printMode);
 
   return (
@@ -355,7 +361,11 @@ export default function VehicleDetailsPage() {
                 </Link>
               </div>
             ) : null}
-            <DetailField label="Envolvidos" value={vehicle.involved_people} wide />
+            <DetailField
+              label="Envolvidos"
+              value={formatVehicleInvolvedPeople(vehicle.involved_people)}
+              wide
+            />
             <DetailField label="Observações" value={vehicle.observations} wide />
           </DetailSection>
 
@@ -426,42 +436,6 @@ export default function VehicleDetailsPage() {
             )}
           </section>
 
-          <section className="rounded-2xl border border-border bg-card p-5">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="font-bold">Histórico</h2>
-                <p className="text-xs text-muted-foreground">Movimentações registradas</p>
-              </div>
-              <History className="h-5 w-5 text-info" />
-            </div>
-            <div className="mt-4 space-y-4">
-              {movements.length ? (
-                movements.map((item) => (
-                  <div key={item.id} className="relative border-l border-info/30 pl-4">
-                    <span className="absolute -left-1.5 top-0 h-3 w-3 rounded-full border-2 border-card bg-info" />
-                    <p className="text-xs font-bold text-foreground">
-                      {movementLabels[item.movement_type]}
-                    </p>
-                    <p className="mt-0.5 text-[11px] text-muted-foreground">
-                      {formatVehicleDate(item.occurred_at, true)}
-                    </p>
-                    {item.from_location || item.to_location ? (
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        {displayVehicleValue(item.from_location)} →{" "}
-                        {displayVehicleValue(item.to_location)}
-                      </p>
-                    ) : null}
-                    {item.notes ? (
-                      <p className="mt-1 text-xs leading-relaxed">{item.notes}</p>
-                    ) : null}
-                  </div>
-                ))
-              ) : (
-                <p className="text-xs text-muted-foreground">Nenhuma movimentação registrada.</p>
-              )}
-            </div>
-          </section>
-
           {canMove ? (
             <button
               type="button"
@@ -478,6 +452,8 @@ export default function VehicleDetailsPage() {
           ) : null}
         </aside>
       </div>
+
+      <VehicleTimeline events={timeline} />
 
       <SipiPrintSheet
         documentTitle={
@@ -610,6 +586,7 @@ function buildPrintSections(vehicle: VehicleRecord, mode: "ficha" | "termo"): Si
     return [
       {
         title: "DADOS DA ENTREGA",
+        wide: true,
         fields: [
           { label: "Situação", value: vehicle.release_status?.replaceAll("_", " ") },
           { label: "Data", value: formatVehicleDate(vehicle.release_date) },
@@ -622,6 +599,7 @@ function buildPrintSections(vehicle: VehicleRecord, mode: "ficha" | "termo"): Si
       },
       {
         title: "IDENTIFICAÇÃO DO VEÍCULO",
+        wide: true,
         fields: [
           { label: "Tipo", value: VEHICLE_TYPE_LABELS[vehicle.vehicle_type] },
           { label: "Marca / Modelo", value: vehicle.brand_model },
@@ -646,19 +624,19 @@ function buildPrintSections(vehicle: VehicleRecord, mode: "ficha" | "termo"): Si
       {
         title: "ASSINATURAS",
         wide: true,
+        signatures: true,
         fields: [
           {
             label: "Pessoa que recebeu",
-            value: `____________________________________________\n${vehicle.released_to?.trim() || "Nome e assinatura"}`,
+            value: vehicle.released_to?.trim() || "Nome não informado",
           },
           {
             label: "Responsável pela entrega",
-            value: `____________________________________________\n${vehicle.release_authority?.trim() || "Nome, matrícula e assinatura"}`,
+            value: vehicle.release_authority?.trim() || "Nome e matrícula não informados",
           },
           {
             label: "Local e data",
-            value: "____________________________________________",
-            wide: true,
+            manualLine: true,
           },
         ],
       },
@@ -667,6 +645,7 @@ function buildPrintSections(vehicle: VehicleRecord, mode: "ficha" | "termo"): Si
   return [
     {
       title: "IDENTIFICAÇÃO",
+      wide: true,
       fields: [
         { label: "Tipo", value: VEHICLE_TYPE_LABELS[vehicle.vehicle_type] },
         { label: "Marca / Modelo", value: vehicle.brand_model },
@@ -683,6 +662,7 @@ function buildPrintSections(vehicle: VehicleRecord, mode: "ficha" | "termo"): Si
     },
     {
       title: "SITUAÇÃO POLICIAL",
+      wide: true,
       fields: [
         { label: "Ocorrência", value: vehicle.occurrence_type },
         { label: "B.O.", value: vehicle.police_report_number },
@@ -691,11 +671,16 @@ function buildPrintSections(vehicle: VehicleRecord, mode: "ficha" | "termo"): Si
           value: [vehicle.procedure_type, vehicle.procedure_number].filter(Boolean).join(" "),
         },
         { label: "Processo judicial", value: vehicle.court_process_number },
-        { label: "Envolvidos", value: vehicle.involved_people, wide: true },
+        {
+          label: "Envolvidos",
+          value: formatVehicleInvolvedPeople(vehicle.involved_people),
+          wide: true,
+        },
       ],
     },
     {
       title: "APREENSÃO E CUSTÓDIA",
+      wide: true,
       fields: [
         { label: "Data", value: formatVehicleDate(vehicle.seizure_date) },
         { label: "Local da apreensão", value: vehicle.seizure_location },

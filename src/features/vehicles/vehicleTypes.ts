@@ -159,6 +159,21 @@ export type VehicleMovementRecord = {
   created_at: string;
 };
 
+export type VehicleTimelineEvent = {
+  id: string;
+  event_kind: "movement" | "audit";
+  event_type: VehicleMovementRecord["movement_type"] | "create" | "update" | "delete";
+  occurred_at: string;
+  from_location: string | null;
+  to_location: string | null;
+  notes: string | null;
+  details: Record<string, unknown>;
+  actor_id: string | null;
+  actor_name: string | null;
+  actor_role: string | null;
+  changed_fields: string[];
+};
+
 export type VehicleOverviewStats = {
   total: number;
   seized: number;

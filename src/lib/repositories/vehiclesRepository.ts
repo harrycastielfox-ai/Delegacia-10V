@@ -10,6 +10,7 @@ import type {
   VehiclePayload,
   VehiclePhotoRecord,
   VehicleRecord,
+  VehicleTimelineEvent,
 } from "@/features/vehicles/vehicleTypes";
 
 const VEHICLE_PHOTOS_BUCKET = "vehicle-photos";
@@ -125,29 +126,26 @@ async function listVehiclePhotos(vehicleId: string) {
   );
 }
 
-async function listVehicleMovements(vehicleId: string) {
-  const data = await runSupabaseQuery<VehicleMovementRecord[]>("histórico do veículo", (signal) =>
+async function listVehicleTimeline(vehicleId: string) {
+  const data = await runSupabaseQuery<VehicleTimelineEvent[]>("histórico do veículo", (signal) =>
     supabase
-      .from("vehicle_movements")
-      .select(
-        "id,vehicle_id,movement_type,occurred_at,from_location,to_location,notes,details,created_by,created_at",
-      )
-      .eq("vehicle_id", vehicleId)
-      .order("occurred_at", { ascending: false })
-      .limit(100)
+      .rpc("list_vehicle_timeline", {
+        p_vehicle_id: vehicleId,
+        p_limit: 100,
+      })
       .abortSignal(signal),
   );
-  return (data ?? []) as VehicleMovementRecord[];
+  return (data ?? []) as VehicleTimelineEvent[];
 }
 
 export async function getVehicleDetailBundle(vehicleId: string) {
   const vehicle = await getVehicleById(vehicleId);
   if (!vehicle) return null;
-  const [photos, movements] = await Promise.all([
+  const [photos, timeline] = await Promise.all([
     listVehiclePhotos(vehicleId),
-    listVehicleMovements(vehicleId),
+    listVehicleTimeline(vehicleId),
   ]);
-  return { vehicle, photos, movements };
+  return { vehicle, photos, timeline };
 }
 
 export async function uploadVehiclePhotos(vehicleId: string, files: File[]) {

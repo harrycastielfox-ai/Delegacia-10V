@@ -4,6 +4,7 @@ export type SipiPrintField = {
   label: string;
   value?: string | null;
   wide?: boolean;
+  manualLine?: boolean;
 };
 
 export type SipiPrintSection = {
@@ -11,6 +12,7 @@ export type SipiPrintSection = {
   fields: SipiPrintField[];
   wide?: boolean;
   narrative?: boolean;
+  signatures?: boolean;
 };
 
 type SipiPrintSheetProps = {
@@ -66,7 +68,9 @@ export function SipiPrintSheet({
       sections
         .map((section) => ({
           ...section,
-          fields: section.fields.filter((field) => isPrintableValue(field.value)),
+          fields: section.fields.filter(
+            (field) => isPrintableValue(field.value) || field.manualLine,
+          ),
         }))
         .filter((section) => section.fields.length > 0),
     [sections],
@@ -109,14 +113,14 @@ export function SipiPrintSheet({
         {visibleSections.map((section) => (
           <section
             key={section.title}
-            className={`sipi-print-section${section.wide ? " sipi-print-section-wide" : ""}${section.narrative ? " sipi-print-section-flow" : ""}`}
+            className={`sipi-print-section${section.wide ? " sipi-print-section-wide" : ""}${section.narrative ? " sipi-print-section-flow" : ""}${section.signatures ? " sipi-print-section-signatures" : ""}`}
           >
             <h2>{section.title}</h2>
             <dl className={section.narrative ? "sipi-print-narrative-list" : ""}>
               {section.fields.map((field) => (
                 <div
                   key={`${section.title}-${field.label}`}
-                  className={field.wide ? "sipi-print-field-wide" : ""}
+                  className={`${field.wide ? "sipi-print-field-wide" : ""}${field.manualLine ? " sipi-print-field-manual" : ""}`.trim()}
                 >
                   <dt>{field.label}</dt>
                   <dd>{field.value}</dd>
