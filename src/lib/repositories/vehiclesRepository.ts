@@ -98,6 +98,21 @@ export async function updateVehicle(id: string, payload: VehiclePayload) {
   );
 }
 
+export async function softDeleteVehicle(id: string) {
+  const deleted = await runSupabaseQuery<boolean>("exclusão de veículo", (signal) =>
+    supabase.rpc("soft_delete_vehicle", { p_vehicle_id: id }).abortSignal(signal),
+  );
+
+  if (!deleted) {
+    throw {
+      code: "PGRST116",
+      message: "Veículo não encontrado ou já excluído.",
+    };
+  }
+
+  return true;
+}
+
 async function listVehiclePhotos(vehicleId: string) {
   const photos = await runSupabaseQuery<VehiclePhotoRecord[]>("fotografias do veículo", (signal) =>
     supabase

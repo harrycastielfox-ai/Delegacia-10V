@@ -1,4 +1,4 @@
-import { Link, useParams } from "@tanstack/react-router";
+import { Link, useNavigate, useParams } from "@tanstack/react-router";
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import {
   AlertTriangle,
@@ -16,14 +16,21 @@ import {
   Repeat2,
   RotateCcw,
   ShieldCheck,
+  Trash2,
   X,
 } from "lucide-react";
 import { useAppProfile } from "@/components/AppProfileContext";
 import { SipiPrintSheet, type SipiPrintSection } from "@/components/SipiPrintSheet";
-import { canEditVehicles, canRegisterVehicleMovements, canReleaseVehicles } from "@/lib/authz";
+import {
+  canDeleteVehicles,
+  canEditVehicles,
+  canRegisterVehicleMovements,
+  canReleaseVehicles,
+} from "@/lib/authz";
 import {
   getVehicleDetailBundle,
   registerVehicleMovement,
+  softDeleteVehicle,
 } from "@/lib/repositories/vehiclesRepository";
 import { VehicleStatusBadge } from "../components/VehicleStatusBadge";
 import { VehicleTimeline } from "../components/VehicleTimeline";
@@ -121,12 +128,18 @@ function getMovementValidationErrors(draft: MovementDraft) {
   return errors;
 }
 
+function isMobileViewport() {
+  return typeof window !== "undefined" && window.matchMedia("(max-width: 767px)").matches;
+}
+
 export default function VehicleDetailsPage() {
   const { vehicleId } = useParams({ from: "/veiculos/$vehicleId" });
+  const navigate = useNavigate();
   const profile = useAppProfile();
   const canEdit = canEditVehicles(profile);
   const canMove = canRegisterVehicleMovements(profile);
   const canRelease = canReleaseVehicles(profile);
+  const canDelete = canDeleteVehicles(profile);
   const [bundle, setBundle] = useState<DetailBundle | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -136,6 +149,9 @@ export default function VehicleDetailsPage() {
   const [movementError, setMovementError] = useState("");
   const [movementSuccess, setMovementSuccess] = useState("");
   const [printMode, setPrintMode] = useState<"ficha" | "termo">("ficha");
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
 
   const loadDetails = useCallback(async () => {
     setLoading(true);
@@ -201,6 +217,33 @@ export default function VehicleDetailsPage() {
       );
     } finally {
       setMovementSaving(false);
+    }
+  }
+
+  async function removeVehicle() {
+    if (!canDelete || deleting || isMobileViewport()) return;
+
+    setDeleting(true);
+    setDeleteError("");
+    try {
+      await softDeleteVehicle(vehicleId);
+      setDeleteOpen(false);
+      await navigate({ to: "/veiculos/todos", replace: true });
+    } catch (deleteFailure) {
+      const code =
+        typeof deleteFailure === "object" &&
+        deleteFailure !== null &&
+        "code" in deleteFailure &&
+        typeof deleteFailure.code === "string"
+          ? deleteFailure.code
+          : "";
+      setDeleteError(
+        code === "42501"
+          ? "Seu perfil não possui permissão para excluir veículos."
+          : "Não foi possível excluir o veículo. Atualize a página e tente novamente.",
+      );
+    } finally {
+      setDeleting(false);
     }
   }
 
@@ -277,14 +320,37 @@ export default function VehicleDetailsPage() {
                 </small>
               </span>
             </button>
-            {canEdit ? (
-              <Link
-                to="/veiculos/$vehicleId/editar"
-                params={{ vehicleId }}
-                className="hidden items-center justify-center gap-2 rounded-xl border border-border px-4 py-2.5 text-sm font-semibold hover:border-info/35 md:inline-flex sm:col-span-2"
-              >
-                <Pencil className="h-4 w-4" /> Editar
-              </Link>
+            {canEdit || canDelete ? (
+              <div className="hidden gap-2 sm:col-span-2 md:flex">
+                {canDelete ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDeleteError("");
+                      setDeleteOpen(true);
+                    }}
+                    disabled={deleting}
+                    aria-label="Excluir veículo"
+                    title="Excluir veículo"
+                    className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-destructive/35 bg-destructive/5 text-destructive transition hover:border-destructive/55 hover:bg-destructive/10 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {deleting ? (
+                      <LoaderCircle className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Trash2 className="h-4 w-4" />
+                    )}
+                  </button>
+                ) : null}
+                {canEdit ? (
+                  <Link
+                    to="/veiculos/$vehicleId/editar"
+                    params={{ vehicleId }}
+                    className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-border px-4 py-2.5 text-sm font-semibold hover:border-info/35"
+                  >
+                    <Pencil className="h-4 w-4" /> Editar
+                  </Link>
+                ) : null}
+              </div>
             ) : null}
           </div>
         </div>
@@ -499,6 +565,63 @@ export default function VehicleDetailsPage() {
           }}
           onSave={saveMovement}
         />
+      ) : null}
+
+      {deleteOpen && canDelete ? (
+        <div
+          className="fixed inset-0 z-50 hidden items-center justify-center bg-black/75 p-4 md:flex"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="delete-vehicle-title"
+        >
+          <div className="w-full max-w-md rounded-2xl border border-destructive/30 bg-card p-5 shadow-2xl">
+            <div className="flex items-start gap-3">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-destructive/10 text-destructive">
+                <AlertTriangle className="h-5 w-5" />
+              </span>
+              <div>
+                <h2 id="delete-vehicle-title" className="text-lg font-bold text-foreground">
+                  Excluir veículo
+                </h2>
+                <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+                  O veículo <strong className="text-foreground">{vehicle.internal_id}</strong> será
+                  removido das listas. O histórico, as movimentações e as fotografias serão
+                  preservados para auditoria.
+                </p>
+              </div>
+            </div>
+
+            {deleteError ? (
+              <p className="mt-4 rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-xs font-semibold text-destructive">
+                {deleteError}
+              </p>
+            ) : null}
+
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setDeleteOpen(false)}
+                disabled={deleting}
+                className="rounded-lg border border-border px-4 py-2 text-sm font-semibold transition hover:bg-accent disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={() => void removeVehicle()}
+                disabled={deleting}
+                className="inline-flex items-center gap-2 rounded-lg bg-destructive px-4 py-2 text-sm font-semibold text-destructive-foreground transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {deleting ? (
+                  <LoaderCircle className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Trash2 className="h-4 w-4" />
+                )}
+                {deleting ? "Excluindo..." : "Confirmar exclusão"}
+              </button>
+            </div>
+          </div>
+        </div>
       ) : null}
     </div>
   );
