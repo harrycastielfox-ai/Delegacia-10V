@@ -22,6 +22,24 @@ export type DiligenciaTipo =
 
 export type PessoaVinculo = "alvo" | "testemunha" | "vitima" | "informante" | "outro";
 
+export type BairroStatus = "pendente" | "confirmado" | "nao_identificado";
+
+export interface BairroOperacionalRecord {
+  id: string;
+  nome: string;
+  chave: string;
+  aliases: string[];
+  municipio: string;
+  uf: string;
+  ordem: number;
+  centro_latitude: number | null;
+  centro_longitude: number | null;
+  limite_geojson: Record<string, unknown> | null;
+  posicao_confirmada: boolean;
+  fonte: string | null;
+  ativo: boolean;
+}
+
 export interface EnderecoRecord {
   id: string;
   logradouro: string;
@@ -29,6 +47,14 @@ export interface EnderecoRecord {
   sem_numero: boolean;
   complemento: string | null;
   bairro: string | null;
+  /** Referência normalizada ao catálogo territorial. */
+  bairro_id: string | null;
+  /** Nunca é confirmado automaticamente por texto ou coordenada. */
+  bairro_status: BairroStatus;
+  bairro_confirmado_em: string | null;
+  bairro_confirmado_por: string | null;
+  bairro_revisado_em: string | null;
+  bairro_revisado_por: string | null;
   municipio: string;
   uf: string;
   cep: string | null;
@@ -109,6 +135,8 @@ export type MapaEnderecoRecord = Pick<
   | "numero"
   | "sem_numero"
   | "bairro"
+  | "bairro_id"
+  | "bairro_status"
   | "municipio"
   | "uf"
   | "latitude"
@@ -124,6 +152,28 @@ export interface MapaPessoaRecord {
   foto_perfil_path: string | null;
   vinculo: PessoaVinculo;
   endereco: MapaEnderecoRecord | null;
+}
+
+export interface BairroPainelDiligenciaRecord {
+  id: string;
+  codigo: string;
+  status: DiligenciaStatus;
+  equipe_nome: string | null;
+  agendada_para: string | null;
+  destino: string;
+}
+
+/** Ficha territorial limitada, carregada apenas depois da selecao de um bairro. */
+export interface BairroPainelRecord {
+  bairro_id: string;
+  bairro_nome: string;
+  enderecos_total: number;
+  enderecos_posicionados: number;
+  pessoas_total: number;
+  diligencias_ativas: number;
+  enderecos: MapaEnderecoRecord[];
+  pessoas: MapaPessoaRecord[];
+  diligencias: BairroPainelDiligenciaRecord[];
 }
 
 export interface DiligenciaRecord {
@@ -263,8 +313,16 @@ export type DiligenciaPayload = Omit<
 
 export type EnderecoPayload = Omit<
   EnderecoRecord,
-  "id" | "created_at" | "updated_at" | "created_by"
->;
+  | "id"
+  | "created_at"
+  | "updated_at"
+  | "created_by"
+  | "bairro_status"
+  | "bairro_confirmado_em"
+  | "bairro_confirmado_por"
+  | "bairro_revisado_em"
+  | "bairro_revisado_por"
+> & { bairro_status?: BairroStatus };
 
 export type PessoaAlvoPayload = Omit<
   PessoaAlvoRecord,

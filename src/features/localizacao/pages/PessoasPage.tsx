@@ -19,20 +19,16 @@ import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import {
   createPessoaCadastroCompleto,
   getPessoaPhotoSignedUrl,
+  listBairrosOperacionais,
   listEnderecos,
   listPessoas,
   updatePessoaCadastroCompleto,
 } from "@/lib/repositories/localizacaoRepository";
-import {
-  BAIRROS_ITABELA,
-  canonicalizarBairro,
-  MUNICIPIO_PADRAO,
-  PESSOA_VINCULO_LABELS,
-  UF_PADRAO,
-} from "../localizacaoConstants";
+import { MUNICIPIO_PADRAO, PESSOA_VINCULO_LABELS, UF_PADRAO } from "../localizacaoConstants";
 import { parseCoordinateInput } from "../coordinateParser";
 import { PessoaDetailsDialog } from "../components/PessoaDetailsDialog";
 import type {
+  BairroOperacionalRecord,
   EnderecoPayload,
   EnderecoRecord,
   PessoaAlvoRecord,
@@ -103,7 +99,8 @@ export default function PessoasPage() {
   const [number, setNumber] = useState("");
   const [noNumber, setNoNumber] = useState(false);
   const [complement, setComplement] = useState("");
-  const [neighborhood, setNeighborhood] = useState("");
+  const [neighborhoodId, setNeighborhoodId] = useState("");
+  const [neighborhoods, setNeighborhoods] = useState<BairroOperacionalRecord[]>([]);
   const [city, setCity] = useState(MUNICIPIO_PADRAO);
   const [uf, setUf] = useState(UF_PADRAO);
   const [cep, setCep] = useState("");
@@ -121,6 +118,21 @@ export default function PessoasPage() {
     },
     [photoPreview],
   );
+
+  useEffect(() => {
+    let cancelled = false;
+    void listBairrosOperacionais()
+      .then((records) => {
+        if (!cancelled) setNeighborhoods(records);
+      })
+      .catch((error) => {
+        console.error("[PessoasPage] Falha ao carregar bairros", error);
+        if (!cancelled) setFormError("Não foi possível carregar o catálogo de bairros.");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -171,7 +183,7 @@ export default function PessoasPage() {
     setNumber("");
     setNoNumber(false);
     setComplement("");
-    setNeighborhood("");
+    setNeighborhoodId("");
     setCity(MUNICIPIO_PADRAO);
     setUf(UF_PADRAO);
     setCep("");
@@ -221,7 +233,7 @@ export default function PessoasPage() {
       setNumber(person.endereco.numero ?? "");
       setNoNumber(person.endereco.sem_numero);
       setComplement(person.endereco.complemento ?? "");
-      setNeighborhood(person.endereco.bairro ?? "");
+      setNeighborhoodId(person.endereco.bairro_id ?? "");
       setCity(person.endereco.municipio);
       setUf(person.endereco.uf);
       setCep(person.endereco.cep ?? "");
@@ -262,12 +274,15 @@ export default function PessoasPage() {
     if (mapsUrl.trim() && !/^https?:\/\//i.test(mapsUrl.trim())) {
       throw new Error("O link do mapa deve começar com http:// ou https://.");
     }
+    const selectedNeighborhood = neighborhoods.find((item) => item.id === neighborhoodId) ?? null;
     return {
       logradouro: street.trim(),
       numero: noNumber ? null : number.trim() || null,
       sem_numero: noNumber,
       complemento: complement.trim() || null,
-      bairro: canonicalizarBairro(neighborhood),
+      bairro: selectedNeighborhood?.nome ?? null,
+      bairro_id: selectedNeighborhood?.id ?? null,
+      bairro_status: selectedNeighborhood ? "confirmado" : "pendente",
       municipio: city.trim() || MUNICIPIO_PADRAO,
       uf: (uf.trim() || UF_PADRAO).toUpperCase(),
       cep: cep.trim() || null,
@@ -746,19 +761,19 @@ export default function PessoasPage() {
                         className={fieldClass}
                       />
                     </Field>
-                    <Field label="Bairro">
-                      <input
-                        value={neighborhood}
-                        onChange={(e) => setNeighborhood(e.target.value)}
-                        list="bairros-itabela-pessoas"
-                        placeholder="Selecione ou informe o bairro"
+                    <Field label="Bairro territorial">
+                      <select
+                        value={neighborhoodId}
+                        onChange={(e) => setNeighborhoodId(e.target.value)}
                         className={fieldClass}
-                      />
-                      <datalist id="bairros-itabela-pessoas">
-                        {BAIRROS_ITABELA.map((bairro) => (
-                          <option key={bairro} value={bairro} />
+                      >
+                        <option value="">Deixar pendente</option>
+                        {neighborhoods.map((bairro) => (
+                          <option key={bairro.id} value={bairro.id}>
+                            {bairro.nome}
+                          </option>
                         ))}
-                      </datalist>
+                      </select>
                     </Field>
                     <Field label="Município">
                       <input

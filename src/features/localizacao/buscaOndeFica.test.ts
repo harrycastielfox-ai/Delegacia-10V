@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { buscarPessoasComLocal } from "@/lib/repositories/localizacaoRepository";
+import {
+  buscarPessoasComLocal,
+  getBairroPainel,
+  listBairrosOperacionais,
+} from "@/lib/repositories/localizacaoRepository";
 
 /**
  * Contrato da busca "Onde Fica". Estes casos descrevem como o policial realmente
@@ -49,5 +53,19 @@ describe("busca Onde Fica", () => {
 
   it("termo sem correspondência devolve lista vazia", async () => {
     expect(await buscarPessoasComLocal("zzzznaoexiste")).toEqual([]);
+  });
+});
+
+describe("painel territorial do bairro", () => {
+  it("carrega contadores e perfis somente para o bairro selecionado", async () => {
+    const bairros = await listBairrosOperacionais();
+    const centro = bairros.find((bairro) => bairro.nome === "Centro");
+    expect(centro).toBeDefined();
+
+    const painel = await getBairroPainel(centro!.id);
+    expect(painel?.bairro_nome).toBe("Centro");
+    expect(painel?.enderecos_total).toBe(1);
+    expect(painel?.pessoas_total).toBe(1);
+    expect(painel?.pessoas[0]?.apelido).toBe("Nêgo do Sítio");
   });
 });

@@ -1,4 +1,6 @@
 import type {
+  BairroOperacionalRecord,
+  BairroPainelRecord,
   ChegadaRecord,
   DiligenciaDetalhe,
   DiligenciaListFilters,
@@ -19,6 +21,7 @@ import type {
   RegistroFotograficoRecord,
   RotaSalvaRecord,
 } from "@/features/localizacao/localizacaoTypes";
+import { BAIRROS_OPERACIONAIS_ITABELA } from "@/features/localizacao/localizacaoConstants";
 import { buildMapDirectionsUrl, buildWazeUrl, DEFAULT_ROUTE_ORIGIN } from "@/lib/mapLinks";
 import { supabase } from "@/lib/supabaseClient";
 
@@ -102,6 +105,12 @@ const TEST_ADDRESS: EnderecoRecord = {
   sem_numero: false,
   complemento: null,
   bairro: "Centro",
+  bairro_id: "bairro-centro",
+  bairro_status: "confirmado",
+  bairro_confirmado_em: TEST_NOW,
+  bairro_confirmado_por: null,
+  bairro_revisado_em: TEST_NOW,
+  bairro_revisado_por: null,
   municipio: "Itabela",
   uf: "BA",
   cep: null,
@@ -116,6 +125,29 @@ const TEST_ADDRESS: EnderecoRecord = {
   updated_at: TEST_NOW,
   created_by: null,
 };
+
+const TEST_BAIRROS: BairroOperacionalRecord[] = BAIRROS_OPERACIONAIS_ITABELA.map(
+  (bairro, index) => ({
+    id: `bairro-${bairro.nome}`,
+    nome: bairro.nome,
+    chave: bairro.nome
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLocaleLowerCase("pt-BR")
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, ""),
+    aliases: [...bairro.aliases],
+    municipio: "Itabela",
+    uf: "BA",
+    ordem: index + 1,
+    centro_latitude: bairro.centro?.[0] ?? null,
+    centro_longitude: bairro.centro?.[1] ?? null,
+    limite_geojson: null,
+    posicao_confirmada: bairro.centro !== null,
+    fonte: null,
+    ativo: true,
+  }),
+);
 const TEST_PEOPLE: PessoaComLocal[] = [
   {
     id: "test-person-1",
@@ -144,6 +176,11 @@ const TEST_PEOPLE: PessoaComLocal[] = [
       ...TEST_ADDRESS,
       id: "test-address-2",
       bairro: "Alvorada",
+      bairro_id: null,
+      bairro_status: "pendente",
+      bairro_confirmado_em: null,
+      bairro_revisado_em: null,
+      bairro_revisado_por: null,
       ponto_referencia: "Acesso pela padaria",
       como_chegar: "Entre pela padaria e siga até o portão azul.",
     },
@@ -302,6 +339,78 @@ export async function registrarChegada(input: {
   return data as ChegadaRecord;
 }
 
+export async function listBairrosOperacionais(): Promise<BairroOperacionalRecord[]> {
+  if (import.meta.env.MODE === "test") return TEST_BAIRROS;
+
+  const { data, error } = await supabase
+    .from("localizacao_bairros")
+    .select(
+      "id, nome, chave, aliases, municipio, uf, ordem, centro_latitude, centro_longitude, limite_geojson, posicao_confirmada, fonte, ativo",
+    )
+    .eq("ativo", true)
+    .order("ordem", { ascending: true })
+    .limit(100);
+  if (error) fail("Falha ao carregar o catálogo territorial", error);
+  return (data ?? []) as BairroOperacionalRecord[];
+}
+
+/**
+ * Ficha territorial carregada somente ao selecionar um bairro. O RPC devolve
+ * contadores completos, mas limita as listas visuais para manter o painel leve.
+ */
+export async function getBairroPainel(bairroId: string): Promise<BairroPainelRecord | null> {
+  if (import.meta.env.MODE === "test") {
+    const bairro = TEST_BAIRROS.find((item) => item.id === bairroId) ?? null;
+    if (!bairro) return null;
+    const pessoas = TEST_PEOPLE.filter(
+      (person) =>
+        person.endereco?.bairro && normalize(person.endereco.bairro) === normalize(bairro.nome),
+    ).map((person) => ({
+      id: person.id,
+      nome: person.nome,
+      apelido: person.apelido,
+      foto_perfil_path: person.foto_perfil_path,
+      vinculo: person.vinculo,
+      endereco: person.endereco,
+    }));
+    const enderecos = pessoas
+      .map((person) => person.endereco)
+      .filter((address): address is EnderecoRecord => address !== null);
+    return {
+      bairro_id: bairro.id,
+      bairro_nome: bairro.nome,
+      enderecos_total: enderecos.length,
+      enderecos_posicionados: enderecos.filter(
+        (address) => address.latitude !== null && address.longitude !== null,
+      ).length,
+      pessoas_total: pessoas.length,
+      diligencias_ativas: 0,
+      enderecos,
+      pessoas,
+      diligencias: [],
+    };
+  }
+
+  const { data, error } = await supabase.rpc("localizacao_bairro_painel", {
+    p_bairro_id: bairroId,
+  });
+  if (error) fail("Falha ao carregar o painel territorial do bairro", error);
+  if (!data || typeof data !== "object" || !("bairro_id" in data)) return null;
+
+  const panel = data as Partial<BairroPainelRecord>;
+  return {
+    bairro_id: String(panel.bairro_id),
+    bairro_nome: String(panel.bairro_nome ?? "Bairro"),
+    enderecos_total: Number(panel.enderecos_total ?? 0),
+    enderecos_posicionados: Number(panel.enderecos_posicionados ?? 0),
+    pessoas_total: Number(panel.pessoas_total ?? 0),
+    diligencias_ativas: Number(panel.diligencias_ativas ?? 0),
+    enderecos: Array.isArray(panel.enderecos) ? panel.enderecos : [],
+    pessoas: Array.isArray(panel.pessoas) ? panel.pessoas : [],
+    diligencias: Array.isArray(panel.diligencias) ? panel.diligencias : [],
+  };
+}
+
 export async function listEnderecos(search = ""): Promise<EnderecoRecord[]> {
   let query = supabase
     .from("localizacao_enderecos")
@@ -318,6 +427,36 @@ export async function listEnderecos(search = ""): Promise<EnderecoRecord[]> {
   const { data, error } = await query;
   if (error) fail("Falha ao listar endereços", error);
   return (data ?? []) as EnderecoRecord[];
+}
+
+export interface EnderecosPendentesResult {
+  records: EnderecoRecord[];
+  total: number;
+}
+
+/**
+ * Fila limitada para revisao humana. O contador vem do servidor e somente o
+ * lote atual trafega para o navegador.
+ */
+export async function listEnderecosPendentes(limit = 25): Promise<EnderecosPendentesResult> {
+  const safeLimit = Math.min(Math.max(limit, 1), 50);
+  if (import.meta.env.MODE === "test") {
+    const records = TEST_PEOPLE.map((person) => person.endereco).filter(
+      (address): address is EnderecoRecord => address?.bairro_status === "pendente",
+    );
+    return { records: records.slice(0, safeLimit), total: records.length };
+  }
+
+  const { data, error, count } = await supabase
+    .from("localizacao_enderecos")
+    .select("*", { count: "exact" })
+    .is("deleted_at", null)
+    .eq("bairro_status", "pendente")
+    .order("updated_at", { ascending: true })
+    .limit(safeLimit);
+
+  if (error) fail("Falha ao carregar a fila de bairros pendentes", error);
+  return { records: (data ?? []) as EnderecoRecord[], total: count ?? 0 };
 }
 
 /**
@@ -339,7 +478,7 @@ export async function listMapaEnderecos(): Promise<MapaEnderecoRecord[]> {
     const { data, error } = await supabase
       .from("localizacao_enderecos")
       .select(
-        "id, logradouro, numero, sem_numero, bairro, municipio, uf, latitude, longitude, maps_url",
+        "id, logradouro, numero, sem_numero, bairro, bairro_id, bairro_status, municipio, uf, latitude, longitude, maps_url",
       )
       .is("deleted_at", null)
       .order("bairro", { ascending: true, nullsFirst: false })
@@ -375,7 +514,7 @@ export async function listMapaPessoasPorEnderecos(
   const { data, error } = await supabase
     .from("localizacao_pessoas")
     .select(
-      "id, nome, apelido, foto_perfil_path, vinculo, endereco:localizacao_enderecos(id, logradouro, numero, sem_numero, bairro, municipio, uf, latitude, longitude, maps_url)",
+      "id, nome, apelido, foto_perfil_path, vinculo, endereco:localizacao_enderecos(id, logradouro, numero, sem_numero, bairro, bairro_id, bairro_status, municipio, uf, latitude, longitude, maps_url)",
     )
     .is("deleted_at", null)
     .in("endereco_id", uniqueIds)
@@ -400,6 +539,37 @@ export async function createEndereco(payload: EnderecoPayload): Promise<Endereco
     .select("*")
     .single();
   if (error) fail("Falha ao criar endereço", error);
+  return data as EnderecoRecord;
+}
+
+export async function confirmarBairroEndereco(
+  enderecoId: string,
+  bairro: Pick<BairroOperacionalRecord, "id" | "nome">,
+): Promise<EnderecoRecord> {
+  const { data, error } = await supabase
+    .from("localizacao_enderecos")
+    .update({
+      bairro_id: bairro.id,
+      bairro: bairro.nome,
+      bairro_status: "confirmado",
+    })
+    .eq("id", enderecoId)
+    .is("deleted_at", null)
+    .select("*")
+    .single();
+  if (error) fail("Falha ao confirmar o bairro do endereço", error);
+  return data as EnderecoRecord;
+}
+
+export async function marcarBairroNaoIdentificado(enderecoId: string): Promise<EnderecoRecord> {
+  const { data, error } = await supabase
+    .from("localizacao_enderecos")
+    .update({ bairro_id: null, bairro_status: "nao_identificado" })
+    .eq("id", enderecoId)
+    .is("deleted_at", null)
+    .select("*")
+    .single();
+  if (error) fail("Falha ao concluir o bairro como não identificado", error);
   return data as EnderecoRecord;
 }
 

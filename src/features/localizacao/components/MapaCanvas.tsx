@@ -1,7 +1,10 @@
+import { Link } from "@tanstack/react-router";
 import type { LatLngExpression, LayerGroup, Map as LeafletMap } from "leaflet";
 import "leaflet/dist/leaflet.css";
 import {
   Building2,
+  ClipboardList,
+  House,
   LocateFixed,
   LoaderCircle,
   MapPin,
@@ -14,7 +17,9 @@ import {
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { DEFAULT_ROUTE_ORIGIN } from "@/lib/mapLinks";
 import {
+  getBairroPainel,
   getPessoaPhotoSignedUrl,
+  listBairrosOperacionais,
   listMapaEnderecos,
   listMapaPessoasPorEnderecos,
 } from "@/lib/repositories/localizacaoRepository";
@@ -25,24 +30,48 @@ import {
   normalizarChaveBairro,
 } from "../localizacaoConstants";
 import type {
+  BairroOperacionalRecord,
+  BairroPainelRecord,
   DiligenciaListRecord,
   MapaEnderecoRecord,
   MapaPessoaRecord,
 } from "../localizacaoTypes";
+import { DiligenciaStatusBadge } from "./DiligenciaStatusBadge";
 
 const ITABELA_CENTER: LatLngExpression = [-16.57257, -39.56629];
 const OSM_TILE_URL = "https://tile.openstreetmap.org/{z}/{x}/{y}.png";
 const WITHOUT_NEIGHBORHOOD = "__sem_bairro__";
+const PENDING_NEIGHBORHOOD = "__bairro_pendente__";
+const UNIDENTIFIED_NEIGHBORHOOD = "__bairro_nao_identificado__";
 const SHOW_PEOPLE_AT_ZOOM = 17;
+const FALLBACK_TERRITORY: BairroOperacionalRecord[] = BAIRROS_OPERACIONAIS_ITABELA.map(
+  (bairro, index) => ({
+    id: `fallback-${index + 1}`,
+    nome: bairro.nome,
+    chave: normalizarChaveBairro(bairro.nome).replace(/\s+/g, "-"),
+    aliases: [...bairro.aliases],
+    municipio: "Itabela",
+    uf: "BA",
+    ordem: index + 1,
+    centro_latitude: bairro.centro?.[0] ?? null,
+    centro_longitude: bairro.centro?.[1] ?? null,
+    limite_geojson: null,
+    posicao_confirmada: bairro.centro !== null,
+    fonte: null,
+    ativo: true,
+  }),
+);
 
 interface TerritoryScope {
   kind: "bairro" | "endereco" | "area";
   label: string;
+  bairroId: string | null;
   addressIds: string[];
 }
 
 interface NeighborhoodGroup {
   key: string;
+  bairroId: string | null;
   label: string;
   addresses: MapaEnderecoRecord[];
   mappedAddresses: MapaEnderecoRecord[];
@@ -63,37 +92,68 @@ function hasCoordinates(
   );
 }
 
-function normalizeNeighborhood(value: string | null) {
+function normalizeNeighborhood(value: string | null, catalog: BairroOperacionalRecord[]) {
   const label = value?.replace(/\s+/g, " ").trim();
   if (!label) return { key: WITHOUT_NEIGHBORHOOD, label: "Bairro não informado" };
-  const canonical = encontrarBairroOperacional(label);
+  const normalized = normalizarChaveBairro(label);
+  const databaseNeighborhood = catalog.find((bairro) =>
+    [bairro.nome, ...bairro.aliases].some(
+      (candidate) => normalizarChaveBairro(candidate) === normalized,
+    ),
+  );
+  const canonical = databaseNeighborhood ?? encontrarBairroOperacional(label);
   return canonical
     ? { key: normalizarChaveBairro(canonical.nome), label: canonical.nome }
     : { key: normalizarChaveBairro(label), label };
 }
 
-function groupNeighborhoods(addresses: MapaEnderecoRecord[]): NeighborhoodGroup[] {
+function groupNeighborhoods(
+  addresses: MapaEnderecoRecord[],
+  catalog: BairroOperacionalRecord[],
+): NeighborhoodGroup[] {
+  const catalogOrder = new Map(
+    catalog.map((bairro, index) => [normalizarChaveBairro(bairro.nome), index]),
+  );
   const groups = new Map<
     string,
     {
       label: string;
+      bairroId: string | null;
       addresses: MapaEnderecoRecord[];
       catalogCenter: readonly [number, number] | null;
     }
   >();
 
-  BAIRROS_OPERACIONAIS_ITABELA.forEach((bairro) => {
+  catalog.forEach((bairro) => {
+    const catalogCenter =
+      bairro.centro_latitude !== null && bairro.centro_longitude !== null
+        ? ([bairro.centro_latitude, bairro.centro_longitude] as const)
+        : null;
     groups.set(normalizarChaveBairro(bairro.nome), {
       label: bairro.nome,
+      bairroId: bairro.id,
       addresses: [],
-      catalogCenter: bairro.centro,
+      catalogCenter,
     });
   });
 
   addresses.forEach((address) => {
-    const neighborhood = normalizeNeighborhood(address.bairro);
+    const linkedNeighborhood = address.bairro_id
+      ? catalog.find((bairro) => bairro.id === address.bairro_id)
+      : null;
+    const neighborhood = linkedNeighborhood
+      ? {
+          key: normalizarChaveBairro(linkedNeighborhood.nome),
+          label: linkedNeighborhood.nome,
+        }
+      : address.bairro_status === "pendente"
+        ? { key: PENDING_NEIGHBORHOOD, label: "Classificação pendente" }
+        : address.bairro_status === "nao_identificado"
+          ? { key: UNIDENTIFIED_NEIGHBORHOOD, label: "Bairro não identificado" }
+          : normalizeNeighborhood(address.bairro, catalog);
     const current = groups.get(neighborhood.key) ?? {
       label: neighborhood.label,
+      bairroId: linkedNeighborhood?.id ?? null,
       addresses: [],
       catalogCenter: null,
     };
@@ -111,10 +171,28 @@ function groupNeighborhoods(addresses: MapaEnderecoRecord[]): NeighborhoodGroup[
       : group.catalogCenter
         ? [group.catalogCenter[0], group.catalogCenter[1]]
         : null;
-    return { key, label: group.label, addresses: group.addresses, mappedAddresses, center };
+    return {
+      key,
+      bairroId: group.bairroId,
+      label: group.label,
+      addresses: group.addresses,
+      mappedAddresses,
+      center,
+    };
   }).sort((a, b) => {
     if (a.key === WITHOUT_NEIGHBORHOOD) return 1;
     if (b.key === WITHOUT_NEIGHBORHOOD) return -1;
+    if (a.key === PENDING_NEIGHBORHOOD) return 1;
+    if (b.key === PENDING_NEIGHBORHOOD) return -1;
+    if (a.key === UNIDENTIFIED_NEIGHBORHOOD) return 1;
+    if (b.key === UNIDENTIFIED_NEIGHBORHOOD) return -1;
+    const aCatalogIndex = catalogOrder.get(a.key);
+    const bCatalogIndex = catalogOrder.get(b.key);
+    if (aCatalogIndex !== undefined && bCatalogIndex !== undefined) {
+      return aCatalogIndex - bCatalogIndex;
+    }
+    if (aCatalogIndex !== undefined) return -1;
+    if (bCatalogIndex !== undefined) return 1;
     return a.label.localeCompare(b.label, "pt-BR");
   });
 }
@@ -140,6 +218,7 @@ function sameScope(previous: TerritoryScope | null, next: TerritoryScope) {
   return (
     previous?.kind === next.kind &&
     previous.label === next.label &&
+    previous.bairroId === next.bairroId &&
     previous.addressIds.join(",") === next.addressIds.join(",")
   );
 }
@@ -176,21 +255,36 @@ export function MapaCanvas({
 
   const [mapReady, setMapReady] = useState(false);
   const [addresses, setAddresses] = useState<MapaEnderecoRecord[]>([]);
+  const [territoryCatalog, setTerritoryCatalog] =
+    useState<BairroOperacionalRecord[]>(FALLBACK_TERRITORY);
   const [addressesLoading, setAddressesLoading] = useState(true);
   const [mapError, setMapError] = useState("");
   const [zoom, setZoom] = useState(14);
-  const [directoryOpen, setDirectoryOpen] = useState(false);
+  // O catálogo territorial abre junto do mapa para que bairros sem coordenadas
+  // também sejam visíveis. O usuário pode fechá-lo para usar toda a área do mapa.
+  const [directoryOpen, setDirectoryOpen] = useState(true);
   const [scope, setScope] = useState<TerritoryScope | null>(null);
   const [people, setPeople] = useState<MapaPessoaRecord[]>([]);
   const [peopleLoading, setPeopleLoading] = useState(false);
   const [peopleError, setPeopleError] = useState("");
+  const [neighborhoodPanel, setNeighborhoodPanel] = useState<BairroPainelRecord | null>(null);
+  const [neighborhoodPanelLoading, setNeighborhoodPanelLoading] = useState(false);
+  const [neighborhoodPanelError, setNeighborhoodPanelError] = useState("");
   const [internalRouteVisible, setInternalRouteVisible] = useState(true);
   const [route, setRoute] = useState<RoadRoute | null>(null);
   const [routeState, setRouteState] = useState<"idle" | "loading" | "ready" | "error">("idle");
 
   const routeVisible = controlledRouteVisible ?? internalRouteVisible;
-  const neighborhoods = useMemo(() => groupNeighborhoods(addresses), [addresses]);
-  const namedNeighborhoods = neighborhoods.filter((item) => item.key !== WITHOUT_NEIGHBORHOOD);
+  const neighborhoods = useMemo(
+    () => groupNeighborhoods(addresses, territoryCatalog),
+    [addresses, territoryCatalog],
+  );
+  const namedNeighborhoods = neighborhoods.filter(
+    (item) =>
+      item.key !== WITHOUT_NEIGHBORHOOD &&
+      item.key !== PENDING_NEIGHBORHOOD &&
+      item.key !== UNIDENTIFIED_NEIGHBORHOOD,
+  );
   const mappedAddresses = useMemo(() => addresses.filter(hasCoordinates), [addresses]);
   const mappedTerritoryPoints = useMemo(
     () => neighborhoods.flatMap((item) => (item.center ? [item.center] : [])),
@@ -206,13 +300,18 @@ export function MapaCanvas({
   useEffect(() => {
     let cancelled = false;
     setAddressesLoading(true);
-    void listMapaEnderecos()
-      .then((records) => {
-        if (!cancelled) setAddresses(records);
+    void Promise.all([listMapaEnderecos(), listBairrosOperacionais()])
+      .then(([addressRecords, neighborhoodRecords]) => {
+        if (!cancelled) {
+          setAddresses(addressRecords);
+          if (neighborhoodRecords.length) setTerritoryCatalog(neighborhoodRecords);
+        }
       })
       .catch((cause) => {
-        console.error("[MapaCanvas] Falha ao carregar endereços", cause);
-        if (!cancelled) setMapError("Não foi possível carregar os bairros cadastrados.");
+        console.error("[MapaCanvas] Falha ao carregar território", cause);
+        if (!cancelled) {
+          setMapError("Não foi possível atualizar o território; exibindo o catálogo local.");
+        }
       })
       .finally(() => {
         if (!cancelled) setAddressesLoading(false);
@@ -295,6 +394,7 @@ export function MapaCanvas({
     setScope({
       kind: "bairro",
       label: group.label,
+      bairroId: group.bairroId,
       addressIds: group.addresses.map((item) => item.id),
     });
     if (group.center) mapRef.current?.flyTo(group.center, Math.max(16, mapRef.current.getZoom()));
@@ -316,6 +416,7 @@ export function MapaCanvas({
     const next: TerritoryScope = {
       kind: "area",
       label: "Pessoas nesta área",
+      bairroId: null,
       addressIds: visible.map((item) => item.id).sort(),
     };
     setScope((previous) => (sameScope(previous, next) ? previous : next));
@@ -385,7 +486,12 @@ export function MapaCanvas({
       marker.on("click", () => {
         selectionLockedRef.current = true;
         setDirectoryOpen(false);
-        setScope({ kind: "endereco", label: formatAddress(address), addressIds: [address.id] });
+        setScope({
+          kind: "endereco",
+          label: formatAddress(address),
+          bairroId: address.bairro_id,
+          addressIds: [address.id],
+        });
       });
       marker.addTo(addressLayer);
     });
@@ -461,6 +567,43 @@ export function MapaCanvas({
   }, [diligencias, mapReady, onSelect, selectedId]);
 
   useEffect(() => {
+    if (scope?.kind !== "bairro" || !scope.bairroId) {
+      setNeighborhoodPanel(null);
+      setNeighborhoodPanelError("");
+      setNeighborhoodPanelLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+    setNeighborhoodPanel(null);
+    setNeighborhoodPanelLoading(true);
+    setNeighborhoodPanelError("");
+    void getBairroPainel(scope.bairroId)
+      .then((panel) => {
+        if (!cancelled) setNeighborhoodPanel(panel);
+      })
+      .catch((cause) => {
+        console.error("[MapaCanvas] Falha ao carregar painel territorial", cause);
+        if (!cancelled) {
+          setNeighborhoodPanelError("Não foi possível carregar a ficha completa deste bairro.");
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setNeighborhoodPanelLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [scope]);
+
+  useEffect(() => {
+    if (scope?.kind === "bairro" && scope.bairroId) {
+      setPeople([]);
+      setPeopleError("");
+      setPeopleLoading(false);
+      return;
+    }
     if (!scope?.addressIds.length) {
       setPeople([]);
       setPeopleError("");
@@ -560,6 +703,10 @@ export function MapaCanvas({
   }
 
   const panelOpen = directoryOpen || scope !== null;
+  const territorialAddresses = neighborhoodPanel?.enderecos ?? scopeAddresses;
+  const territorialPeople = neighborhoodPanel?.pessoas ?? people;
+  const territorialLoading = neighborhoodPanelLoading || peopleLoading;
+  const territorialError = neighborhoodPanelError || peopleError;
 
   return (
     <div
@@ -623,7 +770,6 @@ export function MapaCanvas({
           </header>
 
           <div className="min-h-0 flex-1 overflow-y-auto p-3">
-            {!directoryOpen && scope ? <ScopeAddressList addresses={scopeAddresses} /> : null}
             {directoryOpen ? (
               <div className="space-y-2">
                 {neighborhoods.length ? (
@@ -655,41 +801,81 @@ export function MapaCanvas({
                 ) : (
                   <EmptyTerritory />
                 )}
-                {addresses.some((item) => !item.bairro?.trim()) ? (
+                {addresses.some((item) => item.bairro_status === "pendente") ? (
                   <p className="rounded-lg border border-warning/25 bg-warning/5 p-3 text-[10px] leading-relaxed text-muted-foreground">
-                    Endereços sem bairro continuam acessíveis, mas não recebem um nome territorial
-                    inventado. Complete o bairro no cadastro para ele aparecer como uma área
-                    própria.
+                    Existem {addresses.filter((item) => item.bairro_status === "pendente").length}{" "}
+                    endereço(s) aguardando classificação. Eles não entram nos totais oficiais de
+                    nenhum bairro até a confirmação em Endereços.
                   </p>
                 ) : null}
               </div>
-            ) : peopleLoading ? (
+            ) : territorialLoading ? (
               <div className="flex min-h-40 items-center justify-center gap-2 text-xs text-muted-foreground">
-                <LoaderCircle className="h-4 w-4 animate-spin text-operational" /> Carregando
-                perfis...
+                <LoaderCircle className="h-4 w-4 animate-spin text-operational" /> Montando ficha
+                territorial...
               </div>
-            ) : peopleError ? (
+            ) : territorialError ? (
               <p className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-xs text-destructive">
-                {peopleError}
+                {territorialError}
               </p>
-            ) : people.length ? (
-              <div className="space-y-2">
-                {people.map((person) => (
-                  <PersonMapCard key={person.id} person={person} />
-                ))}
-                {people.length >= 80 ? (
-                  <p className="px-2 py-1 text-[10px] text-muted-foreground">
-                    Exibindo os 80 primeiros cadastros desta área. Aproxime o mapa para refinar.
-                  </p>
-                ) : null}
-              </div>
             ) : (
-              <div className="flex min-h-44 flex-col items-center justify-center rounded-xl border border-dashed border-border p-5 text-center">
-                <UsersRound className="h-7 w-7 text-muted-foreground" />
-                <strong className="mt-3 text-xs">Nenhuma pessoa vinculada</strong>
-                <p className="mt-1 text-[10px] leading-relaxed text-muted-foreground">
-                  O bairro está no mapa, mas ainda não possui pessoa ligada a estes endereços.
-                </p>
+              <div className="space-y-3">
+                {neighborhoodPanel ? <TerritoryStats panel={neighborhoodPanel} /> : null}
+                {scope ? (
+                  <ScopeAddressList
+                    addresses={territorialAddresses}
+                    total={neighborhoodPanel?.enderecos_total}
+                  />
+                ) : null}
+                {neighborhoodPanel ? <NeighborhoodDiligences panel={neighborhoodPanel} /> : null}
+
+                <section>
+                  <div className="mb-2 flex items-center justify-between gap-2 px-1">
+                    <strong className="text-[9px] font-black uppercase tracking-[0.16em] text-operational">
+                      Pessoas vinculadas
+                    </strong>
+                    <span className="text-[9px] text-muted-foreground">
+                      {neighborhoodPanel?.pessoas_total ?? territorialPeople.length}
+                    </span>
+                  </div>
+                  {territorialPeople.length ? (
+                    <div className="space-y-2">
+                      {territorialPeople.map((person) => (
+                        <PersonMapCard key={person.id} person={person} />
+                      ))}
+                      {neighborhoodPanel &&
+                      neighborhoodPanel.pessoas_total > neighborhoodPanel.pessoas.length ? (
+                        <p className="px-2 py-1 text-[10px] text-muted-foreground">
+                          Exibindo {neighborhoodPanel.pessoas.length} de{" "}
+                          {neighborhoodPanel.pessoas_total} perfis. Abra Pessoas / Alvos para a
+                          lista completa.
+                        </p>
+                      ) : territorialPeople.length >= 80 ? (
+                        <p className="px-2 py-1 text-[10px] text-muted-foreground">
+                          Exibindo os 80 primeiros cadastros desta área. Aproxime o mapa para
+                          refinar.
+                        </p>
+                      ) : null}
+                    </div>
+                  ) : (
+                    <div className="flex min-h-36 flex-col items-center justify-center rounded-xl border border-dashed border-border p-5 text-center">
+                      <UsersRound className="h-7 w-7 text-muted-foreground" />
+                      <strong className="mt-3 text-xs">Nenhuma pessoa vinculada</strong>
+                      <p className="mt-1 text-[10px] leading-relaxed text-muted-foreground">
+                        Este bairro ainda não possui pessoa ligada aos endereços classificados.
+                      </p>
+                    </div>
+                  )}
+                </section>
+
+                {scope?.kind === "bairro" ? (
+                  <Link
+                    to="/localizacao/pessoas"
+                    className="flex min-h-10 items-center justify-center gap-2 rounded-lg border border-operational/35 bg-operational/10 px-3 text-[9px] font-black uppercase tracking-wider text-operational transition hover:bg-operational hover:text-[var(--operational-contrast)]"
+                  >
+                    <UsersRound className="h-3.5 w-3.5" /> Abrir Pessoas / Alvos
+                  </Link>
+                ) : null}
               </div>
             )}
           </div>
@@ -731,6 +917,89 @@ export function MapaCanvas({
         </span>
       </div>
     </div>
+  );
+}
+
+function TerritoryStats({ panel }: { panel: BairroPainelRecord }) {
+  const stats = [
+    {
+      label: "Endereços",
+      value: panel.enderecos_total,
+      detail: `${panel.enderecos_posicionados} no mapa`,
+      icon: House,
+    },
+    {
+      label: "Pessoas",
+      value: panel.pessoas_total,
+      detail: "vinculadas",
+      icon: UsersRound,
+    },
+    {
+      label: "Diligências",
+      value: panel.diligencias_ativas,
+      detail: "ativas",
+      icon: ClipboardList,
+    },
+  ];
+
+  return (
+    <section className="grid grid-cols-3 gap-1.5" aria-label="Resumo territorial do bairro">
+      {stats.map(({ label, value, detail, icon: Icon }) => (
+        <article
+          key={label}
+          className="min-w-0 rounded-xl border border-operational/20 bg-operational/5 p-2.5"
+        >
+          <Icon className="h-3.5 w-3.5 text-operational" />
+          <strong className="mt-2 block text-lg font-black tabular-nums">{value}</strong>
+          <span className="block truncate text-[7px] font-black uppercase tracking-wide text-muted-foreground">
+            {label}
+          </span>
+          <span className="mt-0.5 block truncate text-[8px] text-muted-foreground">{detail}</span>
+        </article>
+      ))}
+    </section>
+  );
+}
+
+function NeighborhoodDiligences({ panel }: { panel: BairroPainelRecord }) {
+  return (
+    <section className="rounded-xl border border-border bg-card/60 p-3">
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <strong className="text-[9px] font-black uppercase tracking-[0.16em] text-operational">
+          Diligências ativas
+        </strong>
+        <span className="text-[9px] text-muted-foreground">{panel.diligencias_ativas}</span>
+      </div>
+      {panel.diligencias.length ? (
+        <div className="space-y-1.5">
+          {panel.diligencias.map((diligence) => (
+            <Link
+              key={diligence.id}
+              to="/localizacao/diligencias/$diligenciaId"
+              params={{ diligenciaId: diligence.id }}
+              className="flex items-center gap-2 rounded-lg border border-border/70 bg-background/70 px-2.5 py-2 transition hover:border-operational/40"
+            >
+              <ClipboardList className="h-3.5 w-3.5 shrink-0 text-operational" />
+              <span className="min-w-0 flex-1">
+                <strong className="block truncate font-mono text-[9px]">{diligence.codigo}</strong>
+                <span className="block truncate text-[9px] text-muted-foreground">
+                  {diligence.destino}
+                </span>
+              </span>
+              <DiligenciaStatusBadge status={diligence.status} />
+            </Link>
+          ))}
+          {panel.diligencias_ativas > panel.diligencias.length ? (
+            <span className="block px-2 pt-1 text-[9px] text-muted-foreground">
+              + {panel.diligencias_ativas - panel.diligencias.length} diligência(s) na lista
+              completa.
+            </span>
+          ) : null}
+        </div>
+      ) : (
+        <p className="text-[10px] text-muted-foreground">Nenhuma operação ativa neste bairro.</p>
+      )}
+    </section>
   );
 }
 
@@ -787,7 +1056,13 @@ function PersonMapCard({ person }: { person: MapaPessoaRecord }) {
   );
 }
 
-function ScopeAddressList({ addresses }: { addresses: MapaEnderecoRecord[] }) {
+function ScopeAddressList({
+  addresses,
+  total = addresses.length,
+}: {
+  addresses: MapaEnderecoRecord[];
+  total?: number;
+}) {
   const uniqueAddresses = Array.from(
     new Map(addresses.map((address) => [formatAddress(address), address])).values(),
   );
@@ -798,7 +1073,7 @@ function ScopeAddressList({ addresses }: { addresses: MapaEnderecoRecord[] }) {
         <strong className="text-[9px] font-black uppercase tracking-[0.16em] text-operational">
           Ruas e endereços
         </strong>
-        <span className="text-[9px] text-muted-foreground">{uniqueAddresses.length}</span>
+        <span className="text-[9px] text-muted-foreground">{total}</span>
       </div>
       {uniqueAddresses.length ? (
         <div className="space-y-1.5">
@@ -816,9 +1091,9 @@ function ScopeAddressList({ addresses }: { addresses: MapaEnderecoRecord[] }) {
               </span>
             </span>
           ))}
-          {uniqueAddresses.length > 12 ? (
+          {total > uniqueAddresses.length ? (
             <span className="block px-2 pt-1 text-[9px] text-muted-foreground">
-              + {uniqueAddresses.length - 12} endereços. Aproxime o mapa para refinar a área.
+              + {total - uniqueAddresses.length} endereço(s) na lista completa.
             </span>
           ) : null}
         </div>
