@@ -5,7 +5,6 @@ import {
   Car,
   Package,
   ArrowRight,
-  LockKeyhole,
   Construction,
   Database,
   Shield,
@@ -13,7 +12,7 @@ import {
   Route as RouteIcon,
 } from "lucide-react";
 import { getCurrentProfile, getProfileAvatarPublicUrl, getSession, logout } from "@/lib/auth";
-import { isAuthorized, type UserProfile } from "@/lib/authz";
+import { canViewLocalizacao, isAuthorized, type UserProfile } from "@/lib/authz";
 import { AppearanceSwitcher } from "@/components/AppearanceSwitcher";
 
 export const Route = createFileRoute("/modulos")({
@@ -77,7 +76,8 @@ const MODULOS: Modulo[] = [
       "Apoio a diligências externas com cadastro de pessoas, endereços, rotas, chegada ao local, fotos e Street View.",
     icon: RouteIcon,
     tone: "operational",
-    disponivel: false,
+    to: "/localizacao",
+    disponivel: true,
   },
   {
     id: "extracao-dados",
@@ -207,7 +207,9 @@ function ModulosPage() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-          {MODULOS.map((m) => (
+          {MODULOS.filter(
+            (m) => m.id !== "localizacao-operacional" || canViewLocalizacao(profile),
+          ).map((m) => (
             <ModuloCard
               key={m.id}
               modulo={m}
@@ -294,15 +296,6 @@ function ModuloCard({ modulo, onIndisponivel }: { modulo: Modulo; onIndisponivel
               }`}
             />
           </div>
-          {isOperationalLocation && (
-            <span
-              className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded border border-cyan-300/20 bg-slate-950/55 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-cyan-100/80 shadow-[0_0_10px_rgba(34,211,238,0.04)] backdrop-blur-sm"
-              title="Sendo criado neste momento"
-              aria-label="Em breve — sendo criado neste momento"
-            >
-              <LockKeyhole className="h-2.5 w-2.5 shrink-0" /> EM BREVE
-            </span>
-          )}
         </div>
         <div
           className={`text-[10px] font-bold tracking-[0.2em] mb-1.5 inline-flex w-fit px-2 py-0.5 rounded border ${styles.chip}`}

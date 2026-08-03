@@ -25,6 +25,9 @@ describe("mobile experience", () => {
     "/veiculos/todos",
     "/veiculos/motocicletas",
     "/veiculos/vehicle-id",
+    "/localizacao",
+    "/localizacao/diligencias/dlg-1/campo",
+    "/localizacao/pessoas",
   ])("allows the mobile consultation path %s", (pathname) => {
     expect(isMobilePathAllowed(pathname)).toBe(true);
     expect(getMobileRouteRedirect(pathname, true)).toBeNull();

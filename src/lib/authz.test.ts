@@ -15,6 +15,7 @@ import {
   canRegisterVehicleMovements,
   canReleaseVehicles,
   canViewAuditoria,
+  canViewLocalizacao,
   canViewPrivateCases,
   canViewRepresentacoes,
   canViewVehicles,
@@ -73,6 +74,22 @@ describe("canManageUsers", () => {
     expect(canManageUsers(makeProfile({ cargo: "membro" }))).toBe(false);
     expect(canManageUsers(makeProfile({ cargo: "sipi_access" }))).toBe(false);
     expect(canManageUsers(makeProfile({ cargo: "atlas_access" }))).toBe(false);
+  });
+});
+
+describe("canViewLocalizacao", () => {
+  it("allows authorized operational roles", () => {
+    expect(canViewLocalizacao(makeProfile({ cargo: "sipi_access" }))).toBe(true);
+    expect(canViewLocalizacao(makeProfile({ cargo: "delegado" }))).toBe(true);
+    expect(canViewLocalizacao(makeProfile({ cargo: "admin" }))).toBe(true);
+  });
+
+  it("blocks basic, atlas-only and unauthorized profiles", () => {
+    expect(canViewLocalizacao(makeProfile({ cargo: "membro" }))).toBe(false);
+    expect(canViewLocalizacao(makeProfile({ cargo: "atlas_access" }))).toBe(false);
+    expect(
+      canViewLocalizacao(makeProfile({ cargo: "sipi_access", status_autorizacao: "aguardando" })),
+    ).toBe(false);
   });
 });
 

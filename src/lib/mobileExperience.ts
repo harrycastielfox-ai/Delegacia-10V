@@ -38,6 +38,9 @@ export function getPostAuthDestination(mobile = isMobileViewport()) {
 }
 
 export function isMobilePathAllowed(pathname: string) {
+  // O módulo de localização possui navegação própria e fluxos de campo (GPS/fotos).
+  if (isPathOrChild(pathname, "/localizacao")) return true;
+
   if (pathname.startsWith("/veiculos/")) {
     const vehiclePath = pathname.slice("/veiculos/".length);
     if (!vehiclePath || vehiclePath.includes("/") || vehiclePath === "novo") return false;

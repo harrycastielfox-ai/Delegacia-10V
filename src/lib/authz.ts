@@ -193,6 +193,16 @@ export function canManageVehicles(
   return canCreateVehicles(profile) || canReleaseVehicles(profile) || canDeleteVehicles(profile);
 }
 
+const LOCALIZACAO_ROLES: UserRole[] = ["sipi_access", "delegado", "admin"];
+
+export function canViewLocalizacao(
+  profile: Pick<UserProfile, "cargo" | "status_autorizacao"> | null,
+): boolean {
+  return Boolean(profile && isAuthorized(profile) && LOCALIZACAO_ROLES.includes(profile.cargo));
+}
+
+export const canManageLocalizacao = canViewLocalizacao;
+
 export const canSeePrivateRecords = canViewPrivateCases;
 export const canCreateRecords = canCreateCases;
 export const canEditRecords = canEditCases;
