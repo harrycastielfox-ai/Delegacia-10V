@@ -75,11 +75,15 @@ export interface BairroOperacional {
  * Google Maps (o loteamento das ruas A a T); os outros três seguem aproximados até alguém da
  * unidade confirmar.
  *
+ * O Centro foi reposicionado com base na unidade: vai da delegacia até a Avenida Porto Seguro
+ * (chamada localmente de Rua Porto Seguro), cerca de 1,5 km. O ponto ficava numa das pontas e
+ * passou para o meio desse trecho.
+ *
  * Bairros ainda sem centro não aparecem na relação do IBGE, provavelmente por serem nomes de uso
  * popular. Precisam ser posicionados por quem conhece a cidade.
  */
 export const BAIRROS_OPERACIONAIS_ITABELA: readonly BairroOperacional[] = [
-  { nome: "Centro", aliases: [], centro: [-16.57257, -39.56629] },
+  { nome: "Centro", aliases: [], centro: [-16.573791, -39.559451] },
   { nome: "Pereirão", aliases: ["Pereirao"], centro: [-16.574546, -39.548468] },
   {
     nome: "Bandeirante",
