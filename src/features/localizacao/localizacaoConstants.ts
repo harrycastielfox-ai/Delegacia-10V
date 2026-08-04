@@ -69,12 +69,18 @@ export interface BairroOperacional {
  * conhecidos: a diferença ficou entre 477 e 708 m, compatível com a distância entre o rótulo
  * impresso e o ponto central — os dois caem dentro do mesmo bairro.
  *
+ * Atenção ao ler a folha: o IBGE imprime o nome do bairro onde há espaço livre, não sobre as casas.
+ * Em Pereirão, Ubirajara, Manzolão e Triunfo o rótulo cai em área vazia, então o centro foi tomado
+ * do agrupamento de ruas correspondente, e não da posição do texto. Pereirão foi conferido contra o
+ * Google Maps (o loteamento das ruas A a T); os outros três seguem aproximados até alguém da
+ * unidade confirmar.
+ *
  * Bairros ainda sem centro não aparecem na relação do IBGE, provavelmente por serem nomes de uso
  * popular. Precisam ser posicionados por quem conhece a cidade.
  */
 export const BAIRROS_OPERACIONAIS_ITABELA: readonly BairroOperacional[] = [
   { nome: "Centro", aliases: [], centro: [-16.57257, -39.56629] },
-  { nome: "Pereirão", aliases: ["Pereirao"], centro: [-16.576068, -39.54622] },
+  { nome: "Pereirão", aliases: ["Pereirao"], centro: [-16.574546, -39.548468] },
   {
     nome: "Bandeirante",
     aliases: ["Bandeirantes"],
@@ -82,15 +88,15 @@ export const BAIRROS_OPERACIONAIS_ITABELA: readonly BairroOperacional[] = [
   },
   { nome: "Ouro Verde", aliases: [], centro: [-16.5756828, -39.5749892] },
   { nome: "Palmares", aliases: [], centro: null },
-  { nome: "Ubirajara Brito", aliases: ["Ubirajara"], centro: [-16.579072, -39.546779] },
+  { nome: "Ubirajara Brito", aliases: ["Ubirajara"], centro: [-16.578552, -39.54806] },
   {
     nome: "Jaqueira",
     aliases: ["Village", "Vilagge"],
     centro: [-16.5787503, -39.5989604],
   },
   { nome: "Irmã Dulce", aliases: ["Irma Dulce"], centro: [-16.579072, -39.562281] },
-  { nome: "Triunfo", aliases: ["Triunfo 1", "Triunfo I"], centro: [-16.57227, -39.576989] },
-  { nome: "Manzolão", aliases: ["Manzolao"], centro: [-16.585426, -39.558411] },
+  { nome: "Triunfo", aliases: ["Triunfo 1", "Triunfo I"], centro: [-16.574149, -39.574271] },
+  { nome: "Manzolão", aliases: ["Manzolao"], centro: [-16.581712, -39.559289] },
   { nome: "Bacia", aliases: ["Bairro da Bacia"], centro: null },
   { nome: "Bela Vista", aliases: [], centro: null },
   { nome: "Dapezão", aliases: ["Dapezao"], centro: [-16.581287, -39.54735] },
