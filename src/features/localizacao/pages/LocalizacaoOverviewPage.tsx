@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import {
   CheckCircle2,
+  ChevronDown,
   MapPinCheck,
   Navigation,
   Plus,
@@ -209,8 +210,8 @@ export default function LocalizacaoOverviewPage() {
         </button>
       </section>
 
-      <header className="localizacao-tablet-header mb-5 flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
-        <div>
+      <header className="localizacao-tablet-header mb-4 flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+        <div className="max-w-2xl">
           <p className="text-[10px] font-black uppercase tracking-[0.24em] text-operational">
             Centro de coordenação
           </p>
@@ -221,13 +222,13 @@ export default function LocalizacaoOverviewPage() {
             Acompanhe diligências, rotas e equipes em campo.
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-border bg-card px-3 text-[10px] text-muted-foreground">
+        <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:flex-nowrap">
+          <span className="hidden min-h-10 items-center gap-2 rounded-lg border border-border bg-card px-3 text-[10px] text-muted-foreground sm:inline-flex">
             <RadioTower className="h-3.5 w-3.5 text-success" /> Atualizado agora
           </span>
           <Link
             to="/localizacao/diligencias/nova"
-            className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-operational/60 bg-operational/10 px-4 text-xs font-black uppercase tracking-wide text-operational transition hover:bg-operational hover:text-[var(--operational-contrast)]"
+            className="inline-flex min-h-10 flex-1 items-center justify-center gap-2 rounded-lg border border-operational/60 bg-operational/10 px-4 text-xs font-black uppercase tracking-wide text-operational transition hover:bg-operational hover:text-[var(--operational-contrast)] sm:flex-none"
           >
             <Plus className="h-4 w-4" /> Nova diligência
           </Link>
@@ -241,7 +242,7 @@ export default function LocalizacaoOverviewPage() {
       ) : null}
 
       <div
-        className={`localizacao-tablet-stats mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2 2xl:grid-cols-4 ${
+        className={`localizacao-tablet-stats mb-3 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4 ${
           tabletControlsOpen ? "localizacao-tablet-controls-open" : ""
         }`}
       >
@@ -283,20 +284,20 @@ export default function LocalizacaoOverviewPage() {
         />
       </div>
 
-      <div className="grid min-w-0 items-stretch gap-3 2xl:grid-cols-[minmax(0,1fr)_370px]">
+      <div className="grid min-w-0 items-stretch gap-3 xl:grid-cols-[minmax(0,1fr)_350px] 2xl:grid-cols-[minmax(0,1fr)_370px]">
         <section className="min-w-0 overflow-hidden rounded-xl border border-border bg-card">
           <div
-            className={`localizacao-tablet-filters grid gap-2 border-b border-border p-3 lg:grid-cols-[minmax(260px,1fr)_130px_150px_130px] ${
+            className={`localizacao-tablet-filters grid gap-2 border-b border-border p-3 md:grid-cols-2 2xl:grid-cols-[minmax(260px,1fr)_150px_160px_140px] ${
               tabletControlsOpen ? "localizacao-tablet-controls-open" : ""
             }`}
           >
-            <label className="relative block">
+            <label className="localizacao-filter-search relative block md:col-span-2 2xl:col-span-1">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <input
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
                 placeholder="Buscar diligência, local ou equipe..."
-                className="h-11 w-full rounded-lg border border-border bg-background pl-10 pr-3 text-xs outline-none transition focus:border-operational/50"
+                className="h-12 w-full rounded-lg border border-border bg-background pl-10 pr-3 text-xs outline-none transition focus:border-operational/50"
               />
             </label>
             <FilterSelect
@@ -378,24 +379,26 @@ function OverviewStatCard({
       type="button"
       onClick={onClick}
       style={{ "--overview-accent": accent } as CSSProperties}
-      className={`localizacao-tablet-stat-card group min-h-28 rounded-xl border bg-card p-4 text-left transition duration-200 hover:-translate-y-0.5 hover:border-[var(--overview-accent)]/60 ${
+      className={`localizacao-tablet-stat-card group min-h-[102px] rounded-xl border bg-card p-3.5 text-left transition duration-200 hover:-translate-y-0.5 hover:border-[var(--overview-accent)]/60 ${
         active
           ? "border-[var(--overview-accent)] shadow-[0_0_22px_color-mix(in_oklab,var(--overview-accent)_12%,transparent)]"
           : "border-border"
       }`}
     >
-      <span className="flex items-start justify-between gap-3">
+      <span className="flex items-center justify-between gap-3">
         <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
           {label}
         </span>
-        <span className="localizacao-tablet-stat-icon flex h-9 w-9 items-center justify-center rounded-xl border border-[var(--overview-accent)]/30 bg-[var(--overview-accent)]/10 text-[var(--overview-accent)]">
+        <span className="localizacao-tablet-stat-icon flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--overview-accent)]/30 bg-[var(--overview-accent)]/10 text-[var(--overview-accent)]">
           <Icon className="h-4 w-4" />
         </span>
       </span>
-      <strong className="localizacao-tablet-stat-value mt-1 block text-3xl font-black tabular-nums text-foreground">
-        {value}
-      </strong>
-      <span className="mt-1 block text-[11px] text-muted-foreground">{hint}</span>
+      <span className="mt-2 flex items-baseline gap-2">
+        <strong className="localizacao-tablet-stat-value block text-[26px] font-black leading-none tabular-nums text-foreground">
+          {value}
+        </strong>
+        <span className="truncate text-[10px] text-muted-foreground">{hint}</span>
+      </span>
     </button>
   );
 }
@@ -412,15 +415,15 @@ function FilterSelect({
   options: string[][];
 }) {
   return (
-    <label className="relative flex h-11 flex-col justify-center rounded-lg border border-border bg-background px-3">
-      <span className="text-[8px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
+    <label className="relative flex h-12 min-w-0 flex-col justify-center rounded-lg border border-border bg-background px-3 pr-8 transition focus-within:border-operational/50">
+      <span className="pointer-events-none block text-[8px] font-bold uppercase leading-none tracking-[0.16em] text-muted-foreground">
         {label}
       </span>
       <select
         value={value}
         onChange={(event) => onChange(event.target.value)}
         aria-label={label}
-        className="absolute inset-0 h-full w-full cursor-pointer appearance-none bg-transparent px-3 pt-3 text-[10px] font-bold outline-none"
+        className="mt-1 h-4 min-w-0 w-full cursor-pointer appearance-none truncate bg-transparent p-0 text-[11px] font-bold leading-none text-foreground outline-none"
       >
         {options.map(([optionValue, optionLabel]) => (
           <option key={optionValue} value={optionValue}>
@@ -428,6 +431,7 @@ function FilterSelect({
           </option>
         ))}
       </select>
+      <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
     </label>
   );
 }

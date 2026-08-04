@@ -1517,6 +1517,10 @@ html[data-theme="black"] {
     grid-template-columns: minmax(180px, 1fr) 100px 112px 100px !important;
   }
 
+  .localizacao-filter-search {
+    grid-column: auto !important;
+  }
+
   .localizacao-tablet-filters.localizacao-tablet-controls-open {
     display: grid !important;
   }

@@ -30,15 +30,19 @@ export function LocalizacaoSidebar({ profile }: { profile: UserProfile }) {
 
   return (
     <aside className="localizacao-sidebar hidden h-screen w-[232px] shrink-0 flex-col border-r border-sidebar-border bg-sidebar transition-[width] duration-200 md:sticky md:top-0 md:flex">
-      <div className="localizacao-sidebar-header flex items-center gap-3 border-b border-sidebar-border px-5 py-5">
+      <div className="localizacao-sidebar-header flex items-center gap-2 border-b border-sidebar-border px-4 py-4">
         <Link
           to="/modulos"
           aria-label="Voltar aos módulos"
           title="Voltar aos módulos"
-          className="localizacao-sidebar-brand group flex min-w-0 flex-1 items-center gap-3 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-operational"
+          className="localizacao-sidebar-brand group flex min-w-0 flex-1 items-center gap-2.5 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-operational"
         >
-          <span className="localizacao-sidebar-brand-icon flex h-14 w-14 shrink-0 items-center justify-center rounded-xl border border-operational/40 bg-operational/10 text-operational shadow-[0_0_22px_color-mix(in_oklab,var(--operational)_14%,transparent)]">
-            <RouteIcon className="h-7 w-7" />
+          <span className="localizacao-sidebar-brand-icon flex h-12 w-12 shrink-0 items-center justify-center overflow-visible rounded-xl border border-operational/40 bg-operational/10 p-0.5 shadow-[0_0_22px_color-mix(in_oklab,var(--operational)_14%,transparent)]">
+            <img
+              src="/sipi-badge.png"
+              alt="Logo SIPI"
+              className="h-[140%] w-[140%] max-w-none object-contain"
+            />
           </span>
           <span className="localizacao-sidebar-brand-copy min-w-0">
             <strong className="block font-bold tracking-[0.12em] text-sidebar-foreground group-hover:text-operational">
