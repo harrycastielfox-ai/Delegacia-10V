@@ -61,16 +61,20 @@ export interface BairroOperacional {
  * Relação territorial da sede de Itabela.
  *
  * Os dez primeiros nomes vieram da relação operacional fornecida pela unidade. Os demais foram
- * confirmados em publicações da Prefeitura/Câmara. Somente Centro, Bandeirante, Ouro Verde e
- * Jaqueira possuem centro cartográfico localizado com segurança no OpenStreetMap neste momento.
+ * confirmados em publicações da Prefeitura/Câmara.
+ *
+ * Centro, Bandeirante, Ouro Verde e Jaqueira foram localizados no OpenStreetMap. Os demais centros
+ * vieram do Mapa Urbano Estatístico do IBGE (folha 291465305, SIRGAS 2000/EPSG:4674), lendo a
+ * posição do rótulo de cada bairro na folha georreferenciada. Conferido contra os quatro já
+ * conhecidos: a diferença ficou entre 477 e 708 m, compatível com a distância entre o rótulo
+ * impresso e o ponto central — os dois caem dentro do mesmo bairro.
+ *
+ * Bairros ainda sem centro não aparecem na relação do IBGE, provavelmente por serem nomes de uso
+ * popular. Precisam ser posicionados por quem conhece a cidade.
  */
 export const BAIRROS_OPERACIONAIS_ITABELA: readonly BairroOperacional[] = [
   { nome: "Centro", aliases: [], centro: [-16.57257, -39.56629] },
-  {
-    nome: "Pereirão",
-    aliases: ["Pereirao"],
-    centro: null,
-  },
+  { nome: "Pereirão", aliases: ["Pereirao"], centro: [-16.576068, -39.54622] },
   {
     nome: "Bandeirante",
     aliases: ["Bandeirantes"],
@@ -78,18 +82,23 @@ export const BAIRROS_OPERACIONAIS_ITABELA: readonly BairroOperacional[] = [
   },
   { nome: "Ouro Verde", aliases: [], centro: [-16.5756828, -39.5749892] },
   { nome: "Palmares", aliases: [], centro: null },
-  { nome: "Ubirajara Brito", aliases: [], centro: null },
+  { nome: "Ubirajara Brito", aliases: ["Ubirajara"], centro: [-16.579072, -39.546779] },
   {
     nome: "Jaqueira",
     aliases: ["Village", "Vilagge"],
     centro: [-16.5787503, -39.5989604],
   },
-  { nome: "Irmã Dulce", aliases: ["Irma Dulce"], centro: null },
-  { nome: "Triunfo", aliases: ["Triunfo 1"], centro: null },
-  { nome: "Manzolão", aliases: ["Manzolao"], centro: null },
+  { nome: "Irmã Dulce", aliases: ["Irma Dulce"], centro: [-16.579072, -39.562281] },
+  { nome: "Triunfo", aliases: ["Triunfo 1", "Triunfo I"], centro: [-16.57227, -39.576989] },
+  { nome: "Manzolão", aliases: ["Manzolao"], centro: [-16.585426, -39.558411] },
   { nome: "Bacia", aliases: ["Bairro da Bacia"], centro: null },
   { nome: "Bela Vista", aliases: [], centro: null },
-  { nome: "Dapezão", aliases: ["Dapezao"], centro: null },
+  { nome: "Dapezão", aliases: ["Dapezao"], centro: [-16.581287, -39.54735] },
+  {
+    nome: "Jardim Paquetá",
+    aliases: ["Jardim Paqueta", "Paquetá", "Paqueta"],
+    centro: [-16.577416, -39.57615],
+  },
   { nome: "Ventania", aliases: [], centro: null },
   { nome: "Imperial", aliases: [], centro: null },
   { nome: "Francisqueto", aliases: [], centro: null },
