@@ -449,7 +449,9 @@ function Inqueritos() {
   }, [isInqueritosIndex]);
   useEffect(() => {
     if (!isInqueritosIndex) return;
-    const params = new URLSearchParams(location.search);
+    // location.search do roteador e o objeto ja interpretado; aqui queremos a
+    // query crua da URL.
+    const params = new URLSearchParams(window.location.search);
     const assign = (key: string, setter: (v: string) => void, allowed?: Set<string>) => {
       const v = params.get(key);
       if (!v) return;
