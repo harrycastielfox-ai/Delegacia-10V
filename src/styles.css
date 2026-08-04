@@ -810,6 +810,95 @@ html[data-theme="light"] .sipi-neighborhood-marker > span > b {
   transform: translateX(-50%);
 }
 
+/*
+ * Ponto de referência (banco, posto, praça): serve para orientar, então fica
+ * de fundo — cinza, pequeno, sem clique. Quem precisa saltar é a pessoa.
+ */
+.sipi-reference-marker {
+  border: 0 !important;
+  background: transparent !important;
+}
+
+.sipi-reference-marker > span {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+  transform: translate(-4px, -50%);
+}
+
+.sipi-reference-marker > span > i {
+  width: 6px;
+  height: 6px;
+  flex: 0 0 6px;
+  border-radius: 999px;
+  background: var(--muted-foreground);
+  box-shadow: 0 0 0 2px color-mix(in oklab, var(--background) 65%, transparent);
+}
+
+/*
+ * Nome só bem de perto. Com 56 referências, escrever todos de longe cobre o
+ * mapa inteiro — o ponto sozinho já orienta, e o nome aparece quando há espaço.
+ */
+.sipi-reference-marker > span > b {
+  display: none;
+  color: var(--muted-foreground);
+  font-size: 10px;
+  font-weight: 600;
+  text-shadow:
+    0 0 3px var(--background),
+    0 1px 3px var(--background),
+    -1px 0 3px var(--background),
+    1px 0 3px var(--background);
+}
+
+.sipi-map-refs-nomeadas .sipi-reference-marker > span > b {
+  display: block;
+}
+
+/*
+ * De longe ficam só as âncoras da cidade. Escola, igreja, mercado e comércio
+ * são muitos e só entram quando o mapa já está bem aproximado.
+ */
+.sipi-reference-escola,
+.sipi-reference-igreja,
+.sipi-reference-supermercado,
+.sipi-reference-mercado,
+.sipi-reference-comercio,
+.sipi-reference-hospedagem,
+.sipi-reference-farmacia,
+.sipi-reference-associacao {
+  display: none !important;
+}
+
+.sipi-map-refs-todas .sipi-reference-escola,
+.sipi-map-refs-todas .sipi-reference-igreja,
+.sipi-map-refs-todas .sipi-reference-supermercado,
+.sipi-map-refs-todas .sipi-reference-mercado,
+.sipi-map-refs-todas .sipi-reference-comercio,
+.sipi-map-refs-todas .sipi-reference-hospedagem,
+.sipi-map-refs-todas .sipi-reference-farmacia,
+.sipi-map-refs-todas .sipi-reference-associacao {
+  display: block !important;
+}
+
+/* Alguns tipos ajudam mais a se localizar e ganham um tom próprio. */
+.sipi-reference-praca > span > i,
+.sipi-reference-estadio > span > i {
+  background: var(--success);
+}
+
+.sipi-reference-banco > span > i,
+.sipi-reference-posto > span > i,
+.sipi-reference-terminal > span > i {
+  background: var(--warning);
+}
+
+.sipi-reference-hospital > span > i,
+.sipi-reference-orgao_publico > span > i {
+  background: var(--destructive);
+}
+
 /* Endereço sem morador cadastrado: pino simples, sem foto. */
 .sipi-address-marker {
   border: 0 !important;

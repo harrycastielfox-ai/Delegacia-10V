@@ -22,6 +22,7 @@ import {
   listBairrosOperacionais,
   listMapaEnderecos,
   listMapaPessoasPorEnderecos,
+  listReferencias,
 } from "@/lib/repositories/localizacaoRepository";
 import { fetchDrivingRoute, type RoadRoute } from "@/lib/roadRouting";
 import {
@@ -35,6 +36,7 @@ import type {
   DiligenciaListRecord,
   MapaEnderecoRecord,
   MapaPessoaRecord,
+  ReferenciaRecord,
 } from "../localizacaoTypes";
 import { DiligenciaStatusBadge } from "./DiligenciaStatusBadge";
 
@@ -44,6 +46,12 @@ const WITHOUT_NEIGHBORHOOD = "__sem_bairro__";
 const PENDING_NEIGHBORHOOD = "__bairro_pendente__";
 const UNIDENTIFIED_NEIGHBORHOOD = "__bairro_nao_identificado__";
 const SHOW_PEOPLE_AT_ZOOM = 17;
+/** Só as âncoras da cidade (hospital, terminal, praça, órgão público). */
+const SHOW_REFERENCES_AT_ZOOM = 16;
+/** Demais referências: escola, igreja, mercado, comércio. */
+const SHOW_ALL_REFERENCES_AT_ZOOM = 18;
+/** Nome escrito ao lado do ponto. */
+const SHOW_REFERENCE_NAMES_AT_ZOOM = 18;
 /** Teto de fotos resolvidas por vez: cada uma é um link assinado no Storage. */
 const MAX_FOTOS_NO_MAPA = 80;
 
@@ -302,6 +310,7 @@ export function MapaCanvas({
   const mapRef = useRef<LeafletMap | null>(null);
   const neighborhoodLayerRef = useRef<LayerGroup | null>(null);
   const addressLayerRef = useRef<LayerGroup | null>(null);
+  const referenceLayerRef = useRef<LayerGroup | null>(null);
   const diligenceLayerRef = useRef<LayerGroup | null>(null);
   const routeLayerRef = useRef<LayerGroup | null>(null);
   const addressesRef = useRef<MapaEnderecoRecord[]>([]);
@@ -326,6 +335,7 @@ export function MapaCanvas({
   const [peopleError, setPeopleError] = useState("");
   /** Morador de cada endereço, para o marcador virar a foto quando o mapa aproxima. */
   const [addressPeople, setAddressPeople] = useState<Map<string, MarcadorPessoa>>(new Map());
+  const [references, setReferences] = useState<ReferenciaRecord[]>([]);
   const [neighborhoodPanel, setNeighborhoodPanel] = useState<BairroPainelRecord | null>(null);
   const [neighborhoodPanelLoading, setNeighborhoodPanelLoading] = useState(false);
   const [neighborhoodPanelError, setNeighborhoodPanelError] = useState("");
@@ -414,6 +424,7 @@ export function MapaCanvas({
 
       neighborhoodLayerRef.current = L.layerGroup().addTo(map);
       addressLayerRef.current = L.layerGroup();
+      referenceLayerRef.current = L.layerGroup();
       diligenceLayerRef.current = L.layerGroup().addTo(map);
       routeLayerRef.current = L.layerGroup().addTo(map);
       mapRef.current = map;
@@ -442,6 +453,7 @@ export function MapaCanvas({
       mapRef.current = null;
       neighborhoodLayerRef.current = null;
       addressLayerRef.current = null;
+      referenceLayerRef.current = null;
       diligenceLayerRef.current = null;
       routeLayerRef.current = null;
     };
@@ -486,7 +498,22 @@ export function MapaCanvas({
     const neighborhoodLayer = neighborhoodLayerRef.current;
     const addressLayer = addressLayerRef.current;
     if (!map || !neighborhoodLayer || !addressLayer) return;
-    const showAddresses = map.getZoom() >= 17;
+    const referenceLayer = referenceLayerRef.current;
+    const zoom = map.getZoom();
+    /*
+     * Referência em três degraus, senão 56 rótulos se sobrepõem e o mapa vira
+     * ruído: primeiro só os pontos que servem de âncora na cidade, depois os
+     * demais, e o nome escrito apenas bem de perto.
+     */
+    if (referenceLayer) {
+      const showReferences = zoom >= SHOW_REFERENCES_AT_ZOOM;
+      if (showReferences && !map.hasLayer(referenceLayer)) map.addLayer(referenceLayer);
+      if (!showReferences && map.hasLayer(referenceLayer)) map.removeLayer(referenceLayer);
+      const container = map.getContainer();
+      container.classList.toggle("sipi-map-refs-todas", zoom >= SHOW_ALL_REFERENCES_AT_ZOOM);
+      container.classList.toggle("sipi-map-refs-nomeadas", zoom >= SHOW_REFERENCE_NAMES_AT_ZOOM);
+    }
+    const showAddresses = zoom >= SHOW_PEOPLE_AT_ZOOM;
     if (showAddresses) {
       if (map.hasLayer(neighborhoodLayer)) map.removeLayer(neighborhoodLayer);
       if (!map.hasLayer(addressLayer)) map.addLayer(addressLayer);
@@ -506,8 +533,18 @@ export function MapaCanvas({
     neighborhoodLayer.clearLayers();
     addressLayer.clearLayers();
 
+    // Agrupamentos técnicos ("Classificação pendente", "Bairro não informado")
+    // não são lugares: rotulá-los no mapa como se fossem bairro confunde. Os
+    // endereços deles continuam aparecendo, como pessoa, ao aproximar.
+    const AGRUPAMENTOS_TECNICOS = new Set([
+      WITHOUT_NEIGHBORHOOD,
+      PENDING_NEIGHBORHOOD,
+      UNIDENTIFIED_NEIGHBORHOOD,
+    ]);
+
     neighborhoods.forEach((group) => {
       if (!group.center) return;
+      if (AGRUPAMENTOS_TECNICOS.has(group.key)) return;
       const marker = L.marker(group.center, {
         icon: L.divIcon({
           className: "sipi-neighborhood-marker",
@@ -594,6 +631,34 @@ export function MapaCanvas({
     openNeighborhood,
     addressPeople,
   ]);
+
+  /** Pontos de referência: apoio de orientação, discretos e sem clique. */
+  useEffect(() => {
+    const L = leafletRef.current;
+    const layer = referenceLayerRef.current;
+    if (!mapReady || !L || !layer) return;
+    layer.clearLayers();
+
+    references.forEach((referencia) => {
+      const conteudo = document.createElement("span");
+      const ponto = document.createElement("i");
+      const nome = document.createElement("b");
+      nome.textContent = referencia.nome;
+      conteudo.appendChild(ponto);
+      conteudo.appendChild(nome);
+      L.marker([referencia.latitude, referencia.longitude], {
+        icon: L.divIcon({
+          className: `sipi-reference-marker sipi-reference-${referencia.tipo}`,
+          html: conteudo,
+          iconSize: [0, 0],
+          iconAnchor: [0, 0],
+        }),
+        interactive: false,
+        keyboard: false,
+        zIndexOffset: -200,
+      }).addTo(layer);
+    });
+  }, [mapReady, references]);
 
   useEffect(() => {
     const L = leafletRef.current;
@@ -718,6 +783,21 @@ export function MapaCanvas({
       cancelled = true;
     };
   }, [scope]);
+
+  useEffect(() => {
+    let cancelled = false;
+    void listReferencias()
+      .then((registros) => {
+        if (!cancelled) setReferences(registros);
+      })
+      .catch((cause) => {
+        // Referência é apoio à orientação: se falhar, o mapa continua útil.
+        console.error("[MapaCanvas] Falha ao carregar pontos de referência", cause);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   /**
    * Carrega o morador de cada endereço mapeado e resolve a foto.
