@@ -690,7 +690,6 @@ html[data-theme="black"] {
   background: transparent !important;
 }
 
-.sipi-neighborhood-marker > span,
 .sipi-diligence-marker > span,
 .sipi-central-marker > span {
   position: relative;
@@ -705,14 +704,57 @@ html[data-theme="black"] {
 }
 
 /*
- * O bairro é contexto, não o assunto: fica discreto para as pessoas e os
- * endereços se destacarem quando o mapa aproxima.
+ * Bairro rotulado como em carta topográfica: o nome escrito sobre o mapa, em
+ * ciano neon, sem crachá. O contorno escuro é o que mantém o texto legível
+ * tanto sobre quadra clara quanto sobre mata.
  */
 .sipi-neighborhood-marker > span {
-  border: 1px solid color-mix(in oklab, var(--operational) 45%, transparent);
-  background: color-mix(in oklab, var(--background) 92%, var(--operational) 8%);
-  color: color-mix(in oklab, var(--operational) 85%, var(--foreground));
-  box-shadow: 0 2px 10px rgb(0 0 0 / 28%);
+  display: flex;
+  width: 100%;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.sipi-neighborhood-marker > span > b {
+  color: var(--operational);
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  text-shadow:
+    0 0 3px rgb(0 0 0 / 90%),
+    0 1px 4px rgb(0 0 0 / 85%),
+    -1px 0 3px rgb(0 0 0 / 80%),
+    1px 0 3px rgb(0 0 0 / 80%),
+    0 0 14px color-mix(in oklab, var(--operational) 70%, transparent);
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+/* Contagem de endereços: presente, mas sem disputar com o nome. */
+.sipi-neighborhood-marker > span > i {
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--operational) 88%, black);
+  color: var(--operational-contrast);
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 900;
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+/* No tema claro o contorno preto engrossa demais: inverte para halo branco. */
+html[data-theme="light"] .sipi-neighborhood-marker > span > b {
+  text-shadow:
+    0 0 3px rgb(255 255 255 / 95%),
+    0 1px 4px rgb(255 255 255 / 90%),
+    -1px 0 3px rgb(255 255 255 / 90%),
+    1px 0 3px rgb(255 255 255 / 90%);
 }
 
 /*

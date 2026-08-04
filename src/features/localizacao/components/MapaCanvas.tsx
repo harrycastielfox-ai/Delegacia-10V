@@ -224,6 +224,23 @@ function formatAddress(address: MapaEnderecoRecord | null) {
 }
 
 /**
+ * Rótulo do bairro no estilo de carta: o nome escrito sobre o mapa, com a
+ * contagem discreta ao lado. Elemento do DOM porque o nome vem do banco.
+ */
+function criarRotuloBairro(nome: string, total: number) {
+  const wrapper = document.createElement("span");
+  const label = document.createElement("b");
+  label.textContent = nome;
+  wrapper.appendChild(label);
+  if (total > 0) {
+    const contagem = document.createElement("i");
+    contagem.textContent = String(total);
+    wrapper.appendChild(contagem);
+  }
+  return wrapper;
+}
+
+/**
  * Monta o conteúdo do marcador de pessoa como elemento, não como texto HTML:
  * nome e apelido vêm do banco e nunca devem ser interpretados como marcação.
  */
@@ -494,9 +511,9 @@ export function MapaCanvas({
       const marker = L.marker(group.center, {
         icon: L.divIcon({
           className: "sipi-neighborhood-marker",
-          html: `<span>${group.addresses.length}</span>`,
-          iconSize: [42, 42],
-          iconAnchor: [21, 21],
+          html: criarRotuloBairro(group.label, group.addresses.length),
+          iconSize: [180, 26],
+          iconAnchor: [90, 13],
         }),
         keyboard: true,
         title: group.label,
