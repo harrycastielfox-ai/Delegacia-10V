@@ -44,6 +44,26 @@ const WITHOUT_NEIGHBORHOOD = "__sem_bairro__";
 const PENDING_NEIGHBORHOOD = "__bairro_pendente__";
 const UNIDENTIFIED_NEIGHBORHOOD = "__bairro_nao_identificado__";
 const SHOW_PEOPLE_AT_ZOOM = 17;
+/** Teto de fotos resolvidas por vez: cada uma é um link assinado no Storage. */
+const MAX_FOTOS_NO_MAPA = 80;
+
+/** Dados mínimos para desenhar o morador sobre o endereço. */
+type MarcadorPessoa = {
+  id: string;
+  nome: string;
+  apelido: string | null;
+  vinculo: string;
+  fotoUrl: string | null;
+  iniciais: string;
+};
+
+function iniciaisDe(nome: string) {
+  const partes = nome.trim().split(/\s+/).filter(Boolean);
+  if (!partes.length) return "?";
+  const primeira = partes[0][0] ?? "";
+  const ultima = partes.length > 1 ? (partes[partes.length - 1][0] ?? "") : "";
+  return (primeira + ultima).toUpperCase();
+}
 const FALLBACK_TERRITORY: BairroOperacionalRecord[] = BAIRROS_OPERACIONAIS_ITABELA.map(
   (bairro, index) => ({
     id: `fallback-${index + 1}`,
@@ -203,6 +223,26 @@ function formatAddress(address: MapaEnderecoRecord | null) {
   return `${address.logradouro}, ${number}`;
 }
 
+/**
+ * Monta o conteúdo do marcador de pessoa como elemento, não como texto HTML:
+ * nome e apelido vêm do banco e nunca devem ser interpretados como marcação.
+ */
+function criarConteudoPessoa(pessoa: MarcadorPessoa) {
+  const wrapper = document.createElement("span");
+  if (pessoa.fotoUrl) {
+    const img = document.createElement("img");
+    img.src = pessoa.fotoUrl;
+    img.alt = "";
+    img.loading = "lazy";
+    wrapper.appendChild(img);
+  } else {
+    const iniciais = document.createElement("b");
+    iniciais.textContent = pessoa.iniciais;
+    wrapper.appendChild(iniciais);
+  }
+  return wrapper;
+}
+
 function createSafeTooltip(title: string, subtitle: string) {
   const element = document.createElement("div");
   element.className = "sipi-map-tooltip";
@@ -267,6 +307,8 @@ export function MapaCanvas({
   const [people, setPeople] = useState<MapaPessoaRecord[]>([]);
   const [peopleLoading, setPeopleLoading] = useState(false);
   const [peopleError, setPeopleError] = useState("");
+  /** Morador de cada endereço, para o marcador virar a foto quando o mapa aproxima. */
+  const [addressPeople, setAddressPeople] = useState<Map<string, MarcadorPessoa>>(new Map());
   const [neighborhoodPanel, setNeighborhoodPanel] = useState<BairroPainelRecord | null>(null);
   const [neighborhoodPanelLoading, setNeighborhoodPanelLoading] = useState(false);
   const [neighborhoodPanelError, setNeighborhoodPanelError] = useState("");
@@ -472,16 +514,41 @@ export function MapaCanvas({
     });
 
     mappedAddresses.forEach((address) => {
-      const marker = L.circleMarker([address.latitude, address.longitude], {
-        radius: 7,
-        color: "#22d3ee",
-        weight: 2,
-        fillColor: "#07151b",
-        fillOpacity: 0.95,
-      });
+      const morador = addressPeople.get(address.id);
+
+      // Com morador o marcador é a foto da pessoa; sem morador, um pino de casa.
+      // Formatos diferentes, não só cores: no sol do celular a cor sozinha some.
+      const marker = morador
+        ? L.marker([address.latitude, address.longitude], {
+            icon: L.divIcon({
+              className: "sipi-person-marker",
+              html: criarConteudoPessoa(morador),
+              iconSize: [44, 50],
+              iconAnchor: [22, 48],
+            }),
+            keyboard: true,
+            title: morador.nome,
+            zIndexOffset: 200,
+          })
+        : L.marker([address.latitude, address.longitude], {
+            icon: L.divIcon({
+              className: "sipi-address-marker",
+              html: "<span></span>",
+              iconSize: [22, 28],
+              iconAnchor: [11, 26],
+            }),
+            keyboard: true,
+            title: formatAddress(address),
+          });
+
       marker.bindTooltip(
-        createSafeTooltip(formatAddress(address), address.bairro ?? "Bairro não informado"),
-        { direction: "top", offset: [0, -8] },
+        morador
+          ? createSafeTooltip(
+              morador.apelido ? `${morador.nome} (${morador.apelido})` : morador.nome,
+              formatAddress(address),
+            )
+          : createSafeTooltip(formatAddress(address), address.bairro ?? "Bairro não informado"),
+        { direction: "top", offset: [0, morador ? -46 : -24] },
       );
       marker.on("click", () => {
         selectionLockedRef.current = true;
@@ -502,7 +569,14 @@ export function MapaCanvas({
       const bounds = L.latLngBounds(mappedTerritoryPoints);
       if (bounds.isValid()) map.fitBounds(bounds.pad(0.25), { maxZoom: 16, animate: false });
     }
-  }, [mapReady, mappedAddresses, mappedTerritoryPoints, neighborhoods, openNeighborhood]);
+  }, [
+    mapReady,
+    mappedAddresses,
+    mappedTerritoryPoints,
+    neighborhoods,
+    openNeighborhood,
+    addressPeople,
+  ]);
 
   useEffect(() => {
     const L = leafletRef.current;
@@ -627,6 +701,65 @@ export function MapaCanvas({
       cancelled = true;
     };
   }, [scope]);
+
+  /**
+   * Carrega o morador de cada endereço mapeado e resolve a foto.
+   *
+   * O marcador de perto passa a ser a pessoa, não um número — é assim que o
+   * policial reconhece o lugar. As fotos são privadas: cada uma vem por link
+   * assinado e temporário, e só a partir do zoom em que os endereços aparecem.
+   */
+  useEffect(() => {
+    const ids = mappedAddresses.map((address) => address.id);
+    if (!ids.length) {
+      setAddressPeople(new Map());
+      return;
+    }
+    let cancelled = false;
+    void listMapaPessoasPorEnderecos(ids)
+      .then(async (registros) => {
+        if (cancelled) return;
+        // Um endereço pode ter mais de um morador; o primeiro representa o ponto.
+        const porEndereco = new Map<string, MapaPessoaRecord>();
+        for (const pessoa of registros) {
+          const enderecoId = pessoa.endereco?.id;
+          if (enderecoId && !porEndereco.has(enderecoId)) porEndereco.set(enderecoId, pessoa);
+        }
+
+        const entradas = [...porEndereco.entries()].slice(0, MAX_FOTOS_NO_MAPA);
+        const resolvidas = await Promise.all(
+          entradas.map(async ([enderecoId, pessoa]) => {
+            let fotoUrl: string | null = null;
+            if (pessoa.foto_perfil_path) {
+              try {
+                fotoUrl = await getPessoaPhotoSignedUrl(pessoa.foto_perfil_path, "thumbnail");
+              } catch (cause) {
+                console.error("[MapaCanvas] Falha ao resolver foto de perfil", cause);
+              }
+            }
+            return [
+              enderecoId,
+              {
+                id: pessoa.id,
+                nome: pessoa.nome,
+                apelido: pessoa.apelido,
+                vinculo: pessoa.vinculo,
+                fotoUrl,
+                iniciais: iniciaisDe(pessoa.nome),
+              } satisfies MarcadorPessoa,
+            ] as const;
+          }),
+        );
+        if (!cancelled) setAddressPeople(new Map(resolvidas));
+      })
+      .catch((cause) => {
+        console.error("[MapaCanvas] Falha ao carregar moradores do mapa", cause);
+        if (!cancelled) setAddressPeople(new Map());
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [mappedAddresses]);
 
   useEffect(() => {
     if (
