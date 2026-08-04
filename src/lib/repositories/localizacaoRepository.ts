@@ -18,7 +18,6 @@ import type {
   PessoaComLocal,
   PessoaDetalheRecord,
   PosicaoVtrRecord,
-  ReferenciaRecord,
   RegistroFotograficoRecord,
   RotaSalvaRecord,
 } from "@/features/localizacao/localizacaoTypes";
@@ -338,25 +337,6 @@ export async function registrarChegada(input: {
     .eq("id", input.diligencia_id);
   if (updateError) fail("Chegada criada, mas a diligência não foi atualizada", updateError);
   return data as ChegadaRecord;
-}
-
-/**
- * Pontos de referência da cidade, para orientação no mapa.
- *
- * Dado público e pequeno (dezenas de registros), carregado uma vez por sessão
- * de mapa. Não contém informação de pessoa.
- */
-export async function listReferencias(): Promise<ReferenciaRecord[]> {
-  if (import.meta.env.MODE === "test") return [];
-
-  const { data, error } = await supabase
-    .from("localizacao_referencias")
-    .select("id, nome, tipo, latitude, longitude, fonte")
-    .eq("ativo", true)
-    .order("nome", { ascending: true })
-    .limit(400);
-  if (error) fail("Falha ao carregar os pontos de referência", error);
-  return (data ?? []) as ReferenciaRecord[];
 }
 
 export async function listBairrosOperacionais(): Promise<BairroOperacionalRecord[]> {

@@ -176,38 +176,6 @@ export interface BairroPainelRecord {
   diligencias: BairroPainelDiligenciaRecord[];
 }
 
-export type ReferenciaTipo =
-  | "banco"
-  | "posto"
-  | "hospital"
-  | "farmacia"
-  | "escola"
-  | "igreja"
-  | "orgao_publico"
-  | "terminal"
-  | "mercado"
-  | "associacao"
-  | "supermercado"
-  | "comercio"
-  | "hospedagem"
-  | "praca"
-  | "estadio";
-
-/**
- * Ponto de referência da cidade — banco, posto, praça, terminal.
- *
- * É por eles que as pessoas explicam onde fica uma casa ("depois do Bradesco").
- * Dado público, sem informação de pessoa: serve de orientação no mapa.
- */
-export interface ReferenciaRecord {
-  id: string;
-  nome: string;
-  tipo: ReferenciaTipo;
-  latitude: number;
-  longitude: number;
-  fonte: string;
-}
-
 export interface DiligenciaRecord {
   id: string;
   /** Identificador legível, ex.: "DLG-2026-0876". Gerado pelo banco. */
