@@ -15,11 +15,27 @@ function parseBoolean(value: unknown) {
   return value === true || value === "true" || value === "1" ? true : undefined;
 }
 
+/**
+ * Filtros opcionais da listagem.
+ *
+ * As chaves precisam ser opcionais de verdade: se `validateSearch` devolvesse
+ * sempre as duas (ainda que como `undefined`), o roteador passaria a exigir que
+ * todo `<Link to="/veiculos/todos">` informasse ambas.
+ */
+type AllVehiclesSearch = {
+  situation?: VehicleSituationFilter;
+  pending?: boolean;
+};
+
 export const Route = createFileRoute("/veiculos/todos")({
-  validateSearch: (search: Record<string, unknown>) => ({
-    situation: parseSituation(search.situation),
-    pending: parseBoolean(search.pending),
-  }),
+  validateSearch: (search: Record<string, unknown>): AllVehiclesSearch => {
+    const situation = parseSituation(search.situation);
+    const pending = parseBoolean(search.pending);
+    return {
+      ...(situation ? { situation } : {}),
+      ...(pending ? { pending } : {}),
+    };
+  },
   component: AllVehiclesRoute,
 });
 

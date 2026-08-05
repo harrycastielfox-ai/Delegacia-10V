@@ -32,6 +32,7 @@
   --color-warning: var(--warning);
   --color-info: var(--info);
   --color-purple: var(--purple);
+  --color-operational: var(--operational);
   --color-sidebar: var(--sidebar);
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar-primary: var(--sidebar-primary);
@@ -76,6 +77,11 @@
   --warning: oklch(0.82 0.17 85);
   --info: oklch(0.7 0.18 235);
   --purple: oklch(0.65 0.2 295);
+
+  /* Módulo Localização Operacional: ciano tático */
+  --operational: oklch(0.82 0.13 200);
+  --operational-contrast: oklch(0.16 0.01 240);
+  --operational-map: oklch(0.13 0.02 220);
 
   --border: oklch(0.28 0.015 240);
   --input: oklch(0.24 0.015 240);
@@ -123,6 +129,10 @@ html[data-theme="light"] {
   --info: #246ba8;
   --purple: #7551a8;
 
+  --operational: #0e7490;
+  --operational-contrast: #ffffff;
+  --operational-map: #e6edf2;
+
   --border: #cbd5df;
   --input: #b9c6d1;
   --ring: #16834d;
@@ -168,6 +178,10 @@ html[data-theme="black"] {
   --warning: oklch(0.8 0.17 85);
   --info: oklch(0.68 0.18 235);
   --purple: oklch(0.67 0.2 295);
+
+  --operational: oklch(0.84 0.13 200);
+  --operational-contrast: oklch(0.075 0.004 240);
+  --operational-map: oklch(0.085 0.012 220);
 
   --border: oklch(0.22 0.011 240);
   --input: oklch(0.17 0.009 240);
@@ -598,6 +612,310 @@ html[data-theme="black"] {
 @media screen {
   .print-only {
     display: none !important;
+  }
+}
+
+/* Mapa territorial real — mantém o Leaflet coerente com o design dark do SIPI. */
+.localizacao-real-map .leaflet-container {
+  width: 100%;
+  height: 100%;
+  background: #eef2f5;
+  color: var(--foreground);
+  font-family: inherit;
+}
+
+.localizacao-real-map .leaflet-tile-pane {
+  filter: none;
+}
+
+.localizacao-real-map .leaflet-control-zoom,
+.localizacao-real-map .leaflet-control-scale-line,
+.localizacao-real-map .leaflet-control-attribution {
+  border-color: color-mix(in oklab, var(--operational) 28%, var(--border)) !important;
+  background: color-mix(in oklab, var(--background) 92%, transparent) !important;
+  color: var(--muted-foreground) !important;
+  box-shadow: 0 12px 30px rgb(0 0 0 / 24%);
+  backdrop-filter: blur(10px);
+}
+
+.localizacao-real-map .leaflet-control-zoom a {
+  border-color: var(--border) !important;
+  background: transparent !important;
+  color: var(--foreground) !important;
+}
+
+.localizacao-real-map .leaflet-control-zoom a:hover {
+  background: color-mix(in oklab, var(--operational) 13%, transparent) !important;
+  color: var(--operational) !important;
+}
+
+.localizacao-real-map .leaflet-control-attribution a {
+  color: var(--operational) !important;
+}
+
+.localizacao-real-map .leaflet-tooltip {
+  border: 1px solid color-mix(in oklab, var(--operational) 38%, var(--border));
+  border-radius: 10px;
+  background: color-mix(in oklab, var(--background) 96%, transparent);
+  color: var(--foreground);
+  box-shadow: 0 14px 38px rgb(0 0 0 / 36%);
+  backdrop-filter: blur(12px);
+}
+
+.localizacao-real-map .leaflet-tooltip::before {
+  border-top-color: color-mix(in oklab, var(--operational) 38%, var(--border));
+}
+
+.sipi-map-tooltip {
+  display: grid;
+  min-width: 140px;
+  gap: 2px;
+}
+
+.sipi-map-tooltip strong {
+  font-size: 11px;
+  line-height: 1.25;
+}
+
+.sipi-map-tooltip span {
+  color: var(--muted-foreground);
+  font-size: 9px;
+  line-height: 1.35;
+}
+
+.sipi-neighborhood-marker,
+.sipi-diligence-marker,
+.sipi-central-marker {
+  border: 0 !important;
+  background: transparent !important;
+}
+
+.sipi-diligence-marker > span,
+.sipi-central-marker > span {
+  position: relative;
+  display: flex;
+  width: 100%;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+/*
+ * Bairro rotulado como em carta topográfica: o nome escrito sobre o mapa, em
+ * ciano neon, sem crachá. O contorno escuro é o que mantém o texto legível
+ * tanto sobre quadra clara quanto sobre mata.
+ */
+.sipi-neighborhood-marker > span {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+/*
+ * Ponto sempre visível, marcando o lugar exato do bairro mesmo quando o nome
+ * (abaixo) precisa se esconder por falta de espaço.
+ */
+.sipi-bairro-dot {
+  width: 7px;
+  height: 7px;
+  flex: 0 0 7px;
+  border-radius: 999px;
+  background: var(--operational);
+  box-shadow:
+    0 0 0 3px color-mix(in oklab, var(--background) 65%, transparent),
+    0 0 8px color-mix(in oklab, var(--operational) 65%, transparent);
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.sipi-bairro-text {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Escondido por colisão (resolveBairroLabels) — o ponto acima continua ali. */
+.sipi-bairro-text.is-hidden {
+  display: none;
+}
+
+.sipi-bairro-name {
+  color: var(--operational);
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  text-shadow:
+    0 0 3px rgb(0 0 0 / 90%),
+    0 1px 4px rgb(0 0 0 / 85%),
+    -1px 0 3px rgb(0 0 0 / 80%),
+    1px 0 3px rgb(0 0 0 / 80%),
+    0 0 14px color-mix(in oklab, var(--operational) 70%, transparent);
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+/* Contagem de endereços: presente, mas sem disputar com o nome. */
+.sipi-bairro-count {
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--operational) 88%, black);
+  color: var(--operational-contrast);
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 900;
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+/* No tema claro o contorno preto engrossa demais: inverte para halo branco. */
+html[data-theme="light"] .sipi-bairro-name {
+  text-shadow:
+    0 0 3px rgb(255 255 255 / 95%),
+    0 1px 4px rgb(255 255 255 / 90%),
+    -1px 0 3px rgb(255 255 255 / 90%),
+    1px 0 3px rgb(255 255 255 / 90%);
+}
+
+/*
+ * Pessoa: foto redonda com bico embaixo apontando a casa. A silhueta é
+ * diferente da bolinha do bairro de propósito — no sol do celular a cor
+ * sozinha não distingue nada.
+ */
+.sipi-person-marker {
+  border: 0 !important;
+  background: transparent !important;
+}
+
+.sipi-person-marker > span {
+  position: relative;
+  display: flex;
+  width: 44px;
+  height: 44px;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border: 2.5px solid var(--operational);
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--background) 80%, var(--operational) 20%);
+  box-shadow:
+    0 0 0 3px color-mix(in oklab, var(--background) 70%, transparent),
+    0 3px 12px rgb(0 0 0 / 45%);
+}
+
+.sipi-person-marker > span > img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.sipi-person-marker > span > b {
+  color: var(--operational);
+  font-size: 14px;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+}
+
+/* O bico que ancora a foto no ponto exato do endereço. */
+.sipi-person-marker > span::after {
+  position: absolute;
+  bottom: -9px;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-top: 8px solid var(--operational);
+  border-right: 6px solid transparent;
+  border-left: 6px solid transparent;
+  content: "";
+  transform: translateX(-50%);
+}
+
+/* Endereço sem morador cadastrado: pino simples, sem foto. */
+.sipi-address-marker {
+  border: 0 !important;
+  background: transparent !important;
+}
+
+.sipi-address-marker > span {
+  display: block;
+  width: 18px;
+  height: 18px;
+  margin: 0 auto;
+  border: 2px solid color-mix(in oklab, var(--operational) 70%, transparent);
+  border-radius: 999px 999px 2px 999px;
+  background: var(--background);
+  box-shadow: 0 2px 8px rgb(0 0 0 / 40%);
+  transform: rotate(45deg);
+}
+
+.sipi-diligence-marker > span {
+  border: 2px solid var(--operational);
+  background: var(--background);
+  color: var(--operational);
+  box-shadow: 0 0 18px color-mix(in oklab, var(--operational) 35%, transparent);
+}
+
+.sipi-diligence-marker.is-selected > span {
+  background: var(--operational);
+  color: var(--operational-contrast);
+  box-shadow:
+    0 0 0 7px color-mix(in oklab, var(--operational) 12%, transparent),
+    0 0 28px color-mix(in oklab, var(--operational) 65%, transparent);
+}
+
+.sipi-central-marker > span {
+  border: 2px solid #f4d06f;
+  background: linear-gradient(145deg, #2a2414, #0b1418 72%);
+  color: #f4d06f;
+  box-shadow:
+    0 0 0 7px rgb(244 208 111 / 10%),
+    0 0 30px rgb(244 208 111 / 44%);
+}
+
+.sipi-central-marker > span::before {
+  position: absolute;
+  inset: -8px;
+  border: 1px solid rgb(244 208 111 / 50%);
+  border-radius: inherit;
+  content: "";
+  animation: sipi-map-pulse 2.2s ease-out infinite;
+}
+
+.sipi-route-line {
+  stroke-dasharray: 12 8;
+  animation: sipi-route-flow 1.15s linear infinite;
+  filter: drop-shadow(0 0 5px rgb(34 211 238 / 72%));
+}
+
+@keyframes sipi-map-pulse {
+  from {
+    opacity: 0.75;
+    transform: scale(0.82);
+  }
+  to {
+    opacity: 0;
+    transform: scale(1.45);
+  }
+}
+
+@keyframes sipi-route-flow {
+  to {
+    stroke-dashoffset: -20;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sipi-central-marker > span::before,
+  .sipi-route-line {
+    animation: none;
   }
 }
 
@@ -1055,6 +1373,22 @@ html[data-theme="black"] {
     padding-bottom: 12mm !important;
   }
 
+  .sipi-print-sheet-vehicle .sipi-print-sections {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .sipi-print-sheet-term .sipi-print-sections {
+    display: flex !important;
+    flex-direction: column !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 5mm !important;
+    min-height: 160mm !important;
+  }
+
+  .sipi-print-sheet-term .sipi-print-section {
+    width: 100% !important;
+  }
+
   .sipi-print-document .sipi-print-section {
     display: block !important;
     min-width: 0 !important;
@@ -1135,6 +1469,54 @@ html[data-theme="black"] {
     border: 0 !important;
   }
 
+  .sipi-print-document .sipi-print-sheet-term .sipi-print-section-signatures {
+    margin-top: auto !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    overflow: visible !important;
+  }
+
+  .sipi-print-section-signatures h2 {
+    display: none !important;
+  }
+
+  .sipi-print-section-signatures dl {
+    display: block !important;
+  }
+
+  .sipi-print-section-signatures dl > div {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    width: 110mm !important;
+    margin: 0 auto !important;
+    padding: 12mm 0 0 !important;
+    border: 0 !important;
+    text-align: center !important;
+  }
+
+  .sipi-print-section-signatures dl > div + div {
+    margin-top: 3mm !important;
+  }
+
+  .sipi-print-section-signatures dt {
+    order: 2 !important;
+    margin-top: 1.4mm !important;
+    color: #4b5563 !important;
+    font-size: 6.8pt !important;
+  }
+
+  .sipi-print-section-signatures dd {
+    order: 1 !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 1.6mm 3mm 0 !important;
+    border-top: 1px solid #374151 !important;
+    font-size: 8pt !important;
+    font-weight: 600 !important;
+  }
+
   .sipi-print-footer {
     position: fixed !important;
     right: 10mm !important;
@@ -1152,5 +1534,203 @@ html[data-theme="black"] {
 
   .sipi-print-footer span {
     color: #6b7280 !important;
+  }
+}
+
+/* Tablet de viatura: compacta a interface apenas em dispositivos com toque.
+   O desktop continua integral mesmo quando o navegador usa zoom. */
+@media (min-width: 768px) and (max-width: 1279px) and (any-pointer: coarse) {
+  .localizacao-sidebar {
+    width: 5rem !important;
+  }
+
+  .localizacao-sidebar-header {
+    flex-direction: column !important;
+    padding: 1rem 0.5rem !important;
+    gap: 0.5rem !important;
+  }
+
+  .localizacao-sidebar-brand,
+  .localizacao-sidebar-link,
+  .localizacao-sidebar-profile-link {
+    flex: 0 0 auto !important;
+    justify-content: center !important;
+  }
+
+  .localizacao-sidebar-brand-icon {
+    width: 2.75rem !important;
+    height: 2.75rem !important;
+  }
+
+  .localizacao-sidebar-brand-copy,
+  .localizacao-sidebar-section-label,
+  .localizacao-sidebar-link-label,
+  .localizacao-sidebar-active-arrow,
+  .localizacao-sidebar-profile-copy,
+  .localizacao-sidebar-exit-label {
+    display: none !important;
+  }
+
+  .localizacao-sidebar-nav {
+    padding-right: 0.5rem !important;
+    padding-left: 0.5rem !important;
+  }
+
+  .localizacao-sidebar-section + .localizacao-sidebar-section {
+    margin-top: 0.75rem !important;
+  }
+
+  .localizacao-sidebar-link {
+    min-height: 2.75rem !important;
+    padding-right: 0.5rem !important;
+    padding-left: 0.5rem !important;
+  }
+
+  .localizacao-sidebar-profile {
+    flex-direction: column !important;
+    padding: 0.75rem 0.5rem !important;
+  }
+
+  .localizacao-sidebar-logout,
+  .localizacao-sidebar-exit {
+    display: flex !important;
+    width: 2.75rem !important;
+    height: 2.75rem !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border-radius: 0.5rem !important;
+  }
+
+  .localizacao-sidebar-exit {
+    margin: 0 auto 0.75rem !important;
+  }
+
+  .localizacao-module-main {
+    padding: 1rem 1rem 7.5rem !important;
+  }
+
+  .localizacao-tablet-header {
+    display: none !important;
+  }
+
+  .localizacao-viatura-summary {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) auto !important;
+    align-items: center !important;
+    gap: 1rem !important;
+    margin-bottom: 0.75rem !important;
+    padding: 0.875rem 1rem !important;
+    border: 1px solid color-mix(in oklab, var(--operational) 35%, var(--border)) !important;
+    border-radius: 0.875rem !important;
+    background:
+      linear-gradient(
+        110deg,
+        color-mix(in oklab, var(--operational) 10%, transparent),
+        transparent 45%
+      ),
+      var(--card) !important;
+    box-shadow: 0 0 24px color-mix(in oklab, var(--operational) 8%, transparent) !important;
+  }
+
+  .localizacao-tablet-stats {
+    display: none !important;
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    gap: 0.625rem !important;
+  }
+
+  .localizacao-tablet-stats.localizacao-tablet-controls-open {
+    display: grid !important;
+  }
+
+  .localizacao-tablet-stat-card {
+    padding: 0.75rem !important;
+  }
+
+  .localizacao-tablet-stat-icon {
+    width: 2rem !important;
+    height: 2rem !important;
+  }
+
+  .localizacao-tablet-stat-value {
+    font-size: 1.5rem !important;
+  }
+
+  .localizacao-tablet-filters {
+    display: none !important;
+    grid-template-columns: minmax(180px, 1fr) 100px 112px 100px !important;
+  }
+
+  .localizacao-filter-search {
+    grid-column: auto !important;
+  }
+
+  .localizacao-tablet-filters.localizacao-tablet-controls-open {
+    display: grid !important;
+  }
+
+  .localizacao-tablet-map {
+    min-height: max(390px, calc(100dvh - 15.5rem)) !important;
+  }
+
+  .localizacao-operation-panel-slot {
+    display: none !important;
+  }
+
+  .localizacao-viatura-actions {
+    position: fixed !important;
+    z-index: 1200 !important;
+    right: 0.75rem !important;
+    bottom: max(0.75rem, env(safe-area-inset-bottom)) !important;
+    left: 5.75rem !important;
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 0.625rem !important;
+    padding: 0.625rem !important;
+    border: 1px solid color-mix(in oklab, var(--operational) 30%, var(--border)) !important;
+    border-radius: 1rem !important;
+    background: color-mix(in oklab, var(--background) 92%, transparent) !important;
+    box-shadow: 0 -8px 34px rgb(0 0 0 / 24%) !important;
+    backdrop-filter: blur(18px) !important;
+  }
+
+  .localizacao-viatura-action {
+    display: flex !important;
+    min-height: 3.5rem !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 0.5rem !important;
+    border-radius: 0.75rem !important;
+    padding: 0.625rem 0.75rem !important;
+    font-size: 0.75rem !important;
+    font-weight: 900 !important;
+    letter-spacing: 0.03em !important;
+    text-align: center !important;
+    transition:
+      transform 160ms ease,
+      opacity 160ms ease !important;
+  }
+
+  .localizacao-viatura-action:active:not(:disabled) {
+    transform: scale(0.97) !important;
+  }
+
+  .localizacao-viatura-action:disabled {
+    cursor: not-allowed !important;
+    opacity: 0.45 !important;
+  }
+
+  .localizacao-viatura-toast {
+    position: absolute !important;
+    right: 0.625rem !important;
+    bottom: calc(100% + 0.5rem) !important;
+    left: 0.625rem !important;
+    padding: 0.625rem 0.875rem !important;
+    border-width: 1px !important;
+    border-style: solid !important;
+    border-radius: 0.75rem !important;
+    box-shadow: 0 8px 24px rgb(0 0 0 / 20%) !important;
+    font-size: 0.75rem !important;
+    font-weight: 800 !important;
+    text-align: center !important;
   }
 }

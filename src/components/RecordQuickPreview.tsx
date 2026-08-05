@@ -7,6 +7,7 @@ import {
   VEHICLE_TYPE_LABELS,
 } from "@/features/vehicles/vehicleConstants";
 import type { VehicleListRecord, VehicleRecord } from "@/features/vehicles/vehicleTypes";
+import { formatVehicleInvolvedPeople } from "@/features/vehicles/vehiclePeople";
 import type { InqueritoRecord } from "@/lib/repositories/inqueritosRepository";
 import type { RepresentacaoRecord } from "@/lib/repositories/representacoesRepository";
 
@@ -440,7 +441,10 @@ export function VehicleQuickPreview({
     },
     { label: "Responsável", value: displayValue(vehicle.custody_responsible) },
     { label: "Conservação", value: displayValue(vehicle.conservation_state) },
-    { label: "Envolvidos", value: displayValue(vehicle.involved_people) },
+    {
+      label: "Envolvidos",
+      value: displayValue(formatVehicleInvolvedPeople(vehicle.involved_people)),
+    },
     { label: "Observações", value: displayValue(vehicle.observations) },
   ]
     .filter((item) => item.value !== FALLBACK)

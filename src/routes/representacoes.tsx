@@ -198,7 +198,9 @@ function Representacoes() {
 
   useEffect(() => {
     if (!isRepresentacoesIndex) return;
-    const params = new URLSearchParams(location.search);
+    // location.search do roteador e o objeto ja interpretado; aqui queremos a
+    // query crua da URL.
+    const params = new URLSearchParams(window.location.search);
     const operational = normalizeText(params.get("operationalFilter") ?? "todas");
     setOperationalFilter(ALLOWED_OPERATIONAL_FILTERS.has(operational) ? operational : "todas");
     setSearchTerm(params.get("busca") ?? "");

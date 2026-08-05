@@ -38,10 +38,21 @@ export function getPostAuthDestination(mobile = isMobileViewport()) {
 }
 
 export function isMobilePathAllowed(pathname: string) {
+  // O módulo de localização possui navegação própria e fluxos de campo (GPS/fotos).
+  if (isPathOrChild(pathname, "/localizacao")) return true;
+
   if (pathname.startsWith("/veiculos/")) {
     const vehiclePath = pathname.slice("/veiculos/".length);
     if (!vehiclePath || vehiclePath.includes("/") || vehiclePath === "novo") return false;
     return MOBILE_VEHICLE_LIST_PATHS.has(vehiclePath) || vehiclePath.length > 0;
+  }
+
+  // Mesma regra de veículos: consulta (lista/detalhe) liberada, cadastro/edição
+  // não, e a Visão Geral (gráficos, pensada para desktop) também fica de fora.
+  if (pathname.startsWith("/objetos/")) {
+    const objectPath = pathname.slice("/objetos/".length);
+    if (!objectPath || objectPath.includes("/") || objectPath === "novo") return false;
+    return true;
   }
 
   return (
@@ -57,6 +68,10 @@ export function getMobileRouteRedirect(pathname: string, mobile = isMobileViewpo
   if (pathname === "/veiculos") return "/veiculos/todos" as const;
   if (pathname.startsWith("/veiculos") && !isMobilePathAllowed(pathname)) {
     return "/veiculos/todos" as const;
+  }
+  if (pathname === "/objetos") return "/objetos/todos" as const;
+  if (pathname.startsWith("/objetos") && !isMobilePathAllowed(pathname)) {
+    return "/objetos/todos" as const;
   }
   if (isMobilePathAllowed(pathname)) return null;
   return "/inqueritos" as const;

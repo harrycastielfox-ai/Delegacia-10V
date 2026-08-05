@@ -1,4 +1,4 @@
-import { Link, useParams } from "@tanstack/react-router";
+import { Link, useNavigate, useParams } from "@tanstack/react-router";
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import {
   AlertTriangle,
@@ -9,7 +9,6 @@ import {
   ClipboardCheck,
   FileDown,
   FileSignature,
-  History,
   Link2,
   LoaderCircle,
   MapPin,
@@ -17,16 +16,24 @@ import {
   Repeat2,
   RotateCcw,
   ShieldCheck,
+  Trash2,
   X,
 } from "lucide-react";
 import { useAppProfile } from "@/components/AppProfileContext";
 import { SipiPrintSheet, type SipiPrintSection } from "@/components/SipiPrintSheet";
-import { canEditVehicles, canRegisterVehicleMovements, canReleaseVehicles } from "@/lib/authz";
+import {
+  canDeleteVehicles,
+  canEditVehicles,
+  canRegisterVehicleMovements,
+  canReleaseVehicles,
+} from "@/lib/authz";
 import {
   getVehicleDetailBundle,
   registerVehicleMovement,
+  softDeleteVehicle,
 } from "@/lib/repositories/vehiclesRepository";
 import { VehicleStatusBadge } from "../components/VehicleStatusBadge";
+import { VehicleTimeline } from "../components/VehicleTimeline";
 import {
   IDENTIFICATION_STATUS_LABELS,
   VEHICLE_SITUATION_LABELS,
@@ -34,12 +41,18 @@ import {
   displayVehicleValue,
   formatVehicleDate,
 } from "../vehicleConstants";
-import type { VehicleMovementRecord, VehiclePhotoRecord, VehicleRecord } from "../vehicleTypes";
+import { formatVehicleInvolvedPeople } from "../vehiclePeople";
+import type {
+  VehicleMovementRecord,
+  VehiclePhotoRecord,
+  VehicleRecord,
+  VehicleTimelineEvent,
+} from "../vehicleTypes";
 
 type DetailBundle = {
   vehicle: VehicleRecord;
   photos: VehiclePhotoRecord[];
-  movements: VehicleMovementRecord[];
+  timeline: VehicleTimelineEvent[];
 };
 
 type MovementDraft = {
@@ -115,12 +128,18 @@ function getMovementValidationErrors(draft: MovementDraft) {
   return errors;
 }
 
+function isMobileViewport() {
+  return typeof window !== "undefined" && window.matchMedia("(max-width: 767px)").matches;
+}
+
 export default function VehicleDetailsPage() {
   const { vehicleId } = useParams({ from: "/veiculos/$vehicleId" });
+  const navigate = useNavigate();
   const profile = useAppProfile();
   const canEdit = canEditVehicles(profile);
   const canMove = canRegisterVehicleMovements(profile);
   const canRelease = canReleaseVehicles(profile);
+  const canDelete = canDeleteVehicles(profile);
   const [bundle, setBundle] = useState<DetailBundle | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -130,6 +149,9 @@ export default function VehicleDetailsPage() {
   const [movementError, setMovementError] = useState("");
   const [movementSuccess, setMovementSuccess] = useState("");
   const [printMode, setPrintMode] = useState<"ficha" | "termo">("ficha");
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
 
   const loadDetails = useCallback(async () => {
     setLoading(true);
@@ -198,6 +220,33 @@ export default function VehicleDetailsPage() {
     }
   }
 
+  async function removeVehicle() {
+    if (!canDelete || deleting || isMobileViewport()) return;
+
+    setDeleting(true);
+    setDeleteError("");
+    try {
+      await softDeleteVehicle(vehicleId);
+      setDeleteOpen(false);
+      await navigate({ to: "/veiculos/todos", replace: true });
+    } catch (deleteFailure) {
+      const code =
+        typeof deleteFailure === "object" &&
+        deleteFailure !== null &&
+        "code" in deleteFailure &&
+        typeof deleteFailure.code === "string"
+          ? deleteFailure.code
+          : "";
+      setDeleteError(
+        code === "42501"
+          ? "Seu perfil não possui permissão para excluir veículos."
+          : "Não foi possível excluir o veículo. Atualize a página e tente novamente.",
+      );
+    } finally {
+      setDeleting(false);
+    }
+  }
+
   if (loading)
     return (
       <div className="flex min-h-[50vh] items-center justify-center">
@@ -211,7 +260,7 @@ export default function VehicleDetailsPage() {
       </div>
     );
   if (!bundle) return null;
-  const { vehicle, photos, movements } = bundle;
+  const { vehicle, photos, timeline } = bundle;
   const printSections = buildPrintSections(vehicle, printMode);
 
   return (
@@ -271,14 +320,37 @@ export default function VehicleDetailsPage() {
                 </small>
               </span>
             </button>
-            {canEdit ? (
-              <Link
-                to="/veiculos/$vehicleId/editar"
-                params={{ vehicleId }}
-                className="hidden items-center justify-center gap-2 rounded-xl border border-border px-4 py-2.5 text-sm font-semibold hover:border-info/35 md:inline-flex sm:col-span-2"
-              >
-                <Pencil className="h-4 w-4" /> Editar
-              </Link>
+            {canEdit || canDelete ? (
+              <div className="hidden gap-2 sm:col-span-2 md:flex">
+                {canDelete ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDeleteError("");
+                      setDeleteOpen(true);
+                    }}
+                    disabled={deleting}
+                    aria-label="Excluir veículo"
+                    title="Excluir veículo"
+                    className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-destructive/35 bg-destructive/5 text-destructive transition hover:border-destructive/55 hover:bg-destructive/10 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {deleting ? (
+                      <LoaderCircle className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Trash2 className="h-4 w-4" />
+                    )}
+                  </button>
+                ) : null}
+                {canEdit ? (
+                  <Link
+                    to="/veiculos/$vehicleId/editar"
+                    params={{ vehicleId }}
+                    className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-border px-4 py-2.5 text-sm font-semibold hover:border-info/35"
+                  >
+                    <Pencil className="h-4 w-4" /> Editar
+                  </Link>
+                ) : null}
+              </div>
             ) : null}
           </div>
         </div>
@@ -355,7 +427,11 @@ export default function VehicleDetailsPage() {
                 </Link>
               </div>
             ) : null}
-            <DetailField label="Envolvidos" value={vehicle.involved_people} wide />
+            <DetailField
+              label="Envolvidos"
+              value={formatVehicleInvolvedPeople(vehicle.involved_people)}
+              wide
+            />
             <DetailField label="Observações" value={vehicle.observations} wide />
           </DetailSection>
 
@@ -426,42 +502,6 @@ export default function VehicleDetailsPage() {
             )}
           </section>
 
-          <section className="rounded-2xl border border-border bg-card p-5">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="font-bold">Histórico</h2>
-                <p className="text-xs text-muted-foreground">Movimentações registradas</p>
-              </div>
-              <History className="h-5 w-5 text-info" />
-            </div>
-            <div className="mt-4 space-y-4">
-              {movements.length ? (
-                movements.map((item) => (
-                  <div key={item.id} className="relative border-l border-info/30 pl-4">
-                    <span className="absolute -left-1.5 top-0 h-3 w-3 rounded-full border-2 border-card bg-info" />
-                    <p className="text-xs font-bold text-foreground">
-                      {movementLabels[item.movement_type]}
-                    </p>
-                    <p className="mt-0.5 text-[11px] text-muted-foreground">
-                      {formatVehicleDate(item.occurred_at, true)}
-                    </p>
-                    {item.from_location || item.to_location ? (
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        {displayVehicleValue(item.from_location)} →{" "}
-                        {displayVehicleValue(item.to_location)}
-                      </p>
-                    ) : null}
-                    {item.notes ? (
-                      <p className="mt-1 text-xs leading-relaxed">{item.notes}</p>
-                    ) : null}
-                  </div>
-                ))
-              ) : (
-                <p className="text-xs text-muted-foreground">Nenhuma movimentação registrada.</p>
-              )}
-            </div>
-          </section>
-
           {canMove ? (
             <button
               type="button"
@@ -478,6 +518,8 @@ export default function VehicleDetailsPage() {
           ) : null}
         </aside>
       </div>
+
+      <VehicleTimeline events={timeline} />
 
       <SipiPrintSheet
         documentTitle={
@@ -523,6 +565,63 @@ export default function VehicleDetailsPage() {
           }}
           onSave={saveMovement}
         />
+      ) : null}
+
+      {deleteOpen && canDelete ? (
+        <div
+          className="fixed inset-0 z-50 hidden items-center justify-center bg-black/75 p-4 md:flex"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="delete-vehicle-title"
+        >
+          <div className="w-full max-w-md rounded-2xl border border-destructive/30 bg-card p-5 shadow-2xl">
+            <div className="flex items-start gap-3">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-destructive/10 text-destructive">
+                <AlertTriangle className="h-5 w-5" />
+              </span>
+              <div>
+                <h2 id="delete-vehicle-title" className="text-lg font-bold text-foreground">
+                  Excluir veículo
+                </h2>
+                <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+                  O veículo <strong className="text-foreground">{vehicle.internal_id}</strong> será
+                  removido das listas. O histórico, as movimentações e as fotografias serão
+                  preservados para auditoria.
+                </p>
+              </div>
+            </div>
+
+            {deleteError ? (
+              <p className="mt-4 rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-xs font-semibold text-destructive">
+                {deleteError}
+              </p>
+            ) : null}
+
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setDeleteOpen(false)}
+                disabled={deleting}
+                className="rounded-lg border border-border px-4 py-2 text-sm font-semibold transition hover:bg-accent disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={() => void removeVehicle()}
+                disabled={deleting}
+                className="inline-flex items-center gap-2 rounded-lg bg-destructive px-4 py-2 text-sm font-semibold text-destructive-foreground transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {deleting ? (
+                  <LoaderCircle className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Trash2 className="h-4 w-4" />
+                )}
+                {deleting ? "Excluindo..." : "Confirmar exclusão"}
+              </button>
+            </div>
+          </div>
+        </div>
       ) : null}
     </div>
   );
@@ -610,6 +709,7 @@ function buildPrintSections(vehicle: VehicleRecord, mode: "ficha" | "termo"): Si
     return [
       {
         title: "DADOS DA ENTREGA",
+        wide: true,
         fields: [
           { label: "Situação", value: vehicle.release_status?.replaceAll("_", " ") },
           { label: "Data", value: formatVehicleDate(vehicle.release_date) },
@@ -622,6 +722,7 @@ function buildPrintSections(vehicle: VehicleRecord, mode: "ficha" | "termo"): Si
       },
       {
         title: "IDENTIFICAÇÃO DO VEÍCULO",
+        wide: true,
         fields: [
           { label: "Tipo", value: VEHICLE_TYPE_LABELS[vehicle.vehicle_type] },
           { label: "Marca / Modelo", value: vehicle.brand_model },
@@ -646,19 +747,19 @@ function buildPrintSections(vehicle: VehicleRecord, mode: "ficha" | "termo"): Si
       {
         title: "ASSINATURAS",
         wide: true,
+        signatures: true,
         fields: [
           {
             label: "Pessoa que recebeu",
-            value: `____________________________________________\n${vehicle.released_to?.trim() || "Nome e assinatura"}`,
+            value: vehicle.released_to?.trim() || "Nome não informado",
           },
           {
             label: "Responsável pela entrega",
-            value: `____________________________________________\n${vehicle.release_authority?.trim() || "Nome, matrícula e assinatura"}`,
+            value: vehicle.release_authority?.trim() || "Nome e matrícula não informados",
           },
           {
             label: "Local e data",
-            value: "____________________________________________",
-            wide: true,
+            manualLine: true,
           },
         ],
       },
@@ -667,6 +768,7 @@ function buildPrintSections(vehicle: VehicleRecord, mode: "ficha" | "termo"): Si
   return [
     {
       title: "IDENTIFICAÇÃO",
+      wide: true,
       fields: [
         { label: "Tipo", value: VEHICLE_TYPE_LABELS[vehicle.vehicle_type] },
         { label: "Marca / Modelo", value: vehicle.brand_model },
@@ -683,6 +785,7 @@ function buildPrintSections(vehicle: VehicleRecord, mode: "ficha" | "termo"): Si
     },
     {
       title: "SITUAÇÃO POLICIAL",
+      wide: true,
       fields: [
         { label: "Ocorrência", value: vehicle.occurrence_type },
         { label: "B.O.", value: vehicle.police_report_number },
@@ -691,11 +794,16 @@ function buildPrintSections(vehicle: VehicleRecord, mode: "ficha" | "termo"): Si
           value: [vehicle.procedure_type, vehicle.procedure_number].filter(Boolean).join(" "),
         },
         { label: "Processo judicial", value: vehicle.court_process_number },
-        { label: "Envolvidos", value: vehicle.involved_people, wide: true },
+        {
+          label: "Envolvidos",
+          value: formatVehicleInvolvedPeople(vehicle.involved_people),
+          wide: true,
+        },
       ],
     },
     {
       title: "APREENSÃO E CUSTÓDIA",
+      wide: true,
       fields: [
         { label: "Data", value: formatVehicleDate(vehicle.seizure_date) },
         { label: "Local da apreensão", value: vehicle.seizure_location },

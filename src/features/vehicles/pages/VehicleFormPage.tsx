@@ -26,6 +26,7 @@ import {
   updateVehicle,
   uploadVehiclePhotos,
 } from "@/lib/repositories/vehiclesRepository";
+import { VehiclePeopleEditor } from "../components/VehiclePeopleEditor";
 import { validateVehicleImage } from "../imageCompression";
 import {
   CONSERVATION_STATES,
@@ -45,6 +46,11 @@ import {
   validateVehicleIdentifiers,
   VEHICLE_IDENTIFIER_LABELS,
 } from "../vehicleIdentifiers";
+import {
+  parseVehicleInvolvedPeople,
+  serializeVehicleInvolvedPeople,
+  type VehicleInvolvedPersonFormValue,
+} from "../vehiclePeople";
 import type {
   IdentificationStatus,
   VehicleIdentifierConflict,
@@ -82,7 +88,7 @@ type FormState = {
   procedureNumber: string;
   policeReportNumber: string;
   courtProcessNumber: string;
-  involvedPeople: string;
+  involvedPeople: VehicleInvolvedPersonFormValue[];
   inqueritoId: string;
   seizureDate: string;
   seizureLocation: string;
@@ -129,7 +135,7 @@ const INITIAL_STATE: FormState = {
   procedureNumber: "",
   policeReportNumber: "",
   courtProcessNumber: "",
-  involvedPeople: "",
+  involvedPeople: [],
   inqueritoId: "",
   seizureDate: "",
   seizureLocation: "",
@@ -243,7 +249,7 @@ function stateFromVehicle(vehicle: VehicleRecord): FormState {
     procedureNumber: vehicle.procedure_number ?? "",
     policeReportNumber: vehicle.police_report_number ?? "",
     courtProcessNumber: vehicle.court_process_number ?? "",
-    involvedPeople: vehicle.involved_people ?? "",
+    involvedPeople: parseVehicleInvolvedPeople(vehicle.involved_people),
     inqueritoId: vehicle.inquerito_id ?? "",
     seizureDate: vehicle.seizure_date ?? "",
     seizureLocation: vehicle.seizure_location ?? "",
@@ -306,7 +312,7 @@ function toPayload(state: FormState): VehiclePayload {
     procedure_number: textOrNull(state.procedureNumber),
     police_report_number: textOrNull(state.policeReportNumber),
     court_process_number: textOrNull(state.courtProcessNumber),
-    involved_people: textOrNull(state.involvedPeople),
+    involved_people: serializeVehicleInvolvedPeople(state.involvedPeople),
     inquerito_id: textOrNull(state.inqueritoId),
     seizure_date: textOrNull(state.seizureDate),
     seizure_location: textOrNull(state.seizureLocation),
@@ -838,11 +844,9 @@ export function VehicleFormPage({ mode, vehicleId }: { mode: FormMode; vehicleId
                 </>
               )}
             </div>
-            <TextAreaField
-              label="Envolvidos"
+            <VehiclePeopleEditor
               value={form.involvedPeople}
               onChange={(value) => update("involvedPeople", value)}
-              className="md:col-span-2"
             />
             <TextAreaField
               label="Observações gerais"
