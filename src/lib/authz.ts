@@ -193,6 +193,52 @@ export function canManageVehicles(
   return canCreateVehicles(profile) || canReleaseVehicles(profile) || canDeleteVehicles(profile);
 }
 
+export function canViewObjects(
+  profile: Pick<UserProfile, "cargo" | "status_autorizacao"> | null,
+): boolean {
+  if (!profile || !isAuthorized(profile)) return false;
+  return profile.cargo !== "membro";
+}
+
+const OBJECT_EDITOR_ROLES: UserRole[] = ["sipi_access", "delegado", "admin"];
+const OBJECT_RELEASE_ROLES: UserRole[] = ["delegado", "admin"];
+
+export function canCreateObjects(
+  profile: Pick<UserProfile, "cargo" | "status_autorizacao"> | null,
+): boolean {
+  return Boolean(profile && isAuthorized(profile) && OBJECT_EDITOR_ROLES.includes(profile.cargo));
+}
+
+export function canEditObjects(
+  profile: Pick<UserProfile, "cargo" | "status_autorizacao"> | null,
+): boolean {
+  return canCreateObjects(profile);
+}
+
+export function canRegisterObjectMovements(
+  profile: Pick<UserProfile, "cargo" | "status_autorizacao"> | null,
+): boolean {
+  return canCreateObjects(profile);
+}
+
+export function canReleaseObjects(
+  profile: Pick<UserProfile, "cargo" | "status_autorizacao"> | null,
+): boolean {
+  return Boolean(profile && isAuthorized(profile) && OBJECT_RELEASE_ROLES.includes(profile.cargo));
+}
+
+export function canDeleteObjects(
+  profile: Pick<UserProfile, "cargo" | "status_autorizacao"> | null,
+): boolean {
+  return canReleaseObjects(profile);
+}
+
+export function canManageObjects(
+  profile: Pick<UserProfile, "cargo" | "status_autorizacao"> | null,
+): boolean {
+  return canCreateObjects(profile) || canReleaseObjects(profile) || canDeleteObjects(profile);
+}
+
 const LOCALIZACAO_ROLES: UserRole[] = ["sipi_access", "delegado", "admin"];
 
 export function canViewLocalizacao(

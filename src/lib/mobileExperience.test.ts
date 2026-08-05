@@ -25,6 +25,8 @@ describe("mobile experience", () => {
     "/veiculos/todos",
     "/veiculos/motocicletas",
     "/veiculos/vehicle-id",
+    "/objetos/todos",
+    "/objetos/object-id",
     "/localizacao",
     "/localizacao/diligencias/dlg-1/campo",
     "/localizacao/pessoas",
@@ -53,6 +55,13 @@ describe("mobile experience", () => {
     "redirects restricted vehicle path %s to the mobile vehicle list",
     (pathname) => {
       expect(getMobileRouteRedirect(pathname, true)).toBe("/veiculos/todos");
+    },
+  );
+
+  it.each(["/objetos", "/objetos/novo", "/objetos/object-id/editar"])(
+    "redirects restricted object path %s to the mobile object list",
+    (pathname) => {
+      expect(getMobileRouteRedirect(pathname, true)).toBe("/objetos/todos");
     },
   );
 });

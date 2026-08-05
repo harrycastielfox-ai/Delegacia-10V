@@ -23,6 +23,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as ModulosRouteImport } from './routes/modulos'
 import { Route as NovaRepresentacaoRouteImport } from './routes/nova-representacao'
 import { Route as NovoCasoRouteImport } from './routes/novo-caso'
+import { Route as ObjetosRouteImport } from './routes/objetos'
 import { Route as PerfilRouteImport } from './routes/perfil'
 import { Route as RepresentacoesRouteImport } from './routes/representacoes'
 import { Route as VeiculosRouteImport } from './routes/veiculos'
@@ -39,6 +40,10 @@ import { Route as LocalizacaoRegistrosRouteImport } from './routes/localizacao.r
 import { Route as LocalizacaoRelatoriosRouteImport } from './routes/localizacao.relatorios'
 import { Route as LocalizacaoRotasRouteImport } from './routes/localizacao.rotas'
 import { Route as MockupsLocalizacaoOperacionalRouteImport } from './routes/mockups.localizacao-operacional'
+import { Route as ObjetosIndexRouteImport } from './routes/objetos.index'
+import { Route as ObjetosObjectIdRouteImport } from './routes/objetos.$objectId'
+import { Route as ObjetosNovoRouteImport } from './routes/objetos.novo'
+import { Route as ObjetosTodosRouteImport } from './routes/objetos.todos'
 import { Route as RepresentacoesRepresentacaoIdRouteImport } from './routes/representacoes.$representacaoId'
 import { Route as VeiculosIndexRouteImport } from './routes/veiculos.index'
 import { Route as VeiculosVehicleIdRouteImport } from './routes/veiculos.$vehicleId'
@@ -60,6 +65,7 @@ import { Route as InqueritosCaseIdEditarRouteImport } from './routes/inqueritos.
 import { Route as LocalizacaoDiligenciasIndexRouteImport } from './routes/localizacao.diligencias.index'
 import { Route as LocalizacaoDiligenciasDiligenciaIdRouteImport } from './routes/localizacao.diligencias.$diligenciaId'
 import { Route as LocalizacaoDiligenciasNovaRouteImport } from './routes/localizacao.diligencias.nova'
+import { Route as ObjetosObjectIdEditarRouteImport } from './routes/objetos.$objectId.editar'
 import { Route as RepresentacoesRepresentacaoIdEditarRouteImport } from './routes/representacoes.$representacaoId.editar'
 import { Route as VeiculosVehicleIdEditarRouteImport } from './routes/veiculos.$vehicleId.editar'
 import { Route as LocalizacaoDiligenciasDiligenciaIdIndexRouteImport } from './routes/localizacao.diligencias.$diligenciaId.index'
@@ -134,6 +140,11 @@ const NovaRepresentacaoRoute = NovaRepresentacaoRouteImport.update({
 const NovoCasoRoute = NovoCasoRouteImport.update({
   id: '/novo-caso',
   path: '/novo-caso',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ObjetosRoute = ObjetosRouteImport.update({
+  id: '/objetos',
+  path: '/objetos',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PerfilRoute = PerfilRouteImport.update({
@@ -217,6 +228,26 @@ const MockupsLocalizacaoOperacionalRoute =
     path: '/mockups/localizacao-operacional',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ObjetosIndexRoute = ObjetosIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => ObjetosRoute,
+} as any)
+const ObjetosObjectIdRoute = ObjetosObjectIdRouteImport.update({
+  id: '/$objectId',
+  path: '/$objectId',
+  getParentRoute: () => ObjetosRoute,
+} as any)
+const ObjetosNovoRoute = ObjetosNovoRouteImport.update({
+  id: '/novo',
+  path: '/novo',
+  getParentRoute: () => ObjetosRoute,
+} as any)
+const ObjetosTodosRoute = ObjetosTodosRouteImport.update({
+  id: '/todos',
+  path: '/todos',
+  getParentRoute: () => ObjetosRoute,
+} as any)
 const RepresentacoesRepresentacaoIdRoute =
   RepresentacoesRepresentacaoIdRouteImport.update({
     id: '/$representacaoId',
@@ -326,6 +357,11 @@ const LocalizacaoDiligenciasNovaRoute =
     path: '/nova',
     getParentRoute: () => LocalizacaoDiligenciasRoute,
   } as any)
+const ObjetosObjectIdEditarRoute = ObjetosObjectIdEditarRouteImport.update({
+  id: '/editar',
+  path: '/editar',
+  getParentRoute: () => ObjetosObjectIdRoute,
+} as any)
 const RepresentacoesRepresentacaoIdEditarRoute =
   RepresentacoesRepresentacaoIdEditarRouteImport.update({
     id: '/editar',
@@ -371,6 +407,7 @@ export interface FileRoutesByFullPath {
   '/modulos': typeof ModulosRoute
   '/nova-representacao': typeof NovaRepresentacaoRoute
   '/novo-caso': typeof NovoCasoRoute
+  '/objetos': typeof ObjetosRouteWithChildren
   '/perfil': typeof PerfilRoute
   '/representacoes': typeof RepresentacoesRouteWithChildren
   '/veiculos': typeof VeiculosRouteWithChildren
@@ -386,6 +423,9 @@ export interface FileRoutesByFullPath {
   '/localizacao/relatorios': typeof LocalizacaoRelatoriosRoute
   '/localizacao/rotas': typeof LocalizacaoRotasRoute
   '/mockups/localizacao-operacional': typeof MockupsLocalizacaoOperacionalRoute
+  '/objetos/$objectId': typeof ObjetosObjectIdRouteWithChildren
+  '/objetos/novo': typeof ObjetosNovoRoute
+  '/objetos/todos': typeof ObjetosTodosRoute
   '/representacoes/$representacaoId': typeof RepresentacoesRepresentacaoIdRouteWithChildren
   '/veiculos/$vehicleId': typeof VeiculosVehicleIdRouteWithChildren
   '/veiculos/adulterados': typeof VeiculosAdulteradosRoute
@@ -402,11 +442,13 @@ export interface FileRoutesByFullPath {
   '/veiculos/relatorios': typeof VeiculosRelatoriosRoute
   '/veiculos/todos': typeof VeiculosTodosRoute
   '/localizacao/': typeof LocalizacaoIndexRoute
+  '/objetos/': typeof ObjetosIndexRoute
   '/veiculos/': typeof VeiculosIndexRoute
   '/admin/usuarios/$userId': typeof AdminUsuariosUserIdRoute
   '/inqueritos/$caseId/editar': typeof InqueritosCaseIdEditarRoute
   '/localizacao/diligencias/$diligenciaId': typeof LocalizacaoDiligenciasDiligenciaIdRouteWithChildren
   '/localizacao/diligencias/nova': typeof LocalizacaoDiligenciasNovaRoute
+  '/objetos/$objectId/editar': typeof ObjetosObjectIdEditarRoute
   '/representacoes/$representacaoId/editar': typeof RepresentacoesRepresentacaoIdEditarRoute
   '/veiculos/$vehicleId/editar': typeof VeiculosVehicleIdEditarRoute
   '/localizacao/diligencias/': typeof LocalizacaoDiligenciasIndexRoute
@@ -441,6 +483,9 @@ export interface FileRoutesByTo {
   '/localizacao/relatorios': typeof LocalizacaoRelatoriosRoute
   '/localizacao/rotas': typeof LocalizacaoRotasRoute
   '/mockups/localizacao-operacional': typeof MockupsLocalizacaoOperacionalRoute
+  '/objetos/$objectId': typeof ObjetosObjectIdRouteWithChildren
+  '/objetos/novo': typeof ObjetosNovoRoute
+  '/objetos/todos': typeof ObjetosTodosRoute
   '/representacoes/$representacaoId': typeof RepresentacoesRepresentacaoIdRouteWithChildren
   '/veiculos/$vehicleId': typeof VeiculosVehicleIdRouteWithChildren
   '/veiculos/adulterados': typeof VeiculosAdulteradosRoute
@@ -457,10 +502,12 @@ export interface FileRoutesByTo {
   '/veiculos/relatorios': typeof VeiculosRelatoriosRoute
   '/veiculos/todos': typeof VeiculosTodosRoute
   '/localizacao': typeof LocalizacaoIndexRoute
+  '/objetos': typeof ObjetosIndexRoute
   '/veiculos': typeof VeiculosIndexRoute
   '/admin/usuarios/$userId': typeof AdminUsuariosUserIdRoute
   '/inqueritos/$caseId/editar': typeof InqueritosCaseIdEditarRoute
   '/localizacao/diligencias/nova': typeof LocalizacaoDiligenciasNovaRoute
+  '/objetos/$objectId/editar': typeof ObjetosObjectIdEditarRoute
   '/representacoes/$representacaoId/editar': typeof RepresentacoesRepresentacaoIdEditarRoute
   '/veiculos/$vehicleId/editar': typeof VeiculosVehicleIdEditarRoute
   '/localizacao/diligencias': typeof LocalizacaoDiligenciasIndexRoute
@@ -484,6 +531,7 @@ export interface FileRoutesById {
   '/modulos': typeof ModulosRoute
   '/nova-representacao': typeof NovaRepresentacaoRoute
   '/novo-caso': typeof NovoCasoRoute
+  '/objetos': typeof ObjetosRouteWithChildren
   '/perfil': typeof PerfilRoute
   '/representacoes': typeof RepresentacoesRouteWithChildren
   '/veiculos': typeof VeiculosRouteWithChildren
@@ -499,6 +547,9 @@ export interface FileRoutesById {
   '/localizacao/relatorios': typeof LocalizacaoRelatoriosRoute
   '/localizacao/rotas': typeof LocalizacaoRotasRoute
   '/mockups/localizacao-operacional': typeof MockupsLocalizacaoOperacionalRoute
+  '/objetos/$objectId': typeof ObjetosObjectIdRouteWithChildren
+  '/objetos/novo': typeof ObjetosNovoRoute
+  '/objetos/todos': typeof ObjetosTodosRoute
   '/representacoes/$representacaoId': typeof RepresentacoesRepresentacaoIdRouteWithChildren
   '/veiculos/$vehicleId': typeof VeiculosVehicleIdRouteWithChildren
   '/veiculos/adulterados': typeof VeiculosAdulteradosRoute
@@ -515,11 +566,13 @@ export interface FileRoutesById {
   '/veiculos/relatorios': typeof VeiculosRelatoriosRoute
   '/veiculos/todos': typeof VeiculosTodosRoute
   '/localizacao/': typeof LocalizacaoIndexRoute
+  '/objetos/': typeof ObjetosIndexRoute
   '/veiculos/': typeof VeiculosIndexRoute
   '/admin/usuarios/$userId': typeof AdminUsuariosUserIdRoute
   '/inqueritos/$caseId/editar': typeof InqueritosCaseIdEditarRoute
   '/localizacao/diligencias/$diligenciaId': typeof LocalizacaoDiligenciasDiligenciaIdRouteWithChildren
   '/localizacao/diligencias/nova': typeof LocalizacaoDiligenciasNovaRoute
+  '/objetos/$objectId/editar': typeof ObjetosObjectIdEditarRoute
   '/representacoes/$representacaoId/editar': typeof RepresentacoesRepresentacaoIdEditarRoute
   '/veiculos/$vehicleId/editar': typeof VeiculosVehicleIdEditarRoute
   '/localizacao/diligencias/': typeof LocalizacaoDiligenciasIndexRoute
@@ -544,6 +597,7 @@ export interface FileRouteTypes {
     | '/modulos'
     | '/nova-representacao'
     | '/novo-caso'
+    | '/objetos'
     | '/perfil'
     | '/representacoes'
     | '/veiculos'
@@ -559,6 +613,9 @@ export interface FileRouteTypes {
     | '/localizacao/relatorios'
     | '/localizacao/rotas'
     | '/mockups/localizacao-operacional'
+    | '/objetos/$objectId'
+    | '/objetos/novo'
+    | '/objetos/todos'
     | '/representacoes/$representacaoId'
     | '/veiculos/$vehicleId'
     | '/veiculos/adulterados'
@@ -575,11 +632,13 @@ export interface FileRouteTypes {
     | '/veiculos/relatorios'
     | '/veiculos/todos'
     | '/localizacao/'
+    | '/objetos/'
     | '/veiculos/'
     | '/admin/usuarios/$userId'
     | '/inqueritos/$caseId/editar'
     | '/localizacao/diligencias/$diligenciaId'
     | '/localizacao/diligencias/nova'
+    | '/objetos/$objectId/editar'
     | '/representacoes/$representacaoId/editar'
     | '/veiculos/$vehicleId/editar'
     | '/localizacao/diligencias/'
@@ -614,6 +673,9 @@ export interface FileRouteTypes {
     | '/localizacao/relatorios'
     | '/localizacao/rotas'
     | '/mockups/localizacao-operacional'
+    | '/objetos/$objectId'
+    | '/objetos/novo'
+    | '/objetos/todos'
     | '/representacoes/$representacaoId'
     | '/veiculos/$vehicleId'
     | '/veiculos/adulterados'
@@ -630,10 +692,12 @@ export interface FileRouteTypes {
     | '/veiculos/relatorios'
     | '/veiculos/todos'
     | '/localizacao'
+    | '/objetos'
     | '/veiculos'
     | '/admin/usuarios/$userId'
     | '/inqueritos/$caseId/editar'
     | '/localizacao/diligencias/nova'
+    | '/objetos/$objectId/editar'
     | '/representacoes/$representacaoId/editar'
     | '/veiculos/$vehicleId/editar'
     | '/localizacao/diligencias'
@@ -656,6 +720,7 @@ export interface FileRouteTypes {
     | '/modulos'
     | '/nova-representacao'
     | '/novo-caso'
+    | '/objetos'
     | '/perfil'
     | '/representacoes'
     | '/veiculos'
@@ -671,6 +736,9 @@ export interface FileRouteTypes {
     | '/localizacao/relatorios'
     | '/localizacao/rotas'
     | '/mockups/localizacao-operacional'
+    | '/objetos/$objectId'
+    | '/objetos/novo'
+    | '/objetos/todos'
     | '/representacoes/$representacaoId'
     | '/veiculos/$vehicleId'
     | '/veiculos/adulterados'
@@ -687,11 +755,13 @@ export interface FileRouteTypes {
     | '/veiculos/relatorios'
     | '/veiculos/todos'
     | '/localizacao/'
+    | '/objetos/'
     | '/veiculos/'
     | '/admin/usuarios/$userId'
     | '/inqueritos/$caseId/editar'
     | '/localizacao/diligencias/$diligenciaId'
     | '/localizacao/diligencias/nova'
+    | '/objetos/$objectId/editar'
     | '/representacoes/$representacaoId/editar'
     | '/veiculos/$vehicleId/editar'
     | '/localizacao/diligencias/'
@@ -715,6 +785,7 @@ export interface RootRouteChildren {
   ModulosRoute: typeof ModulosRoute
   NovaRepresentacaoRoute: typeof NovaRepresentacaoRoute
   NovoCasoRoute: typeof NovoCasoRoute
+  ObjetosRoute: typeof ObjetosRouteWithChildren
   PerfilRoute: typeof PerfilRoute
   RepresentacoesRoute: typeof RepresentacoesRouteWithChildren
   VeiculosRoute: typeof VeiculosRouteWithChildren
@@ -820,6 +891,13 @@ declare module '@tanstack/react-router' {
       path: '/novo-caso'
       fullPath: '/novo-caso'
       preLoaderRoute: typeof NovoCasoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/objetos': {
+      id: '/objetos'
+      path: '/objetos'
+      fullPath: '/objetos'
+      preLoaderRoute: typeof ObjetosRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/perfil': {
@@ -933,6 +1011,34 @@ declare module '@tanstack/react-router' {
       fullPath: '/mockups/localizacao-operacional'
       preLoaderRoute: typeof MockupsLocalizacaoOperacionalRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/objetos/': {
+      id: '/objetos/'
+      path: '/'
+      fullPath: '/objetos/'
+      preLoaderRoute: typeof ObjetosIndexRouteImport
+      parentRoute: typeof ObjetosRoute
+    }
+    '/objetos/$objectId': {
+      id: '/objetos/$objectId'
+      path: '/$objectId'
+      fullPath: '/objetos/$objectId'
+      preLoaderRoute: typeof ObjetosObjectIdRouteImport
+      parentRoute: typeof ObjetosRoute
+    }
+    '/objetos/novo': {
+      id: '/objetos/novo'
+      path: '/novo'
+      fullPath: '/objetos/novo'
+      preLoaderRoute: typeof ObjetosNovoRouteImport
+      parentRoute: typeof ObjetosRoute
+    }
+    '/objetos/todos': {
+      id: '/objetos/todos'
+      path: '/todos'
+      fullPath: '/objetos/todos'
+      preLoaderRoute: typeof ObjetosTodosRouteImport
+      parentRoute: typeof ObjetosRoute
     }
     '/representacoes/$representacaoId': {
       id: '/representacoes/$representacaoId'
@@ -1081,6 +1187,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LocalizacaoDiligenciasNovaRouteImport
       parentRoute: typeof LocalizacaoDiligenciasRoute
     }
+    '/objetos/$objectId/editar': {
+      id: '/objetos/$objectId/editar'
+      path: '/editar'
+      fullPath: '/objetos/$objectId/editar'
+      preLoaderRoute: typeof ObjetosObjectIdEditarRouteImport
+      parentRoute: typeof ObjetosObjectIdRoute
+    }
     '/representacoes/$representacaoId/editar': {
       id: '/representacoes/$representacaoId/editar'
       path: '/editar'
@@ -1221,6 +1334,35 @@ const LocalizacaoRouteWithChildren = LocalizacaoRoute._addFileChildren(
   LocalizacaoRouteChildren,
 )
 
+interface ObjetosObjectIdRouteChildren {
+  ObjetosObjectIdEditarRoute: typeof ObjetosObjectIdEditarRoute
+}
+
+const ObjetosObjectIdRouteChildren: ObjetosObjectIdRouteChildren = {
+  ObjetosObjectIdEditarRoute: ObjetosObjectIdEditarRoute,
+}
+
+const ObjetosObjectIdRouteWithChildren = ObjetosObjectIdRoute._addFileChildren(
+  ObjetosObjectIdRouteChildren,
+)
+
+interface ObjetosRouteChildren {
+  ObjetosObjectIdRoute: typeof ObjetosObjectIdRouteWithChildren
+  ObjetosNovoRoute: typeof ObjetosNovoRoute
+  ObjetosTodosRoute: typeof ObjetosTodosRoute
+  ObjetosIndexRoute: typeof ObjetosIndexRoute
+}
+
+const ObjetosRouteChildren: ObjetosRouteChildren = {
+  ObjetosObjectIdRoute: ObjetosObjectIdRouteWithChildren,
+  ObjetosNovoRoute: ObjetosNovoRoute,
+  ObjetosTodosRoute: ObjetosTodosRoute,
+  ObjetosIndexRoute: ObjetosIndexRoute,
+}
+
+const ObjetosRouteWithChildren =
+  ObjetosRoute._addFileChildren(ObjetosRouteChildren)
+
 interface RepresentacoesRepresentacaoIdRouteChildren {
   RepresentacoesRepresentacaoIdEditarRoute: typeof RepresentacoesRepresentacaoIdEditarRoute
 }
@@ -1327,6 +1469,7 @@ const rootRouteChildren: RootRouteChildren = {
   ModulosRoute: ModulosRoute,
   NovaRepresentacaoRoute: NovaRepresentacaoRoute,
   NovoCasoRoute: NovoCasoRoute,
+  ObjetosRoute: ObjetosRouteWithChildren,
   PerfilRoute: PerfilRoute,
   RepresentacoesRoute: RepresentacoesRouteWithChildren,
   VeiculosRoute: VeiculosRouteWithChildren,

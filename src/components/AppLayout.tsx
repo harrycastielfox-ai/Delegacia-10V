@@ -7,7 +7,7 @@ import { getMobileRouteRedirect, MOBILE_VIEWPORT_QUERY } from "@/lib/mobileExper
 import { AppProfileContext } from "./AppProfileContext";
 import { MobileNavigation } from "./MobileNavigation";
 
-type AppModule = "inqueritos" | "veiculos";
+type AppModule = "inqueritos" | "veiculos" | "objetos";
 
 const AppSidebar = lazy(() =>
   import("./AppSidebar").then((module) => ({ default: module.AppSidebar })),
@@ -21,6 +21,14 @@ const VehiclesSidebar = lazy(() =>
 const VehiclesMobileNavigation = lazy(() =>
   import("./VehiclesMobileNavigation").then((module) => ({
     default: module.VehiclesMobileNavigation,
+  })),
+);
+const ObjectsSidebar = lazy(() =>
+  import("./ObjectsSidebar").then((module) => ({ default: module.ObjectsSidebar })),
+);
+const ObjectsMobileNavigation = lazy(() =>
+  import("./ObjectsMobileNavigation").then((module) => ({
+    default: module.ObjectsMobileNavigation,
   })),
 );
 
@@ -136,11 +144,15 @@ export function AppLayout({
           {mobile ? (
             module === "veiculos" ? (
               <VehiclesMobileNavigation profile={profile} />
+            ) : module === "objetos" ? (
+              <ObjectsMobileNavigation profile={profile} />
             ) : (
               <MobileNavigation profile={profile} />
             )
           ) : module === "veiculos" ? (
             <VehiclesSidebar profile={profile} />
+          ) : module === "objetos" ? (
+            <ObjectsSidebar profile={profile} />
           ) : (
             <>
               <AppSidebar profile={profile} />

@@ -66,7 +66,8 @@ const MODULOS: Modulo[] = [
     descricao: "Cadastro e rastreio de objetos apreendidos vinculados a casos.",
     icon: Package,
     tone: "warning",
-    disponivel: false,
+    to: "/objetos",
+    disponivel: true,
   },
   {
     id: "localizacao-operacional",
