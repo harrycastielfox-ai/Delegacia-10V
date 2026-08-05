@@ -321,6 +321,7 @@ export default function ObjectDetailsPage() {
             <DetailField label="Marca / Modelo" value={object.brand_model} />
             <DetailField label="Número de série" value={object.serial_number} />
             <DetailField label="Calibre" value={object.caliber} />
+            <DetailField label="Cor" value={object.color} />
             <DetailField label="Quantidade" value={object.quantity} />
             <DetailField
               label="Peso ou valor"
@@ -355,6 +356,13 @@ export default function ObjectDetailsPage() {
               </div>
             ) : null}
             <DetailField label="Envolvidos" value={object.involved_people} wide />
+            {object.object_type === "documento" ? (
+              <>
+                <DetailField label="Nome no documento" value={object.document_holder_name} />
+                <DetailField label="Número do documento" value={object.document_number} />
+                <DetailField label="Órgão emissor / UF" value={object.document_issuing_authority} />
+              </>
+            ) : null}
             <DetailField label="Observações" value={object.observations} wide />
           </DetailSection>
 

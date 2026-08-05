@@ -209,7 +209,7 @@ export default function ObjectListPage({ preset }: { preset: ObjectListPreset })
             <input
               value={search}
               onChange={(event) => setSearch(event.target.value)}
-              placeholder="Buscar descrição, marca, série, calibre, B.O. ou envolvido..."
+              placeholder="Buscar descrição, marca, série, calibre, cor, documento, B.O. ou envolvido..."
               className="h-12 w-full rounded-xl border border-border/90 bg-background/70 pl-10 pr-4 text-sm outline-none transition placeholder:text-muted-foreground focus:border-warning/55"
             />
           </label>

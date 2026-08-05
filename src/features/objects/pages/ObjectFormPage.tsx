@@ -21,6 +21,7 @@ import {
   OBJECT_SITUATION_LABELS,
   OBJECT_TYPES_WITH_BRAND_MODEL,
   OBJECT_TYPES_WITH_CALIBER,
+  OBJECT_TYPES_WITH_DOCUMENT_INFO,
   OBJECT_TYPES_WITH_SERIAL,
   OBJECT_TYPE_LABELS,
 } from "../objectConstants";
@@ -51,6 +52,7 @@ type FormState = {
   brandModel: string;
   serialNumber: string;
   caliber: string;
+  color: string;
   quantity: string;
   measurementUnit: MeasurementUnit | "";
   weightOrValue: string;
@@ -63,6 +65,9 @@ type FormState = {
   policeReportNumber: string;
   courtProcessNumber: string;
   involvedPeople: string;
+  documentHolderName: string;
+  documentIssuingAuthority: string;
+  documentNumber: string;
   inqueritoId: string;
   seizureDate: string;
   seizureLocation: string;
@@ -87,6 +92,7 @@ const INITIAL_STATE: FormState = {
   brandModel: "",
   serialNumber: "",
   caliber: "",
+  color: "",
   quantity: "1",
   measurementUnit: "",
   weightOrValue: "",
@@ -99,6 +105,9 @@ const INITIAL_STATE: FormState = {
   policeReportNumber: "",
   courtProcessNumber: "",
   involvedPeople: "",
+  documentHolderName: "",
+  documentIssuingAuthority: "",
+  documentNumber: "",
   inqueritoId: "",
   seizureDate: "",
   seizureLocation: "",
@@ -124,6 +133,7 @@ const OBJECT_FIELD_HINTS: Record<string, string> = {
   "Marca / Modelo": "Marca e modelo do objeto, quando identificáveis.",
   "Número de série": "Número gravado no objeto, quando existir.",
   Calibre: "Calibre da arma ou munição, quando aplicável.",
+  Cor: "Cor predominante do objeto, quando ajudar na identificação.",
   Quantidade: "Quantidade de itens — relevante para munição, dinheiro em cédulas e entorpecentes.",
   "Unidade de medida": "Como a quantidade ou o peso/valor abaixo deve ser lido.",
   "Peso ou valor": "Peso do entorpecente ou valor monetário, conforme a unidade selecionada.",
@@ -135,6 +145,9 @@ const OBJECT_FIELD_HINTS: Record<string, string> = {
   "Número do B.O.": "Número do boletim de ocorrência relacionado ao objeto.",
   "Processo judicial": "Número do processo judicial relacionado, quando existir.",
   Envolvidos: "Pessoas relacionadas ao objeto, como proprietário, encontrado com ou vítima.",
+  "Nome no documento": "Nome da pessoa identificada no documento apreendido.",
+  "Número do documento": "Número do RG, CNH, passaporte ou outro documento apreendido.",
+  "Órgão emissor / UF": "Órgão que emitiu o documento e a unidade da federação, ex.: SSP/BA.",
   "Vincular a Inquérito do SIPI":
     "Pesquise e selecione um procedimento já cadastrado para criar o vínculo direto com o objeto.",
   "Data da apreensão": "Data em que o objeto entrou em apreensão ou custódia policial.",
@@ -173,6 +186,7 @@ function stateFromObject(object: ObjectRecord): FormState {
     brandModel: object.brand_model ?? "",
     serialNumber: object.serial_number ?? "",
     caliber: object.caliber ?? "",
+    color: object.color ?? "",
     quantity: String(object.quantity ?? 1),
     measurementUnit: object.measurement_unit ?? "",
     weightOrValue: object.weight_or_value !== null ? String(object.weight_or_value) : "",
@@ -185,6 +199,9 @@ function stateFromObject(object: ObjectRecord): FormState {
     policeReportNumber: object.police_report_number ?? "",
     courtProcessNumber: object.court_process_number ?? "",
     involvedPeople: object.involved_people ?? "",
+    documentHolderName: object.document_holder_name ?? "",
+    documentIssuingAuthority: object.document_issuing_authority ?? "",
+    documentNumber: object.document_number ?? "",
     inqueritoId: object.inquerito_id ?? "",
     seizureDate: object.seizure_date ?? "",
     seizureLocation: object.seizure_location ?? "",
@@ -217,6 +234,7 @@ function toPayload(state: FormState): ObjectPayload {
     caliber: OBJECT_TYPES_WITH_CALIBER.includes(state.objectType)
       ? textOrNull(state.caliber)
       : null,
+    color: textOrNull(state.color),
     quantity: Math.max(1, Number(state.quantity) || 1),
     measurement_unit: state.measurementUnit || null,
     weight_or_value: numberOrNull(state.weightOrValue),
@@ -229,6 +247,15 @@ function toPayload(state: FormState): ObjectPayload {
     police_report_number: textOrNull(state.policeReportNumber),
     court_process_number: textOrNull(state.courtProcessNumber),
     involved_people: textOrNull(state.involvedPeople),
+    document_holder_name: OBJECT_TYPES_WITH_DOCUMENT_INFO.includes(state.objectType)
+      ? textOrNull(state.documentHolderName)
+      : null,
+    document_issuing_authority: OBJECT_TYPES_WITH_DOCUMENT_INFO.includes(state.objectType)
+      ? textOrNull(state.documentIssuingAuthority)
+      : null,
+    document_number: OBJECT_TYPES_WITH_DOCUMENT_INFO.includes(state.objectType)
+      ? textOrNull(state.documentNumber)
+      : null,
     inquerito_id: textOrNull(state.inqueritoId),
     seizure_date: textOrNull(state.seizureDate),
     seizure_location: textOrNull(state.seizureLocation),
@@ -306,6 +333,7 @@ export function ObjectFormPage({ mode, objectId }: { mode: FormMode; objectId?: 
   const showBrandModel = OBJECT_TYPES_WITH_BRAND_MODEL.includes(form.objectType);
   const showSerialNumber = OBJECT_TYPES_WITH_SERIAL.includes(form.objectType);
   const showCaliber = OBJECT_TYPES_WITH_CALIBER.includes(form.objectType);
+  const showDocumentInfo = OBJECT_TYPES_WITH_DOCUMENT_INFO.includes(form.objectType);
 
   function update<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((current) => ({ ...current, [key]: value }));
@@ -438,6 +466,7 @@ export function ObjectFormPage({ mode, objectId }: { mode: FormMode; objectId?: 
               onChange={(value) => update("caliber", value)}
             />
           ) : null}
+          <TextField label="Cor" value={form.color} onChange={(value) => update("color", value)} />
           <TextField
             label="Quantidade"
             type="number"
@@ -585,6 +614,31 @@ export function ObjectFormPage({ mode, objectId }: { mode: FormMode; objectId?: 
             className="md:col-span-2"
             placeholder="Nomes e papel de cada pessoa relacionada ao objeto"
           />
+          {showDocumentInfo ? (
+            <>
+              <div className="md:col-span-2">
+                <p className="text-xs font-bold uppercase tracking-wider text-warning">
+                  Dados do documento
+                </p>
+              </div>
+              <TextField
+                label="Nome no documento"
+                value={form.documentHolderName}
+                onChange={(value) => update("documentHolderName", value)}
+              />
+              <TextField
+                label="Número do documento"
+                value={form.documentNumber}
+                onChange={(value) => update("documentNumber", value)}
+              />
+              <TextField
+                label="Órgão emissor / UF"
+                value={form.documentIssuingAuthority}
+                onChange={(value) => update("documentIssuingAuthority", value)}
+                placeholder="Ex.: SSP/BA"
+              />
+            </>
+          ) : null}
           <TextAreaField
             label="Observações gerais"
             value={form.observations}

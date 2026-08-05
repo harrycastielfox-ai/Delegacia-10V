@@ -72,6 +72,8 @@ export const OBJECT_TYPES_WITH_BRAND_MODEL: readonly ObjectType[] = [
   "joia_bem_valor",
   "outro",
 ];
+/** Documento apreendido (RG, CNH, passaporte...) tem os próprios dados de identificação. */
+export const OBJECT_TYPES_WITH_DOCUMENT_INFO: readonly ObjectType[] = ["documento"];
 
 export const OBJECT_PAGE_SIZE = 20;
 

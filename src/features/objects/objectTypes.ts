@@ -48,6 +48,7 @@ export type ObjectRecord = {
   brand_model: string | null;
   serial_number: string | null;
   caliber: string | null;
+  color: string | null;
   quantity: number;
   measurement_unit: MeasurementUnit | null;
   weight_or_value: number | null;
@@ -60,6 +61,9 @@ export type ObjectRecord = {
   police_report_number: string | null;
   court_process_number: string | null;
   involved_people: string | null;
+  document_holder_name: string | null;
+  document_issuing_authority: string | null;
+  document_number: string | null;
   inquerito_id: string | null;
   seizure_date: string | null;
   seizure_location: string | null;
