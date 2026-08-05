@@ -719,7 +719,35 @@ html[data-theme="black"] {
   pointer-events: none;
 }
 
-.sipi-neighborhood-marker > span > b {
+/*
+ * Ponto sempre visível, marcando o lugar exato do bairro mesmo quando o nome
+ * (abaixo) precisa se esconder por falta de espaço.
+ */
+.sipi-bairro-dot {
+  width: 7px;
+  height: 7px;
+  flex: 0 0 7px;
+  border-radius: 999px;
+  background: var(--operational);
+  box-shadow:
+    0 0 0 3px color-mix(in oklab, var(--background) 65%, transparent),
+    0 0 8px color-mix(in oklab, var(--operational) 65%, transparent);
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.sipi-bairro-text {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Escondido por colisão (resolveBairroLabels) — o ponto acima continua ali. */
+.sipi-bairro-text.is-hidden {
+  display: none;
+}
+
+.sipi-bairro-name {
   color: var(--operational);
   font-size: 13px;
   font-weight: 900;
@@ -736,7 +764,7 @@ html[data-theme="black"] {
 }
 
 /* Contagem de endereços: presente, mas sem disputar com o nome. */
-.sipi-neighborhood-marker > span > i {
+.sipi-bairro-count {
   padding: 1px 6px;
   border-radius: 999px;
   background: color-mix(in oklab, var(--operational) 88%, black);
@@ -749,7 +777,7 @@ html[data-theme="black"] {
 }
 
 /* No tema claro o contorno preto engrossa demais: inverte para halo branco. */
-html[data-theme="light"] .sipi-neighborhood-marker > span > b {
+html[data-theme="light"] .sipi-bairro-name {
   text-shadow:
     0 0 3px rgb(255 255 255 / 95%),
     0 1px 4px rgb(255 255 255 / 90%),

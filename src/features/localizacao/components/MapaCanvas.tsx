@@ -226,18 +226,71 @@ function formatAddress(address: MapaEnderecoRecord | null) {
 /**
  * Rótulo do bairro no estilo de carta: o nome escrito sobre o mapa, com a
  * contagem discreta ao lado. Elemento do DOM porque o nome vem do banco.
+ *
+ * O ponto fica separado do texto de propósito: com 18 bairros próximos, nem
+ * todo nome cabe sem esbarrar no vizinho. Quando não cabe, `resolveBairroLabels`
+ * (mais abaixo) esconde só o texto — o ponto permanece, marcando o lugar.
  */
 function criarRotuloBairro(nome: string, total: number) {
   const wrapper = document.createElement("span");
+
+  const dot = document.createElement("i");
+  dot.className = "sipi-bairro-dot";
+  wrapper.appendChild(dot);
+
+  const text = document.createElement("span");
+  text.className = "sipi-bairro-text";
+
   const label = document.createElement("b");
+  label.className = "sipi-bairro-name";
   label.textContent = nome;
-  wrapper.appendChild(label);
+  text.appendChild(label);
+
   if (total > 0) {
     const contagem = document.createElement("i");
+    contagem.className = "sipi-bairro-count";
     contagem.textContent = String(total);
-    wrapper.appendChild(contagem);
+    text.appendChild(contagem);
   }
-  return wrapper;
+  wrapper.appendChild(text);
+
+  return { root: wrapper, text };
+}
+
+/**
+ * Some nomes de bairro colidem na tela — "PALMARES" em cima de "OURO VERDE",
+ * "CENTRO" atrás do marcador da delegacia. Em vez de deixar sobrepor (ilegível)
+ * ou sumir de vez (perde o lugar), o texto se esconde e só o ponto permanece.
+ *
+ * Reexibe tudo antes de medir — um rótulo já escondido mede 0×0 e nunca mais
+ * voltaria a aparecer — e prioriza o bairro com mais endereços cadastrados,
+ * que é o que mais importa achar de relance.
+ */
+function resolveBairroLabels(
+  entries: Array<{ el: HTMLElement; priority: number }>,
+  reservado: DOMRect[] = [],
+) {
+  if (!entries.length) return;
+  const MARGEM = 4;
+  const colide = (a: DOMRect, b: DOMRect) =>
+    a.left - MARGEM < b.right &&
+    a.right + MARGEM > b.left &&
+    a.top - MARGEM < b.bottom &&
+    a.bottom + MARGEM > b.top;
+
+  entries.forEach(({ el }) => el.classList.remove("is-hidden"));
+
+  const ocupados = [...reservado];
+  [...entries]
+    .sort((a, b) => b.priority - a.priority)
+    .forEach(({ el }) => {
+      const rect = el.getBoundingClientRect();
+      if (ocupados.some((outro) => colide(rect, outro))) {
+        el.classList.add("is-hidden");
+      } else {
+        ocupados.push(rect);
+      }
+    });
 }
 
 /**
@@ -309,6 +362,9 @@ export function MapaCanvas({
   const refreshViewportRef = useRef<() => void>(() => undefined);
   const syncZoomLayersRef = useRef<() => void>(() => undefined);
   const initialFitDoneRef = useRef(false);
+  /** Rótulos de bairro atualmente desenhados, para reavaliar colisão a cada zoom/pan. */
+  const bairroLabelEntriesRef = useRef<Array<{ el: HTMLElement; priority: number }>>([]);
+  const resolveBairroLabelsRef = useRef<() => void>(() => undefined);
 
   const [mapReady, setMapReady] = useState(false);
   const [addresses, setAddresses] = useState<MapaEnderecoRecord[]>([]);
@@ -423,6 +479,7 @@ export function MapaCanvas({
         setZoom(map.getZoom());
         syncZoomLayersRef.current();
         refreshViewportRef.current();
+        resolveBairroLabelsRef.current();
       };
       map.on("zoomend moveend", onViewportChange);
       map.on("click", () => {
@@ -497,6 +554,14 @@ export function MapaCanvas({
     }
   };
 
+  resolveBairroLabelsRef.current = () => {
+    // A delegacia (marcador "DT") fica sempre visível por cima; se um nome de
+    // bairro cair embaixo dela, o texto some, sobrando só o ponto no lugar.
+    const central = containerRef.current?.querySelector(".sipi-central-marker");
+    const reservado = central ? [central.getBoundingClientRect()] : [];
+    resolveBairroLabels(bairroLabelEntriesRef.current, reservado);
+  };
+
   useEffect(() => {
     const map = mapRef.current;
     const L = leafletRef.current;
@@ -516,13 +581,16 @@ export function MapaCanvas({
       UNIDENTIFIED_NEIGHBORHOOD,
     ]);
 
+    bairroLabelEntriesRef.current = [];
+
     neighborhoods.forEach((group) => {
       if (!group.center) return;
       if (AGRUPAMENTOS_TECNICOS.has(group.key)) return;
+      const rotulo = criarRotuloBairro(group.label, group.addresses.length);
       const marker = L.marker(group.center, {
         icon: L.divIcon({
           className: "sipi-neighborhood-marker",
-          html: criarRotuloBairro(group.label, group.addresses.length),
+          html: rotulo.root,
           iconSize: [180, 26],
           iconAnchor: [90, 13],
         }),
@@ -539,6 +607,7 @@ export function MapaCanvas({
       );
       marker.on("click", () => openNeighborhood(group));
       marker.addTo(neighborhoodLayer);
+      bairroLabelEntriesRef.current.push({ el: rotulo.text, priority: group.addresses.length });
     });
 
     mappedAddresses.forEach((address) => {
@@ -592,10 +661,13 @@ export function MapaCanvas({
     });
 
     syncZoomLayersRef.current();
+    resolveBairroLabelsRef.current();
     if (!initialFitDoneRef.current && mappedTerritoryPoints.length) {
       initialFitDoneRef.current = true;
       const bounds = L.latLngBounds(mappedTerritoryPoints);
-      if (bounds.isValid()) map.fitBounds(bounds.pad(0.25), { maxZoom: 16, animate: false });
+      // Padding menor: os 18 bairros já cobrem quase 4 km de ponta a ponta —
+      // uma margem generosa só empurra a cidade para o meio de mata vazia.
+      if (bounds.isValid()) map.fitBounds(bounds.pad(0.12), { maxZoom: 16, animate: false });
     }
   }, [
     mapReady,
@@ -634,6 +706,7 @@ export function MapaCanvas({
       mapRef.current?.flyTo([DEFAULT_ROUTE_ORIGIN.latitude!, DEFAULT_ROUTE_ORIGIN.longitude!], 18);
     });
     central.addTo(layer);
+    resolveBairroLabelsRef.current();
 
     diligencias.forEach((diligence, index) => {
       if (
