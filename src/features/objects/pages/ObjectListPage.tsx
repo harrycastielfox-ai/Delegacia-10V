@@ -26,6 +26,7 @@ export type ObjectListPreset = {
   initialObjectType?: ObjectType;
   initialSituation?: ObjectSituationFilter;
   initialPendingIdentification?: boolean;
+  initialWithoutProcedure?: boolean;
 };
 
 type Cursor = NonNullable<ObjectListFilters["cursor"]>;
@@ -49,6 +50,7 @@ export default function ObjectListPage({ preset }: { preset: ObjectListPreset })
   const [pendingIdentification, setPendingIdentification] = useState(
     preset.initialPendingIdentification ?? false,
   );
+  const [withoutProcedure, setWithoutProcedure] = useState(preset.initialWithoutProcedure ?? false);
   const [cursorStack, setCursorStack] = useState<Array<Cursor | null>>([null]);
   const [pageIndex, setPageIndex] = useState(0);
   const [rawRows, setRawRows] = useState<ObjectListRecord[]>([]);
@@ -65,7 +67,13 @@ export default function ObjectListPage({ preset }: { preset: ObjectListPreset })
     setObjectType(preset.initialObjectType ?? "");
     setSituation(preset.initialSituation ?? "");
     setPendingIdentification(preset.initialPendingIdentification ?? false);
-  }, [preset.initialObjectType, preset.initialPendingIdentification, preset.initialSituation]);
+    setWithoutProcedure(preset.initialWithoutProcedure ?? false);
+  }, [
+    preset.initialObjectType,
+    preset.initialPendingIdentification,
+    preset.initialSituation,
+    preset.initialWithoutProcedure,
+  ]);
 
   const cursor = cursorStack[pageIndex] ?? null;
   const filtersKey = JSON.stringify({
@@ -78,6 +86,7 @@ export default function ObjectListPage({ preset }: { preset: ObjectListPreset })
     startDate,
     endDate,
     pendingIdentification,
+    withoutProcedure,
   });
 
   useEffect(() => {
@@ -100,6 +109,7 @@ export default function ObjectListPage({ preset }: { preset: ObjectListPreset })
       startDate: startDate || null,
       endDate: endDate || null,
       pendingIdentification: pendingIdentification ? true : null,
+      withoutProcedure: withoutProcedure ? true : null,
       cursor,
       limit: OBJECT_PAGE_SIZE + 1,
     })
@@ -131,6 +141,7 @@ export default function ObjectListPage({ preset }: { preset: ObjectListPreset })
     situation,
     startDate,
     status,
+    withoutProcedure,
   ]);
 
   const rows = useMemo(() => rawRows.slice(0, OBJECT_PAGE_SIZE), [rawRows]);
@@ -149,7 +160,8 @@ export default function ObjectListPage({ preset }: { preset: ObjectListPreset })
     custodyLocation ||
     startDate ||
     endDate ||
-    pendingIdentification,
+    pendingIdentification ||
+    withoutProcedure,
   );
 
   function clearFilters() {
@@ -162,6 +174,7 @@ export default function ObjectListPage({ preset }: { preset: ObjectListPreset })
     setStartDate("");
     setEndDate("");
     setPendingIdentification(false);
+    setWithoutProcedure(false);
   }
 
   function openObject(row: ObjectListRecord) {
@@ -288,6 +301,15 @@ export default function ObjectListPage({ preset }: { preset: ObjectListPreset })
                 className="accent-[var(--warning)]"
               />{" "}
               Pendência de identificação
+            </label>
+            <label className="flex h-11 items-center gap-2 rounded-xl border border-border bg-background/70 px-3 text-sm">
+              <input
+                type="checkbox"
+                checked={withoutProcedure}
+                onChange={(event) => setWithoutProcedure(event.target.checked)}
+                className="accent-[var(--warning)]"
+              />{" "}
+              Sem procedimento nem B.O.
             </label>
             {hasFilters ? (
               <button

@@ -19,8 +19,6 @@ export const OBJECT_TYPE_LABELS: Record<ObjectType, string> = {
 
 export const OBJECT_SITUATION_LABELS: Record<ObjectSituation, string> = {
   apreendido: "Apreendido",
-  em_pericia: "Em perícia",
-  periciado: "Periciado",
   liberado: "Liberado / Devolvido",
   incinerado: "Incinerado / Destruído",
   disposicao_justica: "À disposição da Justiça",

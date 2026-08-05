@@ -30,6 +30,7 @@ export async function listObjectsPage(filters: ObjectListFilters = {}) {
         p_start_date: filters.startDate || null,
         p_end_date: filters.endDate || null,
         p_pending_identification: filters.pendingIdentification ?? null,
+        p_without_procedure: filters.withoutProcedure ?? null,
       })
       .abortSignal(signal),
   );

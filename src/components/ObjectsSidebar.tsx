@@ -11,7 +11,6 @@ import {
   Package,
   PackageCheck,
   Pill,
-  SearchCheck,
   Smartphone,
   Undo2,
   Warehouse,
@@ -27,7 +26,6 @@ const sections = [
     items: [
       { title: "Visão Geral", url: "/objetos", icon: ChartNoAxesCombined, exact: true },
       { title: "Apreendidos", url: "/objetos/todos?situation=apreendido", icon: KeyRound },
-      { title: "Em perícia", url: "/objetos/todos?situation=em_pericia", icon: SearchCheck },
       {
         title: "Liberados / Devolvidos",
         url: "/objetos/todos?situation=liberado",

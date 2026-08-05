@@ -12,10 +12,14 @@ export const OBJECT_TYPES = [
 
 export type ObjectType = (typeof OBJECT_TYPES)[number];
 
+/**
+ * Perícia não é uma situação: um objeto não deixa de estar apreendido só
+ * porque foi enviado para exame. Isso é registrado como evento no histórico
+ * (movement_type "pericia" + data da perícia), não como estado que compete
+ * com "Apreendido".
+ */
 export const OBJECT_SITUATIONS = [
   "apreendido",
-  "em_pericia",
-  "periciado",
   "liberado",
   "incinerado",
   "disposicao_justica",
@@ -150,10 +154,11 @@ export type ObjectDetailBundle = {
 export type ObjectOverviewStats = {
   total: number;
   seized: number;
-  inExpertise: number;
   released: number;
   destroyed: number;
   pendingIdentification: number;
+  /** Sem procedimento nem B.O. vinculado — evidência sem amarração formal ao caso. */
+  withoutProcedure: number;
   releasedThisMonth: number;
   byType: Partial<Record<ObjectType, number>>;
   bySituation: Partial<Record<ObjectSituationFilter, number>>;
@@ -170,6 +175,8 @@ export type ObjectListFilters = {
   startDate?: string | null;
   endDate?: string | null;
   pendingIdentification?: boolean | null;
+  /** Sem procedimento (IP/TCO) nem B.O. vinculado — evidência sem amarração formal ao caso. */
+  withoutProcedure?: boolean | null;
   cursor?: { updatedAt: string; id: string } | null;
   limit?: number;
 };

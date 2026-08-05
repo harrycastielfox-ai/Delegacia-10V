@@ -38,6 +38,7 @@ type AllObjectsSearch = {
   objectType?: ObjectType;
   situation?: ObjectSituationFilter;
   pending?: boolean;
+  withoutProcedure?: boolean;
 };
 
 export const Route = createFileRoute("/objetos/todos")({
@@ -45,10 +46,12 @@ export const Route = createFileRoute("/objetos/todos")({
     const objectType = parseObjectType(search.objectType);
     const situation = parseSituation(search.situation);
     const pending = parseBoolean(search.pending);
+    const withoutProcedure = parseBoolean(search.withoutProcedure);
     return {
       ...(objectType ? { objectType } : {}),
       ...(situation ? { situation } : {}),
       ...(pending ? { pending } : {}),
+      ...(withoutProcedure ? { withoutProcedure } : {}),
     };
   },
   component: AllObjectsRoute,
@@ -63,6 +66,7 @@ function AllObjectsRoute() {
         initialObjectType: search.objectType,
         initialSituation: search.situation,
         initialPendingIdentification: search.pending,
+        initialWithoutProcedure: search.withoutProcedure,
       }}
     />
   );

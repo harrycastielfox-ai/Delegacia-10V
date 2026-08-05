@@ -6,12 +6,12 @@ import {
   CheckCircle2,
   CircleDot,
   Crosshair,
+  FileQuestion,
   Flame,
   Gem,
   KeyRound,
   Package,
   FileText,
-  SearchCheck,
   Smartphone,
   Warehouse,
   Wrench,
@@ -35,10 +35,10 @@ import type { ObjectOverviewStats, ObjectType } from "../objectTypes";
 const EMPTY_STATS: ObjectOverviewStats = {
   total: 0,
   seized: 0,
-  inExpertise: 0,
   released: 0,
   destroyed: 0,
   pendingIdentification: 0,
+  withoutProcedure: 0,
   releasedThisMonth: 0,
   byType: {},
   bySituation: {},
@@ -154,16 +154,16 @@ export default function ObjectOverviewPage() {
         </Link>
         <Link
           to="/objetos/todos"
-          search={{ situation: "em_pericia" }}
-          aria-label="Abrir objetos em perícia"
-          className="block rounded-2xl transition hover:-translate-y-0.5 hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-info"
+          search={{ withoutProcedure: true }}
+          aria-label="Abrir objetos sem procedimento vinculado"
+          className="block rounded-2xl transition hover:-translate-y-0.5 hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive"
         >
           <StatCard
-            label="EM PERÍCIA"
-            value={loading ? "—" : stats.inExpertise}
-            hint="Encaminhados para exame"
-            icon={SearchCheck}
-            tone="info"
+            label="SEM PROCEDIMENTO"
+            value={loading ? "—" : stats.withoutProcedure}
+            hint="Sem IP, TCO ou B.O. vinculado"
+            icon={FileQuestion}
+            tone="destructive"
           />
         </Link>
         <Link

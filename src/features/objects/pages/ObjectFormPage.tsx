@@ -35,6 +35,16 @@ import type {
 
 type FormMode = "create" | "edit";
 
+/**
+ * Situações que só quem tem permissão de liberação (Delegado/Admin) pode
+ * atribuir. Sem isso, um editor comum poderia destruir ou liberar um
+ * objeto direto pelo cadastro, contornando o fluxo de liberação — a mesma
+ * proteção que já existe no banco (gatilho enforce_object_privileged_changes)
+ * também precisa existir aqui, para não expor uma opção que o servidor vai
+ * recusar.
+ */
+const RELEASE_ONLY_SITUATIONS = new Set(["liberado", "incinerado", "disposicao_justica"]);
+
 type FormState = {
   objectType: ObjectType;
   description: string;
@@ -80,7 +90,7 @@ const INITIAL_STATE: FormState = {
   quantity: "1",
   measurementUnit: "",
   weightOrValue: "",
-  situation: "",
+  situation: "apreendido",
   occurrenceType: "",
   status: "",
   pendingIdentification: false,
@@ -463,10 +473,10 @@ export function ObjectFormPage({ mode, objectId }: { mode: FormMode; objectId?: 
             label="Situação"
             value={form.situation}
             onChange={(value) => update("situation", value as ObjectSituation | "")}
+            required
           >
-            <option value="">Não informada</option>
             {Object.entries(OBJECT_SITUATION_LABELS)
-              .filter(([value]) => canRelease || value !== "liberado")
+              .filter(([value]) => canRelease || !RELEASE_ONLY_SITUATIONS.has(value))
               .map(([value, label]) => (
                 <option key={value} value={value}>
                   {label}

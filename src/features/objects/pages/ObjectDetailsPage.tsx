@@ -84,7 +84,8 @@ const movementDescriptions: Record<ObjectMovementRecord["movement_type"], string
   entrada: "Entrada do objeto em uma unidade ou depósito.",
   apreensao: "Formaliza a apreensão e define o local de custódia.",
   transferencia: "Move o objeto entre unidades, cofres ou depósitos.",
-  pericia: "Registra o encaminhamento ou realização de perícia.",
+  pericia:
+    "Registra a data do exame pericial no histórico. A situação do objeto não muda — ele continua apreendido.",
   liberacao: "Entrega o objeto à pessoa autorizada.",
   devolucao: "Registra a devolução ao proprietário ou responsável.",
   incineracao: "Registra a destruição definitiva do objeto por determinação.",
@@ -614,18 +615,18 @@ function MovementDialog({
   const hasLocationChange = ["entrada", "apreensao", "transferencia"].includes(draft.movementType);
   const validationErrors = getMovementValidationErrors(draft);
   const canSubmit = validationErrors.length === 0 && (!isRelease || releaseConfirmed) && !saving;
+  // "pericia" é só um evento no histórico — não muda a situação, por isso
+  // cai no "currentSituation" do fim, igual a "atualizacao".
   const nextSituation =
     draft.movementType === "entrada" || draft.movementType === "apreensao"
       ? "Apreendido"
-      : draft.movementType === "pericia"
-        ? "Em perícia"
-        : draft.movementType === "incineracao"
-          ? "Incinerado"
-          : draft.movementType === "disposicao_justica"
-            ? "À disposição da Justiça"
-            : isRelease
-              ? "Liberado"
-              : currentSituation;
+      : draft.movementType === "incineracao"
+        ? "Incinerado"
+        : draft.movementType === "disposicao_justica"
+          ? "À disposição da Justiça"
+          : isRelease
+            ? "Liberado"
+            : currentSituation;
   const nextLocation = isRelease
     ? "Fora da custódia"
     : hasLocationChange
