@@ -239,7 +239,8 @@ export function canManageObjects(
   return canCreateObjects(profile) || canReleaseObjects(profile) || canDeleteObjects(profile);
 }
 
-const LOCALIZACAO_ROLES: UserRole[] = ["sipi_access", "delegado", "admin"];
+// Contato Operacional é restrito ao cargo admin — a pedido explícito do usuário.
+const LOCALIZACAO_ROLES: UserRole[] = ["admin"];
 
 export function canViewLocalizacao(
   profile: Pick<UserProfile, "cargo" | "status_autorizacao"> | null,

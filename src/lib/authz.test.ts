@@ -78,17 +78,17 @@ describe("canManageUsers", () => {
 });
 
 describe("canViewLocalizacao", () => {
-  it("allows authorized operational roles", () => {
-    expect(canViewLocalizacao(makeProfile({ cargo: "sipi_access" }))).toBe(true);
-    expect(canViewLocalizacao(makeProfile({ cargo: "delegado" }))).toBe(true);
+  it("allows only admin — Contato Operacional é restrito por pedido explícito", () => {
     expect(canViewLocalizacao(makeProfile({ cargo: "admin" }))).toBe(true);
   });
 
-  it("blocks basic, atlas-only and unauthorized profiles", () => {
+  it("blocks todos os outros cargos, mesmo autorizados", () => {
     expect(canViewLocalizacao(makeProfile({ cargo: "membro" }))).toBe(false);
     expect(canViewLocalizacao(makeProfile({ cargo: "atlas_access" }))).toBe(false);
+    expect(canViewLocalizacao(makeProfile({ cargo: "sipi_access" }))).toBe(false);
+    expect(canViewLocalizacao(makeProfile({ cargo: "delegado" }))).toBe(false);
     expect(
-      canViewLocalizacao(makeProfile({ cargo: "sipi_access", status_autorizacao: "aguardando" })),
+      canViewLocalizacao(makeProfile({ cargo: "admin", status_autorizacao: "aguardando" })),
     ).toBe(false);
   });
 });
