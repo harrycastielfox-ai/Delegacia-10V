@@ -1,7 +1,6 @@
 import { Link } from "@tanstack/react-router";
-import { AlertTriangle, Phone } from "lucide-react";
+import { AlertTriangle, ChevronRight, Phone } from "lucide-react";
 import {
-  AGENDAMENTO_STATUS_LABELS,
   INTIMACAO_STATUS_LABELS,
   QUALIFICACAO_LABELS,
   TIPO_ATENDIMENTO_LABELS,
@@ -41,11 +40,11 @@ export function AgendamentoLinha({
     <Link
       to="/agenda/$agendamentoId"
       params={{ agendamentoId: agendamento.id }}
-      className={`group flex items-start gap-3 rounded-xl border bg-card/70 p-3 transition hover:border-info/45 hover:bg-info/5 ${
+      className={`group flex items-start gap-3 rounded-xl border bg-card/70 p-3 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-info/45 hover:bg-info/5 hover:shadow-[0_10px_28px_rgba(0,0,0,0.16)] ${
         encerrado ? "border-border/60 opacity-60" : "border-border"
       }`}
     >
-      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-border bg-background text-xs font-black tabular-nums text-muted-foreground">
+      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-info/25 bg-info/10 text-xs font-black tabular-nums text-info">
         {ordem}
       </span>
 
@@ -99,13 +98,9 @@ export function AgendamentoLinha({
         </span>
       </span>
 
-      <span className="flex shrink-0 flex-col items-end gap-1.5">
+      <span className="flex shrink-0 items-center gap-1.5">
         <AgendamentoStatusBadge status={agendamento.status} />
-        <span className="hidden text-[9px] uppercase tracking-wide text-muted-foreground sm:block">
-          {agendamento.status === "agendado" || agendamento.status === "confirmado"
-            ? "Abrir"
-            : AGENDAMENTO_STATUS_LABELS[agendamento.status]}
-        </span>
+        <ChevronRight className="h-4 w-4 text-muted-foreground transition group-hover:translate-x-0.5 group-hover:text-info" />
       </span>
     </Link>
   );

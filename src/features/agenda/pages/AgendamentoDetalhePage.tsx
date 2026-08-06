@@ -18,6 +18,7 @@ import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { useAppProfile } from "@/components/AppProfileContext";
 import { canManageAgenda } from "@/lib/authz";
 import {
+  checarConflitos,
   getAgendamentoById,
   listAgendamentosPeriodo,
   softDeleteAgendamento,
@@ -25,6 +26,7 @@ import {
 } from "@/lib/repositories/agendaRepository";
 import { AgendamentoStatusBadge } from "../components/AgendamentoStatusBadge";
 import {
+  DURACOES_MINUTOS,
   INTIMACAO_STATUS_LABELS,
   INTIMACAO_VIA_LABELS,
   QUALIFICACAO_LABELS,
@@ -32,9 +34,10 @@ import {
   formatDataHora,
   formatHora,
   inicioDoDia,
+  paraInputDateTime,
   somarDias,
 } from "../agendaConstants";
-import type { AgendamentoRecord, AgendamentoStatus } from "../agendaTypes";
+import type { AgendaConflito, AgendamentoRecord, AgendamentoStatus } from "../agendaTypes";
 
 /** Link de WhatsApp com o texto da intimação já pronto. */
 function montarLinkWhatsapp(agendamento: AgendamentoRecord) {
@@ -65,6 +68,13 @@ export default function AgendamentoDetalhePage() {
   const [excluindo, setExcluindo] = useState(false);
   const [confirmarExclusao, setConfirmarExclusao] = useState(false);
   const [aviso, setAviso] = useState("");
+
+  const [remarcarAberto, setRemarcarAberto] = useState(false);
+  const [novaDataHora, setNovaDataHora] = useState("");
+  const [novaDuracao, setNovaDuracao] = useState(30);
+  const [novoLocal, setNovoLocal] = useState("");
+  const [remarcarSalvando, setRemarcarSalvando] = useState(false);
+  const [remarcarConflitos, setRemarcarConflitos] = useState<AgendaConflito[]>([]);
 
   const carregar = useCallback(async () => {
     setLoading(true);
@@ -117,6 +127,71 @@ export default function AgendamentoDetalhePage() {
       setAviso("Não foi possível atualizar a situação.");
     } finally {
       setSalvando(false);
+    }
+  }
+
+  function abrirRemarcacao() {
+    if (!agendamento) return;
+    setNovaDataHora(paraInputDateTime(new Date(Date.now() + 60 * 60 * 1000)));
+    setNovaDuracao(agendamento.duracao_minutos);
+    setNovoLocal(agendamento.local ?? "");
+    setRemarcarConflitos([]);
+    setAviso("");
+    setRemarcarAberto(true);
+  }
+
+  // Checa o novo horário do mesmo jeito que o formulário de marcação — não faz
+  // sentido remarcar para um horário que cai no mesmo problema de antes.
+  useEffect(() => {
+    if (!remarcarAberto || !agendamento || !novaDataHora) {
+      setRemarcarConflitos([]);
+      return;
+    }
+    let cancelado = false;
+    const timer = window.setTimeout(() => {
+      void checarConflitos({
+        dataHora: new Date(novaDataHora).toISOString(),
+        duracaoMinutos: novaDuracao,
+        responsavelUserId: agendamento.responsavel_user_id,
+        numeroBo: agendamento.numero_bo,
+        inqueritoId: agendamento.inquerito_id,
+        qualificacao: agendamento.qualificacao,
+        ignorarId: agendamento.id,
+      })
+        .then((itens) => {
+          if (!cancelado) setRemarcarConflitos(itens);
+        })
+        .catch(() => {
+          if (!cancelado) setRemarcarConflitos([]);
+        });
+    }, 400);
+    return () => {
+      cancelado = true;
+      window.clearTimeout(timer);
+    };
+  }, [remarcarAberto, agendamento, novaDataHora, novaDuracao]);
+
+  async function confirmarRemarcacao() {
+    if (!podeGerenciar || !agendamento || !novaDataHora) return;
+    setRemarcarSalvando(true);
+    setAviso("");
+    try {
+      const dataAntiga = formatDataHora(agendamento.data_hora);
+      const historico = `Remarcado de ${dataAntiga} para ${formatDataHora(new Date(novaDataHora).toISOString())}.`;
+      const atualizado = await updateAgendamento(agendamento.id, {
+        data_hora: new Date(novaDataHora).toISOString(),
+        duracao_minutos: novaDuracao,
+        local: novoLocal.trim() || null,
+        status: "agendado",
+        observacoes: [agendamento.observacoes, historico].filter(Boolean).join("\n"),
+      });
+      setAgendamento(atualizado);
+      setRemarcarAberto(false);
+      setAviso("Atendimento remarcado.");
+    } catch {
+      setAviso("Não foi possível remarcar este atendimento.");
+    } finally {
+      setRemarcarSalvando(false);
     }
   }
 
@@ -385,11 +460,13 @@ export default function AgendamentoDetalhePage() {
             ) : null}
           </article>
 
-          {podeGerenciar && !encerrado ? (
+          {podeGerenciar ? (
             <article className="rounded-2xl border border-border bg-card p-5">
               <h2 className="text-xs font-black tracking-[0.14em] text-info">COMPARECIMENTO</h2>
               <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
-                Registre o que aconteceu depois do horário marcado.
+                {encerrado
+                  ? "Este atendimento está encerrado. Remarque para reativá-lo com data nova, ou corrija a situação manualmente."
+                  : "Registre o que aconteceu depois do horário marcado."}
               </p>
               <div className="mt-3 grid gap-2">
                 <button
@@ -411,14 +488,14 @@ export default function AgendamentoDetalhePage() {
                 <button
                   type="button"
                   disabled={salvando}
-                  onClick={() => void mudarStatus("remarcado")}
+                  onClick={abrirRemarcacao}
                   className="flex min-h-11 items-center justify-center gap-2 rounded-xl border border-warning/50 bg-warning/8 px-3 text-xs font-bold uppercase tracking-wider text-warning transition hover:bg-warning/15 disabled:opacity-40"
                 >
                   <CalendarClock className="h-4 w-4" /> Remarcar
                 </button>
                 <button
                   type="button"
-                  disabled={salvando}
+                  disabled={salvando || agendamento.status === "cancelado"}
                   onClick={() => void mudarStatus("cancelado")}
                   className="flex min-h-10 items-center justify-center gap-2 rounded-xl border border-border px-3 text-[11px] font-semibold text-muted-foreground transition hover:border-destructive/40 hover:text-destructive disabled:opacity-40"
                 >
@@ -429,6 +506,107 @@ export default function AgendamentoDetalhePage() {
           ) : null}
         </aside>
       </section>
+
+      {remarcarAberto ? (
+        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/75 p-4">
+          <div className="w-full max-w-md rounded-2xl border border-warning/35 bg-card p-5 shadow-2xl">
+            <div className="flex items-start gap-3">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-warning/10 text-warning">
+                <CalendarClock className="h-5 w-5" />
+              </span>
+              <div className="min-w-0">
+                <h2 className="text-lg font-bold">Remarcar atendimento</h2>
+                <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+                  Escolha o novo dia e horário de{" "}
+                  <strong className="text-foreground">{agendamento.pessoa_nome}</strong>.
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              <label className="sm:col-span-2">
+                <span className="mb-1.5 block text-xs font-semibold text-muted-foreground">
+                  Nova data e hora <strong className="text-destructive">*</strong>
+                </span>
+                <input
+                  type="datetime-local"
+                  value={novaDataHora}
+                  onChange={(evento) => setNovaDataHora(evento.target.value)}
+                  className="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm outline-none focus:border-warning/50"
+                />
+              </label>
+              <label>
+                <span className="mb-1.5 block text-xs font-semibold text-muted-foreground">
+                  Duração
+                </span>
+                <select
+                  value={novaDuracao}
+                  onChange={(evento) => setNovaDuracao(Number(evento.target.value))}
+                  className="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm outline-none focus:border-warning/50"
+                >
+                  {DURACOES_MINUTOS.map((minutos) => (
+                    <option key={minutos} value={minutos}>
+                      {minutos} minutos
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                <span className="mb-1.5 block text-xs font-semibold text-muted-foreground">
+                  Local / sala
+                </span>
+                <input
+                  value={novoLocal}
+                  onChange={(evento) => setNovoLocal(evento.target.value)}
+                  className="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm outline-none focus:border-warning/50"
+                />
+              </label>
+            </div>
+
+            {remarcarConflitos.length ? (
+              <div className="mt-4 rounded-xl border border-warning/40 bg-warning/8 p-3">
+                <p className="flex items-center gap-2 text-xs font-bold text-warning">
+                  <AlertTriangle className="h-3.5 w-3.5" /> Esse horário também tem gente marcada
+                </p>
+                <ul className="mt-1.5 space-y-1 text-[11px] text-muted-foreground">
+                  {remarcarConflitos.map((item) => (
+                    <li key={`${item.tipo}-${item.agendamento_id}`}>
+                      <strong className="text-foreground">{item.pessoa_nome}</strong> (
+                      {QUALIFICACAO_LABELS[item.qualificacao]})
+                      {item.tipo === "confronto" ? " — mesmo fato" : " — mesmo responsável"}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+
+            <p className="mt-4 rounded-xl border border-border bg-background/50 p-3 text-[11px] leading-relaxed text-muted-foreground">
+              O horário anterior ({formatDataHora(agendamento.data_hora)}) fica registrado nas
+              observações. A situação volta para "Agendado".
+            </p>
+
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setRemarcarAberto(false)}
+                disabled={remarcarSalvando}
+                className="rounded-lg border border-border px-4 py-2 text-sm font-semibold transition hover:bg-accent disabled:opacity-60"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={() => void confirmarRemarcacao()}
+                disabled={remarcarSalvando || !novaDataHora}
+                className="inline-flex items-center gap-2 rounded-lg border border-warning/60 bg-warning/10 px-4 py-2 text-sm font-semibold text-warning transition hover:bg-warning/20 disabled:opacity-50"
+              >
+                {remarcarSalvando ? <LoaderCircle className="h-4 w-4 animate-spin" /> : null}
+                {remarcarSalvando ? "Remarcando..." : "Confirmar nova data"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {confirmarExclusao ? (
         <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/75 p-4">
