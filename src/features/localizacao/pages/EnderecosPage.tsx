@@ -23,6 +23,7 @@ import {
   listEnderecos,
   listEnderecosPendentes,
   marcarBairroNaoIdentificado,
+  softDeleteEndereco,
 } from "@/lib/repositories/localizacaoRepository";
 import { MUNICIPIO_PADRAO, UF_PADRAO } from "../localizacaoConstants";
 import type { BairroOperacionalRecord, EnderecoRecord } from "../localizacaoTypes";
@@ -64,6 +65,8 @@ export default function EnderecosPage() {
   const [notes, setNotes] = useState("");
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [deletingAddress, setDeletingAddress] = useState<EnderecoRecord | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -162,6 +165,23 @@ export default function EnderecosPage() {
       setMessage("Não foi possível confirmar o bairro do endereço.");
     } finally {
       setClassificationSaving(false);
+    }
+  }
+
+  async function handleDeleteAddress() {
+    if (!deletingAddress) return;
+    setDeleting(true);
+    setMessage(null);
+    try {
+      await softDeleteEndereco(deletingAddress.id);
+      setAddresses((current) => current.filter((item) => item.id !== deletingAddress.id));
+      setDeletingAddress(null);
+      setMessage("Endereço excluído.");
+    } catch (error) {
+      console.error("[EnderecosPage] Falha ao excluir endereço", error);
+      setMessage("Não foi possível excluir este endereço.");
+    } finally {
+      setDeleting(false);
     }
   }
 
@@ -325,9 +345,18 @@ export default function EnderecosPage() {
             {addresses.map((address) => (
               <article
                 key={address.id}
-                className="rounded-xl border border-border bg-background p-4"
+                className="relative rounded-xl border border-border bg-background p-4"
               >
-                <div className="flex items-start gap-3">
+                <button
+                  type="button"
+                  onClick={() => setDeletingAddress(address)}
+                  aria-label="Excluir este endereço"
+                  title="Excluir este endereço"
+                  className="absolute right-3 top-3 flex h-7 w-7 items-center justify-center rounded-full border border-destructive/30 text-destructive/70 transition hover:border-destructive/60 hover:bg-destructive/10 hover:text-destructive"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+                <div className="flex items-start gap-3 pr-8">
                   <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-operational/30 bg-operational/10 text-operational">
                     <House className="h-5 w-5" />
                   </span>
@@ -660,6 +689,48 @@ export default function EnderecosPage() {
               <ShieldCheck className="h-5 w-5" />
               {classificationSaving ? "Confirmando..." : "Confirmar bairro"}
             </button>
+          </section>
+        </div>
+      ) : null}
+
+      {deletingAddress ? (
+        <div className="fixed inset-0 z-[75] flex items-center justify-center bg-background/90 p-4 backdrop-blur-sm">
+          <section className="w-full max-w-md rounded-2xl border border-destructive/35 bg-card p-5 shadow-[0_0_50px_color-mix(in_oklab,var(--destructive)_16%,transparent)]">
+            <div className="flex items-start gap-3">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-destructive/10 text-destructive">
+                <AlertTriangle className="h-5 w-5" />
+              </span>
+              <div>
+                <h2 className="text-lg font-black">Excluir endereço</h2>
+                <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+                  <strong className="text-foreground">
+                    {deletingAddress.logradouro},{" "}
+                    {deletingAddress.sem_numero ? "s/n" : (deletingAddress.numero ?? "s/n")}
+                  </strong>{" "}
+                  vai sair das listas e do mapa. Pessoas vinculadas a este endereço ficam sem
+                  endereço vinculado.
+                </p>
+              </div>
+            </div>
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setDeletingAddress(null)}
+                disabled={deleting}
+                className="rounded-lg border border-border px-4 py-2 text-sm font-semibold transition hover:bg-accent disabled:opacity-60"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={() => void handleDeleteAddress()}
+                disabled={deleting}
+                className="inline-flex items-center gap-2 rounded-lg bg-destructive px-4 py-2 text-sm font-semibold text-destructive-foreground transition hover:brightness-110 disabled:opacity-60"
+              >
+                {deleting ? <LoaderCircle className="h-4 w-4 animate-spin" /> : null}
+                {deleting ? "Excluindo..." : "Excluir endereço"}
+              </button>
+            </div>
           </section>
         </div>
       ) : null}

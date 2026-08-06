@@ -388,6 +388,15 @@ export async function createEndereco(payload: EnderecoPayload): Promise<Endereco
   return data as EnderecoRecord;
 }
 
+export async function softDeleteEndereco(id: string): Promise<void> {
+  const { error } = await supabase
+    .from("localizacao_enderecos")
+    .update({ deleted_at: new Date().toISOString() })
+    .eq("id", id)
+    .is("deleted_at", null);
+  if (error) fail("Falha ao excluir endereço", error);
+}
+
 export async function confirmarBairroEndereco(
   enderecoId: string,
   bairro: Pick<BairroOperacionalRecord, "id" | "nome">,
