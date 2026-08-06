@@ -3,7 +3,6 @@ import type { LatLngExpression, LayerGroup, Map as LeafletMap } from "leaflet";
 import "leaflet/dist/leaflet.css";
 import {
   Building2,
-  ClipboardList,
   House,
   LocateFixed,
   LoaderCircle,
@@ -18,6 +17,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { DEFAULT_ROUTE_ORIGIN } from "@/lib/mapLinks";
 import {
   getBairroPainel,
+  getPessoaDetalhes,
   getPessoaPhotoSignedUrl,
   listBairrosOperacionais,
   listMapaEnderecos,
@@ -32,11 +32,10 @@ import {
 import type {
   BairroOperacionalRecord,
   BairroPainelRecord,
-  DiligenciaListRecord,
   MapaEnderecoRecord,
   MapaPessoaRecord,
+  PessoaDetalheRecord,
 } from "../localizacaoTypes";
-import { DiligenciaStatusBadge } from "./DiligenciaStatusBadge";
 
 const ITABELA_CENTER: LatLngExpression = [-16.57257, -39.56629];
 const OSM_TILE_URL = "https://tile.openstreetmap.org/{z}/{x}/{y}.png";
@@ -334,20 +333,20 @@ function sameScope(previous: TerritoryScope | null, next: TerritoryScope) {
 }
 
 export function MapaCanvas({
-  diligencias,
-  selectedId,
-  onSelect,
   routeVisible: controlledRouteVisible,
   onRouteVisibleChange,
   showRouteToggle = true,
+  onSelectedPersonChange,
+  onRouteChange,
   className = "",
 }: {
-  diligencias: DiligenciaListRecord[];
-  selectedId?: string | null;
-  onSelect?: (diligencia: DiligenciaListRecord) => void;
   routeVisible?: boolean;
   onRouteVisibleChange?: (visible: boolean) => void;
   showRouteToggle?: boolean;
+  /** Repassa a ficha completa da pessoa clicada no mapa para o painel ao lado. */
+  onSelectedPersonChange?: (person: PessoaDetalheRecord | null) => void;
+  /** Repassa a rota calculada (e seu estado) para o painel ao lado exibir a distância/tempo. */
+  onRouteChange?: (route: RoadRoute | null, state: "idle" | "loading" | "ready" | "error") => void;
   className?: string;
 }) {
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -355,7 +354,7 @@ export function MapaCanvas({
   const mapRef = useRef<LeafletMap | null>(null);
   const neighborhoodLayerRef = useRef<LayerGroup | null>(null);
   const addressLayerRef = useRef<LayerGroup | null>(null);
-  const diligenceLayerRef = useRef<LayerGroup | null>(null);
+  const centralLayerRef = useRef<LayerGroup | null>(null);
   const routeLayerRef = useRef<LayerGroup | null>(null);
   const addressesRef = useRef<MapaEnderecoRecord[]>([]);
   const selectionLockedRef = useRef(false);
@@ -365,6 +364,17 @@ export function MapaCanvas({
   /** Rótulos de bairro atualmente desenhados, para reavaliar colisão a cada zoom/pan. */
   const bairroLabelEntriesRef = useRef<Array<{ el: HTMLElement; priority: number }>>([]);
   const resolveBairroLabelsRef = useRef<() => void>(() => undefined);
+  // Refs em vez de usar as props direto dentro dos handlers do Leaflet: essas
+  // funções são recriadas a cada render do componente pai, e os handlers são
+  // montados de forma imperativa (não reagem a closures desatualizadas sozinhos).
+  const onSelectedPersonChangeRef = useRef<
+    ((person: PessoaDetalheRecord | null) => void) | undefined
+  >(onSelectedPersonChange);
+  const onRouteChangeRef = useRef<
+    ((route: RoadRoute | null, state: "idle" | "loading" | "ready" | "error") => void) | undefined
+  >(onRouteChange);
+  /** Descarta a resposta de uma ficha se outra pessoa já foi clicada depois. */
+  const personSelectionTokenRef = useRef(0);
 
   const [mapReady, setMapReady] = useState(false);
   const [addresses, setAddresses] = useState<MapaEnderecoRecord[]>([]);
@@ -388,6 +398,10 @@ export function MapaCanvas({
   const [internalRouteVisible, setInternalRouteVisible] = useState(true);
   const [route, setRoute] = useState<RoadRoute | null>(null);
   const [routeState, setRouteState] = useState<"idle" | "loading" | "ready" | "error">("idle");
+  /** Ponto de destino da rota: o endereço da pessoa clicada no mapa. */
+  const [routeTarget, setRouteTarget] = useState<{ latitude: number; longitude: number } | null>(
+    null,
+  );
 
   const routeVisible = controlledRouteVisible ?? internalRouteVisible;
   const neighborhoods = useMemo(
@@ -410,7 +424,6 @@ export function MapaCanvas({
     const ids = new Set(scope.addressIds);
     return addresses.filter((item) => ids.has(item.id));
   }, [addresses, scope]);
-  const selectedDiligence = diligencias.find((item) => item.id === selectedId) ?? null;
 
   useEffect(() => {
     let cancelled = false;
@@ -439,6 +452,11 @@ export function MapaCanvas({
   useEffect(() => {
     addressesRef.current = addresses;
   }, [addresses]);
+
+  useEffect(() => {
+    onSelectedPersonChangeRef.current = onSelectedPersonChange;
+    onRouteChangeRef.current = onRouteChange;
+  }, [onSelectedPersonChange, onRouteChange]);
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
@@ -470,7 +488,7 @@ export function MapaCanvas({
 
       neighborhoodLayerRef.current = L.layerGroup().addTo(map);
       addressLayerRef.current = L.layerGroup();
-      diligenceLayerRef.current = L.layerGroup().addTo(map);
+      centralLayerRef.current = L.layerGroup().addTo(map);
       routeLayerRef.current = L.layerGroup().addTo(map);
       mapRef.current = map;
       setMapReady(true);
@@ -485,6 +503,8 @@ export function MapaCanvas({
       map.on("click", () => {
         selectionLockedRef.current = false;
         setDirectoryOpen(false);
+        setRouteTarget(null);
+        onSelectedPersonChangeRef.current?.(null);
         refreshViewportRef.current();
       });
 
@@ -499,7 +519,7 @@ export function MapaCanvas({
       mapRef.current = null;
       neighborhoodLayerRef.current = null;
       addressLayerRef.current = null;
-      diligenceLayerRef.current = null;
+      centralLayerRef.current = null;
       routeLayerRef.current = null;
     };
   }, []);
@@ -650,6 +670,23 @@ export function MapaCanvas({
       marker.on("click", () => {
         selectionLockedRef.current = true;
         setDirectoryOpen(false);
+
+        if (morador) {
+          // Foto de perfil clicada: abre a ficha da pessoa no painel ao lado e
+          // traça a rota até o endereço dela — não o painel territorial.
+          setRouteTarget({ latitude: address.latitude, longitude: address.longitude });
+          const token = ++personSelectionTokenRef.current;
+          void getPessoaDetalhes(morador.id)
+            .then((detail) => {
+              if (personSelectionTokenRef.current !== token) return;
+              onSelectedPersonChangeRef.current?.(detail);
+            })
+            .catch((cause) => {
+              console.error("[MapaCanvas] Falha ao carregar ficha da pessoa", cause);
+            });
+          return;
+        }
+
         setScope({
           kind: "endereco",
           label: formatAddress(address),
@@ -680,7 +717,7 @@ export function MapaCanvas({
 
   useEffect(() => {
     const L = leafletRef.current;
-    const layer = diligenceLayerRef.current;
+    const layer = centralLayerRef.current;
     if (!mapReady || !L || !layer) return;
     layer.clearLayers();
 
@@ -707,39 +744,7 @@ export function MapaCanvas({
     });
     central.addTo(layer);
     resolveBairroLabelsRef.current();
-
-    diligencias.forEach((diligence, index) => {
-      if (
-        typeof diligence.latitude !== "number" ||
-        typeof diligence.longitude !== "number" ||
-        !Number.isFinite(diligence.latitude) ||
-        !Number.isFinite(diligence.longitude)
-      ) {
-        return;
-      }
-      const selected = diligence.id === selectedId;
-      const marker = L.marker([diligence.latitude, diligence.longitude], {
-        icon: L.divIcon({
-          className: `sipi-diligence-marker${selected ? " is-selected" : ""}`,
-          html: `<span>${index + 1}</span>`,
-          iconSize: [38, 38],
-          iconAnchor: [19, 19],
-        }),
-        keyboard: true,
-        title: diligence.codigo,
-        zIndexOffset: selected ? 500 : 300,
-      });
-      marker.bindTooltip(createSafeTooltip(diligence.codigo, diligence.destino), {
-        direction: "top",
-        offset: [0, -17],
-      });
-      marker.on("click", () => {
-        onSelect?.(diligence);
-        mapRef.current?.flyTo([diligence.latitude!, diligence.longitude!], 17);
-      });
-      marker.addTo(layer);
-    });
-  }, [diligencias, mapReady, onSelect, selectedId]);
+  }, [mapReady]);
 
   useEffect(() => {
     if (scope?.kind !== "bairro" || !scope.bairroId) {
@@ -863,12 +868,7 @@ export function MapaCanvas({
   }, [mappedAddresses]);
 
   useEffect(() => {
-    if (
-      !routeVisible ||
-      !selectedDiligence ||
-      typeof selectedDiligence.latitude !== "number" ||
-      typeof selectedDiligence.longitude !== "number"
-    ) {
+    if (!routeVisible || !routeTarget) {
       setRoute(null);
       setRouteState("idle");
       return;
@@ -880,7 +880,7 @@ export function MapaCanvas({
         latitude: DEFAULT_ROUTE_ORIGIN.latitude!,
         longitude: DEFAULT_ROUTE_ORIGIN.longitude!,
       },
-      { latitude: selectedDiligence.latitude, longitude: selectedDiligence.longitude },
+      routeTarget,
       controller.signal,
     )
       .then((result) => {
@@ -895,7 +895,11 @@ export function MapaCanvas({
         setRouteState("error");
       });
     return () => controller.abort();
-  }, [routeVisible, selectedDiligence]);
+  }, [routeVisible, routeTarget]);
+
+  useEffect(() => {
+    onRouteChangeRef.current?.(route, routeState);
+  }, [route, routeState]);
 
   useEffect(() => {
     const L = leafletRef.current;
@@ -1061,8 +1065,6 @@ export function MapaCanvas({
                     total={neighborhoodPanel?.enderecos_total}
                   />
                 ) : null}
-                {neighborhoodPanel ? <NeighborhoodDiligences panel={neighborhoodPanel} /> : null}
-
                 <section>
                   <div className="mb-2 flex items-center justify-between gap-2 px-1">
                     <strong className="text-[9px] font-black uppercase tracking-[0.16em] text-operational">
@@ -1168,16 +1170,10 @@ function TerritoryStats({ panel }: { panel: BairroPainelRecord }) {
       detail: "vinculadas",
       icon: UsersRound,
     },
-    {
-      label: "Diligências",
-      value: panel.diligencias_ativas,
-      detail: "ativas",
-      icon: ClipboardList,
-    },
   ];
 
   return (
-    <section className="grid grid-cols-3 gap-1.5" aria-label="Resumo territorial do bairro">
+    <section className="grid grid-cols-2 gap-1.5" aria-label="Resumo territorial do bairro">
       {stats.map(({ label, value, detail, icon: Icon }) => (
         <article
           key={label}
@@ -1191,48 +1187,6 @@ function TerritoryStats({ panel }: { panel: BairroPainelRecord }) {
           <span className="mt-0.5 block truncate text-[8px] text-muted-foreground">{detail}</span>
         </article>
       ))}
-    </section>
-  );
-}
-
-function NeighborhoodDiligences({ panel }: { panel: BairroPainelRecord }) {
-  return (
-    <section className="rounded-xl border border-border bg-card/60 p-3">
-      <div className="mb-2 flex items-center justify-between gap-2">
-        <strong className="text-[9px] font-black uppercase tracking-[0.16em] text-operational">
-          Diligências ativas
-        </strong>
-        <span className="text-[9px] text-muted-foreground">{panel.diligencias_ativas}</span>
-      </div>
-      {panel.diligencias.length ? (
-        <div className="space-y-1.5">
-          {panel.diligencias.map((diligence) => (
-            <Link
-              key={diligence.id}
-              to="/localizacao/diligencias/$diligenciaId"
-              params={{ diligenciaId: diligence.id }}
-              className="flex items-center gap-2 rounded-lg border border-border/70 bg-background/70 px-2.5 py-2 transition hover:border-operational/40"
-            >
-              <ClipboardList className="h-3.5 w-3.5 shrink-0 text-operational" />
-              <span className="min-w-0 flex-1">
-                <strong className="block truncate font-mono text-[9px]">{diligence.codigo}</strong>
-                <span className="block truncate text-[9px] text-muted-foreground">
-                  {diligence.destino}
-                </span>
-              </span>
-              <DiligenciaStatusBadge status={diligence.status} />
-            </Link>
-          ))}
-          {panel.diligencias_ativas > panel.diligencias.length ? (
-            <span className="block px-2 pt-1 text-[9px] text-muted-foreground">
-              + {panel.diligencias_ativas - panel.diligencias.length} diligência(s) na lista
-              completa.
-            </span>
-          ) : null}
-        </div>
-      ) : (
-        <p className="text-[10px] text-muted-foreground">Nenhuma operação ativa neste bairro.</p>
-      )}
     </section>
   );
 }

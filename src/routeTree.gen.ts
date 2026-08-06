@@ -31,13 +31,8 @@ import { Route as AdminUsuariosRouteImport } from './routes/admin.usuarios'
 import { Route as AlertasModuloRouteImport } from './routes/alertas.$modulo'
 import { Route as InqueritosCaseIdRouteImport } from './routes/inqueritos.$caseId'
 import { Route as LocalizacaoIndexRouteImport } from './routes/localizacao.index'
-import { Route as LocalizacaoChegadasRouteImport } from './routes/localizacao.chegadas'
-import { Route as LocalizacaoDiligenciasRouteImport } from './routes/localizacao.diligencias'
 import { Route as LocalizacaoEnderecosRouteImport } from './routes/localizacao.enderecos'
-import { Route as LocalizacaoMapaRouteImport } from './routes/localizacao.mapa'
 import { Route as LocalizacaoPessoasRouteImport } from './routes/localizacao.pessoas'
-import { Route as LocalizacaoRegistrosRouteImport } from './routes/localizacao.registros'
-import { Route as LocalizacaoRelatoriosRouteImport } from './routes/localizacao.relatorios'
 import { Route as LocalizacaoRotasRouteImport } from './routes/localizacao.rotas'
 import { Route as MockupsLocalizacaoOperacionalRouteImport } from './routes/mockups.localizacao-operacional'
 import { Route as ObjetosIndexRouteImport } from './routes/objetos.index'
@@ -62,15 +57,9 @@ import { Route as VeiculosRelatoriosRouteImport } from './routes/veiculos.relato
 import { Route as VeiculosTodosRouteImport } from './routes/veiculos.todos'
 import { Route as AdminUsuariosUserIdRouteImport } from './routes/admin.usuarios.$userId'
 import { Route as InqueritosCaseIdEditarRouteImport } from './routes/inqueritos.$caseId.editar'
-import { Route as LocalizacaoDiligenciasIndexRouteImport } from './routes/localizacao.diligencias.index'
-import { Route as LocalizacaoDiligenciasDiligenciaIdRouteImport } from './routes/localizacao.diligencias.$diligenciaId'
-import { Route as LocalizacaoDiligenciasNovaRouteImport } from './routes/localizacao.diligencias.nova'
 import { Route as ObjetosObjectIdEditarRouteImport } from './routes/objetos.$objectId.editar'
 import { Route as RepresentacoesRepresentacaoIdEditarRouteImport } from './routes/representacoes.$representacaoId.editar'
 import { Route as VeiculosVehicleIdEditarRouteImport } from './routes/veiculos.$vehicleId.editar'
-import { Route as LocalizacaoDiligenciasDiligenciaIdIndexRouteImport } from './routes/localizacao.diligencias.$diligenciaId.index'
-import { Route as LocalizacaoDiligenciasDiligenciaIdCampoRouteImport } from './routes/localizacao.diligencias.$diligenciaId.campo'
-import { Route as LocalizacaoDiligenciasDiligenciaIdEditarRouteImport } from './routes/localizacao.diligencias.$diligenciaId.editar'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -182,39 +171,14 @@ const LocalizacaoIndexRoute = LocalizacaoIndexRouteImport.update({
   path: '/',
   getParentRoute: () => LocalizacaoRoute,
 } as any)
-const LocalizacaoChegadasRoute = LocalizacaoChegadasRouteImport.update({
-  id: '/chegadas',
-  path: '/chegadas',
-  getParentRoute: () => LocalizacaoRoute,
-} as any)
-const LocalizacaoDiligenciasRoute = LocalizacaoDiligenciasRouteImport.update({
-  id: '/diligencias',
-  path: '/diligencias',
-  getParentRoute: () => LocalizacaoRoute,
-} as any)
 const LocalizacaoEnderecosRoute = LocalizacaoEnderecosRouteImport.update({
   id: '/enderecos',
   path: '/enderecos',
   getParentRoute: () => LocalizacaoRoute,
 } as any)
-const LocalizacaoMapaRoute = LocalizacaoMapaRouteImport.update({
-  id: '/mapa',
-  path: '/mapa',
-  getParentRoute: () => LocalizacaoRoute,
-} as any)
 const LocalizacaoPessoasRoute = LocalizacaoPessoasRouteImport.update({
   id: '/pessoas',
   path: '/pessoas',
-  getParentRoute: () => LocalizacaoRoute,
-} as any)
-const LocalizacaoRegistrosRoute = LocalizacaoRegistrosRouteImport.update({
-  id: '/registros',
-  path: '/registros',
-  getParentRoute: () => LocalizacaoRoute,
-} as any)
-const LocalizacaoRelatoriosRoute = LocalizacaoRelatoriosRouteImport.update({
-  id: '/relatorios',
-  path: '/relatorios',
   getParentRoute: () => LocalizacaoRoute,
 } as any)
 const LocalizacaoRotasRoute = LocalizacaoRotasRouteImport.update({
@@ -339,24 +303,6 @@ const InqueritosCaseIdEditarRoute = InqueritosCaseIdEditarRouteImport.update({
   path: '/editar',
   getParentRoute: () => InqueritosCaseIdRoute,
 } as any)
-const LocalizacaoDiligenciasIndexRoute =
-  LocalizacaoDiligenciasIndexRouteImport.update({
-    id: '/',
-    path: '/',
-    getParentRoute: () => LocalizacaoDiligenciasRoute,
-  } as any)
-const LocalizacaoDiligenciasDiligenciaIdRoute =
-  LocalizacaoDiligenciasDiligenciaIdRouteImport.update({
-    id: '/$diligenciaId',
-    path: '/$diligenciaId',
-    getParentRoute: () => LocalizacaoDiligenciasRoute,
-  } as any)
-const LocalizacaoDiligenciasNovaRoute =
-  LocalizacaoDiligenciasNovaRouteImport.update({
-    id: '/nova',
-    path: '/nova',
-    getParentRoute: () => LocalizacaoDiligenciasRoute,
-  } as any)
 const ObjetosObjectIdEditarRoute = ObjetosObjectIdEditarRouteImport.update({
   id: '/editar',
   path: '/editar',
@@ -373,24 +319,6 @@ const VeiculosVehicleIdEditarRoute = VeiculosVehicleIdEditarRouteImport.update({
   path: '/editar',
   getParentRoute: () => VeiculosVehicleIdRoute,
 } as any)
-const LocalizacaoDiligenciasDiligenciaIdIndexRoute =
-  LocalizacaoDiligenciasDiligenciaIdIndexRouteImport.update({
-    id: '/',
-    path: '/',
-    getParentRoute: () => LocalizacaoDiligenciasDiligenciaIdRoute,
-  } as any)
-const LocalizacaoDiligenciasDiligenciaIdCampoRoute =
-  LocalizacaoDiligenciasDiligenciaIdCampoRouteImport.update({
-    id: '/campo',
-    path: '/campo',
-    getParentRoute: () => LocalizacaoDiligenciasDiligenciaIdRoute,
-  } as any)
-const LocalizacaoDiligenciasDiligenciaIdEditarRoute =
-  LocalizacaoDiligenciasDiligenciaIdEditarRouteImport.update({
-    id: '/editar',
-    path: '/editar',
-    getParentRoute: () => LocalizacaoDiligenciasDiligenciaIdRoute,
-  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -414,13 +342,8 @@ export interface FileRoutesByFullPath {
   '/admin/usuarios': typeof AdminUsuariosRouteWithChildren
   '/alertas/$modulo': typeof AlertasModuloRoute
   '/inqueritos/$caseId': typeof InqueritosCaseIdRouteWithChildren
-  '/localizacao/chegadas': typeof LocalizacaoChegadasRoute
-  '/localizacao/diligencias': typeof LocalizacaoDiligenciasRouteWithChildren
   '/localizacao/enderecos': typeof LocalizacaoEnderecosRoute
-  '/localizacao/mapa': typeof LocalizacaoMapaRoute
   '/localizacao/pessoas': typeof LocalizacaoPessoasRoute
-  '/localizacao/registros': typeof LocalizacaoRegistrosRoute
-  '/localizacao/relatorios': typeof LocalizacaoRelatoriosRoute
   '/localizacao/rotas': typeof LocalizacaoRotasRoute
   '/mockups/localizacao-operacional': typeof MockupsLocalizacaoOperacionalRoute
   '/objetos/$objectId': typeof ObjetosObjectIdRouteWithChildren
@@ -446,15 +369,9 @@ export interface FileRoutesByFullPath {
   '/veiculos/': typeof VeiculosIndexRoute
   '/admin/usuarios/$userId': typeof AdminUsuariosUserIdRoute
   '/inqueritos/$caseId/editar': typeof InqueritosCaseIdEditarRoute
-  '/localizacao/diligencias/$diligenciaId': typeof LocalizacaoDiligenciasDiligenciaIdRouteWithChildren
-  '/localizacao/diligencias/nova': typeof LocalizacaoDiligenciasNovaRoute
   '/objetos/$objectId/editar': typeof ObjetosObjectIdEditarRoute
   '/representacoes/$representacaoId/editar': typeof RepresentacoesRepresentacaoIdEditarRoute
   '/veiculos/$vehicleId/editar': typeof VeiculosVehicleIdEditarRoute
-  '/localizacao/diligencias/': typeof LocalizacaoDiligenciasIndexRoute
-  '/localizacao/diligencias/$diligenciaId/campo': typeof LocalizacaoDiligenciasDiligenciaIdCampoRoute
-  '/localizacao/diligencias/$diligenciaId/editar': typeof LocalizacaoDiligenciasDiligenciaIdEditarRoute
-  '/localizacao/diligencias/$diligenciaId/': typeof LocalizacaoDiligenciasDiligenciaIdIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -475,12 +392,8 @@ export interface FileRoutesByTo {
   '/admin/usuarios': typeof AdminUsuariosRouteWithChildren
   '/alertas/$modulo': typeof AlertasModuloRoute
   '/inqueritos/$caseId': typeof InqueritosCaseIdRouteWithChildren
-  '/localizacao/chegadas': typeof LocalizacaoChegadasRoute
   '/localizacao/enderecos': typeof LocalizacaoEnderecosRoute
-  '/localizacao/mapa': typeof LocalizacaoMapaRoute
   '/localizacao/pessoas': typeof LocalizacaoPessoasRoute
-  '/localizacao/registros': typeof LocalizacaoRegistrosRoute
-  '/localizacao/relatorios': typeof LocalizacaoRelatoriosRoute
   '/localizacao/rotas': typeof LocalizacaoRotasRoute
   '/mockups/localizacao-operacional': typeof MockupsLocalizacaoOperacionalRoute
   '/objetos/$objectId': typeof ObjetosObjectIdRouteWithChildren
@@ -506,14 +419,9 @@ export interface FileRoutesByTo {
   '/veiculos': typeof VeiculosIndexRoute
   '/admin/usuarios/$userId': typeof AdminUsuariosUserIdRoute
   '/inqueritos/$caseId/editar': typeof InqueritosCaseIdEditarRoute
-  '/localizacao/diligencias/nova': typeof LocalizacaoDiligenciasNovaRoute
   '/objetos/$objectId/editar': typeof ObjetosObjectIdEditarRoute
   '/representacoes/$representacaoId/editar': typeof RepresentacoesRepresentacaoIdEditarRoute
   '/veiculos/$vehicleId/editar': typeof VeiculosVehicleIdEditarRoute
-  '/localizacao/diligencias': typeof LocalizacaoDiligenciasIndexRoute
-  '/localizacao/diligencias/$diligenciaId/campo': typeof LocalizacaoDiligenciasDiligenciaIdCampoRoute
-  '/localizacao/diligencias/$diligenciaId/editar': typeof LocalizacaoDiligenciasDiligenciaIdEditarRoute
-  '/localizacao/diligencias/$diligenciaId': typeof LocalizacaoDiligenciasDiligenciaIdIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -538,13 +446,8 @@ export interface FileRoutesById {
   '/admin/usuarios': typeof AdminUsuariosRouteWithChildren
   '/alertas/$modulo': typeof AlertasModuloRoute
   '/inqueritos/$caseId': typeof InqueritosCaseIdRouteWithChildren
-  '/localizacao/chegadas': typeof LocalizacaoChegadasRoute
-  '/localizacao/diligencias': typeof LocalizacaoDiligenciasRouteWithChildren
   '/localizacao/enderecos': typeof LocalizacaoEnderecosRoute
-  '/localizacao/mapa': typeof LocalizacaoMapaRoute
   '/localizacao/pessoas': typeof LocalizacaoPessoasRoute
-  '/localizacao/registros': typeof LocalizacaoRegistrosRoute
-  '/localizacao/relatorios': typeof LocalizacaoRelatoriosRoute
   '/localizacao/rotas': typeof LocalizacaoRotasRoute
   '/mockups/localizacao-operacional': typeof MockupsLocalizacaoOperacionalRoute
   '/objetos/$objectId': typeof ObjetosObjectIdRouteWithChildren
@@ -570,15 +473,9 @@ export interface FileRoutesById {
   '/veiculos/': typeof VeiculosIndexRoute
   '/admin/usuarios/$userId': typeof AdminUsuariosUserIdRoute
   '/inqueritos/$caseId/editar': typeof InqueritosCaseIdEditarRoute
-  '/localizacao/diligencias/$diligenciaId': typeof LocalizacaoDiligenciasDiligenciaIdRouteWithChildren
-  '/localizacao/diligencias/nova': typeof LocalizacaoDiligenciasNovaRoute
   '/objetos/$objectId/editar': typeof ObjetosObjectIdEditarRoute
   '/representacoes/$representacaoId/editar': typeof RepresentacoesRepresentacaoIdEditarRoute
   '/veiculos/$vehicleId/editar': typeof VeiculosVehicleIdEditarRoute
-  '/localizacao/diligencias/': typeof LocalizacaoDiligenciasIndexRoute
-  '/localizacao/diligencias/$diligenciaId/campo': typeof LocalizacaoDiligenciasDiligenciaIdCampoRoute
-  '/localizacao/diligencias/$diligenciaId/editar': typeof LocalizacaoDiligenciasDiligenciaIdEditarRoute
-  '/localizacao/diligencias/$diligenciaId/': typeof LocalizacaoDiligenciasDiligenciaIdIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -604,13 +501,8 @@ export interface FileRouteTypes {
     | '/admin/usuarios'
     | '/alertas/$modulo'
     | '/inqueritos/$caseId'
-    | '/localizacao/chegadas'
-    | '/localizacao/diligencias'
     | '/localizacao/enderecos'
-    | '/localizacao/mapa'
     | '/localizacao/pessoas'
-    | '/localizacao/registros'
-    | '/localizacao/relatorios'
     | '/localizacao/rotas'
     | '/mockups/localizacao-operacional'
     | '/objetos/$objectId'
@@ -636,15 +528,9 @@ export interface FileRouteTypes {
     | '/veiculos/'
     | '/admin/usuarios/$userId'
     | '/inqueritos/$caseId/editar'
-    | '/localizacao/diligencias/$diligenciaId'
-    | '/localizacao/diligencias/nova'
     | '/objetos/$objectId/editar'
     | '/representacoes/$representacaoId/editar'
     | '/veiculos/$vehicleId/editar'
-    | '/localizacao/diligencias/'
-    | '/localizacao/diligencias/$diligenciaId/campo'
-    | '/localizacao/diligencias/$diligenciaId/editar'
-    | '/localizacao/diligencias/$diligenciaId/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -665,12 +551,8 @@ export interface FileRouteTypes {
     | '/admin/usuarios'
     | '/alertas/$modulo'
     | '/inqueritos/$caseId'
-    | '/localizacao/chegadas'
     | '/localizacao/enderecos'
-    | '/localizacao/mapa'
     | '/localizacao/pessoas'
-    | '/localizacao/registros'
-    | '/localizacao/relatorios'
     | '/localizacao/rotas'
     | '/mockups/localizacao-operacional'
     | '/objetos/$objectId'
@@ -696,14 +578,9 @@ export interface FileRouteTypes {
     | '/veiculos'
     | '/admin/usuarios/$userId'
     | '/inqueritos/$caseId/editar'
-    | '/localizacao/diligencias/nova'
     | '/objetos/$objectId/editar'
     | '/representacoes/$representacaoId/editar'
     | '/veiculos/$vehicleId/editar'
-    | '/localizacao/diligencias'
-    | '/localizacao/diligencias/$diligenciaId/campo'
-    | '/localizacao/diligencias/$diligenciaId/editar'
-    | '/localizacao/diligencias/$diligenciaId'
   id:
     | '__root__'
     | '/'
@@ -727,13 +604,8 @@ export interface FileRouteTypes {
     | '/admin/usuarios'
     | '/alertas/$modulo'
     | '/inqueritos/$caseId'
-    | '/localizacao/chegadas'
-    | '/localizacao/diligencias'
     | '/localizacao/enderecos'
-    | '/localizacao/mapa'
     | '/localizacao/pessoas'
-    | '/localizacao/registros'
-    | '/localizacao/relatorios'
     | '/localizacao/rotas'
     | '/mockups/localizacao-operacional'
     | '/objetos/$objectId'
@@ -759,15 +631,9 @@ export interface FileRouteTypes {
     | '/veiculos/'
     | '/admin/usuarios/$userId'
     | '/inqueritos/$caseId/editar'
-    | '/localizacao/diligencias/$diligenciaId'
-    | '/localizacao/diligencias/nova'
     | '/objetos/$objectId/editar'
     | '/representacoes/$representacaoId/editar'
     | '/veiculos/$vehicleId/editar'
-    | '/localizacao/diligencias/'
-    | '/localizacao/diligencias/$diligenciaId/campo'
-    | '/localizacao/diligencias/$diligenciaId/editar'
-    | '/localizacao/diligencias/$diligenciaId/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -949,20 +815,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LocalizacaoIndexRouteImport
       parentRoute: typeof LocalizacaoRoute
     }
-    '/localizacao/chegadas': {
-      id: '/localizacao/chegadas'
-      path: '/chegadas'
-      fullPath: '/localizacao/chegadas'
-      preLoaderRoute: typeof LocalizacaoChegadasRouteImport
-      parentRoute: typeof LocalizacaoRoute
-    }
-    '/localizacao/diligencias': {
-      id: '/localizacao/diligencias'
-      path: '/diligencias'
-      fullPath: '/localizacao/diligencias'
-      preLoaderRoute: typeof LocalizacaoDiligenciasRouteImport
-      parentRoute: typeof LocalizacaoRoute
-    }
     '/localizacao/enderecos': {
       id: '/localizacao/enderecos'
       path: '/enderecos'
@@ -970,32 +822,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LocalizacaoEnderecosRouteImport
       parentRoute: typeof LocalizacaoRoute
     }
-    '/localizacao/mapa': {
-      id: '/localizacao/mapa'
-      path: '/mapa'
-      fullPath: '/localizacao/mapa'
-      preLoaderRoute: typeof LocalizacaoMapaRouteImport
-      parentRoute: typeof LocalizacaoRoute
-    }
     '/localizacao/pessoas': {
       id: '/localizacao/pessoas'
       path: '/pessoas'
       fullPath: '/localizacao/pessoas'
       preLoaderRoute: typeof LocalizacaoPessoasRouteImport
-      parentRoute: typeof LocalizacaoRoute
-    }
-    '/localizacao/registros': {
-      id: '/localizacao/registros'
-      path: '/registros'
-      fullPath: '/localizacao/registros'
-      preLoaderRoute: typeof LocalizacaoRegistrosRouteImport
-      parentRoute: typeof LocalizacaoRoute
-    }
-    '/localizacao/relatorios': {
-      id: '/localizacao/relatorios'
-      path: '/relatorios'
-      fullPath: '/localizacao/relatorios'
-      preLoaderRoute: typeof LocalizacaoRelatoriosRouteImport
       parentRoute: typeof LocalizacaoRoute
     }
     '/localizacao/rotas': {
@@ -1166,27 +997,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof InqueritosCaseIdEditarRouteImport
       parentRoute: typeof InqueritosCaseIdRoute
     }
-    '/localizacao/diligencias/': {
-      id: '/localizacao/diligencias/'
-      path: '/'
-      fullPath: '/localizacao/diligencias/'
-      preLoaderRoute: typeof LocalizacaoDiligenciasIndexRouteImport
-      parentRoute: typeof LocalizacaoDiligenciasRoute
-    }
-    '/localizacao/diligencias/$diligenciaId': {
-      id: '/localizacao/diligencias/$diligenciaId'
-      path: '/$diligenciaId'
-      fullPath: '/localizacao/diligencias/$diligenciaId'
-      preLoaderRoute: typeof LocalizacaoDiligenciasDiligenciaIdRouteImport
-      parentRoute: typeof LocalizacaoDiligenciasRoute
-    }
-    '/localizacao/diligencias/nova': {
-      id: '/localizacao/diligencias/nova'
-      path: '/nova'
-      fullPath: '/localizacao/diligencias/nova'
-      preLoaderRoute: typeof LocalizacaoDiligenciasNovaRouteImport
-      parentRoute: typeof LocalizacaoDiligenciasRoute
-    }
     '/objetos/$objectId/editar': {
       id: '/objetos/$objectId/editar'
       path: '/editar'
@@ -1207,27 +1017,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/veiculos/$vehicleId/editar'
       preLoaderRoute: typeof VeiculosVehicleIdEditarRouteImport
       parentRoute: typeof VeiculosVehicleIdRoute
-    }
-    '/localizacao/diligencias/$diligenciaId/': {
-      id: '/localizacao/diligencias/$diligenciaId/'
-      path: '/'
-      fullPath: '/localizacao/diligencias/$diligenciaId/'
-      preLoaderRoute: typeof LocalizacaoDiligenciasDiligenciaIdIndexRouteImport
-      parentRoute: typeof LocalizacaoDiligenciasDiligenciaIdRoute
-    }
-    '/localizacao/diligencias/$diligenciaId/campo': {
-      id: '/localizacao/diligencias/$diligenciaId/campo'
-      path: '/campo'
-      fullPath: '/localizacao/diligencias/$diligenciaId/campo'
-      preLoaderRoute: typeof LocalizacaoDiligenciasDiligenciaIdCampoRouteImport
-      parentRoute: typeof LocalizacaoDiligenciasDiligenciaIdRoute
-    }
-    '/localizacao/diligencias/$diligenciaId/editar': {
-      id: '/localizacao/diligencias/$diligenciaId/editar'
-      path: '/editar'
-      fullPath: '/localizacao/diligencias/$diligenciaId/editar'
-      preLoaderRoute: typeof LocalizacaoDiligenciasDiligenciaIdEditarRouteImport
-      parentRoute: typeof LocalizacaoDiligenciasDiligenciaIdRoute
     }
   }
 }
@@ -1266,66 +1055,16 @@ const InqueritosRouteWithChildren = InqueritosRoute._addFileChildren(
   InqueritosRouteChildren,
 )
 
-interface LocalizacaoDiligenciasDiligenciaIdRouteChildren {
-  LocalizacaoDiligenciasDiligenciaIdCampoRoute: typeof LocalizacaoDiligenciasDiligenciaIdCampoRoute
-  LocalizacaoDiligenciasDiligenciaIdEditarRoute: typeof LocalizacaoDiligenciasDiligenciaIdEditarRoute
-  LocalizacaoDiligenciasDiligenciaIdIndexRoute: typeof LocalizacaoDiligenciasDiligenciaIdIndexRoute
-}
-
-const LocalizacaoDiligenciasDiligenciaIdRouteChildren: LocalizacaoDiligenciasDiligenciaIdRouteChildren =
-  {
-    LocalizacaoDiligenciasDiligenciaIdCampoRoute:
-      LocalizacaoDiligenciasDiligenciaIdCampoRoute,
-    LocalizacaoDiligenciasDiligenciaIdEditarRoute:
-      LocalizacaoDiligenciasDiligenciaIdEditarRoute,
-    LocalizacaoDiligenciasDiligenciaIdIndexRoute:
-      LocalizacaoDiligenciasDiligenciaIdIndexRoute,
-  }
-
-const LocalizacaoDiligenciasDiligenciaIdRouteWithChildren =
-  LocalizacaoDiligenciasDiligenciaIdRoute._addFileChildren(
-    LocalizacaoDiligenciasDiligenciaIdRouteChildren,
-  )
-
-interface LocalizacaoDiligenciasRouteChildren {
-  LocalizacaoDiligenciasDiligenciaIdRoute: typeof LocalizacaoDiligenciasDiligenciaIdRouteWithChildren
-  LocalizacaoDiligenciasNovaRoute: typeof LocalizacaoDiligenciasNovaRoute
-  LocalizacaoDiligenciasIndexRoute: typeof LocalizacaoDiligenciasIndexRoute
-}
-
-const LocalizacaoDiligenciasRouteChildren: LocalizacaoDiligenciasRouteChildren =
-  {
-    LocalizacaoDiligenciasDiligenciaIdRoute:
-      LocalizacaoDiligenciasDiligenciaIdRouteWithChildren,
-    LocalizacaoDiligenciasNovaRoute: LocalizacaoDiligenciasNovaRoute,
-    LocalizacaoDiligenciasIndexRoute: LocalizacaoDiligenciasIndexRoute,
-  }
-
-const LocalizacaoDiligenciasRouteWithChildren =
-  LocalizacaoDiligenciasRoute._addFileChildren(
-    LocalizacaoDiligenciasRouteChildren,
-  )
-
 interface LocalizacaoRouteChildren {
-  LocalizacaoChegadasRoute: typeof LocalizacaoChegadasRoute
-  LocalizacaoDiligenciasRoute: typeof LocalizacaoDiligenciasRouteWithChildren
   LocalizacaoEnderecosRoute: typeof LocalizacaoEnderecosRoute
-  LocalizacaoMapaRoute: typeof LocalizacaoMapaRoute
   LocalizacaoPessoasRoute: typeof LocalizacaoPessoasRoute
-  LocalizacaoRegistrosRoute: typeof LocalizacaoRegistrosRoute
-  LocalizacaoRelatoriosRoute: typeof LocalizacaoRelatoriosRoute
   LocalizacaoRotasRoute: typeof LocalizacaoRotasRoute
   LocalizacaoIndexRoute: typeof LocalizacaoIndexRoute
 }
 
 const LocalizacaoRouteChildren: LocalizacaoRouteChildren = {
-  LocalizacaoChegadasRoute: LocalizacaoChegadasRoute,
-  LocalizacaoDiligenciasRoute: LocalizacaoDiligenciasRouteWithChildren,
   LocalizacaoEnderecosRoute: LocalizacaoEnderecosRoute,
-  LocalizacaoMapaRoute: LocalizacaoMapaRoute,
   LocalizacaoPessoasRoute: LocalizacaoPessoasRoute,
-  LocalizacaoRegistrosRoute: LocalizacaoRegistrosRoute,
-  LocalizacaoRelatoriosRoute: LocalizacaoRelatoriosRoute,
   LocalizacaoRotasRoute: LocalizacaoRotasRoute,
   LocalizacaoIndexRoute: LocalizacaoIndexRoute,
 }

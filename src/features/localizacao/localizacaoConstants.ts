@@ -1,35 +1,4 @@
-import type { DiligenciaStatus, DiligenciaTipo, PessoaVinculo } from "./localizacaoTypes";
-
-export const DILIGENCIA_STATUS_LABELS: Record<DiligenciaStatus, string> = {
-  planejada: "Planejada",
-  em_deslocamento: "Em deslocamento",
-  no_local: "No local",
-  concluida: "Concluída",
-  cancelada: "Cancelada",
-};
-
-/** Token do design system usado por cada status. Nunca usar cor crua na UI. */
-export const DILIGENCIA_STATUS_TONE: Record<
-  DiligenciaStatus,
-  "operational" | "success" | "warning" | "info" | "muted-foreground"
-> = {
-  planejada: "warning",
-  em_deslocamento: "operational",
-  no_local: "success",
-  concluida: "info",
-  cancelada: "muted-foreground",
-};
-
-export const DILIGENCIA_TIPO_LABELS: Record<DiligenciaTipo, string> = {
-  intimacao: "Intimação",
-  verificacao_endereco: "Verificação de endereço",
-  cumprimento_mandado: "Cumprimento de mandado",
-  oitiva: "Oitiva",
-  vistoria_local: "Vistoria de local",
-  patrulhamento: "Patrulhamento",
-  apoio_outra_unidade: "Apoio a outra unidade",
-  outro: "Outro",
-};
+import type { PessoaVinculo } from "./localizacaoTypes";
 
 export const PESSOA_VINCULO_LABELS: Record<PessoaVinculo, string> = {
   alvo: "Alvo",
@@ -38,14 +7,6 @@ export const PESSOA_VINCULO_LABELS: Record<PessoaVinculo, string> = {
   informante: "Informante",
   outro: "Outro",
 };
-
-/** Ordem em que os status aparecem na trilha de progresso da diligência. */
-export const DILIGENCIA_PROGRESSO: DiligenciaStatus[] = [
-  "planejada",
-  "em_deslocamento",
-  "no_local",
-  "concluida",
-];
 
 export const MUNICIPIO_PADRAO = "Itabela";
 export const UF_PADRAO = "BA";
