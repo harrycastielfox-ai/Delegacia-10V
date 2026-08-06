@@ -323,15 +323,6 @@ function createSafeTooltip(title: string, subtitle: string) {
   return element;
 }
 
-function sameScope(previous: TerritoryScope | null, next: TerritoryScope) {
-  return (
-    previous?.kind === next.kind &&
-    previous.label === next.label &&
-    previous.bairroId === next.bairroId &&
-    previous.addressIds.join(",") === next.addressIds.join(",")
-  );
-}
-
 export function MapaCanvas({
   routeVisible: controlledRouteVisible,
   onRouteVisibleChange,
@@ -356,9 +347,7 @@ export function MapaCanvas({
   const addressLayerRef = useRef<LayerGroup | null>(null);
   const centralLayerRef = useRef<LayerGroup | null>(null);
   const routeLayerRef = useRef<LayerGroup | null>(null);
-  const addressesRef = useRef<MapaEnderecoRecord[]>([]);
   const selectionLockedRef = useRef(false);
-  const refreshViewportRef = useRef<() => void>(() => undefined);
   const syncZoomLayersRef = useRef<() => void>(() => undefined);
   const initialFitDoneRef = useRef(false);
   /** Rótulos de bairro atualmente desenhados, para reavaliar colisão a cada zoom/pan. */
@@ -450,10 +439,6 @@ export function MapaCanvas({
   }, []);
 
   useEffect(() => {
-    addressesRef.current = addresses;
-  }, [addresses]);
-
-  useEffect(() => {
     onSelectedPersonChangeRef.current = onSelectedPersonChange;
     onRouteChangeRef.current = onRouteChange;
   }, [onSelectedPersonChange, onRouteChange]);
@@ -496,16 +481,18 @@ export function MapaCanvas({
       const onViewportChange = () => {
         setZoom(map.getZoom());
         syncZoomLayersRef.current();
-        refreshViewportRef.current();
         resolveBairroLabelsRef.current();
       };
       map.on("zoomend moveend", onViewportChange);
       map.on("click", () => {
+        // Painel só abre por ação direta (clicar num bairro, endereço ou
+        // pessoa) — não mais sozinho ao passear pelo mapa. Um clique no
+        // fundo do mapa só fecha o que estiver aberto.
         selectionLockedRef.current = false;
         setDirectoryOpen(false);
         setRouteTarget(null);
         onSelectedPersonChangeRef.current?.(null);
-        refreshViewportRef.current();
+        setScope(null);
       });
 
       window.setTimeout(() => map.invalidateSize({ animate: false }), 0);
@@ -535,28 +522,6 @@ export function MapaCanvas({
     });
     if (group.center) mapRef.current?.flyTo(group.center, Math.max(16, mapRef.current.getZoom()));
   }, []);
-
-  refreshViewportRef.current = () => {
-    const map = mapRef.current;
-    if (!map || selectionLockedRef.current) return;
-    if (map.getZoom() < SHOW_PEOPLE_AT_ZOOM) {
-      setScope(null);
-      return;
-    }
-
-    const bounds = map.getBounds();
-    const visible = addressesRef.current.filter(
-      (address) =>
-        hasCoordinates(address) && bounds.contains([address.latitude, address.longitude]),
-    );
-    const next: TerritoryScope = {
-      kind: "area",
-      label: "Pessoas nesta área",
-      bairroId: null,
-      addressIds: visible.map((item) => item.id).sort(),
-    };
-    setScope((previous) => (sameScope(previous, next) ? previous : next));
-  };
 
   syncZoomLayersRef.current = () => {
     const map = mapRef.current;
