@@ -91,12 +91,26 @@ export function ContatoPanel({
       <div className="flex-1 divide-y divide-border px-5">
         <div className="py-4">
           <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-            Telefone
+            {person.telefones.length > 1 ? "Telefones" : "Telefone"}
           </span>
-          <span className="mt-1.5 flex items-center gap-2 text-sm font-semibold">
-            <Phone className="h-3.5 w-3.5 text-operational" />
-            {person.telefone || "Não informado"}
-          </span>
+          {person.telefones.length ? (
+            <div className="mt-1.5 space-y-1">
+              {person.telefones.map((contato, index) => (
+                <span key={index} className="flex items-center gap-2 text-sm font-semibold">
+                  <Phone className="h-3.5 w-3.5 shrink-0 text-operational" />
+                  {contato.numero}
+                  {contato.nome && contato.nome !== "Principal" ? (
+                    <span className="font-normal text-muted-foreground">— {contato.nome}</span>
+                  ) : null}
+                </span>
+              ))}
+            </div>
+          ) : (
+            <span className="mt-1.5 flex items-center gap-2 text-sm font-semibold">
+              <Phone className="h-3.5 w-3.5 text-operational" />
+              Não informado
+            </span>
+          )}
         </div>
         <div className="py-4">
           <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">

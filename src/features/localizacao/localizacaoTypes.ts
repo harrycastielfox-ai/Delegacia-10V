@@ -19,6 +19,16 @@ export type DiligenciaStatus =
 
 export type PessoaVinculo = "alvo" | "testemunha" | "vitima" | "informante" | "outro";
 
+/**
+ * Um contato telefônico com nome de quem atende. Existe porque nem todo
+ * cadastro é uma pessoa — pode ser um comércio, uma loja, um ponto de
+ * referência com mais de um número (o dono, o gerente, a portaria...).
+ */
+export interface PessoaTelefoneContato {
+  nome: string;
+  numero: string;
+}
+
 export type BairroStatus = "pendente" | "confirmado" | "nao_identificado";
 
 export interface BairroOperacionalRecord {
@@ -87,7 +97,10 @@ export interface PessoaAlvoRecord {
   data_nascimento: string | null;
   nome_mae: string | null;
   vinculo: PessoaVinculo;
+  /** Espelha telefones[0].numero — mantido pela API para a busca rápida continuar funcionando. */
   telefone: string | null;
+  /** Lista completa de contatos telefônicos, com nome de quem atende cada um. */
+  telefones: PessoaTelefoneContato[];
   numero_bo: string | null;
   /** Número do procedimento policial usado para cruzar o cadastro com o SIPI. */
   numero_procedimento: string | null;
@@ -233,7 +246,8 @@ export type PessoaAlvoPayload = Omit<
 >;
 
 export interface PessoaCadastroCompletoPayload {
-  pessoa: Omit<PessoaAlvoPayload, "endereco_id" | "foto_perfil_path">;
+  /** "telefone" fica de fora de propósito: o repositório deriva de telefones[0]. */
+  pessoa: Omit<PessoaAlvoPayload, "endereco_id" | "foto_perfil_path" | "telefone">;
   endereco: EnderecoPayload | null;
   endereco_id: string | null;
   foto: File | null;

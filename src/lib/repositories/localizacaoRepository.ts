@@ -11,6 +11,7 @@ import type {
   PessoaCadastroCompletoPayload,
   PessoaComLocal,
   PessoaDetalheRecord,
+  PessoaTelefoneContato,
   RotaSalvaRecord,
 } from "@/features/localizacao/localizacaoTypes";
 import { BAIRROS_OPERACIONAIS_ITABELA } from "@/features/localizacao/localizacaoConstants";
@@ -67,6 +68,14 @@ function formatAddress(
 function asAddress(value: unknown): EnderecoRecord | null {
   if (!value) return null;
   return (Array.isArray(value) ? value[0] : value) as EnderecoRecord | null;
+}
+
+/**
+ * A coluna "telefone" (legada, texto simples) precisa continuar espelhando o
+ * primeiro contato da lista — é ela que alimenta o índice de busca rápida.
+ */
+function primaryPhone(telefones: PessoaTelefoneContato[] | undefined): string | null {
+  return telefones?.[0]?.numero?.trim() || null;
 }
 
 const TEST_NOW = "2026-08-03T12:00:00.000Z";
@@ -509,10 +518,13 @@ export async function listPessoas(search = ""): Promise<PessoaAlvoRecord[]> {
   return (data ?? []) as unknown as PessoaAlvoRecord[];
 }
 
-export async function createPessoa(payload: PessoaAlvoPayload): Promise<PessoaAlvoRecord> {
+/** "telefone" não entra pelo chamador — é sempre derivado de telefones[0] aqui dentro. */
+export async function createPessoa(
+  payload: Omit<PessoaAlvoPayload, "telefone">,
+): Promise<PessoaAlvoRecord> {
   const { data, error } = await supabase
     .from("localizacao_pessoas")
-    .insert(payload)
+    .insert({ ...payload, telefone: primaryPhone(payload.telefones) })
     .select("*")
     .single();
   if (error) fail("Falha ao criar pessoa", error);
@@ -709,6 +721,7 @@ export async function updatePessoaCadastroCompleto(
     .update({
       ...payload.pessoa,
       endereco_id: addressId,
+      telefone: primaryPhone(payload.pessoa.telefones),
     })
     .eq("id", personId)
     .is("deleted_at", null)

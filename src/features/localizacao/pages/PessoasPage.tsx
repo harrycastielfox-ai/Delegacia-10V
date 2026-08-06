@@ -7,10 +7,12 @@ import {
   Link2,
   MapPin,
   Navigation,
+  Phone,
   Plus,
   Route,
   Search,
   ShieldCheck,
+  Trash2,
   UserPlus,
   UserRoundSearch,
   X,
@@ -33,6 +35,7 @@ import type {
   EnderecoRecord,
   PessoaAlvoRecord,
   PessoaDetalheRecord,
+  PessoaTelefoneContato,
   PessoaVinculo,
 } from "../localizacaoTypes";
 
@@ -86,7 +89,7 @@ export default function PessoasPage() {
   const [birthDate, setBirthDate] = useState("");
   const [motherName, setMotherName] = useState("");
   const [link, setLink] = useState<PessoaVinculo>("alvo");
-  const [phone, setPhone] = useState("");
+  const [phones, setPhones] = useState<PessoaTelefoneContato[]>([{ nome: "", numero: "" }]);
   const [boNumber, setBoNumber] = useState("");
   const [procedureNumber, setProcedureNumber] = useState("");
   const [notes, setNotes] = useState("");
@@ -172,7 +175,7 @@ export default function PessoasPage() {
     setBirthDate("");
     setMotherName("");
     setLink("alvo");
-    setPhone("");
+    setPhones([{ nome: "", numero: "" }]);
     setBoNumber("");
     setProcedureNumber("");
     setNotes("");
@@ -220,7 +223,9 @@ export default function PessoasPage() {
     setBirthDate(person.data_nascimento ?? "");
     setMotherName(person.nome_mae ?? "");
     setLink(person.vinculo);
-    setPhone(person.telefone ?? "");
+    setPhones(
+      person.telefones.length ? person.telefones : [{ nome: "", numero: person.telefone ?? "" }],
+    );
     setBoNumber(person.numero_bo ?? "");
     setProcedureNumber(person.numero_procedimento ?? "");
     setNotes(person.observacoes ?? "");
@@ -249,6 +254,22 @@ export default function PessoasPage() {
     setFormError(null);
     setSelectedPersonId(null);
     setFormOpen(true);
+  }
+
+  function updatePhone(index: number, field: "nome" | "numero", value: string) {
+    setPhones((current) =>
+      current.map((contato, i) => (i === index ? { ...contato, [field]: value } : contato)),
+    );
+  }
+
+  function addPhone() {
+    setPhones((current) => [...current, { nome: "", numero: "" }]);
+  }
+
+  function removePhone(index: number) {
+    setPhones((current) =>
+      current.length > 1 ? current.filter((_, i) => i !== index) : [{ nome: "", numero: "" }],
+    );
   }
 
   function goToAddressStep() {
@@ -318,7 +339,10 @@ export default function PessoasPage() {
           data_nascimento: birthDate || null,
           nome_mae: motherName.trim() || null,
           vinculo: link,
-          telefone: phone.trim() || null,
+          telefones: phones
+            .map((contato) => ({ nome: contato.nome.trim(), numero: contato.numero.trim() }))
+            .filter((contato) => contato.numero)
+            .map((contato) => ({ nome: contato.nome || "Principal", numero: contato.numero })),
           numero_bo: boNumber.trim() || null,
           numero_procedimento: procedureNumber.trim() || null,
           inquerito_id: null,
@@ -431,6 +455,11 @@ export default function PessoasPage() {
                     <dt className="text-muted-foreground">Telefone</dt>
                     <dd className="text-right font-semibold">
                       {person.telefone ?? "Não informado"}
+                      {person.telefones.length > 1 ? (
+                        <span className="ml-1 text-operational">
+                          +{person.telefones.length - 1}
+                        </span>
+                      ) : null}
                     </dd>
                   </div>
                   <div className="flex justify-between gap-3 border-t border-border pt-2">
@@ -583,12 +612,42 @@ export default function PessoasPage() {
                     ))}
                   </select>
                 </Field>
-                <Field label="Telefone">
-                  <input
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    className={fieldClass}
-                  />
+                <Field label="Telefones" wide>
+                  <div className="mt-2 space-y-2">
+                    {phones.map((contato, index) => (
+                      <div key={index} className="flex flex-col gap-2 sm:flex-row">
+                        <input
+                          value={contato.nome}
+                          onChange={(e) => updatePhone(index, "nome", e.target.value)}
+                          placeholder="Nome do contato (ex.: Gerente, Portaria)"
+                          className={`${fieldClass} mt-0 sm:w-[55%]`}
+                        />
+                        <div className="flex flex-1 gap-2">
+                          <input
+                            value={contato.numero}
+                            onChange={(e) => updatePhone(index, "numero", e.target.value)}
+                            placeholder="Telefone"
+                            className={`${fieldClass} mt-0 flex-1`}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => removePhone(index)}
+                            aria-label="Remover este telefone"
+                            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-border text-muted-foreground transition hover:border-destructive/40 hover:text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={addPhone}
+                      className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-operational/35 bg-operational/10 px-3 text-xs font-bold text-operational transition hover:bg-operational/20"
+                    >
+                      <Phone className="h-3.5 w-3.5" /> Adicionar telefone
+                    </button>
+                  </div>
                 </Field>
                 <Field label="Nº do B.O.">
                   <input
