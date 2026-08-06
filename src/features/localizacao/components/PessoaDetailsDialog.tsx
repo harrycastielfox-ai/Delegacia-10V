@@ -138,13 +138,16 @@ export function PessoaDetailsDialog({ personId, onClose, onEdit }: PessoaDetails
 
   return (
     <div
-      className="animate-in fade-in fixed inset-0 z-[75] flex items-center justify-center bg-black/75 p-3 backdrop-blur-sm duration-200 sm:p-6"
+      // Sem blur e com fundo mais claro de propósito: isso abre em cima do
+      // mapa, e o mapa precisa continuar visível e legível atrás da ficha —
+      // não é um modal que trava a tela toda.
+      className="animate-in fade-in fixed inset-0 z-[75] flex items-stretch justify-end bg-black/35 duration-200"
       role="dialog"
       aria-modal="true"
       aria-labelledby="pessoa-detalhe-titulo"
       data-testid="pessoa-detalhe-dialog"
     >
-      <section className="animate-in zoom-in-95 flex max-h-[88dvh] w-full max-w-[760px] flex-col overflow-hidden rounded-2xl border border-operational/25 bg-card shadow-[0_24px_80px_rgba(0,0,0,.55)] duration-200">
+      <section className="animate-in slide-in-from-right-8 flex h-full w-full max-w-[560px] flex-col overflow-hidden border-l border-operational/25 bg-card shadow-[-24px_0_80px_rgba(0,0,0,.55)] duration-200">
         <header className="flex items-start justify-between gap-4 border-b border-border p-4 sm:px-5 sm:py-4">
           <div>
             <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-operational">
