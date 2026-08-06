@@ -5,6 +5,7 @@ import {
   Car,
   Package,
   ArrowRight,
+  CalendarDays,
   Construction,
   Database,
   Shield,
@@ -12,7 +13,8 @@ import {
   Route as RouteIcon,
 } from "lucide-react";
 import { getCurrentProfile, getProfileAvatarPublicUrl, getSession, logout } from "@/lib/auth";
-import { canViewLocalizacao, isAuthorized, type UserProfile } from "@/lib/authz";
+import { canViewAgenda, canViewLocalizacao, isAuthorized, type UserProfile } from "@/lib/authz";
+import { AgendaLembreteNotification } from "@/components/AgendaLembreteNotification";
 import { AppearanceSwitcher } from "@/components/AppearanceSwitcher";
 
 export const Route = createFileRoute("/modulos")({
@@ -67,6 +69,17 @@ const MODULOS: Modulo[] = [
     icon: Package,
     tone: "warning",
     to: "/objetos",
+    disponivel: true,
+  },
+  {
+    id: "agenda",
+    titulo: "AGENDA DE OITIVAS",
+    hint: "Convocações e horários",
+    descricao:
+      "Marcação de vítimas, testemunhas e autores para serem ouvidos, com cronograma da unidade.",
+    icon: CalendarDays,
+    tone: "info",
+    to: "/agenda",
     disponivel: true,
   },
   {
@@ -209,7 +222,9 @@ function ModulosPage() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
           {MODULOS.filter(
-            (m) => m.id !== "localizacao-operacional" || canViewLocalizacao(profile),
+            (m) =>
+              (m.id !== "localizacao-operacional" || canViewLocalizacao(profile)) &&
+              (m.id !== "agenda" || canViewAgenda(profile)),
           ).map((m) => (
             <ModuloCard
               key={m.id}
@@ -227,6 +242,10 @@ function ModulosPage() {
             <div className="text-sm text-foreground">{aviso}</div>
           </div>
         )}
+
+        {/* É aqui que o servidor cai logo depois de entrar — o lembrete da
+            agenda precisa aparecer nesta tela, não só dentro dos módulos. */}
+        {canViewAgenda(profile) && !aviso ? <AgendaLembreteNotification /> : null}
       </div>
     </div>
   );

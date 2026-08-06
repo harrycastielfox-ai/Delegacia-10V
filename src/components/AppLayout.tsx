@@ -7,7 +7,7 @@ import { getMobileRouteRedirect, MOBILE_VIEWPORT_QUERY } from "@/lib/mobileExper
 import { AppProfileContext } from "./AppProfileContext";
 import { MobileNavigation } from "./MobileNavigation";
 
-type AppModule = "inqueritos" | "veiculos" | "objetos";
+type AppModule = "inqueritos" | "veiculos" | "objetos" | "agenda";
 
 const AppSidebar = lazy(() =>
   import("./AppSidebar").then((module) => ({ default: module.AppSidebar })),
@@ -29,6 +29,19 @@ const ObjectsSidebar = lazy(() =>
 const ObjectsMobileNavigation = lazy(() =>
   import("./ObjectsMobileNavigation").then((module) => ({
     default: module.ObjectsMobileNavigation,
+  })),
+);
+const AgendaSidebar = lazy(() =>
+  import("./AgendaSidebar").then((module) => ({ default: module.AgendaSidebar })),
+);
+const AgendaMobileNavigation = lazy(() =>
+  import("./AgendaMobileNavigation").then((module) => ({
+    default: module.AgendaMobileNavigation,
+  })),
+);
+const AgendaLembreteNotification = lazy(() =>
+  import("./AgendaLembreteNotification").then((module) => ({
+    default: module.AgendaLembreteNotification,
   })),
 );
 
@@ -146,6 +159,8 @@ export function AppLayout({
               <VehiclesMobileNavigation profile={profile} />
             ) : module === "objetos" ? (
               <ObjectsMobileNavigation profile={profile} />
+            ) : module === "agenda" ? (
+              <AgendaMobileNavigation profile={profile} />
             ) : (
               <MobileNavigation profile={profile} />
             )
@@ -153,10 +168,13 @@ export function AppLayout({
             <VehiclesSidebar profile={profile} />
           ) : module === "objetos" ? (
             <ObjectsSidebar profile={profile} />
+          ) : module === "agenda" ? (
+            <AgendaSidebar profile={profile} />
           ) : (
             <>
               <AppSidebar profile={profile} />
               <DueSoonNotification />
+              <AgendaLembreteNotification />
             </>
           )}
         </Suspense>

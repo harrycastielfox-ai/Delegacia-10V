@@ -55,6 +55,16 @@ export function isMobilePathAllowed(pathname: string) {
     return true;
   }
 
+  // A agenda é consultada no balcão e no corredor: ver o dia, o cronograma e a
+  // ficha de quem chegou precisa funcionar no celular. Marcar e editar continua
+  // sendo tarefa de mesa — formulário longo, com busca de procedimento.
+  if (isPathOrChild(pathname, "/agenda")) {
+    if (pathname === "/agenda" || pathname === "/agenda/cronograma") return true;
+    const agendaPath = pathname.slice("/agenda/".length);
+    if (!agendaPath || agendaPath === "novo" || agendaPath.startsWith("editar")) return false;
+    return !agendaPath.includes("/");
+  }
+
   return (
     MOBILE_PUBLIC_PATHS.some((path) => pathname === path) ||
     isReadOnlyRecordPath(pathname, "/inqueritos") ||
@@ -72,6 +82,9 @@ export function getMobileRouteRedirect(pathname: string, mobile = isMobileViewpo
   if (pathname === "/objetos") return "/objetos/todos" as const;
   if (pathname.startsWith("/objetos") && !isMobilePathAllowed(pathname)) {
     return "/objetos/todos" as const;
+  }
+  if (pathname.startsWith("/agenda") && !isMobilePathAllowed(pathname)) {
+    return "/agenda" as const;
   }
   if (isMobilePathAllowed(pathname)) return null;
   return "/inqueritos" as const;
