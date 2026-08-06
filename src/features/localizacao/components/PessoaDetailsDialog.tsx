@@ -247,10 +247,29 @@ export function PessoaDetailsDialog({ personId, onClose, onEdit }: PessoaDetails
                     </h3>
                   </div>
                   <dl>
-                    <DetailItem label="Telefone" value={person.telefone} />
+                    {person.telefones.length ? (
+                      <div className="border-t border-border py-3 first:border-t-0 first:pt-0">
+                        <dt className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
+                          {person.telefones.length > 1 ? "Telefones" : "Telefone"}
+                        </dt>
+                        <dd className="mt-1.5 space-y-1.5">
+                          {person.telefones.map((contato, index) => (
+                            <span key={index} className="flex items-center gap-2 text-sm">
+                              <Phone className="h-3.5 w-3.5 shrink-0 text-operational" />
+                              <strong className="font-semibold">{contato.numero}</strong>
+                              {contato.nome && contato.nome !== "Principal" ? (
+                                <span className="text-muted-foreground">— {contato.nome}</span>
+                              ) : null}
+                            </span>
+                          ))}
+                        </dd>
+                      </div>
+                    ) : null}
                     <DetailItem label="Número do B.O." value={person.numero_bo} />
                     <DetailItem label="Procedimento" value={person.numero_procedimento} />
-                    {!person.telefone && !person.numero_bo && !person.numero_procedimento ? (
+                    {!person.telefones.length &&
+                    !person.numero_bo &&
+                    !person.numero_procedimento ? (
                       <p className="text-xs text-muted-foreground">
                         Nenhum contato ou procedimento informado.
                       </p>
