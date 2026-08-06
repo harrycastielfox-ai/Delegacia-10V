@@ -9,7 +9,7 @@ const LocalizacaoModuleFrame = lazy(
 export const Route = createFileRoute("/localizacao")({
   head: () => ({
     meta: [
-      { title: "Localização Operacional — SIPI" },
+      { title: "Contato Operacional — SIPI" },
       { name: "description", content: "Planejamento e acompanhamento de diligências externas." },
     ],
   }),

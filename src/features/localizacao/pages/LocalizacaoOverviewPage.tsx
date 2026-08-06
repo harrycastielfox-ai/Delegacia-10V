@@ -216,7 +216,7 @@ export default function LocalizacaoOverviewPage() {
             Centro de coordenação
           </p>
           <h1 className="mt-1 text-2xl font-black uppercase tracking-tight sm:text-3xl">
-            Localização Operacional
+            Contato Operacional
           </h1>
           <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
             Acompanhe diligências, rotas e equipes em campo.

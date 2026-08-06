@@ -49,7 +49,7 @@ export function LocalizacaoSidebar({ profile }: { profile: UserProfile }) {
               SIPI
             </strong>
             <span className="block truncate text-[11px] text-muted-foreground">
-              Localização Operacional
+              Contato Operacional
             </span>
           </span>
         </Link>
