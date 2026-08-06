@@ -140,8 +140,11 @@ export function PessoaDetailsDialog({ personId, onClose, onEdit }: PessoaDetails
     <div
       // Sem blur e com fundo mais claro de propósito: isso abre em cima do
       // mapa, e o mapa precisa continuar visível e legível atrás da ficha —
-      // não é um modal que trava a tela toda.
-      className="animate-in fade-in fixed inset-0 z-[75] flex items-stretch justify-end bg-black/35 duration-200"
+      // não é um modal que trava a tela toda. z-index acima de 1000: os
+      // controles internos do MapaCanvas (badge de bairros, painel
+      // territorial, pill de rota) usam z-[900]/z-[1000] e furavam por cima
+      // da ficha antes desse ajuste.
+      className="animate-in fade-in fixed inset-0 z-[1100] flex items-stretch justify-end bg-black/35 duration-200"
       role="dialog"
       aria-modal="true"
       aria-labelledby="pessoa-detalhe-titulo"
