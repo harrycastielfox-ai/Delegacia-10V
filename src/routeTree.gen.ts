@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AgendaRouteImport } from './routes/agenda'
 import { Route as AguardandoAutorizacaoRouteImport } from './routes/aguardando-autorizacao'
 import { Route as AlertasRouteImport } from './routes/alertas'
 import { Route as AuditoriaRouteImport } from './routes/auditoria'
@@ -28,6 +29,10 @@ import { Route as PerfilRouteImport } from './routes/perfil'
 import { Route as RepresentacoesRouteImport } from './routes/representacoes'
 import { Route as VeiculosRouteImport } from './routes/veiculos'
 import { Route as AdminUsuariosRouteImport } from './routes/admin.usuarios'
+import { Route as AgendaIndexRouteImport } from './routes/agenda.index'
+import { Route as AgendaAgendamentoIdRouteImport } from './routes/agenda.$agendamentoId'
+import { Route as AgendaCronogramaRouteImport } from './routes/agenda.cronograma'
+import { Route as AgendaNovoRouteImport } from './routes/agenda.novo'
 import { Route as AlertasModuloRouteImport } from './routes/alertas.$modulo'
 import { Route as InqueritosCaseIdRouteImport } from './routes/inqueritos.$caseId'
 import { Route as LocalizacaoIndexRouteImport } from './routes/localizacao.index'
@@ -56,6 +61,7 @@ import { Route as VeiculosRecuperadosRouteImport } from './routes/veiculos.recup
 import { Route as VeiculosRelatoriosRouteImport } from './routes/veiculos.relatorios'
 import { Route as VeiculosTodosRouteImport } from './routes/veiculos.todos'
 import { Route as AdminUsuariosUserIdRouteImport } from './routes/admin.usuarios.$userId'
+import { Route as AgendaEditarAgendamentoIdRouteImport } from './routes/agenda.editar.$agendamentoId'
 import { Route as InqueritosCaseIdEditarRouteImport } from './routes/inqueritos.$caseId.editar'
 import { Route as ObjetosObjectIdEditarRouteImport } from './routes/objetos.$objectId.editar'
 import { Route as RepresentacoesRepresentacaoIdEditarRouteImport } from './routes/representacoes.$representacaoId.editar'
@@ -64,6 +70,11 @@ import { Route as VeiculosVehicleIdEditarRouteImport } from './routes/veiculos.$
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AgendaRoute = AgendaRouteImport.update({
+  id: '/agenda',
+  path: '/agenda',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AguardandoAutorizacaoRoute = AguardandoAutorizacaoRouteImport.update({
@@ -155,6 +166,26 @@ const AdminUsuariosRoute = AdminUsuariosRouteImport.update({
   id: '/admin/usuarios',
   path: '/admin/usuarios',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AgendaIndexRoute = AgendaIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AgendaRoute,
+} as any)
+const AgendaAgendamentoIdRoute = AgendaAgendamentoIdRouteImport.update({
+  id: '/$agendamentoId',
+  path: '/$agendamentoId',
+  getParentRoute: () => AgendaRoute,
+} as any)
+const AgendaCronogramaRoute = AgendaCronogramaRouteImport.update({
+  id: '/cronograma',
+  path: '/cronograma',
+  getParentRoute: () => AgendaRoute,
+} as any)
+const AgendaNovoRoute = AgendaNovoRouteImport.update({
+  id: '/novo',
+  path: '/novo',
+  getParentRoute: () => AgendaRoute,
 } as any)
 const AlertasModuloRoute = AlertasModuloRouteImport.update({
   id: '/$modulo',
@@ -298,6 +329,12 @@ const AdminUsuariosUserIdRoute = AdminUsuariosUserIdRouteImport.update({
   path: '/$userId',
   getParentRoute: () => AdminUsuariosRoute,
 } as any)
+const AgendaEditarAgendamentoIdRoute =
+  AgendaEditarAgendamentoIdRouteImport.update({
+    id: '/editar/$agendamentoId',
+    path: '/editar/$agendamentoId',
+    getParentRoute: () => AgendaRoute,
+  } as any)
 const InqueritosCaseIdEditarRoute = InqueritosCaseIdEditarRouteImport.update({
   id: '/editar',
   path: '/editar',
@@ -322,6 +359,7 @@ const VeiculosVehicleIdEditarRoute = VeiculosVehicleIdEditarRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/agenda': typeof AgendaRouteWithChildren
   '/aguardando-autorizacao': typeof AguardandoAutorizacaoRoute
   '/alertas': typeof AlertasRouteWithChildren
   '/auditoria': typeof AuditoriaRoute
@@ -340,6 +378,9 @@ export interface FileRoutesByFullPath {
   '/representacoes': typeof RepresentacoesRouteWithChildren
   '/veiculos': typeof VeiculosRouteWithChildren
   '/admin/usuarios': typeof AdminUsuariosRouteWithChildren
+  '/agenda/$agendamentoId': typeof AgendaAgendamentoIdRoute
+  '/agenda/cronograma': typeof AgendaCronogramaRoute
+  '/agenda/novo': typeof AgendaNovoRoute
   '/alertas/$modulo': typeof AlertasModuloRoute
   '/inqueritos/$caseId': typeof InqueritosCaseIdRouteWithChildren
   '/localizacao/enderecos': typeof LocalizacaoEnderecosRoute
@@ -364,10 +405,12 @@ export interface FileRoutesByFullPath {
   '/veiculos/recuperados': typeof VeiculosRecuperadosRoute
   '/veiculos/relatorios': typeof VeiculosRelatoriosRoute
   '/veiculos/todos': typeof VeiculosTodosRoute
+  '/agenda/': typeof AgendaIndexRoute
   '/localizacao/': typeof LocalizacaoIndexRoute
   '/objetos/': typeof ObjetosIndexRoute
   '/veiculos/': typeof VeiculosIndexRoute
   '/admin/usuarios/$userId': typeof AdminUsuariosUserIdRoute
+  '/agenda/editar/$agendamentoId': typeof AgendaEditarAgendamentoIdRoute
   '/inqueritos/$caseId/editar': typeof InqueritosCaseIdEditarRoute
   '/objetos/$objectId/editar': typeof ObjetosObjectIdEditarRoute
   '/representacoes/$representacaoId/editar': typeof RepresentacoesRepresentacaoIdEditarRoute
@@ -390,6 +433,9 @@ export interface FileRoutesByTo {
   '/perfil': typeof PerfilRoute
   '/representacoes': typeof RepresentacoesRouteWithChildren
   '/admin/usuarios': typeof AdminUsuariosRouteWithChildren
+  '/agenda/$agendamentoId': typeof AgendaAgendamentoIdRoute
+  '/agenda/cronograma': typeof AgendaCronogramaRoute
+  '/agenda/novo': typeof AgendaNovoRoute
   '/alertas/$modulo': typeof AlertasModuloRoute
   '/inqueritos/$caseId': typeof InqueritosCaseIdRouteWithChildren
   '/localizacao/enderecos': typeof LocalizacaoEnderecosRoute
@@ -414,10 +460,12 @@ export interface FileRoutesByTo {
   '/veiculos/recuperados': typeof VeiculosRecuperadosRoute
   '/veiculos/relatorios': typeof VeiculosRelatoriosRoute
   '/veiculos/todos': typeof VeiculosTodosRoute
+  '/agenda': typeof AgendaIndexRoute
   '/localizacao': typeof LocalizacaoIndexRoute
   '/objetos': typeof ObjetosIndexRoute
   '/veiculos': typeof VeiculosIndexRoute
   '/admin/usuarios/$userId': typeof AdminUsuariosUserIdRoute
+  '/agenda/editar/$agendamentoId': typeof AgendaEditarAgendamentoIdRoute
   '/inqueritos/$caseId/editar': typeof InqueritosCaseIdEditarRoute
   '/objetos/$objectId/editar': typeof ObjetosObjectIdEditarRoute
   '/representacoes/$representacaoId/editar': typeof RepresentacoesRepresentacaoIdEditarRoute
@@ -426,6 +474,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/agenda': typeof AgendaRouteWithChildren
   '/aguardando-autorizacao': typeof AguardandoAutorizacaoRoute
   '/alertas': typeof AlertasRouteWithChildren
   '/auditoria': typeof AuditoriaRoute
@@ -444,6 +493,9 @@ export interface FileRoutesById {
   '/representacoes': typeof RepresentacoesRouteWithChildren
   '/veiculos': typeof VeiculosRouteWithChildren
   '/admin/usuarios': typeof AdminUsuariosRouteWithChildren
+  '/agenda/$agendamentoId': typeof AgendaAgendamentoIdRoute
+  '/agenda/cronograma': typeof AgendaCronogramaRoute
+  '/agenda/novo': typeof AgendaNovoRoute
   '/alertas/$modulo': typeof AlertasModuloRoute
   '/inqueritos/$caseId': typeof InqueritosCaseIdRouteWithChildren
   '/localizacao/enderecos': typeof LocalizacaoEnderecosRoute
@@ -468,10 +520,12 @@ export interface FileRoutesById {
   '/veiculos/recuperados': typeof VeiculosRecuperadosRoute
   '/veiculos/relatorios': typeof VeiculosRelatoriosRoute
   '/veiculos/todos': typeof VeiculosTodosRoute
+  '/agenda/': typeof AgendaIndexRoute
   '/localizacao/': typeof LocalizacaoIndexRoute
   '/objetos/': typeof ObjetosIndexRoute
   '/veiculos/': typeof VeiculosIndexRoute
   '/admin/usuarios/$userId': typeof AdminUsuariosUserIdRoute
+  '/agenda/editar/$agendamentoId': typeof AgendaEditarAgendamentoIdRoute
   '/inqueritos/$caseId/editar': typeof InqueritosCaseIdEditarRoute
   '/objetos/$objectId/editar': typeof ObjetosObjectIdEditarRoute
   '/representacoes/$representacaoId/editar': typeof RepresentacoesRepresentacaoIdEditarRoute
@@ -481,6 +535,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/agenda'
     | '/aguardando-autorizacao'
     | '/alertas'
     | '/auditoria'
@@ -499,6 +554,9 @@ export interface FileRouteTypes {
     | '/representacoes'
     | '/veiculos'
     | '/admin/usuarios'
+    | '/agenda/$agendamentoId'
+    | '/agenda/cronograma'
+    | '/agenda/novo'
     | '/alertas/$modulo'
     | '/inqueritos/$caseId'
     | '/localizacao/enderecos'
@@ -523,10 +581,12 @@ export interface FileRouteTypes {
     | '/veiculos/recuperados'
     | '/veiculos/relatorios'
     | '/veiculos/todos'
+    | '/agenda/'
     | '/localizacao/'
     | '/objetos/'
     | '/veiculos/'
     | '/admin/usuarios/$userId'
+    | '/agenda/editar/$agendamentoId'
     | '/inqueritos/$caseId/editar'
     | '/objetos/$objectId/editar'
     | '/representacoes/$representacaoId/editar'
@@ -549,6 +609,9 @@ export interface FileRouteTypes {
     | '/perfil'
     | '/representacoes'
     | '/admin/usuarios'
+    | '/agenda/$agendamentoId'
+    | '/agenda/cronograma'
+    | '/agenda/novo'
     | '/alertas/$modulo'
     | '/inqueritos/$caseId'
     | '/localizacao/enderecos'
@@ -573,10 +636,12 @@ export interface FileRouteTypes {
     | '/veiculos/recuperados'
     | '/veiculos/relatorios'
     | '/veiculos/todos'
+    | '/agenda'
     | '/localizacao'
     | '/objetos'
     | '/veiculos'
     | '/admin/usuarios/$userId'
+    | '/agenda/editar/$agendamentoId'
     | '/inqueritos/$caseId/editar'
     | '/objetos/$objectId/editar'
     | '/representacoes/$representacaoId/editar'
@@ -584,6 +649,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/agenda'
     | '/aguardando-autorizacao'
     | '/alertas'
     | '/auditoria'
@@ -602,6 +668,9 @@ export interface FileRouteTypes {
     | '/representacoes'
     | '/veiculos'
     | '/admin/usuarios'
+    | '/agenda/$agendamentoId'
+    | '/agenda/cronograma'
+    | '/agenda/novo'
     | '/alertas/$modulo'
     | '/inqueritos/$caseId'
     | '/localizacao/enderecos'
@@ -626,10 +695,12 @@ export interface FileRouteTypes {
     | '/veiculos/recuperados'
     | '/veiculos/relatorios'
     | '/veiculos/todos'
+    | '/agenda/'
     | '/localizacao/'
     | '/objetos/'
     | '/veiculos/'
     | '/admin/usuarios/$userId'
+    | '/agenda/editar/$agendamentoId'
     | '/inqueritos/$caseId/editar'
     | '/objetos/$objectId/editar'
     | '/representacoes/$representacaoId/editar'
@@ -638,6 +709,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AgendaRoute: typeof AgendaRouteWithChildren
   AguardandoAutorizacaoRoute: typeof AguardandoAutorizacaoRoute
   AlertasRoute: typeof AlertasRouteWithChildren
   AuditoriaRoute: typeof AuditoriaRoute
@@ -666,6 +738,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/agenda': {
+      id: '/agenda'
+      path: '/agenda'
+      fullPath: '/agenda'
+      preLoaderRoute: typeof AgendaRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/aguardando-autorizacao': {
@@ -793,6 +872,34 @@ declare module '@tanstack/react-router' {
       fullPath: '/admin/usuarios'
       preLoaderRoute: typeof AdminUsuariosRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/agenda/': {
+      id: '/agenda/'
+      path: '/'
+      fullPath: '/agenda/'
+      preLoaderRoute: typeof AgendaIndexRouteImport
+      parentRoute: typeof AgendaRoute
+    }
+    '/agenda/$agendamentoId': {
+      id: '/agenda/$agendamentoId'
+      path: '/$agendamentoId'
+      fullPath: '/agenda/$agendamentoId'
+      preLoaderRoute: typeof AgendaAgendamentoIdRouteImport
+      parentRoute: typeof AgendaRoute
+    }
+    '/agenda/cronograma': {
+      id: '/agenda/cronograma'
+      path: '/cronograma'
+      fullPath: '/agenda/cronograma'
+      preLoaderRoute: typeof AgendaCronogramaRouteImport
+      parentRoute: typeof AgendaRoute
+    }
+    '/agenda/novo': {
+      id: '/agenda/novo'
+      path: '/novo'
+      fullPath: '/agenda/novo'
+      preLoaderRoute: typeof AgendaNovoRouteImport
+      parentRoute: typeof AgendaRoute
     }
     '/alertas/$modulo': {
       id: '/alertas/$modulo'
@@ -990,6 +1097,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminUsuariosUserIdRouteImport
       parentRoute: typeof AdminUsuariosRoute
     }
+    '/agenda/editar/$agendamentoId': {
+      id: '/agenda/editar/$agendamentoId'
+      path: '/editar/$agendamentoId'
+      fullPath: '/agenda/editar/$agendamentoId'
+      preLoaderRoute: typeof AgendaEditarAgendamentoIdRouteImport
+      parentRoute: typeof AgendaRoute
+    }
     '/inqueritos/$caseId/editar': {
       id: '/inqueritos/$caseId/editar'
       path: '/editar'
@@ -1020,6 +1134,25 @@ declare module '@tanstack/react-router' {
     }
   }
 }
+
+interface AgendaRouteChildren {
+  AgendaAgendamentoIdRoute: typeof AgendaAgendamentoIdRoute
+  AgendaCronogramaRoute: typeof AgendaCronogramaRoute
+  AgendaNovoRoute: typeof AgendaNovoRoute
+  AgendaIndexRoute: typeof AgendaIndexRoute
+  AgendaEditarAgendamentoIdRoute: typeof AgendaEditarAgendamentoIdRoute
+}
+
+const AgendaRouteChildren: AgendaRouteChildren = {
+  AgendaAgendamentoIdRoute: AgendaAgendamentoIdRoute,
+  AgendaCronogramaRoute: AgendaCronogramaRoute,
+  AgendaNovoRoute: AgendaNovoRoute,
+  AgendaIndexRoute: AgendaIndexRoute,
+  AgendaEditarAgendamentoIdRoute: AgendaEditarAgendamentoIdRoute,
+}
+
+const AgendaRouteWithChildren =
+  AgendaRoute._addFileChildren(AgendaRouteChildren)
 
 interface AlertasRouteChildren {
   AlertasModuloRoute: typeof AlertasModuloRoute
@@ -1195,6 +1328,7 @@ const AdminUsuariosRouteWithChildren = AdminUsuariosRoute._addFileChildren(
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AgendaRoute: AgendaRouteWithChildren,
   AguardandoAutorizacaoRoute: AguardandoAutorizacaoRoute,
   AlertasRoute: AlertasRouteWithChildren,
   AuditoriaRoute: AuditoriaRoute,

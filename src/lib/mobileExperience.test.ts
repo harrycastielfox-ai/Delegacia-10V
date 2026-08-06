@@ -27,6 +27,9 @@ describe("mobile experience", () => {
     "/veiculos/vehicle-id",
     "/objetos/todos",
     "/objetos/object-id",
+    "/agenda",
+    "/agenda/cronograma",
+    "/agenda/agendamento-id",
     "/localizacao",
     "/localizacao/diligencias/dlg-1/campo",
     "/localizacao/pessoas",
@@ -62,6 +65,16 @@ describe("mobile experience", () => {
     "redirects restricted object path %s to the mobile object list",
     (pathname) => {
       expect(getMobileRouteRedirect(pathname, true)).toBe("/objetos/todos");
+    },
+  );
+
+  // Marcar/editar oitiva é tarefa de mesa: formulário longo, com busca de
+  // procedimento e checagem de conflito. No celular volta para a agenda.
+  it.each(["/agenda/novo", "/agenda/editar/agendamento-id"])(
+    "redirects restricted agenda path %s to the day agenda",
+    (pathname) => {
+      expect(getMobileRouteRedirect(pathname, true)).toBe("/agenda");
+      expect(getMobileRouteRedirect(pathname, false)).toBeNull();
     },
   );
 });
