@@ -71,7 +71,7 @@ const MODULOS: Modulo[] = [
   },
   {
     id: "localizacao-operacional",
-    titulo: "LOCALIZAÇÃO OPERACIONAL",
+    titulo: "CONTATO OPERACIONAL",
     hint: "Diligências e rotas",
     descricao:
       "Apoio a diligências externas com cadastro de pessoas, endereços, rotas, chegada ao local, fotos e Street View.",
