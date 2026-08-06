@@ -6,8 +6,7 @@ import { getProfileAvatarPublicUrl, logout } from "@/lib/auth";
 import type { UserProfile } from "@/lib/authz";
 
 const items = [
-  { title: "Visão", url: "/localizacao", icon: Radar, exact: true },
-  { title: "Diligências", url: "/localizacao/diligencias", icon: RouteIcon },
+  { title: "Mapa", url: "/localizacao", icon: Radar, exact: true },
   { title: "Pessoas", url: "/localizacao/pessoas", icon: UserRoundSearch },
   { title: "Endereços", url: "/localizacao/enderecos", icon: House },
   { title: "Rotas", url: "/localizacao/rotas", icon: RouteIcon },
@@ -29,9 +28,9 @@ export function LocalizacaoMobileNavigation({ profile }: { profile: UserProfile 
               <RouteIcon className="h-5 w-5" />
             </span>
             <span className="min-w-0">
-              <strong className="block truncate text-sm tracking-wide">LOCALIZAÇÃO</strong>
+              <strong className="block truncate text-sm tracking-wide">CONTATO OPERACIONAL</strong>
               <span className="block truncate text-[10px] text-muted-foreground">
-                Operação em campo
+                Mapa de contatos
               </span>
             </span>
           </Link>
@@ -74,7 +73,7 @@ export function LocalizacaoMobileNavigation({ profile }: { profile: UserProfile 
         aria-label="Navegação do módulo de localização"
         className="fixed inset-x-0 bottom-0 z-50 border-t border-border bg-background/95 px-1 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden"
       >
-        <div className="mx-auto grid min-h-16 max-w-lg grid-cols-5 items-stretch">
+        <div className="mx-auto grid min-h-16 max-w-lg grid-cols-4 items-stretch">
           {items.map((item) => {
             const active =
               "exact" in item && item.exact

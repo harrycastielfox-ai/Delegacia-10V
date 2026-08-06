@@ -7,18 +7,15 @@
  * exige mudança nenhuma nas telas.
  */
 
+/**
+ * Status de diligência ainda existe como conceito no banco (o painel
+ * territorial por bairro ainda devolve `diligencias`/`diligencias_ativas`,
+ * ver BairroPainelDiligenciaRecord) mesmo depois que a interface de
+ * diligências foi removida. O tipo aqui reflete o que a API realmente
+ * devolve — não o que a tela usa.
+ */
 export type DiligenciaStatus =
   "planejada" | "em_deslocamento" | "no_local" | "concluida" | "cancelada";
-
-export type DiligenciaTipo =
-  | "intimacao"
-  | "verificacao_endereco"
-  | "cumprimento_mandado"
-  | "oitiva"
-  | "vistoria_local"
-  | "patrulhamento"
-  | "apoio_outra_unidade"
-  | "outro";
 
 export type PessoaVinculo = "alvo" | "testemunha" | "vitima" | "informante" | "outro";
 
@@ -176,72 +173,6 @@ export interface BairroPainelRecord {
   diligencias: BairroPainelDiligenciaRecord[];
 }
 
-export interface DiligenciaRecord {
-  id: string;
-  /** Identificador legível, ex.: "DLG-2026-0876". Gerado pelo banco. */
-  codigo: string;
-  tipo: DiligenciaTipo;
-  status: DiligenciaStatus;
-  endereco_id: string | null;
-  pessoa_id: string | null;
-  inquerito_id: string | null;
-  veiculo_id: string | null;
-  equipe_nome: string | null;
-  equipe_agentes: number | null;
-  viatura: string | null;
-  /** ISO 8601. */
-  agendada_para: string | null;
-  saida_em: string | null;
-  chegada_em: string | null;
-  concluida_em: string | null;
-  /** Metros e segundos devolvidos pelo serviço de rota. */
-  distancia_metros: number | null;
-  duracao_segundos: number | null;
-  resultado: string | null;
-  observacoes: string | null;
-  created_at: string;
-  updated_at: string;
-  created_by: string | null;
-  updated_by: string | null;
-}
-
-/** Linha da tabela de diligências, já com os campos resolvidos para exibição. */
-export interface DiligenciaListRecord {
-  id: string;
-  codigo: string;
-  tipo: DiligenciaTipo;
-  status: DiligenciaStatus;
-  destino: string;
-  bairro: string | null;
-  latitude: number | null;
-  longitude: number | null;
-  equipe_nome: string | null;
-  agendada_para: string | null;
-  saida_em: string | null;
-  chegada_em: string | null;
-  total_count: number;
-}
-
-/** Diligência com os vínculos carregados, para a tela de detalhe e o painel lateral. */
-export interface DiligenciaDetalhe extends DiligenciaRecord {
-  endereco: EnderecoRecord | null;
-  pessoa: PessoaAlvoRecord | null;
-  fotos: RegistroFotograficoRecord[];
-  chegada: ChegadaRecord | null;
-}
-
-export interface ChegadaRecord {
-  id: string;
-  diligencia_id: string;
-  registrada_em: string;
-  latitude: number;
-  longitude: number;
-  /** Precisão do GPS em metros, como devolvida pelo navegador. */
-  precisao_metros: number | null;
-  registrada_por: string | null;
-  observacoes: string | null;
-}
-
 export interface RegistroFotograficoRecord {
   id: string;
   /** Foto tirada durante uma diligência. Nulo quando o local foi cadastrado avulso. */
@@ -254,17 +185,6 @@ export interface RegistroFotograficoRecord {
   latitude: number | null;
   longitude: number | null;
   created_by: string | null;
-}
-
-/** Posição da viatura durante o deslocamento, para o mapa ao vivo. */
-export interface PosicaoVtrRecord {
-  id: string;
-  diligencia_id: string;
-  latitude: number;
-  longitude: number;
-  precisao_metros: number | null;
-  velocidade_kmh: number | null;
-  registrada_em: string;
 }
 
 export interface RotaSalvaRecord {
@@ -282,18 +202,6 @@ export interface RotaSalvaRecord {
   created_by: string | null;
 }
 
-export interface DiligenciaListFilters {
-  status?: DiligenciaStatus | "todos" | "ativas";
-  tipo?: DiligenciaTipo;
-  equipe?: string;
-  busca?: string;
-  /** Datas ISO (YYYY-MM-DD). */
-  de?: string;
-  ate?: string;
-  page?: number;
-  pageSize?: number;
-}
-
 export interface LocalizacaoOverviewStats {
   ativas: number;
   em_deslocamento: number;
@@ -305,11 +213,6 @@ export interface LocalizacaoOverviewStats {
   /** Diligências por dia, para o gráfico da visão geral. */
   por_dia: Array<{ dia: string; total: number }>;
 }
-
-export type DiligenciaPayload = Omit<
-  DiligenciaRecord,
-  "id" | "codigo" | "created_at" | "updated_at" | "created_by" | "updated_by"
->;
 
 export type EnderecoPayload = Omit<
   EnderecoRecord,

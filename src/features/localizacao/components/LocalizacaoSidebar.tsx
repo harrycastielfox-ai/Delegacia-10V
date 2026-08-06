@@ -6,16 +6,13 @@ import type { UserProfile } from "@/lib/authz";
 
 const sections = [
   {
-    label: "OPERAÇÃO",
-    items: [
-      { title: "Visão Geral", url: "/localizacao", icon: Radar, exact: true },
-      { title: "Diligências", url: "/localizacao/diligencias", icon: RouteIcon },
-    ],
+    label: "MAPA",
+    items: [{ title: "Mapa de Contatos", url: "/localizacao", icon: Radar, exact: true }],
   },
   {
     label: "CADASTROS",
     items: [
-      { title: "Pessoas / Alvos", url: "/localizacao/pessoas", icon: UserRoundSearch },
+      { title: "Pessoas / Contatos", url: "/localizacao/pessoas", icon: UserRoundSearch },
       { title: "Endereços", url: "/localizacao/enderecos", icon: House },
       { title: "Rotas salvas", url: "/localizacao/rotas", icon: RouteIcon },
     ],

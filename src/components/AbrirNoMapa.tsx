@@ -87,9 +87,12 @@ export function AbrirNoMapa({
 
   if (!viewUrl && !rotaUrl && !streetViewUrl) return null;
 
+  // Antes ficava quase invisível em repouso (borda cinza + texto apagado, só
+  // ganhando cor no hover) — em telas de campo, com sol ou baixa luminosidade,
+  // isso lia como "botão desativado". Agora o tom já aparece parado.
   const base = cn(
-    "inline-flex items-center gap-1.5 rounded-md border border-border bg-background font-semibold",
-    "text-muted-foreground transition-colors hover:border-info/40 hover:bg-accent hover:text-info",
+    "inline-flex items-center gap-1.5 rounded-md border border-info/45 bg-info/10 font-semibold",
+    "text-info transition-colors hover:border-info/70 hover:bg-info/20",
     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-info",
     size === "sm" ? "px-2.5 py-1.5 text-[11px]" : "px-3 py-2 text-xs",
   );

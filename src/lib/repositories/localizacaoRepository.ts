@@ -1,12 +1,6 @@
 import type {
   BairroOperacionalRecord,
   BairroPainelRecord,
-  ChegadaRecord,
-  DiligenciaDetalhe,
-  DiligenciaListFilters,
-  DiligenciaListRecord,
-  DiligenciaPayload,
-  DiligenciaRecord,
   EnderecoPayload,
   EnderecoRecord,
   LocalizacaoOverviewStats,
@@ -17,8 +11,6 @@ import type {
   PessoaCadastroCompletoPayload,
   PessoaComLocal,
   PessoaDetalheRecord,
-  PosicaoVtrRecord,
-  RegistroFotograficoRecord,
   RotaSalvaRecord,
 } from "@/features/localizacao/localizacaoTypes";
 import { BAIRROS_OPERACIONAIS_ITABELA } from "@/features/localizacao/localizacaoConstants";
@@ -64,21 +56,6 @@ async function findAddressIds(search: string): Promise<string[]> {
   return (data ?? []).map((item) => item.id);
 }
 
-async function findPersonIds(search: string): Promise<string[]> {
-  const safe = safeSearch(search);
-  if (!safe) return [];
-  const { data, error } = await supabase
-    .from("localizacao_pessoas")
-    .select("id")
-    .is("deleted_at", null)
-    .or(
-      `nome.ilike.%${safe}%,apelido.ilike.%${safe}%,telefone.ilike.%${safe}%,numero_bo.ilike.%${safe}%,numero_procedimento.ilike.%${safe}%`,
-    )
-    .limit(60);
-  if (error) fail("Falha ao localizar pessoas relacionadas à busca", error);
-  return (data ?? []).map((item) => item.id);
-}
-
 function formatAddress(
   address: Pick<EnderecoRecord, "logradouro" | "numero" | "sem_numero"> | null,
 ) {
@@ -90,11 +67,6 @@ function formatAddress(
 function asAddress(value: unknown): EnderecoRecord | null {
   if (!value) return null;
   return (Array.isArray(value) ? value[0] : value) as EnderecoRecord | null;
-}
-
-function asPerson(value: unknown): PessoaAlvoRecord | null {
-  if (!value) return null;
-  return (Array.isArray(value) ? value[0] : value) as PessoaAlvoRecord | null;
 }
 
 const TEST_NOW = "2026-08-03T12:00:00.000Z";
@@ -188,94 +160,6 @@ const TEST_PEOPLE: PessoaComLocal[] = [
   },
 ];
 
-export async function listDiligenciasPage(
-  filters: DiligenciaListFilters = {},
-): Promise<DiligenciaListRecord[]> {
-  const pageSize = Math.min(Math.max(filters.pageSize ?? 20, 1), 100);
-  const page = Math.max(filters.page ?? 1, 1);
-  const from = (page - 1) * pageSize;
-  const to = from + pageSize - 1;
-
-  const search = safeSearch(filters.busca ?? "");
-  const [addressIds, personIds] = search
-    ? await Promise.all([findAddressIds(search), findPersonIds(search)])
-    : [[], []];
-
-  let query = supabase
-    .from("localizacao_diligencias")
-    .select(
-      "*, endereco:localizacao_enderecos(*), pessoa:localizacao_pessoas(id, endereco:localizacao_enderecos(*))",
-      { count: "exact" },
-    )
-    .is("deleted_at", null)
-    .order("updated_at", { ascending: false })
-    .range(from, to);
-
-  if (filters.status === "ativas") query = query.not("status", "in", '("concluida","cancelada")');
-  else if (filters.status && filters.status !== "todos") query = query.eq("status", filters.status);
-  if (filters.tipo) query = query.eq("tipo", filters.tipo);
-  if (filters.equipe) query = query.eq("equipe_nome", filters.equipe);
-  if (filters.de) query = query.gte("created_at", `${filters.de}T00:00:00`);
-  if (filters.ate) query = query.lte("created_at", `${filters.ate}T23:59:59.999`);
-  if (search) {
-    const clauses = [
-      `codigo.ilike.%${search}%`,
-      `equipe_nome.ilike.%${search}%`,
-      `viatura.ilike.%${search}%`,
-    ];
-    if (addressIds.length) clauses.push(`endereco_id.in.(${addressIds.join(",")})`);
-    if (personIds.length) clauses.push(`pessoa_id.in.(${personIds.join(",")})`);
-    query = query.or(clauses.join(","));
-  }
-
-  const { data, count, error } = await query;
-  if (error) fail("Falha ao listar diligências", error);
-
-  return (data ?? []).map((row) => {
-    const embeddedPerson = Array.isArray(row.pessoa) ? row.pessoa[0] : row.pessoa;
-    const personAddress = asAddress(embeddedPerson?.endereco);
-    const address = asAddress(row.endereco) ?? personAddress;
-    return {
-      id: row.id,
-      codigo: row.codigo,
-      tipo: row.tipo,
-      status: row.status,
-      destino: formatAddress(address),
-      bairro: address?.bairro ?? null,
-      latitude: address?.latitude ?? null,
-      longitude: address?.longitude ?? null,
-      equipe_nome: row.equipe_nome,
-      agendada_para: row.agendada_para,
-      saida_em: row.saida_em,
-      chegada_em: row.chegada_em,
-      total_count: count ?? 0,
-    } as DiligenciaListRecord;
-  });
-}
-
-export async function getDiligenciaById(id: string): Promise<DiligenciaDetalhe | null> {
-  const { data, error } = await supabase
-    .from("localizacao_diligencias")
-    .select(
-      "*, endereco:localizacao_enderecos(*), pessoa:localizacao_pessoas(*), fotos:localizacao_registros_fotograficos(*), chegadas:localizacao_chegadas(*)",
-    )
-    .eq("id", id)
-    .is("deleted_at", null)
-    .maybeSingle();
-  if (error) fail("Falha ao carregar diligência", error);
-  if (!data) return null;
-
-  const arrivals = Array.isArray(data.chegadas) ? (data.chegadas as ChegadaRecord[]) : [];
-  arrivals.sort((a, b) => b.registrada_em.localeCompare(a.registrada_em));
-  return {
-    ...(data as DiligenciaRecord),
-    endereco: asAddress(data.endereco),
-    pessoa: asPerson(data.pessoa),
-    fotos: (Array.isArray(data.fotos) ? data.fotos : []) as RegistroFotograficoRecord[],
-    chegada: arrivals[0] ?? null,
-  };
-}
-
 export async function getLocalizacaoOverviewStats(): Promise<LocalizacaoOverviewStats> {
   const { data, error } = await supabase.rpc("localizacao_overview_stats");
   if (error) fail("Falha ao carregar indicadores de localização", error);
@@ -290,53 +174,6 @@ export async function getLocalizacaoOverviewStats(): Promise<LocalizacaoOverview
     fotos_30_dias: Number(stats.fotos_30_dias ?? 0),
     por_dia: Array.isArray(stats.por_dia) ? stats.por_dia : [],
   };
-}
-
-export async function createDiligencia(payload: DiligenciaPayload): Promise<DiligenciaRecord> {
-  const { data, error } = await supabase
-    .from("localizacao_diligencias")
-    .insert(payload)
-    .select("*")
-    .single();
-  if (error) fail("Falha ao criar diligência", error);
-  return data as DiligenciaRecord;
-}
-
-export async function updateDiligencia(
-  id: string,
-  payload: Partial<DiligenciaPayload>,
-): Promise<DiligenciaRecord | null> {
-  const { data, error } = await supabase
-    .from("localizacao_diligencias")
-    .update(payload)
-    .eq("id", id)
-    .is("deleted_at", null)
-    .select("*")
-    .maybeSingle();
-  if (error) fail("Falha ao atualizar diligência", error);
-  return data as DiligenciaRecord | null;
-}
-
-export async function registrarChegada(input: {
-  diligencia_id: string;
-  latitude: number;
-  longitude: number;
-  precisao_metros: number | null;
-  observacoes?: string | null;
-}): Promise<ChegadaRecord> {
-  const { data, error } = await supabase
-    .from("localizacao_chegadas")
-    .insert({ ...input, observacoes: input.observacoes ?? null })
-    .select("*")
-    .single();
-  if (error) fail("Falha ao registrar chegada", error);
-
-  const { error: updateError } = await supabase
-    .from("localizacao_diligencias")
-    .update({ status: "no_local", chegada_em: data.registrada_em })
-    .eq("id", input.diligencia_id);
-  if (updateError) fail("Chegada criada, mas a diligência não foi atualizada", updateError);
-  return data as ChegadaRecord;
 }
 
 export async function listBairrosOperacionais(): Promise<BairroOperacionalRecord[]> {
@@ -946,31 +783,4 @@ export async function listRotasSalvas(): Promise<RotaSalvaRecord[]> {
     ...row,
     paradas: Array.isArray(row.paradas) ? row.paradas : [],
   })) as RotaSalvaRecord[];
-}
-
-export async function listPosicoesVtr(_diligenciaId: string): Promise<PosicaoVtrRecord[]> {
-  return [];
-}
-
-export async function uploadFotosDiligencia(
-  diligenciaId: string,
-  files: File[],
-): Promise<RegistroFotograficoRecord[]> {
-  const uploaded: RegistroFotograficoRecord[] = [];
-  for (const file of files.slice(0, 8)) {
-    const blob = await compressPhoto(file, { maxDimension: 1440, quality: 0.88 });
-    const path = `diligencias/${diligenciaId}/${crypto.randomUUID()}.webp`;
-    const { error: uploadError } = await supabase.storage
-      .from(PRIVATE_BUCKET)
-      .upload(path, blob, { contentType: "image/webp", upsert: false });
-    if (uploadError) fail("Falha ao enviar fotografia da diligência", uploadError);
-    const { data, error } = await supabase
-      .from("localizacao_registros_fotograficos")
-      .insert({ diligencia_id: diligenciaId, storage_path: path })
-      .select("*")
-      .single();
-    if (error) fail("Falha ao registrar fotografia da diligência", error);
-    uploaded.push(data as RegistroFotograficoRecord);
-  }
-  return uploaded;
 }
