@@ -23,7 +23,7 @@ function AgendaModuleContent() {
         </span>
         <h1 className="mt-4 text-xl font-black">Acesso restrito</h1>
         <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-          Seu perfil não possui autorização para consultar a Agenda de Oitivas.
+          Seu perfil não possui autorização para consultar o Agendamento.
         </p>
       </section>
     );

@@ -338,7 +338,7 @@ export function AgendamentoFormPage({
         >
           <ArrowLeft className="h-4 w-4" /> Voltar
         </button>
-        <p className="text-[10px] font-bold tracking-[0.2em] text-info">MÓDULO AGENDA</p>
+        <p className="text-[10px] font-bold tracking-[0.2em] text-info">MÓDULO AGENDAMENTO</p>
         <h1 className="mt-1 text-3xl font-black tracking-tight">
           {modo === "create" ? "Marcar atendimento" : "Editar agendamento"}
         </h1>

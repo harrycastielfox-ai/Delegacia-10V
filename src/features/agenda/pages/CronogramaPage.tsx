@@ -128,7 +128,7 @@ export default function CronogramaPage() {
     <div className="space-y-5">
       <header className="rounded-2xl border border-border/70 bg-card/60 p-5 lg:p-6">
         <div className="mb-2 inline-flex items-center gap-2 rounded-md border border-info/25 bg-info/10 px-2.5 py-1 text-[10px] font-bold tracking-[0.18em] text-info">
-          MÓDULO AGENDA
+          MÓDULO AGENDAMENTO
         </div>
         <h1 className="text-3xl font-black tracking-tight">CRONOGRAMA</h1>
         <p className="mt-2 max-w-2xl text-sm text-muted-foreground">

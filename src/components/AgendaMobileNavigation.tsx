@@ -33,7 +33,9 @@ export function AgendaMobileNavigation({ profile }: { profile: UserProfile }) {
               />
             </span>
             <span className="min-w-0">
-              <span className="block text-sm font-black tracking-wide text-foreground">AGENDA</span>
+              <span className="block text-sm font-black tracking-wide text-foreground">
+                AGENDAMENTO
+              </span>
               <span className="block truncate text-[10px] text-muted-foreground">
                 Oitivas e atendimentos
               </span>
