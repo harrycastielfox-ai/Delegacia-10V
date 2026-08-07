@@ -73,7 +73,7 @@ const MODULOS: Modulo[] = [
   },
   {
     id: "agenda",
-    titulo: "AGENDA DE OITIVAS",
+    titulo: "AGENDAMENTO",
     hint: "Convocações e horários",
     descricao:
       "Marcação de vítimas, testemunhas e autores para serem ouvidos, com cronograma da unidade.",

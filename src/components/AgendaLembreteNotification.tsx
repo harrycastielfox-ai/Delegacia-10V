@@ -48,17 +48,15 @@ export function AgendaLembreteNotification() {
     return () => window.clearTimeout(timeoutId);
   }, []);
 
-  if (!visivel || !itens.length) return null;
-
   const hoje = chaveDoDia(new Date());
   const deHoje = itens.filter((item) => chaveDoDia(item.data_hora) === hoje);
-  const deAmanha = itens.filter((item) => chaveDoDia(item.data_hora) !== hoje);
-  // Amanhã é o que o servidor precisa antecipar; hoje ele já está vivendo.
-  const foco = deAmanha.length ? deAmanha : deHoje;
-  const ehAmanha = deAmanha.length > 0;
-  const dataFoco = new Date(foco[0].data_hora);
-  const preview = foco.slice(0, 4);
-  const extras = foco.length - preview.length;
+
+  // O aviso é sobre quem chega hoje pra ser ouvido — o que precisa de ação
+  // agora. O cronograma já mostra o resto dos dias pra quem quiser planejar.
+  if (!visivel || !deHoje.length) return null;
+
+  const preview = deHoje.slice(0, 4);
+  const extras = deHoje.length - preview.length;
 
   return (
     <div
@@ -72,14 +70,12 @@ export function AgendaLembreteNotification() {
         </span>
         <div className="min-w-0 flex-1">
           <p className="text-xs font-black uppercase tracking-[0.1em] text-info">
-            {ehAmanha ? "Amanhã na sua agenda" : "Hoje na sua agenda"}
+            Hoje na sua agenda
           </p>
           <p className="mt-1 text-sm text-foreground">
-            {ehAmanha ? "Amanhã, " : "Hoje, "}
-            {new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "2-digit" }).format(
-              dataFoco,
-            )}
-            , você marcou <strong>{foco.length}</strong> {foco.length === 1 ? "pessoa" : "pessoas"}
+            Hoje você tem <strong>{deHoje.length}</strong>{" "}
+            {deHoje.length === 1 ? "pessoa marcada" : "pessoas marcadas"} para ser
+            {deHoje.length === 1 ? "" : "em"} ouvida{deHoje.length === 1 ? "" : "s"}
           </p>
 
           <ol className="mt-2 space-y-1 text-xs text-muted-foreground">

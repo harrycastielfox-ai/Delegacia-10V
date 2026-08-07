@@ -39,7 +39,7 @@ export function AgendaSidebar({ profile }: { profile: UserProfile }) {
             <div className="font-bold tracking-wide text-sidebar-foreground group-hover:text-info">
               SIPI
             </div>
-            <div className="-mt-0.5 truncate text-xs text-muted-foreground">Agenda de Oitivas</div>
+            <div className="-mt-0.5 truncate text-xs text-muted-foreground">Agendamento</div>
           </div>
         </Link>
         <AppearanceSwitcher />

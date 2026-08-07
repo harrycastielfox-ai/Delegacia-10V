@@ -158,9 +158,9 @@ export default function AgendaDiaPage() {
       <header className="flex flex-col gap-4 rounded-2xl border border-border/70 bg-gradient-to-br from-card/80 to-card/40 p-5 lg:flex-row lg:items-center lg:justify-between lg:p-6">
         <div>
           <div className="mb-2 inline-flex items-center gap-2 rounded-md border border-info/25 bg-info/10 px-2.5 py-1 text-[10px] font-bold tracking-[0.18em] text-info">
-            MÓDULO AGENDA
+            MÓDULO AGENDAMENTO
           </div>
-          <h1 className="text-3xl font-black tracking-tight">AGENDA DE OITIVAS</h1>
+          <h1 className="text-3xl font-black tracking-tight">AGENDAMENTO</h1>
           <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
             Quem foi convocado, para que horário e por qual fato — vítimas, testemunhas e autores
             marcados para serem ouvidos.
