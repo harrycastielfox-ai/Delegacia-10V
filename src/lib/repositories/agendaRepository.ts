@@ -51,14 +51,6 @@ export async function listResponsaveis() {
   return (data ?? []) as ResponsavelOption[];
 }
 
-/** Lembrete de login: o que é meu para hoje e amanhã. */
-export async function listMeusLembretes() {
-  const data = await runSupabaseQuery<AgendamentoRecord[]>("lembretes da agenda", (signal) =>
-    supabase.rpc("meus_agendamentos_lembrete").abortSignal(signal),
-  );
-  return (data ?? []) as AgendamentoRecord[];
-}
-
 export async function checarConflitos(input: {
   dataHora: string;
   duracaoMinutos: number;

@@ -1,16 +1,52 @@
 import { Link } from "@tanstack/react-router";
 import { CalendarClock, X } from "lucide-react";
 import { useEffect, useState } from "react";
-import { QUALIFICACAO_LABELS, chaveDoDia, formatHora } from "@/features/agenda/agendaConstants";
+import { chaveDoDia, inicioDoDia, somarDias } from "@/features/agenda/agendaConstants";
 import type { AgendamentoRecord } from "@/features/agenda/agendaTypes";
-import { listMeusLembretes } from "@/lib/repositories/agendaRepository";
+import { listAgendamentosPeriodo } from "@/lib/repositories/agendaRepository";
 
 const CHECK_KEY = "sipi:agenda-lembrete-next-check-at";
 const PRIMEIRA_CHECAGEM_MS = 6_000;
 const REPETIR_MS = 4 * 60 * 60 * 1000;
+const STATUS_ATIVOS = new Set(["agendado", "confirmado"]);
+const SEM_RESPONSAVEL = "__sem_responsavel__";
 
+interface LinhaEquipe {
+  chave: string;
+  nome: string;
+  total: number;
+}
+
+function agruparPorResponsavel(itens: AgendamentoRecord[]): LinhaEquipe[] {
+  const contagem = new Map<string, LinhaEquipe>();
+
+  itens.forEach((item) => {
+    const chave = item.responsavel_user_id ?? SEM_RESPONSAVEL;
+    const nome = item.responsavel_nome ?? "Sem responsável definido";
+    const atual = contagem.get(chave);
+    if (atual) {
+      atual.total += 1;
+      return;
+    }
+    contagem.set(chave, { chave, nome, total: 1 });
+  });
+
+  // Quem tem mais gente marcada aparece primeiro — é quem mais precisa se
+  // organizar. "Sem responsável" fica sempre por último, é pendência, não prioridade.
+  return Array.from(contagem.values()).sort((a, b) => {
+    if (a.chave === SEM_RESPONSAVEL) return 1;
+    if (b.chave === SEM_RESPONSAVEL) return -1;
+    return b.total - a.total;
+  });
+}
+
+/**
+ * Painel de "quem chega hoje" visível pra toda a unidade — não só pra quem
+ * marcou. Assim todo mundo sabe o movimento do dia ao entrar no sistema, não
+ * só o escrivão que fez a marcação.
+ */
 export function AgendaLembreteNotification() {
-  const [itens, setItens] = useState<AgendamentoRecord[]>([]);
+  const [linhas, setLinhas] = useState<LinhaEquipe[]>([]);
   const [visivel, setVisivel] = useState(false);
 
   useEffect(() => {
@@ -18,13 +54,22 @@ export function AgendaLembreteNotification() {
 
     async function carregar() {
       try {
-        const registros = await listMeusLembretes();
-        if (!registros.length) return;
-        setItens(registros);
+        const hoje = inicioDoDia(new Date());
+        const registros = await listAgendamentosPeriodo({
+          inicio: hoje.toISOString(),
+          fim: somarDias(hoje, 1).toISOString(),
+          limit: 300,
+        });
+        const chaveHoje = chaveDoDia(hoje);
+        const deHoje = registros.filter(
+          (item) => STATUS_ATIVOS.has(item.status) && chaveDoDia(item.data_hora) === chaveHoje,
+        );
+        if (!deHoje.length) return;
+        setLinhas(agruparPorResponsavel(deHoje));
         setVisivel(true);
       } catch (erro) {
         if (import.meta.env.DEV) {
-          console.warn("[AgendaLembrete] falha ao carregar lembretes", erro);
+          console.warn("[AgendaLembrete] falha ao carregar a agenda do dia", erro);
         }
       }
     }
@@ -48,15 +93,9 @@ export function AgendaLembreteNotification() {
     return () => window.clearTimeout(timeoutId);
   }, []);
 
-  const hoje = chaveDoDia(new Date());
-  const deHoje = itens.filter((item) => chaveDoDia(item.data_hora) === hoje);
+  if (!visivel || !linhas.length) return null;
 
-  // O aviso é sobre quem chega hoje pra ser ouvido — o que precisa de ação
-  // agora. O cronograma já mostra o resto dos dias pra quem quiser planejar.
-  if (!visivel || !deHoje.length) return null;
-
-  const preview = deHoje.slice(0, 4);
-  const extras = deHoje.length - preview.length;
+  const totalGeral = linhas.reduce((soma, linha) => soma + linha.total, 0);
 
   return (
     <div
@@ -70,33 +109,23 @@ export function AgendaLembreteNotification() {
         </span>
         <div className="min-w-0 flex-1">
           <p className="text-xs font-black uppercase tracking-[0.1em] text-info">
-            Hoje na sua agenda
+            Hoje na agenda da unidade
           </p>
           <p className="mt-1 text-sm text-foreground">
-            Hoje você tem <strong>{deHoje.length}</strong>{" "}
-            {deHoje.length === 1 ? "pessoa marcada" : "pessoas marcadas"} para ser
-            {deHoje.length === 1 ? "" : "em"} ouvida{deHoje.length === 1 ? "" : "s"}
+            <strong>{totalGeral}</strong> {totalGeral === 1 ? "pessoa marcada" : "pessoas marcadas"}{" "}
+            no total
           </p>
 
-          <ol className="mt-2 space-y-1 text-xs text-muted-foreground">
-            {preview.map((item, indice) => (
-              <li key={item.id} className="truncate">
-                <Link
-                  to="/agenda/$agendamentoId"
-                  params={{ agendamentoId: item.id }}
-                  className="transition-colors hover:text-info"
-                >
-                  {indice + 1} — {formatHora(item.data_hora)} ·{" "}
-                  <strong className="text-foreground">{item.pessoa_nome}</strong> ·{" "}
-                  {QUALIFICACAO_LABELS[item.qualificacao]}
-                  {item.natureza ? ` — ${item.natureza}` : ""}
-                </Link>
+          <ul className="mt-2 space-y-1 text-xs text-muted-foreground">
+            {linhas.map((linha) => (
+              <li key={linha.chave} className="truncate">
+                <strong className="text-foreground">{linha.nome}</strong> tem{" "}
+                <strong className="text-info">{linha.total}</strong>{" "}
+                {linha.total === 1 ? "pessoa marcada" : "pessoas marcadas"} para ser
+                {linha.total === 1 ? "" : "em"} ouvida{linha.total === 1 ? "" : "s"}
               </li>
             ))}
-          </ol>
-          {extras > 0 ? (
-            <p className="mt-1 text-[11px] text-muted-foreground">+{extras} outra(s)</p>
-          ) : null}
+          </ul>
 
           <Link
             to="/agenda/cronograma"
